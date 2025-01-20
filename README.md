@@ -16,4 +16,4 @@ The model is structured into two files, input.pro and glogem.pro. The input.pro 
 ... to be developed
 
 # Contact
-Main developers: [Matthias Huss](https://vaw.ethz.ch/personen/person-detail.huss.html) & [Regine Hock](https://glaciers.gi.alaska.edu/people/hock)
+Main developers: [Matthias Huss](https://vaw.ethz.ch/personen/person-detail.huss.html) & [Regine Hock](https://www.mn.uio.no/geo/english/people/aca/geohyd/regineho/)
