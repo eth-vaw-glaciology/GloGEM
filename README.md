@@ -3,7 +3,7 @@
 # Overview
 The Global Glacier Evolution Model is an IDL package which allows to model the evolution of all 200.000 glaciers on Earth outside the ice sheets.
 The model is forced by monthly temperature and precipitation from 14 GCMs and three emission scenarios. In contrast to previous global-scale glacier models, GloGEM includes mass loss due to frontal ablation of marine-terminating glaciers.
-To get started, please check out this [schematic overview](https://github.com/avonderesch/GloGEM_m/blob/main/GloGEM_schematic.png) of the model.
+To get started, please check out this [schematic overview](https://github.com/sdrocer/GloGEM/blob/main/GloGEM_schematic.png) of the model.
 
 # Documentation
 The model is structured into two files, input.pro and glogem.pro. The input.pro file is used to change the model input and thus to be adjusted individually. This is why it is also stored in the .gitignore file (git will not trace files stored within .gitignore). The glogem.pro file contains the full code of the model. Follow the below procedure to run the model:
