@@ -910,7 +910,7 @@ if d eq 0 then st=bal_month else st=1
 if d eq 0 then en=365 else en=bal_month-1
 
 ; ****************************
-; loop over months
+; loop over months (#But actually it is here looping over each day)
 for m=st,en do begin
 
 psg=dblarr(nb) & mel=psg & refr=psg & corrdis=psg & snowmel=melt & icemel=mel
@@ -1131,7 +1131,7 @@ if ar_gl ne 0 then begin
    endif
 endif
 
-endfor                          ; loop over months
+endfor                          ; loop over months ;So actually days
 
 endfor                          ; parts of hydrological year
 
