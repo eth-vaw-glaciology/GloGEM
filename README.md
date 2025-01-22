@@ -13,7 +13,7 @@ The model is structured into two files, input.pro and glogem.pro. The input.pro 
 3. Run the `input.pro` script in your idl interpreter by typing .r `input.pro`
 4. Now, finally run GloGEM by typing .r `glogem.pro`
 
-Checkout the [Detailed Documentation](https://github.com/sdrocer/GloGEM/wiki) in our wiki.
+Checkout the detailed [Documentation](https://github.com/sdrocer/GloGEM/wiki) in our wiki.
 
 # Contact
 Main developers: [Matthias Huss](https://vaw.ethz.ch/personen/person-detail.huss.html) & [Regine Hock](https://www.mn.uio.no/geo/english/people/aca/geohyd/regineho/)
