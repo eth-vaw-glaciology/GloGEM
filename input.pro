@@ -9,15 +9,25 @@
 ; GloGEM.pro
 ; (IDL Version)
 
+; --- RGI-version selection
+RGIversion='6'       ; version of the RGI to be used
+
+; --- Time resolution selection 
+time_resolution='daily'           ; 'daily'/'monthly' - SELECT TIME RESOLUTION OF MODELLING
+
 ; PATHS TO ADAPT
 dir='/home/mhuss/projects/GloGEM/data/'           ; general data folder
-dirres='/scratch_net/iceberg_second/mhuss/r6spec_test/'   ; output folder  (same machine as you run on)scratch via the network
+dirres='/scratch_net/iceberg_second/mhuss/r'+RGIversion+'_'+time_resolution+'/'   ; output folder  (same machine as you run on)scratch via the network
 
-dir_data='/scratch_net/iceberg_second/mhuss/global_thickness/rgi60/bands_consensus2019/' ; thickness data
-dir_data_alt='/scratch_net/iceberg_second/mhuss/global_thickness/rgi60/bands_HF2012/'    ; alternative thickness data (for cross-checks)
+dir_data='/scratch_net/iceberg_second/mhuss/global_thickness/rgi'+RGIversion+'0/bands_consensus2019/' ; thickness data
+dir_data_alt='/scratch_net/iceberg_second/mhuss/global_thickness/rgi'+RGIversion+'0/bands_HF2012/'    ; alternative thickness data (for cross-checks)
 dir_clim='/scratch_net/vierzack04_fourth/mhuss/klima/'     ; climate data
 
-	
+; --- region selection
+; regions can be selected in group via a range of region-IDs
+; (diverging from RGI region IDs due to subregions)
+; alternatively regions can also be directly selected by putting region_id_loop=[0,0]	
+
 ; individual regions / subregions to be run (mostly working with region-loop)
 ;dir_region='Alaska' & region_n=['alaska']  ; *1
 ;dir_region='WesternCanada' & region_n=['westerncanada']    ; *2
@@ -32,14 +42,14 @@ dir_clim='/scratch_net/vierzack04_fourth/mhuss/klima/'     ; climate data
 ;dir_region='NorthAsia' & region_n=['northasia']  & clim_subregion='Chukotka'; *11
 ;dir_region='NorthAsia' & region_n=['northasia']  & clim_subregion='East'; *12
 ;dir_region='NorthAsia' & region_n=['northasia']  & clim_subregion='North'; *13
-dir_region='CentralEurope' & region_n=['centraleurope']  ; *14
+;dir_region='CentralEurope' & region_n=['centraleurope']  ; *14
 ;dir_region='Caucasus' & region_n=['caucasus']            ; *15
 ;dir_region='CentralAsia' & region_n=['centralasiaN']  ; *16
 ;dir_region='SouthAsiaWest' & region_n=['centralasiaW'] ; *17
 ;dir_region='SouthAsiaEast' & region_n=['centralasiaS'] ; *18
 ;dir_region='LowLatitudes' & region_n=['lowlatitudes'] & clim_subregion='Andes'; *19
 ;dir_region='LowLatitudes' & region_n=['lowlatitudes'] & clim_subregion='Africa'; *20
-dir_region='LowLatitudes' & region_n=['lowlatitudes'] & clim_subregion='Mexico'; *21
+;dir_region='LowLatitudes' & region_n=['lowlatitudes'] & clim_subregion='Mexico'; *21
 ;dir_region='LowLatitudes' & region_n=['lowlatitudes'] & clim_subregion='Newguinea' ; *22
 ;dir_region='SouthernAndes' & region_n=['southernandes']  ; *23
 ;dir_region='NewZealand' & region_n=['newzealand']       ; *24
@@ -54,27 +64,33 @@ dir_region='LowLatitudes' & region_n=['lowlatitudes'] & clim_subregion='Mexico';
 region_id_loop=[14,14]       ; specify IDs of regions to be run according to region_batch.dat
 ;region_id_loop=[0,0]        ; default, no loop
 
+; -- size selection
+size_range_overwrite='n'        ; Automatically overwriting size range of glaciers to be computed with value specied in regional_parameters_*
 size_range=[0.002,100000]          ; [km2]     size_range to be calculated
-;size_range=[0.5,0.52]          ; [km2]     size_range to be calculated
+size_range=[20,10000]          ; [km2]     size_range to be calculated
+
+; -- glacier / catchment selection
 
 single_glacier=''                  ; calculate all glaciers in region
 ;single_glacier='01450'            ; calculate one single glacier only
-;single_glacier='02822'            ; calculate one single glacier only
+
+catchment_selection=''
+;catchment_selection='Alps_g5km2'
 
 ; --------------------------------------
 ; MAIN SETTINGS / MODES
 
 tran=[1980,2100]                   ; time period of modelling
+tran=[2010,2030]                   ; time period of modelling
 
 calibrate='n'                      ; DO NOT CALIBRATE, JUST RUN FORWARD       => output to files/
 
-calibrate='y'                     ; PERFORM MODEL CALIBRATION                => no output, but calibration files to calibration/
+;calibrate='y'                     ; PERFORM MODEL CALIBRATION                => no output, but calibration files to calibration/
 
-calibrate='n' & tran=[1980,2019]  ; DO NOT CALIBRATE, BUT RUN MODEL FOR PAST   => output to PAST/
+;calibrate='n' & tran=[1980,2019]  ; DO NOT CALIBRATE, BUT RUN MODEL FOR PAST   => output to PAST/
 
 meltmodel='1'                   ; Select melt model to be used
                                 ; 1: Classic degree-day model
-                                ; 2: Hock (1999) model - not fully implemented
                                 ; 3: Simple energy-balance model (Oerlemans,2001)
 
 find_startyear='y'     ; automatically determine first year of future modelling (based on date of inventory); 'n' ALSO to drive static output for GloGEMflow
@@ -83,6 +99,8 @@ find_startyear='y'     ; automatically determine first year of future modelling 
 ; climate data
 
 CMIP6='y'             ; CMIP6 GCMs to be used?
+if CMIP6 eq 'y' then GCMdata = 'CMIP6' 
+if CMIP6 eq 'y' and time_resolution eq 'daily' then GCMdata='CMIP6_daily' 
 
 long_GCM=''           ; runs until 2100
 ;long_GCM='long_'     ; runs until 2300
@@ -112,14 +130,16 @@ if long_GCM eq 'y' then begin
    rcp_batch=[6,6,6,6,6,6,6,6,6,6,6,6,6,6]
 endif
 
-; Re-analysis
-reanalysis='ERA5' &  rea_eval=[1980,2019]      ; time period for evaluating the bias
+; --- Re-analysis
+reanalysis='ERA5-land_daily'            ; reanalysis data set 
+rea_eval=[1980,2019]                    ; time period for evaluating the bias
+grid_step=0.1                           ; grid stepping of reanalysis data set
 
 ; ***********
-; calibration
+; calibration (main setting given in the beginning)
 
-;calibrate='y'               ; run calibration routine (setting given above)
     valiglaciers_only='n'    ; perform a calibration run for the WGMS validation glaciers only 
+        validation_dataset='seasonal/validate_final2017/validate_WGMS_'  ; to be updated
 
 calibrate_individual='y'     ; parameter optimization for individual glaciers
 
@@ -181,18 +201,10 @@ no_incprec=[0.75,1000,2,2]      ; precipitation reduction at very high elevation
 
 ; ----- melt model
 
-;meltmodel='1'     ; !!!!! Choose melt model to be used   (option given above)
-                  ; '1': conventional DDF-model; '2': Hock, 1999; '3': Oerlemans,2001
-
 ; meltmodel 1 - conventional DDF
 DDFsnow0=3        ; (mm d-1 C-1) degree-day factor snow (irrelevant, specified in file)
 DDFice0=6         ; (mm d-1 C-1) degree-day factor snow (irrelevant, specified in file)
 T_melt=0          ; critical temperature for melting [deg C]
-
-; meltmodel 2 - enhanced DDF model (Hock, 1999)
-Fm=1
-r_ice=1
-r_snow=0.5
 
 ; meltmodel 3 - Simple energy balance model (Oerlemans, 2001)
 C0=-45           ; parameter 1 (irrelevant, specified in file)
@@ -222,9 +234,9 @@ debris_supraglacial='n'              ; ACTIVATE MODEL FOR SUPRAGLACIAL DEBRIS
 
 refreezing_full='y'      ; ACTIVATE REFREEZING MODEL
 
-firnice_temperature='y'               ; ACTIVATE ICE TEMPERATURE MODEL - compute firn/ice temperatures transiently (not just for refreezing)
+firnice_temperature='n'               ; ACTIVATE ICE TEMPERATURE MODEL - compute firn/ice temperatures transiently (not just for refreezing)
    firnice_write=['y','y']   ; output of overall (time series, annual) and detailed (profiles, monthly) files
-   firnice_batch='y'      ; run batch (all sites contained in icetemperature_batch.dat)
+   firnice_batch='n'      ; run batch (all sites contained in icetemperature_batch.dat)
       ; only relevant if defined manually (firnice_runbatch='n' )
       firnice_profile=[0.2,0.65,0.95]      ; (max 3.) manually inserting elevations of profiles to be written (<1: ratio of elev. range, >1: masl)
      ; firnice_profile=[3000,3500,4000]
@@ -269,9 +281,16 @@ clim_subregion=''
 full_output='n'
 
 ; define which files are written out
-if full_output eq 'y' then outf_names=['Area','Volume','Annual_Balance_sfc','Winter_balance_sfc','Icemelt_sfc',$
+if time_resolution eq 'monthly' then $
+   if full_output eq 'y' then outf_names=['Area','Volume','Annual_Balance_sfc','Winter_balance_sfc','Icemelt_sfc',$
  'Snowmelt_sfc','Accumulation_sfc','Rain_sfc','ELA','AAR','Refreezing_sfc','Hmin','Frontal_ablation','Discharge','Discharge_gl'$
- ,'Balance_mon','Precipitation_mon','Accumulation_mon','Melt_mon','Refreezing_mon']
+ ,'Balance_mon','Precipitation_mon','Accumulation_mon','Melt_mon','Refreezing_mon'] $
+else if full_output eq 'y' then outf_names=['Area','Volume','Annual_Balance_sfc','Winter_balance_sfc','Icemelt_sfc',$
+ 'Snowmelt_sfc','Accumulation_sfc','Rain_sfc','ELA','AAR','Refreezing_sfc','Hmin','Frontal_ablation','Discharge','Discharge_gl'$
+ ,'Accumulation_day','Rain_day','Snowmelt_day','Icemelt_day','Refreezing_day','Snowline_day']
+
+; output file-names equivalent for daily and monthly in case the
+; reduced output option is used
 if full_output eq 'n' then outf_names=['Area','Volume','Annual_Balance_sfc','Winter_balance_sfc','Icemelt_sfc',$
  'Snowmelt_sfc','Accumulation_sfc','Rain_sfc','ELA','AAR','Refreezing_sfc','Hmin','Frontal_ablation',$
  'Discharge','Discharge_gl','','','','','']   ; reduced output - less monthly data
@@ -294,7 +313,6 @@ lon0=[0,0]
 lat0=[9999,9999]        ; run for entire region (perimeter determined automatically based on glaciers)
 
 grid_run='y'     ; default, perform runs aggregated to a spatial grid (aligned with re-analysis?)
-grid_step=0.5    ; deg
 
 ; ------------------
 ; plot
@@ -329,7 +347,7 @@ lhf=334000.          ; [J kg-1] latent heat of fusion
 
 
 ; ----------------------------------
-; some definitions
+; some more definitions
 if lat0(0) eq -9999 then grid_run='n'
 if grid_run eq 'n' then areaplot='n'
 
@@ -340,6 +358,12 @@ asp_class=[0,45,90,135,180]
 
 rddf_si=ddfice0/ddfsnow0
 years=tran(1)-tran(0)+1
+
+; days of month
+if time_resolution eq 'monthly' then mon_len=[31,28,31,30,31,30,31,31,30,31,30,31] else mon_len=dblarr(365)+1   
+
+; only partially implemented for daily version and unsure whether it would actually work out...
+variability_bias_longterm='n'        ; include bias in GCM variability from month to month
 
 ; ----------------------
 ; IF - THEN for options (automatic exclusion - to avoid erroneous runs)
@@ -398,7 +422,7 @@ rf_melcrit=0.02             ; [m w.e.] critical amount of melt for initialising 
 dens_rf=[300,300,400,450,500,550,600,650]     ; approx. density of layers
 rf_dz=1.                       ; layer thickness (m)
 rf_dsc=3.                      ; increase in temporal resolution (num. stability of heat conduction)
-rf_dt=3600.*24.*30./rf_dsc     ; time step
+rf_dt=3600.*24.*mean(mon_len)/rf_dsc     ; time step
 
 ; initialize ice temperature model
 fit_layers=[10,10,10]          ; number of layers with given thickness (max. 260m in this setup) 
@@ -421,6 +445,7 @@ for i=1,total(fit_layers)-1 do fit_dz(1,i)=fit_dz(1,i-1)+fit_dz(0,i)
 
 ; -------------------------------------
 ; short_gcmchoice - get individual GCMs
+;   (does only need adapting when short_gcmchoice option is used)
 
 if short_gcmchoice(0) ne 0 then begin
 
