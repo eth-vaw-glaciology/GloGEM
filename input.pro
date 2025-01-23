@@ -16,8 +16,8 @@ RGIversion='6'       ; version of the RGI to be used
 time_resolution='daily'           ; 'daily'/'monthly' - SELECT TIME RESOLUTION OF MODELLING
 
 ; PATHS TO ADAPT
-dir='/home/mhuss/projects/GloGEM/data/'           ; general data folder
-dirres='/scratch_net/iceberg_second/mhuss/r'+RGIversion+'_'+time_resolution+'/'   ; output folder  (same machine as you run on)scratch via the network
+dir='/scratch_net/vierzack04_fourth/GloGEM_data/'           ; general data folder
+dirres='/scratch_net/vierzack05/jabeer/GloGEM_output/r'+RGIversion+'_'+time_resolution+'/'   ; output folder  (same machine as you run on)scratch via the network
 
 dir_data='/scratch_net/iceberg_second/mhuss/global_thickness/rgi'+RGIversion+'0/bands_consensus2019/' ; thickness data
 dir_data_alt='/scratch_net/iceberg_second/mhuss/global_thickness/rgi'+RGIversion+'0/bands_HF2012/'    ; alternative thickness data (for cross-checks)
@@ -59,7 +59,7 @@ dir_clim='/scratch_net/vierzack04_fourth/mhuss/klima/'     ; climate data
 ;dir_region='Antarctic' & region_n=['antarctic'] & clim_subregion='MaudWilkes'; *28
 ;dir_region='Antarctic' & region_n=['antarctic'] & clim_subregion='Victoria'; *29
 ;dir_region='Antarctic' & region_n=['antarctic'] & clim_subregion='Peninsula'; *30
-;dir_region='Antarctic' & region_n=['antarctic'] & clim_subregion='MarieByrd'; *31
+; dir_region='Antarctic' & region_n=['antarctic'] & clim_subregion='MarieByrd'; *31
 
 region_id_loop=[14,14]       ; specify IDs of regions to be run according to region_batch.dat
 ;region_id_loop=[0,0]        ; default, no loop
@@ -71,8 +71,8 @@ size_range=[20,10000]          ; [km2]     size_range to be calculated
 
 ; -- glacier / catchment selection
 
-single_glacier=''                  ; calculate all glaciers in region
-;single_glacier='01450'            ; calculate one single glacier only
+; single_glacier=''                  ; calculate all glaciers in region
+single_glacier='01450'            ; calculate one single glacier only
 
 catchment_selection=''
 ;catchment_selection='Alps_g5km2'
@@ -83,9 +83,9 @@ catchment_selection=''
 tran=[1980,2100]                   ; time period of modelling
 tran=[2010,2030]                   ; time period of modelling
 
-calibrate='n'                      ; DO NOT CALIBRATE, JUST RUN FORWARD       => output to files/
+; calibrate='n'                      ; DO NOT CALIBRATE, JUST RUN FORWARD       => output to files/
 
-;calibrate='y'                     ; PERFORM MODEL CALIBRATION                => no output, but calibration files to calibration/
+calibrate='y'                     ; PERFORM MODEL CALIBRATION                => no output, but calibration files to calibration/
 
 ;calibrate='n' & tran=[1980,2019]  ; DO NOT CALIBRATE, BUT RUN MODEL FOR PAST   => output to PAST/
 
