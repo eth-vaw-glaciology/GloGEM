@@ -16,7 +16,7 @@
 
 ; ******************************************************************
 ; saving/reading input file settings at the start of the main run
-fn=dir+'../prog/input.pro' & anz=file_lines(fn) & input_file_content=strarr(anz)
+fn='input.pro' & anz=file_lines(fn) & input_file_content=strarr(anz)
 openr,1,fn & readf,1,input_file_content & close,1
 
 ; --------------------------------------------
@@ -162,7 +162,7 @@ endfor
 ; *** Glacier-specific calibration file
 endif else begin
 
-   READ_GEODETICDATA,dir,dir_region,region_loop_data,calibrate_glacierspecific_period,calimb_bn
+   READ_GEODETICDATA,dir,dir_region,region_loop_data,calibrate_glacierspecific_period,calimb_bn,calimb_p0,calimb_p1,calimb_gid
 
 endelse
 
@@ -294,6 +294,13 @@ if meltmodel eq '1' then mtt='' else mtt='_m3'
 a=systime() & b=strsplit(a,' ',/extract) & tt=double(b(4))-1
 if tran(1) le tt then b='/PAST'+version_past+mtt
 
+c=findfile(dirres+dir_region)
+if c(0) eq '' then begin
+   spawn,'mkdir '+dirres+dir_region & spawn,'chmod a+rx '+dirres+dir_region 
+   spawn,'mkdir '+dirres+dir_region+'/calibration' & spawn,'chmod a+rx '+dirres+dir_region+'/calibration' ; calibration folder
+   spawn,'mkdir '+dirres+dir_region+'/files'+mtt & spawn,'chmod a+rx '+dirres+dir_region+'/files'+mtt     ; result files
+   spawn,'mkdir '+dirres+dir_region+'/PAST'+mtt & spawn,'chmod a+rx '+dirres+dir_region+'/PAST'+mtt       ; past files
+endif
 c=findfile(dirres+dir_region+'/files'+mtt+'/'+GCM_model(gcms))
 if c(0) eq '' then begin
    spawn,'mkdir '+dirres+dir_region+'/files'+mtt+'/'+GCM_model(gcms) & spawn,'chmod a+rx '+dirres+dir_region+'/files'+mtt+'/'+GCM_model(gcms)
