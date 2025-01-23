@@ -1,4 +1,4 @@
-PRO read_geodeticdata,dir,dir_region,region_loop_data,calibrate_glacierspecific_period,calimb_bn
+PRO read_geodeticdata,dir,dir_region,region_loop_data,calibrate_glacierspecific_period,calimb_bn,calimb_p0,calimb_p1,calimb_gid
 
 ii=where(dir_region eq region_loop_data(2,*))
 fn=dir+'geodetic/aggregated_'+calibrate_glacierspecific_period+'/'+strcompress(region_loop_data(1,ii),/remove_all)+'_mb_glspec.dat'
