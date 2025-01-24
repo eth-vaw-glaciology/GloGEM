@@ -12,19 +12,20 @@
 ;
 ; --------------------------------------------------
 ; two calibration output files are created - change this!
-compile_opt idl2
 
-.r input.pro
+RGIversion='6'
+
+time_resolution='daily'
 ;
-single_glacier = '01450'
-calibrate = 'y'
-meltmodel = '1' ; Select melt model to be used
+;single_glacier = '01450'
+;calibrate = 'y'
+;meltmodel = '1' ; Select melt model to be used
 ; 1: Classic degree-day model
 ; 3: Simple energy-balance model (Oerlemans,2001)
 
-find_startyear = 'y'
+;find_startyear = 'y'
 
-.r glogem.pro
+;.r glogem.pro
 ;
 ; check output values
 ;
@@ -99,5 +100,7 @@ for i = 0, n_elements(variable_names) - 1 do begin
     print, var_name + ' is different.'
     print, 'Reference value: ', ref_val
     print, 'Simulated value: ', sim_val
-  endif
+  endelse
 endfor
+
+end
