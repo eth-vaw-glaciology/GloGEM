@@ -17,7 +17,7 @@ time_resolution='daily'           ; 'daily'/'monthly' - SELECT TIME RESOLUTION O
 
 ; PATHS TO ADAPT
 dir='/scratch_net/vierzack04_fourth/GloGEM_data/'           ; general data folder
-dirres='/scratch_net/vierzack05/jabeer/GloGEM_output/r'+RGIversion+'_'+time_resolution+'/'   ; output folder  (same machine as you run on)scratch via the network
+dirres='/scratch_net/vierzack05/lvantrich/GloGEM_output/r'+RGIversion+'_'+time_resolution+'/'   ; output folder  (same machine as you run on)scratch via the network
 
 dir_data='/scratch_net/iceberg_second/mhuss/global_thickness/rgi'+RGIversion+'0/bands_consensus2019/' ; thickness data
 dir_data_alt='/scratch_net/iceberg_second/mhuss/global_thickness/rgi'+RGIversion+'0/bands_HF2012/'    ; alternative thickness data (for cross-checks)
@@ -85,7 +85,7 @@ tran=[2010,2030]                   ; time period of modelling
 
 ; calibrate='n'                      ; DO NOT CALIBRATE, JUST RUN FORWARD       => output to files/
 
-calibrate='n'                     ; PERFORM MODEL CALIBRATION                => no output, but calibration files to calibration/
+calibrate = 'n'                     ; PERFORM MODEL CALIBRATION                => no output, but calibration files to calibration/
 
 ;calibrate='n' & tran=[1980,2019]  ; DO NOT CALIBRATE, BUT RUN MODEL FOR PAST   => output to PAST/
 
