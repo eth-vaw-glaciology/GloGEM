@@ -304,7 +304,7 @@ endif
 
 c=findfile(dirres+dir_region+'/files/SINGLE') 
 if c(0) eq '' then begin
-   spawn,'mkdir '+dirres+dir_region+'/files/SINGLE' & spawn,'chmod a+rx '+dirres+dir_region+'files/SINGLE'
+   spawn,'mkdir '+dirres+dir_region+'/files/SINGLE' & spawn,'chmod a+rx '+dirres+dir_region+'/files/SINGLE'
 endif
 
 c=findfile(dirres+dir_region+'/files'+mtt+'/'+GCM_model(gcms))
