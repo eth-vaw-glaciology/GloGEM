@@ -1538,82 +1538,16 @@ endif
 cali_calflux=cali_calflux+mean(flux_calv)/1000.*ar_gl
 
 ; ---------------------
-; write results files
+; Write results files
 if write_file eq 'y' then begin
-
-; output for daily model => procedure
-if time_resolution eq 'daily' then begin
-
-ii=where(outf_names ne '',ci)
-for i=0,ci-1 do begin
-	case ii(i) of
-	  0: var=areas
-	  1: var=volumes
-	  2: var=mb
-	  3: var=wb
-	  4: var=smelt
-	  5: var=imelt
-	  6: var=accum
-	  7: var=rain
-	  8: var=ela
-	  9: var=aar
-	 10: var=refre
-         11: var=hmin_g
-         12: var=flux_calv
-	 13: var=discharge
-	 14: var=discharge_gl
-	 15: var=accday
-	 16: var=rainday
-	 17: var=snowmeltday
-	 18: var=icemeltday
-	 19: var=refrday
-	 20: var=snowlineday/1000.
-	 endcase
-        if ii(i) lt 13 then $
-           printf,string(i+10,fo='(i2)'),id(gg(g))+' '+string(var,fo='('+strcompress(string(years),/remove_all)+format_of(i)+')') $
-        else begin   ; new format for daily runoff files
-           for k=0,years-1 do begin
-              if ii(i) ne 14 then att=areas(0) else att=areas(k)
-              printf,string(i+10,fo='(i2)'),id(gg(g))+'  '+string(y(k),fo='(i4)')+'  '+string(att,fo='(f11.3)')+' '+string(var(0+k*365.:364.+k*365.)*1000.,fo='('+strcompress(365,/remove_all)+format_of(i)+')')
-           endfor
-        endelse
-endfor
-
-endif
-
-; output for monthly model => procedure
-if time_resolution eq 'monthly' then begin
-
-ii=where(outf_names ne '',ci)
-for i=0,ci-1 do begin
-	case ii(i) of
-	  0: var=areas
-	  1: var=volumes
-	  2: var=mb
-	  3: var=wb
-	  4: var=smelt
-	  5: var=imelt
-	  6: var=accum
-	  7: var=rain
-	  8: var=ela
-	  9: var=aar
-	 10: var=refre
-         11: var=hmin_g
-         12: var=flux_calv
-	 13: var=discharge
-	 14: var=discharge_gl
-	 15: var=balmo
-	 16: var=precmo
-	 17: var=accmo
-	 18: var=melmo
-	 19: var=refrmo
-	 endcase
-        if ii(i) ge 13 then a=12 else a=1
-	printf,string(i+10,fo='(i2)'),id(gg(g))+' '+string(var,fo='('+strcompress(string(years)*a,/remove_all)+format_of(i)+')')
-endfor
-
-endif
-
+   ; Output for daily results
+   if time_resolution eq 'daily' then begin
+      WRITE_RESULTS_FILES_DAILY, format_of, time_resolution, outf_names, areas, volumes, mb, wb, smelt, imelt, accum, rain, ela, aar, refre, hmin_g, flux_calv, discharge, discharge_gl, accday, rainday, snowmeltday, icemeltday, refrday, snowlineday, id, gg, g, years, y     
+   endif else if time_resolution eq 'monthly' then begin
+      WRITE_RESULTS_FILES_MONTHLY, format_of, time_resolution, outf_names, areas, volumes, mb, wb, smelt, imelt, accum, rain, ela, aar, refre, hmin_g, flux_calv, discharge, discharge_gl, balmo, precmo, accmo, mellmo, refrmo, id, gg, g, years, y
+   endif else begin
+      PRINT, 'Error: temporal resolution is required.'
+   endelse
 endif
 
 ; ------------------------
