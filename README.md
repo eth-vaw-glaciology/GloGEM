@@ -1,4 +1,4 @@
-<p align="center"><img src="https://github.com/sdrocer/GloGEM/blob/main/figs/Logo.png" width="66.6%"></p>
+<p align="center"><img src="https://github.com/sdrocer/GloGEM/blob/main/figs/GloGEM_logo_AVDE_long_noBackground_white.png" width="66.6%"></p>
 
 # Overview
 The Global Glacier Evolution Model is an IDL package which allows to model the evolution of all 200.000 glaciers on Earth outside the ice sheets.
