@@ -14,10 +14,16 @@ RGIversion='6'       ; version of the RGI to be used
 
 ; --- Time resolution selection 
 time_resolution='daily'           ; 'daily'/'monthly' - SELECT TIME RESOLUTION OF MODELLING
+time_resolution='monthly'           ; 'daily'/'monthly' - SELECT TIME RESOLUTION OF MODELLING
 
 ; PATHS TO ADAPT
-dir='/scratch_net/vierzack04_fourth/GloGEM_data/'           ; general data folder
-dirres='/scratch_net/vierzack05/lvantrich/GloGEM_output/r'+RGIversion+'_'+time_resolution+'/'   ; output folder  (same machine as you run on)scratch via the network
+; lvantrich
+;dir='/scratch_net/vierzack04_fourth/GloGEM_data/'           ; general data folder
+;dirres='/scratch_net/vierzack05/lvantrich/GloGEM_output/r'+RGIversion+'_'+time_resolution+'/'   ; output folder  (same machine as you run on)scratch via the network
+
+; mhuss
+dir='/home/mhuss/projects/GloGEM/data/'                                         ; general data folder
+dirres='/scratch_net/iceberg_second/mhuss/r'+RGIversion+'_'+time_resolution+'/'   ; output folder  (same machine as you run on)scratch via the network
 
 dir_data='/scratch_net/iceberg_second/mhuss/global_thickness/rgi'+RGIversion+'0/bands_consensus2019/' ; thickness data
 dir_data_alt='/scratch_net/iceberg_second/mhuss/global_thickness/rgi'+RGIversion+'0/bands_HF2012/'    ; alternative thickness data (for cross-checks)
@@ -132,7 +138,8 @@ endif
 
 ; --- Re-analysis
 reanalysis='ERA5-land_daily'            ; reanalysis data set 
-rea_eval=[1980,2019]                    ; time period for evaluating the bias
+if time_resolution eq 'monthly' then reanalysis='ERA5'     ; reanalysis data set for monthly resolution
+rea_eval=[1980,2019]            ; time period for evaluating the bias
 grid_step=0.1                           ; grid stepping of reanalysis data set
 
 ; ***********
