@@ -18,6 +18,3 @@ If you want to refer to GloGEM in your publications or presentations, please ref
 GloGEM is a “glacier centric model”, which means that it runs for each glacier independently of the others. In the case of glacier complexes, 
 it relies on the glacier inventory to properly separate the individual glacier entities by the ice divides, ensuring that all ice in a glacier 
 basin flows towards a single glacier terminus.
-
-# Contact
-Main developers: [Matthias Huss](https://vaw.ethz.ch/personen/person-detail.huss.html) & [Regine Hock](https://www.mn.uio.no/geo/english/people/aca/geohyd/regineho/)
