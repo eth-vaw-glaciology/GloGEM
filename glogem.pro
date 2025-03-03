@@ -725,8 +725,11 @@ endif
 ; ---------------------
 ; read files for supraglacial debris
 
+if debris_supraglacial eq 'y' then begin
+  
 Read_SUPRAGLACIALDEBRIS, debris_supraglacial, region, id, gg, g, dir_data, advance, nb, adv_addband, debris_pond_enhancementfactor, debris_thick0, debris_thick, debris_frac, debris_mf, debris_ponddens, debris_type_th, debris_type_red
 
+endif
 
 ; ---------------------
 ; attribute specific parameter values
