@@ -1204,7 +1204,8 @@ endif
 ; annually adapting debris cover extent and thickness
 if debris_supraglacial eq 'y' and ar_gl gt 0 then begin
 
-DEBRIS_MODEL,ye   ; to be done
+DEBRIS_MODEL, ye, nb, step, gl, noval, area, ar_gl, ela, bal, mb, elev, debris_expansion, debris_seed_bands, debris_seed_meters, debris_thickening, debris_frac, debris_thick, debris_thick_gradient, debris_ponddens, debris_pond_gradient, debris_ponddens_max, tran, survey_year, write_mb_elevationbands, debris_exp_gradient, debris_initialband, debris_red_factor, debris_thick0, elev_debthick, elev_debfrac, elev_debfactor, elev_pondarea, g, gg
+
 
 endif
 
