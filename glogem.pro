@@ -931,17 +931,8 @@ endif
 
 if debris_supraglacial eq 'y' then begin
 
-ii=where(sur eq 0 and tg gt t_melt and debris_thick gt 0 and debris_frac gt 0,ci)   ;  debris-covered ice
-if ci gt 0 then begin
-   for i=0l,ci-1 do begin
-      a=min(abs(debris_thick(ii(i))-debris_type_th),ind) ; looking for closest value (may be improved by interpolating)
-      if write_mb_elevationbands eq 'y' then debris_red_factor(ii(i))=debris_type_red(ind)
-      ; debris-covered ice + bare ice + area of ponds/cliffs 
-      mel(ii(i))=(debris_frac(0,ii(i))-debris_ponddens(ii(i)))*debris_type_red(ind)*mel(ii(i))  +  (1.-debris_frac(0,ii(i)))*mel(ii(i))  +  debris_ponddens(ii(i))*debris_pond_enhancementfactor*mel(ii(i))
-   endfor
-   imelt(ye)=imelt(ye)+total(mel(ii)*area(ii))/ar_gl ; updating array from above
-   if time_resolution eq 'daily' then icemel(ii)=mel(ii)
-endif
+CALCULATEDEBRISMELT, debris_supraglacial, sur, tg, t_melt, debris_thick, debris_frac, debris_type_th, debris_type_red, debris_ponddens, debris_pond_enhancementfactor, mel, imelt, ye, ar_gl, area, time_resolution, icemel, write_mb_elevationbands
+
 
 endif                           ; debris
 
