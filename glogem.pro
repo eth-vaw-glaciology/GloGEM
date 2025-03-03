@@ -725,33 +725,8 @@ endif
 ; ---------------------
 ; read files for supraglacial debris
 
-if debris_supraglacial eq 'y' then begin
-   fn=dir_data+'../debris/'+region+'/debris_'+id(gg(g))+'.dat' & a=findfile(fn)
+Read_SUPRAGLACIALDEBRIS, debris_supraglacial, region, id, gg, g, dir_data, advance, nb, adv_addband, debris_pond_enhancementfactor, debris_thick0, debris_thick, debris_frac, debris_mf, debris_ponddens, debris_type_th, debris_type_red
 
-   if a(0) ne '' then begin
-      anz=file_lines(fn)-5 & s=strarr(5) & da=dblarr(8,anz)
-      openr,1,fn & readf,1,s & readf,1,da & close,1
-
-      ; adding more bands in front of glacier in case that advance is allowed
-      if advance eq 'y' and nb gt 3 then begin
-         nb0=nb-adv_addband &  tt=da & da=dblarr(8,nb) & da(*,nb-nb0:nb-1)=tt(*,0:nb0-1)
-      endif else adv_addband=0
-
-      debris_thick=da(5,*) & debris_frac=da(4,*)
-      debris_mf=da(6,*) & debris_ponddens=da(7,*)
-   endif else begin             ; debris file not present; setting debris to zero everywhere
-      debris_thick=dblarr(nb) & debris_frac=dblarr(nb) & debris_mf=dblarr(nb)+1 & debris_ponddens=dblarr(nb)
-   endelse
-   debris_thick0=debris_thick
-   if debris_pond_enhancementfactor eq 0 then debris_ponddens=dblarr(nb)  ; setting pond density to zero for default value
-   ii=where(debris_frac eq 0,ci) & if ci gt 0 then debris_ponddens(ii)=0  ; no ponds possible without debris coverage
-
-   ; read debris melt-reduction file (Ostrem-curve)
-   fn=dir_data+'../debris/'+region+'/factor_'+id(gg(g))+'.dat'
-   anz=file_lines(fn)-3 & s=strarr(3) & da=dblarr(3,anz)
-   openr,1,fn & readf,1,s & readf,1,da & close,1
-   debris_type_th=da(1,*) & debris_type_red=da(2,*) 
-endif
 
 ; ---------------------
 ; attribute specific parameter values
