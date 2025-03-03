@@ -424,8 +424,8 @@ vol_bz=dblarr(years)    ; define array for storing ice volume below sea level
 ; LOOPs over grids
 
 ; determine the range of glaciers that are covered in region
-lon0=[fix(min(lon_gl)/grid_step)*grid_step-grid_step/2.,fix(max(lon_gl)/grid_step)*grid_step+grid_step/2.]
-lat0=[fix(min(lat_gl)/grid_step)*grid_step-grid_step/2.,fix(max(lat_gl)/grid_step)*grid_step+grid_step/2.]
+lon0=[fix(min(lon_gl)/grid_step)*grid_step-grid_step/2.,fix(max(lon_gl)/grid_step)*grid_step+grid_step/2.+2*grid_step]
+lat0=[fix(min(lat_gl)/grid_step)*grid_step-grid_step/2.,fix(max(lat_gl)/grid_step)*grid_step+grid_step/2.+2*grid_step]
 
 if single_glacier ne '' then begin
    gg=where(id eq single_glacier,cg)
