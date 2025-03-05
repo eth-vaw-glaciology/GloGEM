@@ -1,5 +1,50 @@
 PRO FIRNICE_TEMPERATURE_MODEL,gl,fit_layers,fit_dens,fit_dz, rf_dsc,rf_dt,Lh_rf, tgs,tl_fit,te_fit,geothermal_flux, cair,cice,kair,kice, sno,mel,plg,thick,slope,firn, firnice_batch,firnice_write,firnice_maxdepth, fit_water,fact_permeability,elev_firnicetemp,firnice_profile,firnice_profile_ind,ye,tran,m
 
+;*********************
+; alternative permeability model based on velocity gradient 
+ii_perm=where(gl ne noval,ci)
+
+for i=0,ci-1 do begin
+
+; alternative permeability model based on velocity gradient
+g = 9.81      ; acceleration due to gravity [m/s^2]
+rho_ice = 917 ; density of ice [kg/m^3]
+A = 2.4e-24   ; ice flow law parameter [Pa^-3 s^-1]
+n = 3         ; Glen's flow law exponent
+THRESHOLD_ICE_VELOCITY_GRADIENT = 1e-4  ; Threshold for ice velocity gradient [year^-1]
+
+tau_d = rho_ice * g * SIN(slope(ii_perm(i)) * !DTOR) * thickness(ii_perm(i))               ; driving stress in Pa
+u = (2 * A / (n + 1)) * tau_d^n * thickness(ii_perm(i))^(n + 1) * 365.25 * 24 * 3600  ; ice velocity in m/year
+du = FLTARR(N_ELEMENTS(u))  ; Initialize the gradient array with the same number of elements as u
+
+; Compute the gradient of the velocity array using finite differences
+du[0] = (u[1] - u[0])  ; Forward difference for the first element
+FOR i = 1, N_ELEMENTS(u) - 2 DO BEGIN
+    du[i] = (u[i+1] - u[i-1]) / 2.0  ; Central difference for the middle elements
+ENDFOR
+du[N_ELEMENTS(u) - 1] = (u[N_ELEMENTS(u) - 1] - u[N_ELEMENTS(u) - 2])  ; Backward difference for the last element
+PRINT, 'Ice velocity gradient (du) in m/year/m: ', du
+
+endfor
+
+; Normalize the velocity gradient to a range of 0 to 1
+min_du = MIN(du)
+max_du = MAX(du)
+normalized_du = (du - min_du) / (max_du - min_du)
+
+; Apply the threshold for ice velocity gradient
+permeability = normalized_du
+permeability[WHERE(normalized_du < THRESHOLD_ICE_VELOCITY_GRADIENT)] = 0
+
+; Divide by 2 to allow only 50% permeability
+permeability = permeability / 2
+
+; Print the result
+PRINT, 'Normalized velocity gradient: ', normalized_du
+PRINT, 'Permeability: ', permeability
+
+;*********************
+
 noval=-9999 & snoval=-99
 
 ii=where(gl ne noval,ci)
@@ -77,9 +122,12 @@ for j=1,ck do begin ; loop through all SNOW layers from top, and update temperat
 endfor
 
 ; reduce liquid water input through glacier ice by a factor proportional to local characteristics (thickness / slope ~flow speed)
-f=(slope(ii(i))^2*fact_permeability(0))*(thick(ii(i))*fact_permeability(1))
-if f gt 0.5 then f=0.5     ; setting maximum value for overall reduction factor - to be assessed 
-if f lt 0.0001 then f=0.0001     ; setting minimum value for overall reduction factor - to be assessed 
+; f=(slope(ii(i))^2*fact_permeability(0))*(thick(ii(i))*fact_permeability(1)) ; slope based permeability (Matthias model)
+; f = permeability(ii(i)) ; velocity gradient based permeability
+f = 0 ; no permeability
+
+; if f gt 0.5 then f=0.5     ; setting maximum value for overall reduction factor - to be assessed 
+; if f lt 0.0001 then f=0.0001     ; setting minimum value for overall reduction factor - to be assessed 
 fit_water=fit_water*f      ; reducing amount of water entering glacier ice
 
 for j=ck+1,tt-2 do begin ; loop through all ICE layers from top, and update temperatures
