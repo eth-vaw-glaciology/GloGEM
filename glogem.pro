@@ -11,7 +11,9 @@
 ; ****************************************************
 
 ; defining where procedures are found
-a=!path & !PATH=a+':'+dir+'../prog/procedures/read/:'+dir+'../prog/procedures/write/:'+dir+'../prog/procedures/processing/:' 
+CD, CURRENT=base_dir ; define base directory
+a = !path            ; save current path
+!PATH = a + ':' + base_dir + '/procedures/read/:' + base_dir + '/procedures/write/:' + base_dir + '/procedures/processing/:' ; add path to procedures
 
 ; ******************************************************************
 ; saving/reading input file settings at the start of the main run
