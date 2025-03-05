@@ -322,7 +322,16 @@ endif
 ; generating folder structure
 if meltmodel eq '1' then mtt='' else mtt='_m3'
 
-a=systime() & b=strsplit(a,' ',/extract) & tt=double(b(4))-1
+; Get the current date and time
+a = systime()
+b = strsplit(a, ' ', /extract)
+date_str = strjoin(b, '_')
+tt = double(b[4]) - 1
+
+; Construct the directory path
+b = '/' + date_str + '/'
+PRINT, b
+
 if tran(1) le tt then b='/PAST'+version_past+mtt
 
 c=findfile(dirres+dir_region)
@@ -645,6 +654,12 @@ if write_mb_elevationbands eq 'y' then begin
       endif
    endif
 endif
+
+PRINT, b
+; PRINT, dirres
+; PRINT, dirres+dir_region
+; PRINT, dirres+dir_region+b
+; PRINT, dirres+dir_region+b+'firnice_temperature'
 
 ; prepare output of ice temperature model
 if firnice_temperature eq 'y' then begin
