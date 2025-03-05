@@ -20,6 +20,21 @@ a = !path            ; save current path
 fn='input.pro' & anz=file_lines(fn) & input_file_content=strarr(anz)
 openr,1,fn & readf,1,input_file_content & close,1
 
+;*******************************************************************
+; Some information to show which model we are running
+if time_resolution eq 'daily' then begin
+  print, '                    We are running GloGEM daily'
+endif else begin
+  print, '                    We are running GloGEM monthly'
+endelse
+if calibrate eq 'y' then begin
+  print, '                    Calibration started ...'
+endif else begin
+  print, '                    Running for the future ...'
+endelse
+print, catchment_selection
+print, reanalysis
+;********************************************************************
 ; --------------------------------------------
 ; READ batch-file for individual glaciers (icetemperature-batch)
 
