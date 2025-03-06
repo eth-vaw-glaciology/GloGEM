@@ -11,13 +11,30 @@
 ; ****************************************************
 
 ; defining where procedures are found
-a=!path & !PATH=a+':'+dir+'../prog/procedures/read/:'+dir+'../prog/procedures/write/:'+dir+'../prog/procedures/processing/:' 
+CD, CURRENT=base_dir ; define base directory
+a = !path            ; save current path
+!PATH = a + ':' + base_dir + '/procedures/read/:' + base_dir + '/procedures/write/:' + base_dir + '/procedures/processing/:' ; add path to procedures
 
 ; ******************************************************************
 ; saving/reading input file settings at the start of the main run
 fn='input.pro' & anz=file_lines(fn) & input_file_content=strarr(anz)
 openr,1,fn & readf,1,input_file_content & close,1
 
+;*******************************************************************
+; Some information to show which model we are running
+if time_resolution eq 'daily' then begin
+  print, '                    We are running GloGEM daily'
+endif else begin
+  print, '                    We are running GloGEM monthly'
+endelse
+if calibrate eq 'y' then begin
+  print, '                    Calibration started ...'
+endif else begin
+  print, '                    Running for the future ...'
+endelse
+print, catchment_selection
+print, reanalysis
+;********************************************************************
 ; --------------------------------------------
 ; READ batch-file for individual glaciers (icetemperature-batch)
 
@@ -577,11 +594,13 @@ tgs_cum=dblarr(nb)   ; array for storing local air temperatures
 
 ; ------------------------------
 ; prepare output for mass balance in elevation bands
+
+if meltmodel eq '1' then mtt='' else mtt='_m3'
+b='/files'+mtt+'/'+GCM_model(gcms)+'/'+GCM_rcp(rcps)
+if reanalysis_direct eq 'y' then b='/PAST'+mtt
+
 if write_mb_elevationbands eq 'y' then begin
 
-   if meltmodel eq '1' then mtt='' else mtt='_m3'
-   b='/files'+mtt+'/'+GCM_model(gcms)+'/'+GCM_rcp(rcps)
-   if reanalysis_direct eq 'y' then b='/PAST'+mtt
    c=findfile(dirres+dir_region+b+'/mb_elevation')
    if c(0) eq '' then begin
       spawn,'mkdir '+dirres+dir_region+b+'/mb_elevation' & spawn,'chmod a+rx '+dirres+dir_region+b+'/mb_elevation'
