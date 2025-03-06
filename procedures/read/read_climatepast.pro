@@ -1,7 +1,7 @@
 PRO READ_CLIMATEPAST,dir_clim,dir_region,reanalysis,gxs,gys, tempre,precre,p_thres,ryear,rday,rmon,dtdz,prec_orig,cyear,cday,temp,prec,hclim
 
 
-fn=dir_clim+'reanalysis/'+reanalysis+'/region/'+dir_region+'/clim_'+gxs+'_'+gys+'.dat'
+fn=dir_clim+'reanalysis/'+reanalysis+'/'+dir_region+'/clim_'+gxs+'_'+gys+'.dat'
 anz=file_lines(fn)-3 & da=dblarr(7,anz) & tt=strarr(3)
 openr,1,fn & readf,1,tt & readf,1,da & close,1
 tempre=da(4,*) & precre=da(5,*) & ryear=da(0,*) & rday=da(2,*) & rmon=da(1,*) & dtdz=da(6,*)/100.
