@@ -745,31 +745,9 @@ endif
 ; read files for supraglacial debris
 
 if debris_supraglacial eq 'y' then begin
-   fn=dir_data+'../debris/'+region+'/debris_'+id(gg(g))+'.dat' & a=findfile(fn)
+  
+Read_SUPRAGLACIALDEBRIS, debris_supraglacial, region, id, gg, g, dir_data, advance, nb, adv_addband, debris_pond_enhancementfactor, debris_thick0, debris_thick, debris_frac, debris_mf, debris_ponddens, debris_type_th, debris_type_red
 
-   if a(0) ne '' then begin
-      anz=file_lines(fn)-5 & s=strarr(5) & da=dblarr(8,anz)
-      openr,1,fn & readf,1,s & readf,1,da & close,1
-
-      ; adding more bands in front of glacier in case that advance is allowed
-      if advance eq 'y' and nb gt 3 then begin
-         nb0=nb-adv_addband &  tt=da & da=dblarr(8,nb) & da(*,nb-nb0:nb-1)=tt(*,0:nb0-1)
-      endif else adv_addband=0
-
-      debris_thick=da(5,*) & debris_frac=da(4,*)
-      debris_mf=da(6,*) & debris_ponddens=da(7,*)
-   endif else begin             ; debris file not present; setting debris to zero everywhere
-      debris_thick=dblarr(nb) & debris_frac=dblarr(nb) & debris_mf=dblarr(nb)+1 & debris_ponddens=dblarr(nb)
-   endelse
-   debris_thick0=debris_thick
-   if debris_pond_enhancementfactor eq 0 then debris_ponddens=dblarr(nb)  ; setting pond density to zero for default value
-   ii=where(debris_frac eq 0,ci) & if ci gt 0 then debris_ponddens(ii)=0  ; no ponds possible without debris coverage
-
-   ; read debris melt-reduction file (Ostrem-curve)
-   fn=dir_data+'../debris/'+region+'/factor_'+id(gg(g))+'.dat'
-   anz=file_lines(fn)-3 & s=strarr(3) & da=dblarr(3,anz)
-   openr,1,fn & readf,1,s & readf,1,da & close,1
-   debris_type_th=da(1,*) & debris_type_red=da(2,*) 
 endif
 
 ; ---------------------
@@ -972,17 +950,8 @@ endif
 
 if debris_supraglacial eq 'y' then begin
 
-ii=where(sur eq 0 and tg gt t_melt and debris_thick gt 0 and debris_frac gt 0,ci)   ;  debris-covered ice
-if ci gt 0 then begin
-   for i=0l,ci-1 do begin
-      a=min(abs(debris_thick(ii(i))-debris_type_th),ind) ; looking for closest value (may be improved by interpolating)
-      if write_mb_elevationbands eq 'y' then debris_red_factor(ii(i))=debris_type_red(ind)
-      ; debris-covered ice + bare ice + area of ponds/cliffs 
-      mel(ii(i))=(debris_frac(0,ii(i))-debris_ponddens(ii(i)))*debris_type_red(ind)*mel(ii(i))  +  (1.-debris_frac(0,ii(i)))*mel(ii(i))  +  debris_ponddens(ii(i))*debris_pond_enhancementfactor*mel(ii(i))
-   endfor
-   imelt(ye)=imelt(ye)+total(mel(ii)*area(ii))/ar_gl ; updating array from above
-   if time_resolution eq 'daily' then icemel(ii)=mel(ii)
-endif
+CALCULATEDEBRISMELT, debris_supraglacial, sur, tg, t_melt, debris_thick, debris_frac, debris_type_th, debris_type_red, debris_ponddens, debris_pond_enhancementfactor, mel, imelt, ye, ar_gl, area, time_resolution, icemel, write_mb_elevationbands
+
 
 endif                           ; debris
 
@@ -1223,7 +1192,8 @@ endif
 ; annually adapting debris cover extent and thickness
 if debris_supraglacial eq 'y' and ar_gl gt 0 then begin
 
-DEBRIS_MODEL,ye   ; to be done
+DEBRIS_MODEL, ye, nb, step, gl, noval, area, ar_gl, ela, bal, mb, elev, debris_expansion, debris_seed_bands, debris_seed_meters, debris_thickening, debris_frac, debris_thick, debris_thick_gradient, debris_ponddens, debris_pond_gradient, debris_ponddens_max, tran, survey_year, write_mb_elevationbands, debris_exp_gradient, debris_initialband, debris_red_factor, debris_thick0, elev_debthick, elev_debfrac, elev_debfactor, elev_pondarea, g, gg
+
 
 endif
 
