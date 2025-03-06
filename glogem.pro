@@ -594,11 +594,13 @@ tgs_cum=dblarr(nb)   ; array for storing local air temperatures
 
 ; ------------------------------
 ; prepare output for mass balance in elevation bands
+
+if meltmodel eq '1' then mtt='' else mtt='_m3'
+b='/files'+mtt+'/'+GCM_model(gcms)+'/'+GCM_rcp(rcps)
+if reanalysis_direct eq 'y' then b='/PAST'+mtt
+
 if write_mb_elevationbands eq 'y' then begin
 
-   if meltmodel eq '1' then mtt='' else mtt='_m3'
-   b='/files'+mtt+'/'+GCM_model(gcms)+'/'+GCM_rcp(rcps)
-   if reanalysis_direct eq 'y' then b='/PAST'+mtt
    c=findfile(dirres+dir_region+b+'/mb_elevation')
    if c(0) eq '' then begin
       spawn,'mkdir '+dirres+dir_region+b+'/mb_elevation' & spawn,'chmod a+rx '+dirres+dir_region+b+'/mb_elevation'
