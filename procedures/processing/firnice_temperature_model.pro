@@ -1,10 +1,10 @@
 PRO FIRNICE_TEMPERATURE_MODEL,gl,fit_layers,fit_dens,fit_dz, rf_dsc,rf_dt,Lh_rf, tgs,tl_fit,te_fit,geothermal_flux, cair,cice,kair,kice, sno,mel,plg,thick,slope,firn, firnice_batch,firnice_write,firnice_maxdepth, fit_water,fact_permeability,elev_firnicetemp,firnice_profile,firnice_profile_ind,ye,tran,m
 
-;*********************
+noval=-9999 & snoval=-99 ; no value indicators
+
+;********************* 
 ; alternative permeability model based on velocity gradient 
 ii_perm=where(gl ne noval,ci)
-
-for i=0,ci-1 do begin
 
 ; alternative permeability model based on velocity gradient
 g = 9.81      ; acceleration due to gravity [m/s^2]
@@ -13,8 +13,18 @@ A = 2.4e-24   ; ice flow law parameter [Pa^-3 s^-1]
 n = 3         ; Glen's flow law exponent
 THRESHOLD_ICE_VELOCITY_GRADIENT = 1e-4  ; Threshold for ice velocity gradient [year^-1]
 
-tau_d = rho_ice * g * SIN(slope(ii_perm(i)) * !DTOR) * thickness(ii_perm(i))               ; driving stress in Pa
-u = (2 * A / (n + 1)) * tau_d^n * thickness(ii_perm(i))^(n + 1) * 365.25 * 24 * 3600  ; ice velocity in m/year
+; Compute the driving stress (tau_d) and ice velocity (u) for each element in one loop
+u     = FLTARR(ci)  ; Initialize the velocity array with the same number of elements as ci
+tau_d = FLTARR(ci)  ; Initialize the driving stress array with the same number of elements as ci
+for i = 0, ci-1 do begin
+   ; Calculate driving stress
+   tau_d = rho_ice * g * thick(ii_perm(i)) * SIN(slope(ii_perm(i)) * !DTOR)  ; driving stress in Pa
+   ; Calculate depth-averaged velocity
+   u[i] = (2 * A / (n + 2)) * tau_d^n * thick(ii_perm(i)) * 365.25 * 24 * 3600  ; ice velocity in m/year
+endfor
+
+; PRINT, 'Ice velocity in m/year: ', u
+
 du = FLTARR(N_ELEMENTS(u))  ; Initialize the gradient array with the same number of elements as u
 
 ; Compute the gradient of the velocity array using finite differences
@@ -23,9 +33,7 @@ FOR i = 1, N_ELEMENTS(u) - 2 DO BEGIN
     du[i] = (u[i+1] - u[i-1]) / 2.0  ; Central difference for the middle elements
 ENDFOR
 du[N_ELEMENTS(u) - 1] = (u[N_ELEMENTS(u) - 1] - u[N_ELEMENTS(u) - 2])  ; Backward difference for the last element
-PRINT, 'Ice velocity gradient (du) in m/year/m: ', du
-
-endfor
+; PRINT, 'Ice velocity gradient (du) in m/year/m: ', du
 
 ; Normalize the velocity gradient to a range of 0 to 1
 min_du = MIN(du)
@@ -34,18 +42,18 @@ normalized_du = (du - min_du) / (max_du - min_du)
 
 ; Apply the threshold for ice velocity gradient
 permeability = normalized_du
-permeability[WHERE(normalized_du < THRESHOLD_ICE_VELOCITY_GRADIENT)] = 0
+indices = WHERE(normalized_du lt THRESHOLD_ICE_VELOCITY_GRADIENT, count)
 
 ; Divide by 2 to allow only 50% permeability
 permeability = permeability / 2
 
-; Print the result
-PRINT, 'Normalized velocity gradient: ', normalized_du
-PRINT, 'Permeability: ', permeability
+; ; Print the result
+; PRINT, 'Normalized velocity gradient: ', normalized_du
+; PRINT, 'Permeability: ', permeability
 
 ;*********************
 
-noval=-9999 & snoval=-99
+fit_water=0 ; set liquid water input to zero -> no permeability
 
 ii=where(gl ne noval,ci)
 for i=0,ci-1 do begin
@@ -123,7 +131,7 @@ endfor
 
 ; reduce liquid water input through glacier ice by a factor proportional to local characteristics (thickness / slope ~flow speed)
 ; f=(slope(ii(i))^2*fact_permeability(0))*(thick(ii(i))*fact_permeability(1)) ; slope based permeability (Matthias model)
-; f = permeability(ii(i)) ; velocity gradient based permeability
+; f = permeability(ii(i)) ; velocity gradient based permeability (Janosch model)
 f = 0 ; no permeability
 
 ; if f gt 0.5 then f=0.5     ; setting maximum value for overall reduction factor - to be assessed 
