@@ -154,7 +154,7 @@ if time_resolution eq 'monthly' then begin
       READ_GCMDATA_MONTHLY,dir_clim,GCMdata,dir_region,long_GCM,ccl,GCM_model,GCM_rcp,GCM_experiment,  gcms,rcps,experis,rmid,  gcm_temp,gcm_prec,gcm_year,gcm_mon,gcm_lon,gcm_lat
    endif
 
-   READ_CLIMATEPAST_MONTHLY,dir_clim,dir_region,ccl,reanalysis,submonth_variability, rtemp,rprec,rvariab,rtg, rlon,rlat,relev,nlons,nlats,lon0,lat0,ntime, ryear,rmon
+   READ_CLIMATEPAST_MONTHLY,dir_clim, dir_region, clim_subregion, reanalysis, submonth_variability, rtemp, rprec, rvariab, rtg, rlon, rlat, relev, nlons, nlats, lon0, lat0, ntime, ryear, rmon, rvlat, rvmon, rvday, rvlon, nmonths, ndays, nvar
 
 endif
 
@@ -1732,14 +1732,14 @@ endif
 
 ; --------------------------------
 ; copying time-stamped input.pro into the output folder
- if calibrate ne 'y' then begin
-a=systime() & b=strsplit(a(0),' ',/extract) & c=systime(/julian) & d=strsplit(b(3),':',/extract)
-openw,4,dirres+dir_region+subpath+long_GCM+'input'+catchment_selection+'.pro'
-printf,4,'Date/time outputted: '+string(c,fo='(C(CYI04,CMOI02,CDI02))')+'_'+strjoin(d(0:1),'.')
-printf,4,'**********************' & printf,4,''
-for i=0l,n_elements(input_file_content)-1 do printf,4,input_file_content(i),fo='(a)'
-close,4
-endif
+;  if calibrate ne 'y' then begin
+; a=systime() & b=strsplit(a(0),' ',/extract) & c=systime(/julian) & d=strsplit(b(3),':',/extract)
+; openw,4,dirres+dir_region+subpath+long_GCM+'input'+catchment_selection+'.pro'
+; printf,4,'Date/time outputted: '+string(c,fo='(C(CYI04,CMOI02,CDI02))')+'_'+strjoin(d(0:1),'.')
+; printf,4,'**********************' & printf,4,''
+; for i=0l,n_elements(input_file_content)-1 do printf,4,input_file_content(i),fo='(a)'
+; close,4
+; endif
 
 endfor                          ; regions
 
