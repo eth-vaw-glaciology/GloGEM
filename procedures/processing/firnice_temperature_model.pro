@@ -53,7 +53,7 @@ permeability = permeability / 2
 
 ;*********************
 
-fit_water=0 ; set liquid water input to zero -> no permeability
+; fit_water=0 ; set liquid water input to zero -> no permeability
 
 ii=where(gl ne noval,ci)
 for i=0,ci-1 do begin
@@ -131,8 +131,8 @@ endfor
 
 ; reduce liquid water input through glacier ice by a factor proportional to local characteristics (thickness / slope ~flow speed)
 ; f=(slope(ii(i))^2*fact_permeability(0))*(thick(ii(i))*fact_permeability(1)) ; slope based permeability (Matthias model)
-; f = permeability(ii(i)) ; velocity gradient based permeability (Janosch model)
-f = 0 ; no permeability
+f = permeability(ii(i)) ; velocity gradient based permeability (Janosch model)
+; f = 0 ; no permeability
 
 ; if f gt 0.5 then f=0.5     ; setting maximum value for overall reduction factor - to be assessed 
 ; if f lt 0.0001 then f=0.0001     ; setting minimum value for overall reduction factor - to be assessed 
