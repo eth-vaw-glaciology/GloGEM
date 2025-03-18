@@ -1,6 +1,6 @@
-PRO READ_CLIMATEPAST_MONTHLY,dir_clim,dir_region,clim_subregion,reanalysis,submonth_variability, rtemp,rprec,rvariab,rtg, rlon,rlat,relev,nlons,nlats,lon0,lat0,ntime, ryear,rmon, rvlat  
+PRO READ_CLIMATEPAST_MONTHLY, dir_clim, dir_region, clim_subregion, reanalysis, submonth_variability, rtemp, rprec, rvariab, rtg, rlon, rlat, relev, nlons, nlats, lon0, lat0, ntime, ryear, rmon, rvlat, rvmon, rvday, rvlon, nmonths, ndays, nvar
 
-  if clim_subregion ne '' then ccl=clim_subregion else ccl=''
+   if clim_subregion ne '' then ccl=clim_subregion else ccl=''
 
 ; ---- RE_ANALYSIS - climate file
 fn=dir_clim+'reanalysis/'+reanalysis+'/region/'+dir_region+'/clim_'+dir_region+ccl+'.mdi'
