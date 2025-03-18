@@ -1,4 +1,4 @@
-<p align="center"><img src="https://github.com/sdrocer/GloGEM/blob/main/figs/GloGEM_logo_AVDE_long_noBackground_white.png" width="66.6%"></p>
+<p align="center"><img src="https://github.com/eth-vaw-glaciology/GloGEM/blob/main/figs/GloGEM_header_lightblue.png" width="66.6%"></p>
 
 # The Global Glacier Evolution Model (GloGEM)
 
