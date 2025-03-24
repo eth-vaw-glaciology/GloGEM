@@ -53,7 +53,7 @@ permeability = permeability / 2
 
 ;*********************
 
-; fit_water=0 ; set liquid water input to zero -> no permeability
+if firn_permeability = 'n' then fit_water = 0  ; check if permeability is disabled, if yes then set infiltrating water to zero
 
 ii=where(gl ne noval,ci)
 for i=0,ci-1 do begin
@@ -130,13 +130,11 @@ for j=1,ck do begin ; loop through all SNOW layers from top, and update temperat
 endfor
 
 ; reduce liquid water input through glacier ice by a factor proportional to local characteristics (thickness / slope ~flow speed)
-; f=(slope(ii(i))^2*fact_permeability(0))*(thick(ii(i))*fact_permeability(1)) ; slope based permeability (Matthias model)
-f = permeability(ii(i)) ; velocity gradient based permeability (Janosch model)
-; f = 0 ; no permeability
-
-; if f gt 0.5 then f=0.5     ; setting maximum value for overall reduction factor - to be assessed 
-; if f lt 0.0001 then f=0.0001     ; setting minimum value for overall reduction factor - to be assessed 
-fit_water=fit_water*f      ; reducing amount of water entering glacier ice
+if firnice_permeability = 'y' then begin
+   f = permeability(ii(i)) ; velocity gradient based permeability (Janosch model)
+   fit_water=fit_water*f   ; reducing amount of water entering glacier ice
+   ; f=(slope(ii(i))^2*fact_permeability(0))*(thick(ii(i))*fact_permeability(1)) ; slope based permeability (Matthias model)
+endif
 
 for j=ck+1,tt-2 do begin ; loop through all ICE layers from top, and update temperatures
    c=(-1)*(tl_fit(ii(i),j)-((fit_dz(1,j)*0.9/10.)*(-0.00742)))*cap_fit(j)*fit_dz(0,j)/Lh_rf ; cold content in layer below pressure melting point
