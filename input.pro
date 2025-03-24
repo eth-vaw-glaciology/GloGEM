@@ -16,18 +16,18 @@ RGIversion='6'       ; version of the RGI to be used
 time_resolution='daily'           ; 'daily'/'monthly' - SELECT TIME RESOLUTION OF MODELLING
 time_resolution='monthly'           ; 'daily'/'monthly' - SELECT TIME RESOLUTION OF MODELLING
 
-; PATHS TO ADAPT
-; lvantrich
-;dir='/scratch_net/vierzack04_fourth/GloGEM_data/'           ; general data folder
-;dirres='/scratch_net/vierzack05/lvantrich/GloGEM_output/r'+RGIversion+'_'+time_resolution+'/'   ; output folder  (same machine as you run on)scratch via the network
+; Dynamically detect the username and construct the directory path
+username = GETENV('USER')  ; Get the current user's username from the environment
 
-; mhuss
-dir='/itet-stor/jabeer/glogem/data/'                                         ; general data folder
+; input
+main_dir     = '/itet-stor/' + username + '/glogem/'  ; Construct the main directory path
+dir          = main_dir+'data/'                       ; Construct the general data folder path
+dir_data     = main_dir+'rgiv'+RGIversion+'/bands/bands_consensus2019/' ; thickness data
+dir_data_alt = main_dir+'rgiv'+RGIversion+'/bands/bands_HF2012/'        ; alternative thickness data (for cross-checks)
+dir_clim     = main_dir+'climatedata/'                                  ; climate data
+
+; output (same machine as you run on)scratch via the network
 dirres='/scratch_net/vierzack04_fourth/jabeer/GloGEM/batch_results_diff_icetemp/firnice_perm/r'+RGIversion+'_'+time_resolution+'/'   ; output folder  (same machine as you run on)scratch via the network
-
-dir_data='/scratch_net/iceberg_second/mhuss/global_thickness/rgi'+RGIversion+'0/bands_consensus2019/' ; thickness data
-dir_data_alt='/scratch_net/iceberg_second/mhuss/global_thickness/rgi'+RGIversion+'0/bands_HF2012/'    ; alternative thickness data (for cross-checks)
-dir_clim='/itet-stor/jabeer/glogem/climatedata/'+time_resolution     ; climate data
 
 ; --- region selection
 ; regions can be selected in group via a range of region-IDs
