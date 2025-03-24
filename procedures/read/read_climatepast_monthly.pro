@@ -1,4 +1,4 @@
-PRO READ_CLIMATEPAST_MONTHLY,dir_clim,dir_region,clim_subregion,reanalysis,submonth_variability, rtemp,rprec,rvariab,rtg, rlon,rlat,relev,nlons,nlats,lon0,lat0,ntime, ryear,rmon  
+PRO READ_CLIMATEPAST_MONTHLY,dir_clim,dir_region,clim_subregion,reanalysis,submonth_variability, rtemp,rprec,rvariab,rtg, rlon,rlat,relev,nlons,nlats,lon0,lat0,ntime, ryear,rmon, time_resolution 
 
   if clim_subregion ne '' then ccl='_'+clim_subregion else ccl=''
 
