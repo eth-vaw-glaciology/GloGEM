@@ -151,10 +151,10 @@ if time_resolution eq 'monthly' then begin
    
   ; GCM --- CLIMATE FILE
    if reanalysis_direct ne 'y' then begin
-      READ_GCMDATA_MONTHLY,dir_clim,GCMdata,dir_region,long_GCM,ccl,GCM_model,GCM_rcp,GCM_experiment,  gcms,rcps,experis,rmid,  gcm_temp,gcm_prec,gcm_year,gcm_mon,gcm_lon,gcm_lat
+      READ_GCMDATA_MONTHLY,dir_clim,GCMdata,dir_region,long_GCM,ccl,GCM_model,GCM_rcp,GCM_experiment,  gcms,rcps,experis,rmid,  gcm_temp,gcm_prec,gcm_year,gcm_mon,gcm_lon,gcm_lat, time_resolution
    endif
 
-   READ_CLIMATEPAST_MONTHLY,dir_clim, dir_region, clim_subregion, reanalysis, submonth_variability, rtemp, rprec, rvariab, rtg, rlon, rlat, relev, nlons, nlats, lon0, lat0, ntime, ryear, rmon, rvlat, rvmon, rvday, rvlon, nmonths, ndays, nvar
+   READ_CLIMATEPAST_MONTHLY, dir_clim, dir_region, clim_subregion, reanalysis, submonth_variability, rtemp, rprec, rvariab, rtg, rlon, rlat, relev, nlons, nlats, lon0, lat0, ntime, ryear, rmon, rvlat, rvmon, rvday, rvlon, nmonths, ndays, nvar, time_resolution
 
 endif
 
@@ -514,14 +514,14 @@ gys=strcompress(string(rmid(1),fo='(f7.2)'),/remove_all)
 ; ------------------------------
 ; meteo time series read from re-analysis data (past)
 
-READ_CLIMATEPAST_DAILY,dir_clim,dir_region,reanalysis,gxs,gys, tempre,precre,p_thres,ryear,rday,rmon,dtdz,prec_orig,cyear,cday,temp,prec,hclim
+READ_CLIMATEPAST_DAILY,dir_clim,dir_region,reanalysis,gxs,gys, tempre,precre,p_thres,ryear,rday,rmon,dtdz,prec_orig,cyear,cday,temp,prec,hclim, time_resolution
 
 ; ---------------------------------
 ; ---------------------------------
 ; meteo time series downscaled from GCMs or whatever (future)
 if reanalysis_direct eq 'n' then begin
 
-   READ_GCMDATA_DAILY,dir_clim,GCMdata,dir_region,GCM_model,GCM_rcp,gcms,rcps, rmid,  tempgcm,precgcm,gcm_year,gcm_mon,gcm_day 
+   READ_GCMDATA_DAILY,dir_clim,GCMdata,dir_region,GCM_model,GCM_rcp,gcms,rcps, rmid,  tempgcm,precgcm,gcm_year,gcm_mon,gcm_day, time_resolution 
 
    DOWNSCALE_GCMDATA_DAILY,gcm_year,gcm_mon,gcm_day,ryear,rmon,rday,m,rea_eval,rmid,years,tran,tempgcm,tempre,precgcm,precre,prec_orig,min_tempbias,min_precbias,write_file,meltmodel,variability_bias_longterm,p_thres, temp,prec,rad,cyear,cday,cmon
 

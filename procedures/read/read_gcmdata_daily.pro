@@ -1,4 +1,4 @@
-PRO READ_GCMDATA_DAILY,dir_clim,GCMdata,dir_region,GCM_model,GCM_rcp,gcms,rcps,rmid,  tempgcm,precgcm,gcm_year,gcm_mon,gcm_day 
+PRO READ_GCMDATA_DAILY,dir_clim,GCMdata,dir_region,GCM_model,GCM_rcp,gcms,rcps,rmid,  tempgcm,precgcm,gcm_year,gcm_mon,gcm_day, time_resolution
 
 ; find closest GCM-point
 fn=dir_clim+'/future/'+time_resolution+'/'+GCMdata+'/'+dir_region+'/'+GCM_model(gcms)+'/longitudes.dat'
