@@ -105,7 +105,7 @@ find_startyear='y'     ; automatically determine first year of future modelling 
 ; climate data
 
 ; --- GCM data specifications
-long_GCM = 'n'  ; runs until 2300
+long_ = 'n'  ; runs until 2300
 CMIP6 = 'n'     ; CMIP6 data set
 
 ;GCM_data= 'monthly/cmip6'
@@ -133,7 +133,7 @@ GCM_rcp=['ssp126','ssp245','ssp370','ssp585','ssp119','ssp534-over']
 GCM_experiment=['r1i1p1f1','r2i1p1f1','r3i1p1f1','r4i1p1f1','r5i1p1f1','r6i1p1f1','r7i1p1f1']
 
 ; for runs until 2300 (long_)
-if long_GCM eq 'y' then begin
+if long_ eq 'y' then begin
    GCM_model=['ACCESS-CM2','ACCESS-ESM1-5','CESM2-WACCM','CanESM5','GISS-E2-1-G','GISS-E2-1-H','GISS-E2-2-G','IPSL-CM6A-LR','MIROC-ES2L','MRI-ESM2-0','UKESM1-0-LL']
    rcp_batch=[6,6,6,6,6,6,6,6,6,6,6,6,6,6]
 endif
