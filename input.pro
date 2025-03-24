@@ -450,6 +450,10 @@ kair = 0.001    ; conductivity air [J s-1 K-1 m-1]
 cap  = (1-dens_rf/1000.)*cair+dens_rf/1000.*cice ; compute heat capacity of layers
 cond = (1-dens_rf/1000.)*kair+dens_rf/1000.*kice ; compute conductivity of layers
 
+; activate/deactivate permeability model
+firn_permeability = 'n' ; 'y' to activate firn permeability model
+firnice_permeability = 'n' ; 'y' to activate firn/ice permeability model
+
 ; set min and max values for permeability reduction factor f
 min_f = 0.0001
 max_f = 0.5
