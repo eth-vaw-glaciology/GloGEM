@@ -22,8 +22,8 @@ username = GETENV('USER')  ; Get the current user's username from the environmen
 ; input
 main_dir     = '/itet-stor/' + username + '/glogem/'  ; Construct the main directory path
 dir          = main_dir+'data/'                       ; Construct the general data folder path
-dir_data     = main_dir+'rgiv'+RGIversion+'/bands/bands_consensus2019/' ; thickness data
-dir_data_alt = main_dir+'rgiv'+RGIversion+'/bands/bands_HF2012/'        ; alternative thickness data (for cross-checks)
+dir_data     = main_dir+'/geometricdata/'+'rgiv'+RGIversion+'/bands/bands_consensus2019/' ; thickness data
+dir_data_alt = main_dir+'/geometricdata/'+'rgiv'+RGIversion+'/bands/bands_HF2012/'        ; alternative thickness data (for cross-checks)
 dir_clim     = main_dir+'climatedata/'                                  ; climate data
 
 ; output (same machine as you run on)scratch via the network
@@ -109,10 +109,9 @@ CMIP6='y'             ; CMIP6 GCMs to be used?
 long_GCM=''           ; runs until 2100
 ;long_GCM='long_'     ; runs until 2300
 
-;GCM_data= 'monthly/cmip6'
-;GCM_data= 'monthly/long_cmip6' ;runs until 2300
-GCM_data= 'daily/cmip6isimip3b'
-;GCM_data= 'daily/cmip6'
+;GCM_data= 'cmip6'
+;GCM_data= 'long_cmip6' ;runs until 2300
+GCM_data= 'cmip6'
 
 ; Codes for CMIP6-GCMs
 ; 1: 'BCC-CSM2-MR', 2: 'CAMS-CSM1-0', 3:'CESM2', 4:'CESM2-WACCM', 5:'EC-Earth3', 6:'EC-Earth3-Veg', 7:'FGOALS-f3-L', 8:'GFDL-ESM4',

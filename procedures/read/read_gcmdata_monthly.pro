@@ -1,6 +1,6 @@
-PRO READ_GCMDATA_MONTHLY,dir_clim,GCMdata,dir_region,long_GCM,ccl,GCM_model,GCM_rcp,GCM_experiment,  gcms,rcps,experis, rmid,  gcm_temp,gcm_prec,gcm_year,gcm_mon,gcm_lon,gcm_lat, time_resolution  
+PRO READ_GCMDATA_MONTHLY,dir_clim,GCM_data,dir_region,long_GCM,ccl,GCM_model,GCM_rcp,GCM_experiment,  gcms,rcps,experis, rmid,  gcm_temp,gcm_prec,gcm_year,gcm_mon,gcm_lon,gcm_lat, time_resolution  
 
-  fn=dir_clim+'/future/'+time_resolution+'/'+long_GCM+'/'+GCMdata+'/'+dir_region+'/'+GCM_model(gcms)+ $
+  fn=dir_clim+'/future/'+time_resolution+'/'+long_GCM+'/'+GCM_data+'/'+dir_region+'/'+GCM_model(gcms)+ $
      '/'+GCM_model(gcms)+'_'+GCM_rcp(rcps)+'_'+GCM_experiment(experis)+'_'+dir_region+ccl+'.mdi'
   a=findfile(fn) ;& if a(0) eq '' then goto,next_GCM
   tt=strarr(1) & nyrs=dblarr(1) & nmonths=nyrs & nlons=nyrs & nlats=nyrs & nvar=dblarr(2)
