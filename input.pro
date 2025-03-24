@@ -27,7 +27,7 @@ dir_data_alt = main_dir+'rgiv'+RGIversion+'/bands/bands_HF2012/'        ; altern
 dir_clim     = main_dir+'climatedata/'                                  ; climate data
 
 ; output (same machine as you run on)scratch via the network
-dirres='/scratch_net/vierzack04_fourth/jabeer/GloGEM/batch_results_diff_icetemp/firnice_perm/r'+RGIversion+'_'+time_resolution+'/'   ; output folder  (same machine as you run on)scratch via the network
+dirres='/scratch_net/vierzack04_fourth/jabeer/GloGEM/batch_results_diff_icetemp/no_perm/r'+RGIversion+'_'+time_resolution+'/'   ; output folder  (same machine as you run on)scratch via the network
 
 ; --- region selection
 ; regions can be selected in group via a range of region-IDs
@@ -105,7 +105,7 @@ find_startyear='y'     ; automatically determine first year of future modelling 
 ; climate data
 
 ; --- GCM data specifications
-long_GCM = 'n'  ; runs until 2300
+long_ = 'n'  ; runs until 2300
 CMIP6 = 'n'     ; CMIP6 data set
 
 ;GCM_data= 'monthly/cmip6'
@@ -133,7 +133,7 @@ GCM_rcp=['ssp126','ssp245','ssp370','ssp585','ssp119','ssp534-over']
 GCM_experiment=['r1i1p1f1','r2i1p1f1','r3i1p1f1','r4i1p1f1','r5i1p1f1','r6i1p1f1','r7i1p1f1']
 
 ; for runs until 2300 (long_)
-if long_GCM eq 'y' then begin
+if long_ eq 'y' then begin
    GCM_model=['ACCESS-CM2','ACCESS-ESM1-5','CESM2-WACCM','CanESM5','GISS-E2-1-G','GISS-E2-1-H','GISS-E2-2-G','IPSL-CM6A-LR','MIROC-ES2L','MRI-ESM2-0','UKESM1-0-LL']
    rcp_batch=[6,6,6,6,6,6,6,6,6,6,6,6,6,6]
 endif
@@ -454,6 +454,10 @@ kair = 0.001    ; conductivity air [J s-1 K-1 m-1]
 ; compute heat capacity and conductivity of layers
 cap  = (1-dens_rf/1000.)*cair+dens_rf/1000.*cice ; compute heat capacity of layers
 cond = (1-dens_rf/1000.)*kair+dens_rf/1000.*kice ; compute conductivity of layers
+
+; activate/deactivate permeability model
+firn_permeability = 'n' ; 'y' to activate firn permeability model
+firnice_permeability = 'n' ; 'y' to activate firn/ice permeability model
 
 ; set min and max values for permeability reduction factor f
 min_f = 0.0001
