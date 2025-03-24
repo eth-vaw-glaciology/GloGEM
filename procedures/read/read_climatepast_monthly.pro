@@ -3,7 +3,7 @@ PRO READ_CLIMATEPAST_MONTHLY, dir_clim, dir_region, clim_subregion, reanalysis, 
    if clim_subregion ne '' then ccl=clim_subregion else ccl=''
 
 ; ---- RE_ANALYSIS - climate file
-fn=dir_clim+'reanalysis/'+reanalysis+'/region/'+dir_region+'/clim_'+dir_region+ccl+'.mdi'
+fn=dir_clim+'reanalysis/'+ time_resolution +'/'+reanalysis+'/'+dir_region+'/clim_'+dir_region+ccl+'.mdi'
 tt=strarr(1) & ntime=dblarr(1) & nlons=ntime & nlats=ntime & nvar=dblarr(2)
 openr,1,fn & readf,1,tt & readf,1,ntime & readf,1,nlons & readf,1,nlats & readf,1,nvar
 ntime=ntime(0) & nlats=nlats(0) & nlons=nlons(0) & nvar=nvar(0)
@@ -37,7 +37,7 @@ ryear=fix(rtime) & rmon=round((rtime-ryear)*12+0.5-(ryear-ryear(0))/1400.*12)  ;
 if submonth_variability eq 'y' then begin
 
 ; RE_ANALYSIS - variability file
-fn=dir_clim+'reanalysis/'+reanalysis+'/region/'+dir_region+'/variability_'+dir_region+ccl+'.mdi'
+fn=dir_clim+'reanalysis/'+ time_resolution +'/'+reanalysis+'/'+dir_region+'/variability_'+dir_region+ccl+'.mdi'
 tt=strarr(1) & nmonths=dblarr(1) & ndays=dblarr(1) & nlons=ntime & nlats=ntime & nvar=dblarr(1)
 openr,1,fn & readf,1,tt & readf,1,nmonths & readf,1,ndays & readf,1,nlons & readf,1,nlats & readf,1,nvar
 nmonths=nmonths(0) & nlats=nlats(0) & nlons=nlons(0) & nvar=nvar(0) & ndays=ndays(0)
@@ -56,7 +56,7 @@ close,1
 endif
 
 ; RE_ANALYSIS - temperature gradient file
-fn=dir_clim+'reanalysis/'+reanalysis+'/region/'+dir_region+'/tgrad_'+dir_region+ccl+'.mdi'
+fn=dir_clim+'reanalysis/'+ time_resolution +'/'+reanalysis+'/'+dir_region+'/tgrad_'+dir_region+ccl+'.mdi'
 tt=strarr(1) & nmonths=dblarr(1) & nlons=ntime & nlats=ntime & nvar=dblarr(1)
 nmonths=nmonths(0) & nlats=nlats(0) & nlons=nlons(0) & nvar=nvar(0)
 openr,1,fn & readf,1,tt & readf,1,nmonths & readf,1,nlons & readf,1,nlats & readf,1,nvar
