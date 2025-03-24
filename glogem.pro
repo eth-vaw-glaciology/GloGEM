@@ -505,14 +505,14 @@ gys=strcompress(string(rmid(1),fo='(f7.2)'),/remove_all)
 ; ------------------------------
 ; meteo time series read from re-analysis data (past)
 
-READ_CLIMATEPAST,dir_clim,dir_region,reanalysis,gxs,gys, tempre,precre,p_thres,ryear,rday,rmon,dtdz,prec_orig,cyear,cday,temp,prec,hclim
+READ_CLIMATEPAST_DAILY,dir_clim,dir_region,reanalysis,gxs,gys, tempre,precre,p_thres,ryear,rday,rmon,dtdz,prec_orig,cyear,cday,temp,prec,hclim
 
 ; ---------------------------------
 ; ---------------------------------
 ; meteo time series downscaled from GCMs or whatever (future)
 if reanalysis_direct eq 'n' then begin
 
-   READ_GCMDATA,dir_clim,GCMdata,dir_region,GCM_model,GCM_rcp,gcms,rcps, rmid,  tempgcm,precgcm,gcm_year,gcm_mon,gcm_day 
+   READ_GCMDATA_DAILY,dir_clim,GCMdata,dir_region,GCM_model,GCM_rcp,gcms,rcps, rmid,  tempgcm,precgcm,gcm_year,gcm_mon,gcm_day 
 
    DOWNSCALE_GCMDATA,gcm_year,gcm_mon,gcm_day,ryear,rmon,rday,m,rea_eval,rmid,years,tran,tempgcm,tempre,precgcm,precre,prec_orig,min_tempbias,min_precbias,write_file,meltmodel,variability_bias_longterm,p_thres, temp,prec,rad,cyear,cday,cmon
 

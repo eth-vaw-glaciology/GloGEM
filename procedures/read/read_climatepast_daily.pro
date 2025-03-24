@@ -1,4 +1,4 @@
-PRO READ_CLIMATEPAST,dir_clim,dir_region,reanalysis,gxs,gys, tempre,precre,p_thres,ryear,rday,rmon,dtdz,prec_orig,cyear,cday,temp,prec,hclim
+PRO READ_CLIMATEPAST_DAILY,dir_clim,dir_region,reanalysis,gxs,gys, tempre,precre,p_thres,ryear,rday,rmon,dtdz,prec_orig,cyear,cday,temp,prec,hclim
 
 
 fn=dir_clim+'reanalysis/daily/'+reanalysis+'/'+dir_region+'/clim_'+gxs+'_'+gys+'.dat'
