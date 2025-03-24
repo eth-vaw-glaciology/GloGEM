@@ -421,7 +421,7 @@ if firnice_temperature eq 'n' then firnice_batch='n'
 
 
 ; only reduced output for runs until 2300 (no Discharge)
-if long_GCM ne '' then outf_names=['Area','Volume','Annual_Balance_sfc','Winter_balance_sfc','Icemelt_sfc',$
+if long_ eq 'y' then outf_names=['Area','Volume','Annual_Balance_sfc','Winter_balance_sfc','Icemelt_sfc',$
  'Snowmelt_sfc','Accumulation_sfc','Rain_sfc','ELA','AAR','Refreezing_sfc','Hmin','Frontal_ablation',$
  '','','','','','','']
 
