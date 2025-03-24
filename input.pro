@@ -289,7 +289,7 @@ frontal_ablation='y'     ; ACTIVATE FRONTAL ABLATION MODEL (only marine-terminat
 ; OUTPUT
 
 ; fixing some variables
-clim_subregion=''
+clim_subregion='something'
 full_output='n'
 
 ; define which files are written out
