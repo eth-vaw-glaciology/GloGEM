@@ -16,18 +16,18 @@ RGIversion='6'       ; version of the RGI to be used
 time_resolution='daily'           ; 'daily'/'monthly' - SELECT TIME RESOLUTION OF MODELLING
 time_resolution='monthly'           ; 'daily'/'monthly' - SELECT TIME RESOLUTION OF MODELLING
 
-; PATHS TO ADAPT
-; lvantrich
-;dir='/scratch_net/vierzack04_fourth/GloGEM_data/'           ; general data folder
-;dirres='/scratch_net/vierzack05/lvantrich/GloGEM_output/r'+RGIversion+'_'+time_resolution+'/'   ; output folder  (same machine as you run on)scratch via the network
+; Dynamically detect the username and construct the directory path
+username = GETENV('USER')  ; Get the current user's username from the environment
 
-; mhuss
-dir='/itet-stor/jabeer/glogem/data/'                                         ; general data folder
+; input
+main_dir     = '/itet-stor/' + username + '/glogem/'  ; Construct the main directory path
+dir          = main_dir+'data/'                       ; Construct the general data folder path
+dir_data     = main_dir+'rgiv'+RGIversion+'/bands/bands_consensus2019/' ; thickness data
+dir_data_alt = main_dir+'rgiv'+RGIversion+'/bands/bands_HF2012/'        ; alternative thickness data (for cross-checks)
+dir_clim     = main_dir+'climatedata/'                                  ; climate data
+
+; output (same machine as you run on)scratch via the network
 dirres='/scratch_net/vierzack04_fourth/jabeer/GloGEM/batch_results_diff_icetemp/firnice_perm/r'+RGIversion+'_'+time_resolution+'/'   ; output folder  (same machine as you run on)scratch via the network
-
-dir_data='/scratch_net/iceberg_second/mhuss/global_thickness/rgi'+RGIversion+'0/bands_consensus2019/' ; thickness data
-dir_data_alt='/scratch_net/iceberg_second/mhuss/global_thickness/rgi'+RGIversion+'0/bands_HF2012/'    ; alternative thickness data (for cross-checks)
-dir_clim='/scratch_net/vierzack04_fourth/mhuss/klima/'     ; climate data
 
 ; --- region selection
 ; regions can be selected in group via a range of region-IDs
@@ -103,13 +103,10 @@ find_startyear='y'     ; automatically determine first year of future modelling 
 
 ; ---------------------------------------
 ; climate data
-
-CMIP6='y'             ; CMIP6 GCMs to be used?
-if CMIP6 eq 'y' then GCMdata = 'CMIP6' 
-if CMIP6 eq 'y' and time_resolution eq 'daily' then GCMdata='CMIP6_daily' 
-
-long_GCM=''           ; runs until 2100
-;long_GCM='long_'     ; runs until 2300
+;GCM_data= 'monthly/cmip6'
+;GCM_data= 'monthly/long_cmip6' ;runs until 2300
+GCM_data= 'daily/cmip6isimip3b'
+;GCM_data= 'daily/cmip6'
 
 ; Codes for CMIP6-GCMs
 ; 1: 'BCC-CSM2-MR', 2: 'CAMS-CSM1-0', 3:'CESM2', 4:'CESM2-WACCM', 5:'EC-Earth3', 6:'EC-Earth3-Veg', 7:'FGOALS-f3-L', 8:'GFDL-ESM4',
@@ -137,7 +134,10 @@ if long_GCM eq 'y' then begin
 endif
 
 ; --- Re-analysis
-reanalysis='ERA5-land_daily'            ; reanalysis data set 
+reanalysis='era5land'            ; reanalysis data set, grid step is 0.1 
+;reanalysis='chelsaw5e5'         ; grid step needs to be changed to 0.08333333333333333
+;reanalysis='ch2018'
+;reanalysis='gswp3w5e5'
 if time_resolution eq 'monthly' then reanalysis='ERA5'     ; reanalysis data set for monthly resolution
 rea_eval=[1980,2019]            ; time period for evaluating the bias
 grid_step=0.1                           ; grid stepping of reanalysis data set
