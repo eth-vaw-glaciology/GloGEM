@@ -514,7 +514,7 @@ if reanalysis_direct eq 'n' then begin
 
    READ_GCMDATA_DAILY,dir_clim,GCMdata,dir_region,GCM_model,GCM_rcp,gcms,rcps, rmid,  tempgcm,precgcm,gcm_year,gcm_mon,gcm_day 
 
-   DOWNSCALE_GCMDATA,gcm_year,gcm_mon,gcm_day,ryear,rmon,rday,m,rea_eval,rmid,years,tran,tempgcm,tempre,precgcm,precre,prec_orig,min_tempbias,min_precbias,write_file,meltmodel,variability_bias_longterm,p_thres, temp,prec,rad,cyear,cday,cmon
+   DOWNSCALE_GCMDATA_DAILY,gcm_year,gcm_mon,gcm_day,ryear,rmon,rday,m,rea_eval,rmid,years,tran,tempgcm,tempre,precgcm,precre,prec_orig,min_tempbias,min_precbias,write_file,meltmodel,variability_bias_longterm,p_thres, temp,prec,rad,cyear,cday,cmon
 
 endif
 
