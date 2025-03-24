@@ -105,7 +105,7 @@ find_startyear='y'     ; automatically determine first year of future modelling 
 ; climate data
 
 ; --- GCM data specifications
-long_gcm = 'n'  ; runs until 2300
+long_GCM = 'n'  ; runs until 2300
 CMIP6 = 'n'     ; CMIP6 data set
 
 ;GCM_data= 'monthly/cmip6'
