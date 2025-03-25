@@ -1233,7 +1233,7 @@ CALVING_MODEL,thick,bed_elev,bed_elev_term,bed_elev_p,dvol,frontal_ablation,fron
 
 if glacier_retreat eq 'y' then begin
 
-   GLACIER_RETREAT,ye,thick,thick_ini,elev,bed_elev,area,area_ini,gl,dh_size,nb,dvol,bal,balv,advance,adv_fcrit,volume0,volume1,volumes,adv_iniar,adv_inithi,adv_iniamplification,expon,redistribute_vplus,adv_lookup,adv_lookup_data,flux_calv
+   GLACIER_RETREAT,ye,thick,thick_ini,elev,bed_elev,area,areas,area_ini,gl,dh_size,nb,dvol,bal,balv,advance,adv_fcrit,volume0,volume1,volumes,adv_iniar,adv_inithi,adv_iniamplification,expon,redistribute_vplus,adv_lookup,adv_lookup_data,flux_calv
 
 endif                           ; glacier retreat
 
