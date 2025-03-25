@@ -137,7 +137,6 @@ if ice_permeability eq 'y' then begin
 endif else begin
    fit_water=fit_water*0 ; no water entering glacier ice
 endelse
-endif
 
 for j=ck+1,tt-2 do begin ; loop through all ICE layers from top, and update temperatures
    c=(-1)*(tl_fit(ii(i),j)-((fit_dz(1,j)*0.9/10.)*(-0.00742)))*cap_fit(j)*fit_dz(0,j)/Lh_rf ; cold content in layer below pressure melting point
