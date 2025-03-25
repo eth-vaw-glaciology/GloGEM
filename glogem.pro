@@ -154,7 +154,7 @@ if time_resolution eq 'monthly' then begin
       READ_GCMDATA_MONTHLY,dir_clim,GCM_data,dir_region,long_GCM,ccl,GCM_model,GCM_rcp,GCM_experiment,  gcms,rcps,experis,rmid,  gcm_temp,gcm_prec,gcm_year,gcm_mon,gcm_lon,gcm_lat, time_resolution
    endif
 
-   READ_CLIMATEPAST_MONTHLY,dir_clim, dir_region, clim_subregion, reanalysis, submonth_variability, rtemp, rprec, rvariab, rtg, rlon, rlat, relev, nlons, nlats, lon0, lat0, ntime, ryear, rmon, rvlat, rvmon, rvday, rvlon, nmonths, ndays, nvar
+   READ_CLIMATEPAST_MONTHLY, dir_clim, dir_region, clim_subregion, reanalysis, submonth_variability, rtemp, rprec, rvariab, rtg, rlon, rlat, relev, nlons, nlats, lon0, lat0, ntime, ryear, rmon, rvlat, rvmon, rvday, rvlon, nmonths, ndays, nvar, time_resolution
 
 endif
 
