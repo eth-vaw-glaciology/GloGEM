@@ -1,4 +1,4 @@
-PRO CALVING_MODEL,thick,bed_elev,bed_elev_term,bed_elev_p,dvol,frontal_ablation,front_melt,calv_amplification,width,slope,length,alpha_f,length_corrfact,crit_ccorrdist,ccorr_expon,ccorr_param,area,acc,dens,ye,tran,id,gg,g
+PRO CALVING_MODEL,thick,bed_elev,bed_elev_term,bed_elev_p,dvol,frontal_ablation,front_melt,calv_amplification,width,slope,length,alpha_f,length_corrfact,crit_ccorrdist,ccorr_expon,ccorr_param,area,acc,dens,ye,tran,id,gg,g,c_calving
 
   ii=where(thick gt 0,ci) & fa='n' 
 if ci gt 6 then begin
