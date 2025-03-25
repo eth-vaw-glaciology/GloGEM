@@ -441,9 +441,6 @@ fit_dzstep = [1.,5.,20.] ; layer thickness [m]
 
 ; reference density profile, shifted depending on snow/firn situation 
 fit_dens = [250,300,360,420,480,550,580,610,640,670,700,730,760,790,820,850,880,900] ; kg m-3
-slope_pf = 0.001                                                                     ; scaling parameter for estimating glacier ice permeability on the basis of the slope    
-thick_pf = 0.005                                                                     ; scaling parameter for estimating glacier ice permeability on the basis of the thickness
-fact_permeability = [slope_pf, thick_pf]                                              ; scaling parameters for estimating glacier ice permeability
 
 ; physical constants
 cice = 1890000. ; heat capacity of ice [J m-3]

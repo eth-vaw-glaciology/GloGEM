@@ -1036,7 +1036,7 @@ endif
 
 if firnice_temperature eq 'y' then begin
 
-   FIRNICE_TEMPERATURE_MODEL,gl,fit_layers,fit_dens,fit_dz, rf_dsc,rf_dt,Lh_rf, tgs,tl_fit,te_fit,geothermal_flux, cair,cice,kair,kice, sno,mel,plg,thick,slope,firn, firnice_batch,firnice_write,firnice_maxdepth, fit_water,fact_permeability,elev_firnicetemp,firnice_profile,firnice_profile_ind,ye,tran,m, firn_permeability,ice_permeability
+   FIRNICE_TEMPERATURE_MODEL,gl,fit_layers,fit_dens,fit_dz, rf_dsc,rf_dt,Lh_rf, tgs,tl_fit,te_fit,geothermal_flux, cair,cice,kair,kice, sno,mel,plg,thick,slope,firn, firnice_batch,firnice_write,firnice_maxdepth, fit_water,elev_firnicetemp,firnice_profile,firnice_profile_ind,ye,tran,m, firn_permeability,ice_permeability
 
 endif    ; firn-ice temperature model
 

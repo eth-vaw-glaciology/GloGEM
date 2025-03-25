@@ -1,4 +1,4 @@
-PRO FIRNICE_TEMPERATURE_MODEL,gl,fit_layers,fit_dens,fit_dz, rf_dsc,rf_dt,Lh_rf, tgs,tl_fit,te_fit,geothermal_flux, cair,cice,kair,kice, sno,mel,plg,thick,slope,firn, firnice_batch,firnice_write,firnice_maxdepth, fit_water,fact_permeability,elev_firnicetemp,firnice_profile,firnice_profile_ind,ye,tran,m, firn_permeability,ice_permeability
+PRO FIRNICE_TEMPERATURE_MODEL,gl,fit_layers,fit_dens,fit_dz, rf_dsc,rf_dt,Lh_rf, tgs,tl_fit,te_fit,geothermal_flux, cair,cice,kair,kice, sno,mel,plg,thick,slope,firn, firnice_batch,firnice_write,firnice_maxdepth, fit_water,elev_firnicetemp,firnice_profile,firnice_profile_ind,ye,tran,m, firn_permeability,ice_permeability
 
 noval=-9999 & snoval=-99 ; no value indicators
 
@@ -129,11 +129,14 @@ for j=1,ck do begin ; loop through all SNOW layers from top, and update temperat
    endelse
 endfor
 
-; reduce liquid water input through glacier ice by a factor proportional to local characteristics (thickness / slope ~flow speed)
+; reduce liquid water input through glacier ice using different permeability models
 if ice_permeability eq 'y' then begin
    f = permeability(ii(i)) ; velocity gradient based permeability (Janosch model)
    fit_water=fit_water*f   ; reducing amount of water entering glacier ice
    ; f=(slope(ii(i))^2*fact_permeability(0))*(thick(ii(i))*fact_permeability(1)) ; slope based permeability (Matthias model)
+endif else begin
+   fit_water=fit_water*0 ; no water entering glacier ice
+endelse
 endif
 
 for j=ck+1,tt-2 do begin ; loop through all ICE layers from top, and update temperatures
