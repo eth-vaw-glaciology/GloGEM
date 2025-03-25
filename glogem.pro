@@ -1227,7 +1227,7 @@ dens=0.9 & dvol=dvol/dens
 ; -----------------------------
 ; volume loss due to frontal ablation
 
-CALVING_MODEL,thick,bed_elev,bed_elev_term,bed_elev_p,dvol,frontal_ablation,front_melt,calv_amplification,width,slope,length,alpha_f,length_corrfact,crit_ccorrdist,ccorr_expon,ccorr_param,area,acc,dens,ye,tran,id,gg,g,c_calving, calv_sep,glacier_retreat,single_glacier
+CALVING_MODEL,thick,bed_elev,bed_elev_term,bed_elev_p,dvol,frontal_ablation,front_melt,calv_amplification,width,slope,length,alpha_f,length_corrfact,crit_ccorrdist,ccorr_expon,ccorr_param,area,acc,dens,ye,tran,id,gg,g,c_calving,ar_gl,calv_sep,glacier_retreat,single_glacier
 
 ; *******************************************
 
