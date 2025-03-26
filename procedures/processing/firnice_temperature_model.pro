@@ -14,8 +14,8 @@ n = 3         ; Glen's flow law exponent
 THRESHOLD_ICE_VELOCITY_GRADIENT = 1e-4  ; Threshold for ice velocity gradient [year^-1]
 
 ; Compute the driving stress (tau_d) and ice velocity (u) for each element in one loop
-u     = FLTARR(ci)  ; Initialize the velocity array with the same number of elements as ci
-tau_d = FLTARR(ci)  ; Initialize the driving stress array with the same number of elements as ci
+u     = FLTARR(N_ELEMENTS(gl))  ; Initialize the velocity array with the same number of elements as gl
+tau_d = FLTARR(N_ELEMENTS(gl))  ; Initialize the driving stress array with the same number of elements as gl
 for i = 0, ci-1 do begin
    ; Calculate driving stress
    tau_d = rho_ice * g * thick(ii_perm(i)) * SIN(slope(ii_perm(i)) * !DTOR)  ; driving stress in Pa
@@ -46,10 +46,6 @@ indices = WHERE(normalized_du lt THRESHOLD_ICE_VELOCITY_GRADIENT, count)
 
 ; Divide by 2 to allow only 50% permeability
 permeability = permeability / 2
-
-; ; Print the result
-; PRINT, 'Normalized velocity gradient: ', normalized_du
-; PRINT, 'Permeability: ', permeability
 
 ;*********************
 
