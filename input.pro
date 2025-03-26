@@ -27,7 +27,7 @@ dir_data_alt = main_dir+'/geometricdata/'+'rgiv'+RGIversion+'/bands/bands_HF2012
 dir_clim     = main_dir+'climatedata/'                                  ; climate data
 
 ; output (same machine as you run on)scratch via the network
-dirres='/scratch_net/vierzack04_fourth/jabeer/GloGEM/batch_results_diff_icetemp/firnice_perm/r'+RGIversion+'_'+time_resolution+'/'   ; output folder  (same machine as you run on)scratch via the network
+dirres='/scratch_net/vierzack04_fourth/jabeer/GloGEM/batch_results_diff_icetemp/firn_perm/r'+RGIversion+'_'+time_resolution+'/'   ; output folder  (same machine as you run on)scratch via the network
 
 ; --- region selection
 ; regions can be selected in group via a range of region-IDs
@@ -455,7 +455,7 @@ cond = (1-dens_rf/1000.)*kair+dens_rf/1000.*kice ; compute conductivity of layer
 
 ; activate/deactivate permeability model
 firn_permeability = 'y' ; 'y' to activate firn permeability model
-ice_permeability  = 'y' ; 'y' to activate ice  permeability model
+ice_permeability  = 'n' ; 'y' to activate ice  permeability model
 
 ; set min and max values for permeability reduction factor f
 min_f = 0.0001
