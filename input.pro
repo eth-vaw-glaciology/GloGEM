@@ -276,6 +276,7 @@ frontal_ablation='y'     ; ACTIVATE FRONTAL ABLATION MODEL (only marine-terminat
                          ; according to Oerlemans&Nick, 2005
 
 	alpha_f=0.7      ; parameters of calving model (irrelevant, read from file)
+   calv_sep=1.25    ; [m w.e.] as threshold: separate calving flux into gl geom. change AND direct break off at terminus
 	c_calving=2.4
 	regparams_readfromfile='y'    ; reading parameters from regional file or use above ones?
 
