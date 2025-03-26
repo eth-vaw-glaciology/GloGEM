@@ -1,4 +1,4 @@
-PRO GLACIER_RETREAT,ye,thick,thick_ini,elev,bed_elev,area,areas,area_ini,gl,dh_size,nb,dvol,bal,balv,advance,adv_fcrit,volume0,volume1,volumes,adv_iniar,adv_inithi,adv_iniamplification,expon,redistribute_vplus,adv_lookup,adv_lookup_data,flux_calv
+PRO GLACIER_RETREAT,ye,thick,thick_ini,elev,bed_elev,area,areas,area_ini,gl,dh_size,nb,dvol,bal,balv,advance,adv_fcrit,volume0,volume1,volumes,adv_iniar,adv_inithi,adv_iniamplification,expon,redistribute_vplus,adv_lookup,adv_lookup_data,flux_calv,dens,ar_gl
 
 noval=-9999
   
