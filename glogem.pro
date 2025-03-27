@@ -566,7 +566,7 @@ fn=dir_data+'/'+region+'/'+id(gg(g))+'.dat' & a=findfile(fn)
 
 if a(0) ne '' then begin
 
-READ_HYPSOMETRYFILE,fn,gg,g,a_gl,nb,da,advance,adv_calving,adv_addband,adv_addband0,hmin
+READ_HYPSOMETRYFILE,fn,gg,g,a_gl,nb,da,advance,adv_calving,adv_addband,adv_addband0,hmin, dir_data_alt,region
 
 ; find geothermal heat flux for glacier
 if firnice_temperature eq 'y' then begin
