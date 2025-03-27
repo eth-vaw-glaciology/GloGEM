@@ -27,7 +27,7 @@ dir_data_alt = main_dir+'/geometricdata/'+'rgiv'+RGIversion+'/bands/bands_HF2012
 dir_clim     = main_dir+'climatedata/'                                  ; climate data
 
 ; output (same machine as you run on)scratch via the network
-dirres='/scratch_net/vierzack04_fourth/jabeer/GloGEM/batch_results_diff_icetemp/firnice_perm/r'+RGIversion+'_'+time_resolution+'/'   ; output folder  (same machine as you run on)scratch via the network
+dirres='/scratch_net/vierzack04_fourth/jabeer/GloGEM/batch_results_diff_icetemp/no_perm/r'+RGIversion+'_'+time_resolution+'/'   ; output folder  (same machine as you run on)scratch via the network
 
 ; --- region selection
 ; regions can be selected in group via a range of region-IDs

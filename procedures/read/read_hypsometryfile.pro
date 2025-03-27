@@ -1,4 +1,4 @@
-PRO READ_HYPSOMETRYFILE,fn,gg,g,a_gl,nb,da,advance,adv_calving,adv_addband,adv_addband0,hmin, dir_data_alt, region
+PRO READ_HYPSOMETRYFILE,fn,gg,g,a_gl,nb,da,advance,adv_calving,adv_addband,adv_addband0,hmin, dir_data_alt, region,id
   
   nb=file_lines(fn)-5
   s=strarr(5) & da=dblarr(12,nb)
