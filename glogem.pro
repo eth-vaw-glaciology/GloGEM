@@ -1093,7 +1093,7 @@ if outf_names(14) ne '' then begin
 ; for entire catchment
       accday(ccmon-1)=total((psg)*area_ini)/total(area_ini) & refrday(ccmon-1)=total(refr*area_ini)/total(area_ini)
       rainday(ccmon-1)=total((plg)*area_ini)/total(area_ini)
-      snowmeltday(ccmon-1)=total((snowmel)*area_ini)/total(area_ini) & icemeltday(ccmon-1)=total((icemel)*area_ini)/total(area_ini)
+      snowmeltday(ccmon-1)=total((snowmel)*area_ini)/total(area_ini) & icemeltday(ccmon-1)=total((icemel)*area)/total(area_ini)
    ; rather write out snowcover-percentage??
       jj=where(sno eq 0 and gl ne noval,cj) & if cj gt 0 then snowlineday(ccmon-1)=gl(jj(cj-1))
    endelse   
