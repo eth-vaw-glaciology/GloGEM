@@ -3,10 +3,9 @@ PRO FIRNICE_TEMPERATURE_MODEL,gl,fit_layers,fit_dens,fit_dz, rf_dsc,rf_dt,Lh_rf,
 noval=-9999 & snoval=-99 ; no value indicators
 
 ;********************* 
-; alternative permeability model based on velocity gradient 
+; copute ice velocity based on shallow ice approximation
 ii_perm=where(gl ne noval,ci)
 
-; alternative permeability model based on velocity gradient
 g = 9.81      ; acceleration due to gravity [m/s^2]
 rho_ice = 917 ; density of ice [kg/m^3]
 A = 2.4e-24   ; ice flow law parameter [Pa^-3 s^-1]
@@ -23,8 +22,8 @@ for i = 0, ci-1 do begin
    u[i] = (2 * A / (n + 2)) * tau_d^n * thick(ii_perm(i)) * 365.25 * 24 * 3600  ; ice velocity in m/year
 endfor
 
-; PRINT, 'Ice velocity in m/year: ', u
-
+;*********************
+; alternative permeability model based on velocity gradient
 du = FLTARR(N_ELEMENTS(u))  ; Initialize the gradient array with the same number of elements as u
 
 ; Compute the gradient of the velocity array using finite differences
@@ -49,7 +48,6 @@ permeability = permeability / 2
 
 ;*********************
 
-if firn_permeability eq 'n' then fit_water = 0  ; check if permeability is disabled, if yes then set infiltrating water to zero
 
 ii=where(gl ne noval,ci)
 for i=0,ci-1 do begin
@@ -95,6 +93,8 @@ tt=min([ind+1,total(fit_layers)])  ; either run to bedrock, or to max of layers
 tl_fit(ii(i),tt-1:total(fit_layers))=tl_fit(ii(i),tt-2)
 
 fit_water=mel(ii(i))+plg(ii(i))  ; liquid water available from surface (melt+rain)
+
+if firn_permeability eq 'n' then fit_water = 0  ; check if permeability is disabled, if yes then set infiltrating water to zero
 
 ; latent heat release over firn/snow surface (entirely permeable)
 if firn(ii(i)) eq 1 then begin
