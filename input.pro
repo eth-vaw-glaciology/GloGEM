@@ -308,6 +308,7 @@ if full_output eq 'n' then outf_names=['Area','Volume','Annual_Balance_sfc','Win
  'Snowmelt_sfc','Accumulation_sfc','Rain_sfc','ELA','AAR','Refreezing_sfc','Hmin','Frontal_ablation',$
  'Discharge','Discharge_gl','','','','','']   ; reduced output - less monthly data
 format_of=['f10.3','f10.4','f8.3','f8.3','f8.3','f8.3','f8.3','f8.3','i6','f7.1','f8.3','i6','f10.5','f8.3','f9.4','f9.4','f9.4','f9.4','f9.4','f10.5']
+; format_of=['f10.3','f10.4','f8.3','f8.3','f8.3','f8.3','f8.3','f8.3','i6','f7.1','f8.3','i6','f10.5','f8.2','f8.2','f8.2','f8.2','f8.2','f8.2','f9.4','i7'] ; added by Alex to generate output
 
 write_mb_elevationbands='n'     ; write out seasonal mass balance in elevation bands for every glacier
     eval_mbelevsensitivity='n'      ; evaluating mass balance sensitivity in each band to changing surface elevation
@@ -454,8 +455,8 @@ cap  = (1-dens_rf/1000.)*cair+dens_rf/1000.*cice ; compute heat capacity of laye
 cond = (1-dens_rf/1000.)*kair+dens_rf/1000.*kice ; compute conductivity of layers
 
 ; activate/deactivate permeability model
-firn_permeability = 'y' ; 'y' to activate firn permeability model
-ice_permeability  = 'y' ; 'y' to activate ice  permeability model
+firn_permeability = 'n' ; 'y' to activate firn permeability model
+ice_permeability  = 'n' ; 'y' to activate ice  permeability model
 
 ; set min and max values for permeability reduction factor f
 min_f = 0.0001
