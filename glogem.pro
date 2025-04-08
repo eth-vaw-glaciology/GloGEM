@@ -880,7 +880,7 @@ if d eq 0 then en=dd_thresholds(3) else en=bal_month-1
 ; loop over months
 for m=st,en do begin
 
-psg=dblarr(nb) & mel=psg & refr=psg & corrdis=psg & snowmel=melt & icemel=mel
+psg=dblarr(nb) & mel=psg & refr=psg & corrdis=psg & snowmel=mel & icemel=mel
 
 ; correct snow storage array
 if bal_month eq dd_thresholds(2) then if m eq 1 then sno=sno-snostor
