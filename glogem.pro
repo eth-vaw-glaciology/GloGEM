@@ -1095,7 +1095,19 @@ if outf_names(14) ne '' then begin
       rainday(ccmon-1)=total((plg)*area_ini)/total(area_ini)
       snowmeltday(ccmon-1)=total((snowmel)*area_ini)/total(area_ini) & icemeltday(ccmon-1)=total((icemel)*area)/total(area_ini)
    ; rather write out snowcover-percentage??
-      jj=where(sno eq 0 and gl ne noval,cj) & if cj gt 0 then snowlineday(ccmon-1)=gl(jj(cj-1))
+      jj=where(sno eq 0 and gl ne noval,cj) 
+      if cj gt 0 then begin
+        snowlineday(ccmon-1)=gl(jj(cj-1))
+        ; Select lowest elevation bin of the glacier if fully snow covered
+      endif else begin
+        ; Filter out negative values
+        positive_values = gl[where(gl GE 0)]
+        ; Get the minimum of positive values
+        min_snowline = positive_values[0]
+        snowlineday(ccmon-1)=min_snowline
+      endelse
+
+
    endelse   
 
 endif
