@@ -1113,6 +1113,7 @@ if outf_names(14) ne '' then begin
 endif
 
 
+
 if ar_gl ne 0 then begin
 
    if bal_month eq dd_thresholds(2) then if m eq dd_thresholds(0) then wb(ye)=total(bal*area)/ar_gl
