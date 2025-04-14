@@ -330,7 +330,7 @@ tt = double(b[4]) - 1
 
 ; Construct the directory path
 b = '/' + date_str + '/'
-PRINT, b
+;PRINT, b
 
 if tran(1) le tt then b='/PAST'+version_past+mtt
 
@@ -655,7 +655,7 @@ if write_mb_elevationbands eq 'y' then begin
    endif
 endif
 
-PRINT, b
+;PRINT, b
 ; PRINT, dirres
 ; PRINT, dirres+dir_region
 ; PRINT, dirres+dir_region+b
