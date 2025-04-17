@@ -2,7 +2,7 @@ PRO FIRNICE_TEMPERATURE_MODEL,gl,fit_layers,fit_dens,fit_dz, rf_dsc,rf_dt,Lh_rf,
    tgs,tl_fit,te_fit,geothermal_flux, cair,cice,kair,kice, sno,mel,plg,thick,slope,firn, $
    firnice_batch,firnice_write,firnice_maxdepth, fit_water,elev_firnicetemp,firnice_profile, $
    firnice_profile_ind,ye,tran,m, firn_permeability,ice_permeability, enable_advection=enable_advection, $
-   diff_coef=diff_coef, elev_adv_horiz=elev_adv_horiz, elev_adv_vert=elev_adv_vert, advection_write=advection_write, $
+   diff_coef=diff_coef, elev_adv_horiz=elev_adv_horiz, elev_adv_vert=elev_adv_vert, advection_write=advection_write
 
 noval=-9999 & snoval=-99 ; no value indicators
 
