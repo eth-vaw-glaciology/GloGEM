@@ -27,7 +27,7 @@ dir_data_alt = main_dir+'/geometricdata/'+'rgiv'+RGIversion+'/bands/bands_HF2012
 dir_clim     = main_dir+'climatedata/'                                  ; climate data
 
 ; output (same machine as you run on)scratch via the network
-dirres='/scratch_net/vierzack04_fourth/jabeer/GloGEM/advection_tests/r'+RGIversion+'_'+time_resolution+'/'   ; output folder  (same machine as you run on)scratch via the network
+dirres='/scratch_net/vierzack04_fourth/jabeer/GloGEM/batch_results_diff_icetemp/firn_perm/r'+RGIversion+'_'+time_resolution+'/'   ; output folder  (same machine as you run on)scratch via the network
 
 ; --- region selection
 ; regions can be selected in group via a range of region-IDs
@@ -248,14 +248,18 @@ refreezing_full='y'      ; ACTIVATE REFREEZING MODEL
 
 firnice_temperature='y'      ; ACTIVATE ICE TEMPERATURE MODEL - compute firn/ice temperatures transiently (not just for refreezing)
    firnice_write=['y','y']   ; output of overall (time series, annual) and detailed (profiles, monthly) files
-   firnice_batch='n'      ; run batch (all sites contained in icetemperature_batch.dat)
+   firnice_batch='y'      ; run batch (all sites contained in icetemperature_batch.dat)
       ; only relevant if defined manually (firnice_runbatch='n' )
       firnice_profile=[0.2,0.65,0.95]      ; (max 3.) manually inserting elevations of profiles to be written (<1: ratio of elev. range, >1: masl)
      ; firnice_profile=[3000,3500,4000]
 
-enable_advection='y'         ; ACTIVATE ADVECTION OF TEMPERATURE IN FIRN/ICE
-   advection_write='y'       ; write out advection of temperature in firn/ice
-   
+   enable_advection='n'      ; ACTIVATE ADVECTION OF TEMPERATURE IN FIRN/ICE
+   advection_write='n'       ; write out advection of temperature in firn/ice
+
+; activate/deactivate permeability model
+firn_permeability = 'y' ; 'y' to activate firn permeability model
+ice_permeability  = 'n' ; 'y' to activate ice  permeability model
+
 ; ----- glacier retreat module
 
 glacier_retreat='y'  ; ACTIVATE GLACIER GEOMETRY CHANGE MODEL
@@ -456,10 +460,6 @@ kair = 0.001    ; conductivity air [J s-1 K-1 m-1]
 ; compute heat capacity and conductivity of layers
 cap  = (1-dens_rf/1000.)*cair+dens_rf/1000.*cice ; compute heat capacity of layers
 cond = (1-dens_rf/1000.)*kair+dens_rf/1000.*kice ; compute conductivity of layers
-
-; activate/deactivate permeability model
-firn_permeability = 'n' ; 'y' to activate firn permeability model
-ice_permeability  = 'n' ; 'y' to activate ice  permeability model
 
 ; set min and max values for permeability reduction factor f
 min_f = 0.0001
