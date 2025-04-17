@@ -1,6 +1,11 @@
-PRO FIRNICE_TEMPERATURE_MODEL,gl,fit_layers,fit_dens,fit_dz, rf_dsc,rf_dt,Lh_rf, tgs,tl_fit,te_fit,geothermal_flux, cair,cice,kair,kice, sno,mel,plg,thick,slope,firn, firnice_batch,firnice_write,firnice_maxdepth, fit_water,elev_firnicetemp,firnice_profile,firnice_profile_ind,ye,tran,m, firn_permeability,ice_permeability
+PRO FIRNICE_TEMPERATURE_MODEL,gl,fit_layers,fit_dens,fit_dz, rf_dsc,rf_dt,Lh_rf, tgs,tl_fit,te_fit,geothermal_flux, cair,cice,kair,kice, sno,mel,plg,thick,slope,firn, firnice_batch,firnice_write,firnice_maxdepth, fit_water,elev_firnicetemp,firnice_profile,firnice_profile_ind,ye,tran,m, firn_permeability,ice_permeability, enable_advection=enable_advection, enable_diffusion=enable_diffusion, diff_coef=diff_coef
 
 noval=-9999 & snoval=-99 ; no value indicators
+
+; Default parameters for advection and diffusion
+IF N_ELEMENTS(enable_advection) EQ 0 THEN enable_advection = 0
+IF N_ELEMENTS(enable_diffusion) EQ 0 THEN enable_diffusion = 0
+IF N_ELEMENTS(diff_coef) EQ 0 THEN diff_coef = 5.0  ; Default diffusion coefficient in m²/yr
 
 ;********************* 
 ; copute ice velocity based on shallow ice approximation
