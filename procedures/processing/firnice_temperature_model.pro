@@ -1,4 +1,8 @@
-PRO FIRNICE_TEMPERATURE_MODEL,gl,fit_layers,fit_dens,fit_dz, rf_dsc,rf_dt,Lh_rf, tgs,tl_fit,te_fit,geothermal_flux, cair,cice,kair,kice, sno,mel,plg,thick,slope,firn, firnice_batch,firnice_write,firnice_maxdepth, fit_water,elev_firnicetemp,firnice_profile,firnice_profile_ind,ye,tran,m, firn_permeability,ice_permeability, enable_advection=enable_advection, enable_diffusion=enable_diffusion, diff_coef=diff_coef
+PRO FIRNICE_TEMPERATURE_MODEL,gl,fit_layers,fit_dens,fit_dz, rf_dsc,rf_dt,Lh_rf, $
+   tgs,tl_fit,te_fit,geothermal_flux, cair,cice,kair,kice, sno,mel,plg,thick,slope,firn, $
+   firnice_batch,firnice_write,firnice_maxdepth, fit_water,elev_firnicetemp,firnice_profile, $
+   firnice_profile_ind,ye,tran,m, firn_permeability,ice_permeability, enable_advection=enable_advection, $
+   diff_coef=diff_coef, elev_adv_horiz=elev_adv_horiz, elev_adv_vert=elev_adv_vert, advection_write=advection_write, $
 
 noval=-9999 & snoval=-99 ; no value indicators
 
@@ -6,6 +10,13 @@ noval=-9999 & snoval=-99 ; no value indicators
 IF N_ELEMENTS(enable_advection) EQ 0 THEN enable_advection = 0
 IF N_ELEMENTS(enable_diffusion) EQ 0 THEN enable_diffusion = 0
 IF N_ELEMENTS(diff_coef) EQ 0 THEN diff_coef = 5.0  ; Default diffusion coefficient in m²/yr
+
+; Arrays to store advection effects if enabled and requested
+IF enable_advection AND KEYWORD_SET(advection_write) THEN BEGIN
+   ; Create arrays to track advection impacts
+   adv_horiz_effect = DBLARR(N_ELEMENTS(gl))  ; Horizontal advection effect
+   adv_vert_effect = DBLARR(N_ELEMENTS(gl))   ; Vertical advection effect
+ENDIF
 
 ;********************* 
 ; copute ice velocity based on shallow ice approximation
@@ -75,7 +86,7 @@ tt=min([ind+1,total(fit_layers)])  ; either run to bedrock, or to max of layers
 
    for h=0,rf_dsc-1 do begin
 
-      ; heat conduction
+      ; heat conduction (vertical) in the firn/ice layers
       for j=1,tt-2 do begin
 
          tl_fit(ii(i),0)=min([0,tgs(ii(i))]) ; temperature of topmost layer corresponding to air temperature or melting point!
@@ -92,6 +103,140 @@ tt=min([ind+1,total(fit_layers)])  ; either run to bedrock, or to max of layers
          if tl_fit(ii(i),j) gt (fit_dz(1,j)*0.9/10.)*(-0.00742) then tl_fit(ii(i),j)=(fit_dz(1,j)*0.9/10.)*(-0.00742)
 
       endfor
+
+      ; advection (horizontal) in the firn/ice layers
+      IF enable_advection THEN BEGIN
+         ; Skip first elevation band (highest) since there's no upglacier source
+         IF i GT 0 THEN BEGIN
+            ; Calculate vertical profile of horizontal velocity (Nye's approximation)
+            vprofile = FLTARR(tt)
+            FOR j=0,tt-1 DO BEGIN
+               relative_height = 1.0D - (DOUBLE(j) / DOUBLE(tt))  ; 1 at surface, 0 at bed
+               vprofile[j] = relative_height^4  ; approximation of velocity profile with n=3
+            ENDFOR
+            
+            ; Get velocity for current elevation band
+            current_vel = u[i]
+            
+            ; Get upglacier index (where ice is flowing from)
+            upglacier_idx = i - 1
+            
+            ; Calculate timestep in seconds
+            dt_seconds = rf_dt * 3600.0D * 24.0D * 30.5D / rf_dsc
+            
+            ; Calculate the actual horizontal distance based on slope
+            band_vertical_spacing = 10.0D  ; Vertical spacing between bands in meters - ADJUST THIS VALUE
+            min_slope_rad = 0.01D * !DTOR  ; Minimum slope to prevent division by zero
+            local_slope_rad = MAX([slope[ii_perm[i]] * !DTOR, min_slope_rad])
+            dx = band_vertical_spacing / TAN(local_slope_rad)
+            dx = dx < 1000.0D  ; Cap maximum horizontal distance
+            
+            ; Calculate advection coefficient (Courant number)
+            courant = current_vel * dt_seconds / (dx * 365.25D * 24.0D * 3600.0D)
+            
+            ; Ensure stability by limiting Courant number
+            courant = courant < 0.8
+            
+            ; Apply advection to each layer
+            FOR j=1,tt-2 DO BEGIN
+               ; Scale advection by the vertical velocity profile
+               layer_courant = courant * vprofile[j]
+               
+               ; First-order upwind scheme for advection
+               tl_fit[ii(i),j] = (1.0D - layer_courant) * tl_fit[ii(i),j] + $
+                                 layer_courant * tl_fit[ii(upglacier_idx),j]
+
+               ; Store horizontal advection effect (average temperature change at key depths)
+               IF KEYWORD_SET(advection_write) THEN BEGIN
+                  IF j EQ 10 THEN adv_horiz_effect[ii(i)] = tl_fit[ii(i),j] - temp_before  ; Use 10m depth
+               ENDIF
+               
+               ; Ensure temperature doesn't exceed pressure melting point
+               tl_fit[ii(i),j] = tl_fit[ii(i),j] < (fit_dz(1,j)*0.9D/10.0D)*(-0.00742D)
+            ENDFOR
+         ENDIF
+      ENDIF
+
+      ; advection (vertical) in the firn/ice layers
+      IF enable_advection THEN BEGIN
+         ; Calculate vertical velocity component
+         ; Positive = downward, Negative = upward (emergence)
+         vertical_vel = DBLARR(tt)
+         
+         ; In accumulation area: downward movement due to burial by new snow
+         ; In ablation area: upward movement due to emergence velocity
+         IF sno[ii(i)] GT mel[ii(i)] THEN BEGIN
+            ; Accumulation area: downward movement
+            ; Surface velocity = net accumulation rate
+            surface_vertical_vel = MAX([(sno[ii(i)] - mel[ii(i)]), 0.0]) ; m/year, downward positive
+            
+            ; Linear decrease of vertical velocity with depth (zero at bed)
+            FOR j=0,tt-1 DO BEGIN
+               relative_depth = DOUBLE(j) / DOUBLE(tt-1)
+               vertical_vel[j] = surface_vertical_vel * (1.0D - relative_depth)
+            ENDFOR
+         ENDIF ELSE BEGIN
+            ; Ablation area: upward movement (emergence velocity)
+            ; Simplified emergence velocity estimate based on surface slope and ice velocity
+            emergence_vel = current_vel * TAN(local_slope_rad) ; m/year, upward positive
+            
+            ; Convert to our coordinate system (downward positive)
+            surface_vertical_vel = -emergence_vel
+            
+            ; Linear decrease of vertical velocity with depth (zero at bed)
+            FOR j=0,tt-1 DO BEGIN
+               relative_depth = DOUBLE(j) / DOUBLE(tt-1)
+               vertical_vel[j] = surface_vertical_vel * (1.0D - relative_depth)
+            ENDFOR
+         ENDELSE
+         
+         ; Apply vertical advection (upwind scheme)
+         ; Only if vertical velocity is significant
+         IF ABS(MAX(vertical_vel)) GT 0.1D THEN BEGIN
+            ; Create temporary array to store updated temperatures
+            temp_v = tl_fit[ii(i),*]
+            temp_before_v = tl_fit[ii(i),10]  ; Store 10m temperature before vertical advection
+            
+            ; Convert to proper time units
+            dt_years = rf_dt * (30.5D/rf_dsc) / 365.25D
+            
+            ; Apply vertical advection for each layer (except boundaries)
+            FOR j=1,tt-2 DO BEGIN
+               ; Calculate vertical grid spacing (might vary with depth in your model)
+               dz = fit_dz[0,j]
+               
+               ; Calculate Courant number for vertical advection
+               v_courant = vertical_vel[j] * dt_years / dz
+               
+               ; Ensure stability
+               v_courant = v_courant < 0.8D
+               v_courant = v_courant > -0.8D
+               
+               IF v_courant GE 0 THEN BEGIN
+                  ; Downward advection (from above)
+                  IF j GT 1 THEN temp_v[j] = temp_v[j] - v_courant * (temp_v[j] - temp_v[j-1])
+               ENDIF ELSE BEGIN
+                  ; Upward advection (from below)
+                  IF j LT tt-2 THEN temp_v[j] = temp_v[j] - v_courant * (temp_v[j+1] - temp_v[j])
+               ENDELSE
+            ENDFOR
+            
+            ; Store vertical advection effect at 10m depth
+            IF KEYWORD_SET(advection_write) THEN BEGIN
+               adv_vert_effect[ii(i)] = temp_v[10] - temp_before_v  ; Effect at 10m depth
+            ENDIF
+
+            ; Update temperature array with advected values
+            tl_fit[ii(i),1:tt-2] = temp_v[1:tt-2]
+            
+            ; Ensure temperatures don't exceed pressure melting point
+            FOR j=1,tt-2 DO BEGIN
+               IF tl_fit[ii(i),j] GT (fit_dz[1,j]*0.9D/10.0D)*(-0.00742D) THEN $
+                  tl_fit[ii(i),j] = (fit_dz[1,j]*0.9D/10.0D)*(-0.00742D)
+            ENDFOR
+         ENDIF
+      ENDIF
+
    endfor
 
 ; setting all bedrock temperatures to lowermost computed layer (to avoid constant warming from beneath)
@@ -172,5 +317,10 @@ endif
 
 endfor
 
+; Return advection effects in the output variables if requested
+IF enable_advection AND KEYWORD_SET(advection_write) THEN BEGIN
+   elev_adv_horiz = adv_horiz_effect
+   elev_adv_vert = adv_vert_effect
+ENDIF
 
 end
