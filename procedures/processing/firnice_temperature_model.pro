@@ -209,8 +209,8 @@ tt=min([ind+1,total(fit_layers)])  ; either run to bedrock, or to max of layers
                v_courant = vertical_vel[j] * dt_years / dz
                
                ; Ensure stability
-               v_courant = v_courant < 0.8D
-               v_courant = v_courant > -0.8D
+               v_courant = v_courant < 0.8D       ; Limit to 0.8 for stability
+               v_courant = MAX([v_courant, -0.8D])
                
                IF v_courant GE 0 THEN BEGIN
                   ; Downward advection (from above)
