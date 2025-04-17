@@ -681,7 +681,22 @@ if firnice_temperature eq 'y' then begin
 
       openw,48,dirres+dir_region+b+'/firnice_temperature/temp_bedrock_'+id(gg(g))+'.dat'
       printf,48,'Elev  '+a 
-
+   endif
+   if enable_advection eq 'y' AND advection_write eq 'y' then begin
+      c=findfile(dirres+dir_region+b+'/firnice_temperature')
+      IF c(0) EQ '' THEN BEGIN
+         spawn,'mkdir '+dirres+dir_region+b+'/firnice_temperature' 
+         spawn,'chmod a+rx '+dirres+dir_region+b+'/firnice_temperature'
+      ENDIF
+      
+      openw,70,dirres+dir_region+b+'/firnice_temperature/adv_horizontal_'+id(gg(g))+'.dat'
+      a='' & FOR i=0,years-1 DO a=a+string(i+tran(0),fo='(i4)')+'  '
+      printf,70,'Elev  '+a
+      elev_adv_horiz=dblarr(years,nb)+snoval
+      
+      openw,71,dirres+dir_region+b+'/firnice_temperature/adv_vertical_'+id(gg(g))+'.dat'
+      printf,71,'Elev  '+a
+      elev_adv_vert=dblarr(years,nb)+snoval
    endif
 
    if firnice_write(1) eq 'y' then begin
@@ -1036,7 +1051,11 @@ endif
 
 if firnice_temperature eq 'y' then begin
 
-   FIRNICE_TEMPERATURE_MODEL,gl,fit_layers,fit_dens,fit_dz, rf_dsc,rf_dt,Lh_rf, tgs,tl_fit,te_fit,geothermal_flux, cair,cice,kair,kice, sno,mel,plg,thick,slope,firn, firnice_batch,firnice_write,firnice_maxdepth, fit_water,elev_firnicetemp,firnice_profile,firnice_profile_ind,ye,tran,m, firn_permeability,ice_permeability
+   FIRNICE_TEMPERATURE_MODEL,gl,fit_layers,fit_dens,fit_dz, rf_dsc,rf_dt,Lh_rf, $
+   tgs,tl_fit,te_fit,geothermal_flux, cair,cice,kair,kice, sno,mel,plg,thick,slope,firn, $
+   firnice_batch,firnice_write,firnice_maxdepth, fit_water,elev_firnicetemp,firnice_profile, $
+   firnice_profile_ind,ye,tran,m, firn_permeability,ice_permeability, enable_advection=enable_advection, $
+   diff_coef=diff_coef, elev_adv_horiz=elev_adv_horiz, elev_adv_vert=elev_adv_vert, advection_write=advection_write, $
 
 endif    ; firn-ice temperature model
 

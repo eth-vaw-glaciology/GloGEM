@@ -27,7 +27,7 @@ dir_data_alt = main_dir+'/geometricdata/'+'rgiv'+RGIversion+'/bands/bands_HF2012
 dir_clim     = main_dir+'climatedata/'                                  ; climate data
 
 ; output (same machine as you run on)scratch via the network
-dirres='/scratch_net/vierzack04_fourth/jabeer/GloGEM/batch_results_diff_icetemp/no_perm/r'+RGIversion+'_'+time_resolution+'/'   ; output folder  (same machine as you run on)scratch via the network
+dirres='/scratch_net/vierzack04_fourth/jabeer/GloGEM/batch_results_diff_icetemp/advection_tests/r'+RGIversion+'_'+time_resolution+'/'   ; output folder  (same machine as you run on)scratch via the network
 
 ; --- region selection
 ; regions can be selected in group via a range of region-IDs
@@ -248,6 +248,7 @@ refreezing_full='y'      ; ACTIVATE REFREEZING MODEL
 
 firnice_temperature='y'               ; ACTIVATE ICE TEMPERATURE MODEL - compute firn/ice temperatures transiently (not just for refreezing)
    firnice_write=['y','y']   ; output of overall (time series, annual) and detailed (profiles, monthly) files
+   advection_write='n'       ; write out advection of temperature in firn/ice
    firnice_batch='y'      ; run batch (all sites contained in icetemperature_batch.dat)
       ; only relevant if defined manually (firnice_runbatch='n' )
       firnice_profile=[0.2,0.65,0.95]      ; (max 3.) manually inserting elevations of profiles to be written (<1: ratio of elev. range, >1: masl)
