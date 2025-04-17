@@ -99,136 +99,141 @@ tt=min([ind+1,total(fit_layers)])  ; either run to bedrock, or to max of layers
 
       endfor
 
-      ; advection (horizontal) in the firn/ice layers
-      IF enable_advection eq 'y' THEN BEGIN
+      ; advection (horizontal and vertical) in the firn/ice layers
+      IF enable_advection EQ 'y' THEN BEGIN
+         ; Horizontal advection
          ; Skip first elevation band (highest) since there's no upglacier source
          IF i GT 0 THEN BEGIN
-            ; Calculate vertical profile of horizontal velocity (Nye's approximation)
-            vprofile = FLTARR(tt)
-            FOR j=0,tt-1 DO BEGIN
-               relative_height = 1.0D - (DOUBLE(j) / DOUBLE(tt))  ; 1 at surface, 0 at bed
-               vprofile[j] = relative_height^4  ; approximation of velocity profile with n=3
-            ENDFOR
+         ; Calculate vertical profile of horizontal velocity (Nye's approximation)
+         vprofile = FLTARR(tt)
+         FOR j=0,tt-1 DO BEGIN
+            relative_height = 1.0D - (DOUBLE(j) / DOUBLE(tt))  ; 1 at surface, 0 at bed
+            vprofile[j] = relative_height^4  ; approximation of velocity profile with n=3
+         ENDFOR
+         
+         ; Get velocity for current elevation band
+         current_vel = u[i]
+         
+         ; Get upglacier index (where ice is flowing from)
+         upglacier_idx = i - 1
+         
+         ; Calculate timestep in seconds
+         dt_seconds = rf_dt * 3600.0D * 24.0D * 30.5D / rf_dsc
+         
+         ; Calculate the actual horizontal distance based on slope
+         band_vertical_spacing = 10.0D  ; Vertical spacing between bands in meters - ADJUST THIS VALUE
+         min_slope_rad = 0.01D * !DTOR  ; Minimum slope to prevent division by zero
+         local_slope_rad = MAX([slope[ii_perm[i]] * !DTOR, min_slope_rad])
+         dx = band_vertical_spacing / TAN(local_slope_rad)
+         dx = dx < 1000.0D  ; Cap maximum horizontal distance
+         
+         ; Calculate advection coefficient (Courant number)
+         courant = current_vel * dt_seconds / (dx * 365.25D * 24.0D * 3600.0D)
+         
+         ; Ensure stability by limiting Courant number
+         courant = courant < 0.8
+         
+         ; Apply advection to each layer
+         FOR j=1,tt-2 DO BEGIN
+            ; Scale advection by the vertical velocity profile
+            layer_courant = courant * vprofile[j]
             
-            ; Get velocity for current elevation band
-            current_vel = u[i]
+            ; Store the temperature before horizontal advection at 10m depth
+            temp_before = tl_fit[ii(i),10]  ; Store 10m temperature before horizontal advection
             
-            ; Get upglacier index (where ice is flowing from)
-            upglacier_idx = i - 1
-            
-            ; Calculate timestep in seconds
-            dt_seconds = rf_dt * 3600.0D * 24.0D * 30.5D / rf_dsc
-            
-            ; Calculate the actual horizontal distance based on slope
-            band_vertical_spacing = 10.0D  ; Vertical spacing between bands in meters - ADJUST THIS VALUE
-            min_slope_rad = 0.01D * !DTOR  ; Minimum slope to prevent division by zero
-            local_slope_rad = MAX([slope[ii_perm[i]] * !DTOR, min_slope_rad])
-            dx = band_vertical_spacing / TAN(local_slope_rad)
-            dx = dx < 1000.0D  ; Cap maximum horizontal distance
-            
-            ; Calculate advection coefficient (Courant number)
-            courant = current_vel * dt_seconds / (dx * 365.25D * 24.0D * 3600.0D)
-            
-            ; Ensure stability by limiting Courant number
-            courant = courant < 0.8
-            
-            ; Apply advection to each layer
-            FOR j=1,tt-2 DO BEGIN
-               ; Scale advection by the vertical velocity profile
-               layer_courant = courant * vprofile[j]
-               
-               ; First-order upwind scheme for advection
-               tl_fit[ii(i),j] = (1.0D - layer_courant) * tl_fit[ii(i),j] + $
-                                 layer_courant * tl_fit[ii(upglacier_idx),j]
+            ; First-order upwind scheme for advection
+            tl_fit[ii(i),j] = (1.0D - layer_courant) * tl_fit[ii(i),j] + $
+                     layer_courant * tl_fit[ii(upglacier_idx),j]
 
-               ; Store horizontal advection effect (average temperature change at key depths)
-               IF advection_write EQ 'y' THEN BEGIN
-                  IF j EQ 10 THEN adv_horiz_effect[ii(i)] = tl_fit[ii(i),j] - temp_before  ; Use 10m depth
-               ENDIF
-               
-               ; Ensure temperature doesn't exceed pressure melting point
-               tl_fit[ii(i),j] = tl_fit[ii(i),j] < (fit_dz(1,j)*0.9D/10.0D)*(-0.00742D)
-            ENDFOR
+            ; Store horizontal advection effect (average temperature change at key depths)
+            IF advection_write EQ 'y' THEN BEGIN
+            IF j EQ 10 THEN adv_horiz_effect[ii(i)] = tl_fit[ii(i),j] - temp_before  ; Effect of horizontal advection at 10m depth
+            ENDIF
+            
+            ; Ensure temperature doesn't exceed pressure melting point
+            tl_fit[ii(i),j] = tl_fit[ii(i),j] < (fit_dz(1,j)*0.9D/10.0D)*(-0.00742D)
+         ENDFOR
          ENDIF
-      ENDIF
 
-      ; advection (vertical) in the firn/ice layers
-      IF enable_advection eq 'y' THEN BEGIN
+         ; Vertical advection
          ; Calculate vertical velocity component
-         ; Positive = downward, Negative = upward (emergence)
          vertical_vel = DBLARR(tt)
          
          ; In accumulation area: downward movement due to burial by new snow
          ; In ablation area: upward movement due to emergence velocity
          IF sno[ii(i)] GT mel[ii(i)] THEN BEGIN
-            ; Accumulation area: downward movement
-            ; Surface velocity = net accumulation rate
-            surface_vertical_vel = MAX([(sno[ii(i)] - mel[ii(i)]), 0.0]) ; m/year, downward positive
-            
-            ; Linear decrease of vertical velocity with depth (zero at bed)
-            FOR j=0,tt-1 DO BEGIN
-               relative_depth = DOUBLE(j) / DOUBLE(tt-1)
-               vertical_vel[j] = surface_vertical_vel * (1.0D - relative_depth)
-            ENDFOR
+         ; Accumulation area: downward movement
+         ; Surface velocity = net accumulation rate
+         surface_vertical_vel = MAX([(sno[ii(i)] - mel[ii(i)]), 0.0]) ; m/year, downward positive
+         
+
+         ; Linear decrease of vertical velocity with depth (zero at bed)
+         FOR j=0,tt-1 DO BEGIN
+            relative_depth = DOUBLE(j) / DOUBLE(tt-1)
+            vertical_vel[j] = surface_vertical_vel * (1.0D - relative_depth)
+         ENDFOR
          ENDIF ELSE BEGIN
-            ; Ablation area: upward movement (emergence velocity)
-            ; Simplified emergence velocity estimate based on surface slope and ice velocity
-            emergence_vel = current_vel * TAN(local_slope_rad) ; m/year, upward positive
-            
-            ; Convert to our coordinate system (downward positive)
-            surface_vertical_vel = -emergence_vel
-            
-            ; Linear decrease of vertical velocity with depth (zero at bed)
-            FOR j=0,tt-1 DO BEGIN
-               relative_depth = DOUBLE(j) / DOUBLE(tt-1)
-               vertical_vel[j] = surface_vertical_vel * (1.0D - relative_depth)
-            ENDFOR
+         ; Ablation area: upward movement (emergence velocity)
+         ; Simplified emergence velocity estimate based on surface slope and ice velocity
+         min_slope_rad = 0.01D * !DTOR  ; Minimum slope to prevent division by zero
+         local_slope_rad = MAX([slope[ii_perm[i]] * !DTOR, min_slope_rad])
+         current_vel = u[i] ; Get velocity for current elevation band
+         emergence_vel = current_vel * TAN(local_slope_rad) ; m/year, upward positive
+         
+         ; Convert to our coordinate system (downward positive)
+         surface_vertical_vel = -emergence_vel
+         
+         ; Linear decrease of vertical velocity with depth (zero at bed)
+         FOR j=0,tt-1 DO BEGIN
+            relative_depth = DOUBLE(j) / DOUBLE(tt-1)
+            vertical_vel[j] = surface_vertical_vel * (1.0D - relative_depth)
+         ENDFOR
          ENDELSE
          
          ; Apply vertical advection (upwind scheme)
          ; Only if vertical velocity is significant
          IF ABS(MAX(vertical_vel)) GT 0.1D THEN BEGIN
-            ; Create temporary array to store updated temperatures
-            temp_v = tl_fit[ii(i),*]
-            temp_before_v = tl_fit[ii(i),10]  ; Store 10m temperature before vertical advection
+         ; Create temporary array to store updated temperatures
+         temp_v = tl_fit[ii(i),*]
+         temp_before_v = tl_fit[ii(i),10]  ; Store 10m temperature before vertical advection
+         
+         ; Convert to proper time units
+         dt_years = rf_dt * (30.5D/rf_dsc) / 365.25D
+         
+         ; Apply vertical advection for each layer (except boundaries)
+         FOR j=1,tt-2 DO BEGIN
+            ; Calculate vertical grid spacing (might vary with depth in your model)
+            dz = fit_dz[0,j]
             
-            ; Convert to proper time units
-            dt_years = rf_dt * (30.5D/rf_dsc) / 365.25D
+            ; Calculate Courant number for vertical advection
+            v_courant = vertical_vel[j] * dt_years / dz
             
-            ; Apply vertical advection for each layer (except boundaries)
-            FOR j=1,tt-2 DO BEGIN
-               ; Calculate vertical grid spacing (might vary with depth in your model)
-               dz = fit_dz[0,j]
-               
-               ; Calculate Courant number for vertical advection
-               v_courant = vertical_vel[j] * dt_years / dz
-               
-               ; Ensure stability
-               v_courant = v_courant < 0.8D       ; Limit to 0.8 for stability
-               v_courant = MAX([v_courant, -0.8D])
-               
-               IF v_courant GE 0 THEN BEGIN
-                  ; Downward advection (from above)
-                  IF j GT 1 THEN temp_v[j] = temp_v[j] - v_courant * (temp_v[j] - temp_v[j-1])
-               ENDIF ELSE BEGIN
-                  ; Upward advection (from below)
-                  IF j LT tt-2 THEN temp_v[j] = temp_v[j] - v_courant * (temp_v[j+1] - temp_v[j])
-               ENDELSE
-            ENDFOR
+            ; Ensure stability
+            v_courant = v_courant < 0.8D       ; Limit to 0.8 for stability
+            v_courant = MAX([v_courant, -0.8D])
             
-            ; Store vertical advection effect at 10m depth
-            IF advection_write EQ 'y' THEN BEGIN
-               adv_vert_effect[ii(i)] = temp_v[10] - temp_before_v  ; Effect at 10m depth
-            ENDIF
+            IF v_courant GE 0 THEN BEGIN
+            ; Downward advection (from above)
+            IF j GT 1 THEN temp_v[j] = temp_v[j] - v_courant * (temp_v[j] - temp_v[j-1])
+            ENDIF ELSE BEGIN
+            ; Upward advection (from below)
+            IF j LT tt-2 THEN temp_v[j] = temp_v[j] - v_courant * (temp_v[j+1] - temp_v[j])
+            ENDELSE
+         ENDFOR
+         
+         ; Store vertical advection effect at 10m depth
+         IF advection_write EQ 'y' THEN BEGIN
+            adv_vert_effect[ii(i)] = temp_v[10] - temp_before_v  ; Effect at 10m depth
+         ENDIF
 
-            ; Update temperature array with advected values
-            tl_fit[ii(i),1:tt-2] = temp_v[1:tt-2]
-            
-            ; Ensure temperatures don't exceed pressure melting point
-            FOR j=1,tt-2 DO BEGIN
-               IF tl_fit[ii(i),j] GT (fit_dz[1,j]*0.9D/10.0D)*(-0.00742D) THEN $
-                  tl_fit[ii(i),j] = (fit_dz[1,j]*0.9D/10.0D)*(-0.00742D)
-            ENDFOR
+         ; Update temperature array with advected values
+         FOR j=1,tt-2 DO tl_fit[ii(i),j] = temp_v[j]
+
+         ; Ensure temperatures don't exceed pressure melting point
+         FOR j=1,tt-2 DO BEGIN
+            IF tl_fit[ii(i),j] GT (fit_dz[1,j]*0.9D/10.0D)*(-0.00742D) THEN $
+            tl_fit[ii(i),j] = (fit_dz[1,j]*0.9D/10.0D)*(-0.00742D)
+         ENDFOR
          ENDIF
       ENDIF
 
