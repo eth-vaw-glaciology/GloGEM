@@ -6,13 +6,8 @@ PRO FIRNICE_TEMPERATURE_MODEL,gl,fit_layers,fit_dens,fit_dz, rf_dsc,rf_dt,Lh_rf,
 
 noval=-9999 & snoval=-99 ; no value indicators
 
-; Default parameters for advection and diffusion
-IF N_ELEMENTS(enable_advection) EQ 0 THEN enable_advection = 0
-IF N_ELEMENTS(enable_diffusion) EQ 0 THEN enable_diffusion = 0
-IF N_ELEMENTS(diff_coef) EQ 0 THEN diff_coef = 5.0  ; Default diffusion coefficient in m²/yr
-
 ; Arrays to store advection effects if enabled and requested
-IF enable_advection AND KEYWORD_SET(advection_write) THEN BEGIN
+IF enable_advection EQ 'y' AND advection_write EQ 'y' THEN BEGIN
    ; Create arrays to track advection impacts
    adv_horiz_effect = DBLARR(N_ELEMENTS(gl))  ; Horizontal advection effect
    adv_vert_effect = DBLARR(N_ELEMENTS(gl))   ; Vertical advection effect
@@ -105,7 +100,7 @@ tt=min([ind+1,total(fit_layers)])  ; either run to bedrock, or to max of layers
       endfor
 
       ; advection (horizontal) in the firn/ice layers
-      IF enable_advection THEN BEGIN
+      IF enable_advection eq 'y' THEN BEGIN
          ; Skip first elevation band (highest) since there's no upglacier source
          IF i GT 0 THEN BEGIN
             ; Calculate vertical profile of horizontal velocity (Nye's approximation)
@@ -147,7 +142,7 @@ tt=min([ind+1,total(fit_layers)])  ; either run to bedrock, or to max of layers
                                  layer_courant * tl_fit[ii(upglacier_idx),j]
 
                ; Store horizontal advection effect (average temperature change at key depths)
-               IF KEYWORD_SET(advection_write) THEN BEGIN
+               IF advection_write EQ 'y' THEN BEGIN
                   IF j EQ 10 THEN adv_horiz_effect[ii(i)] = tl_fit[ii(i),j] - temp_before  ; Use 10m depth
                ENDIF
                
@@ -158,7 +153,7 @@ tt=min([ind+1,total(fit_layers)])  ; either run to bedrock, or to max of layers
       ENDIF
 
       ; advection (vertical) in the firn/ice layers
-      IF enable_advection THEN BEGIN
+      IF enable_advection eq 'y' THEN BEGIN
          ; Calculate vertical velocity component
          ; Positive = downward, Negative = upward (emergence)
          vertical_vel = DBLARR(tt)
@@ -222,7 +217,7 @@ tt=min([ind+1,total(fit_layers)])  ; either run to bedrock, or to max of layers
             ENDFOR
             
             ; Store vertical advection effect at 10m depth
-            IF KEYWORD_SET(advection_write) THEN BEGIN
+            IF advection_write EQ 'y' THEN BEGIN
                adv_vert_effect[ii(i)] = temp_v[10] - temp_before_v  ; Effect at 10m depth
             ENDIF
 
@@ -318,7 +313,7 @@ endif
 endfor
 
 ; Return advection effects in the output variables if requested
-IF enable_advection AND KEYWORD_SET(advection_write) THEN BEGIN
+IF enable_advection EQ 'y' AND advection_write EQ 'y' THEN BEGIN
    elev_adv_horiz = adv_horiz_effect
    elev_adv_vert = adv_vert_effect
 ENDIF
