@@ -27,7 +27,7 @@ dir_data_alt = main_dir+'/geometricdata/'+'rgiv'+RGIversion+'/bands/bands_HF2012
 dir_clim     = main_dir+'climatedata/'                                  ; climate data
 
 ; output (same machine as you run on)scratch via the network
-dirres='/scratch_net/vierzack04_fourth/jabeer/GloGEM/batch_results_diff_icetemp/firn_perm/r'+RGIversion+'_'+time_resolution+'/'   ; output folder  (same machine as you run on)scratch via the network
+dirres='/scratch_net/vierzack04_fourth/jabeer/GloGEM/batch_results_diff_icetemp/firnice_perm/r'+RGIversion+'_'+time_resolution+'/'   ; output folder  (same machine as you run on)scratch via the network
 
 ; --- region selection
 ; regions can be selected in group via a range of region-IDs
@@ -258,7 +258,7 @@ firnice_temperature='y'      ; ACTIVATE ICE TEMPERATURE MODEL - compute firn/ice
 
 ; activate/deactivate permeability model
 firn_permeability = 'y' ; 'y' to activate firn permeability model
-ice_permeability  = 'n' ; 'y' to activate ice  permeability model
+ice_permeability  = 'y' ; 'y' to activate ice  permeability model
 
 ; ----- glacier retreat module
 
