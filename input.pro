@@ -144,7 +144,7 @@ reanalysis='era5land'            ; reanalysis data set, grid step is 0.1
 ;reanalysis='ch2018'
 ;reanalysis='gswp3w5e5'
 if time_resolution eq 'monthly' then reanalysis='ERA5'     ; reanalysis data set for monthly resolution
-rea_eval=[1980,2019]            ; time period for evaluating the bias
+rea_eval=[1980,2024]            ; time period for evaluating the bias
 grid_step=0.1                           ; grid stepping of reanalysis data set
 
 ; ***********
