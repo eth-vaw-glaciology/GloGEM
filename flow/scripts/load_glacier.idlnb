@@ -1,0 +1,94 @@
+{
+  "version": "2.0.0",
+  "cells": [
+    {
+      "type": "markdown",
+      "content": [
+        "### load_glacer"
+      ],
+      "metadata": {},
+      "outputs": []
+    },
+    {
+      "type": "code",
+      "content": [
+        ".compile import_glacier_geometry"
+      ],
+      "metadata": {},
+      "outputs": [
+        {
+          "items": [
+            {
+              "mime": "text/plain",
+              "content": [
+                "% Compiled module: IMPORT_GLACIER_GEOMETRY."
+              ]
+            }
+          ],
+          "metadata": {
+            "id": "not-saved"
+          }
+        }
+      ]
+    },
+    {
+      "type": "code",
+      "content": [
+        "glacier_id = '01450'",
+        "region = 'centraleurope'",
+        "dx = 0",
+        "frontal_length = 1.0/4.0",
+        "display_during_flag = 0"
+      ],
+      "metadata": {},
+      "outputs": []
+    },
+    {
+      "type": "code",
+      "content": [
+        "function load_glacier, glacier_id, region, dx, frontal_length, display_during_flag"
+      ],
+      "metadata": {},
+      "outputs": []
+    },
+    {
+      "type": "code",
+      "content": [
+        "  ; ; Read in the data",
+        "  glacier_geom = import_glacier_geometry('../input/' + region + '/flowline_geom/' + string(glacier_id, format = '(I05)') + '.dat')"
+      ],
+      "metadata": {},
+      "outputs": [
+        {
+          "items": [
+            {
+              "mime": "text/plain",
+              "content": [
+                "% OPENR: Error opening file. Unit: 100",
+                "         File: ../input/centraleurope/flowline_geom/01450.dat",
+                "  No such file or directory",
+                "% Execution halted at: IMPORT_GLACIER_GEOMETRY   34",
+                "   /home/jabeer/projects/GloGEM/flow/scripts/import_glacier_geometry.pro",
+                "%                      $MAIN$              2",
+                "   /home/jabeer/projects/GloGEM/flow/scripts/load_glacier_notebook_cell_W2sdn",
+                "  Njb2RlLXJlbW90ZQ==.pro",
+                ""
+              ]
+            }
+          ],
+          "metadata": {
+            "id": "not-saved"
+          }
+        }
+      ]
+    },
+    {
+      "type": "code",
+      "content": [
+        ""
+      ],
+      "metadata": {},
+      "outputs": []
+    }
+  ]
+}

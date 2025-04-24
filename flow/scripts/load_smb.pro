@@ -1,4 +1,3 @@
-; filepath: /home/jabeer/projects/GloGEM/flow/load_smb.pro
 ; Load the SMB from Matthias and transform to elevation-dependent
 ; relationship (for the 1961-1990 period, needed for steady state
 ; simulations), or for individual years (needed for transient runs).
