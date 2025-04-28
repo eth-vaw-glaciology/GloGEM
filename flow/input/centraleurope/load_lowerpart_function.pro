@@ -6,11 +6,13 @@ function load_lowerpart_function, glacier_id, dist, min_dist_to_previous
   print, 'glacier_id: ', glacier_id
 
   ; Read the DEM grid
-  dem_file = 'dem_extended/dem_' + string(glacier_id, format = '(I05)') + '.grid'
+  dem_file = main_dir + '/geometricdata/' + 'rgiv' + RGIversion + '/grids/' + region + '/dem/dem_' + glacier_id + '.grid'
   print, 'Reading: ', dem_file
-  data = read_ascii(dem_file)
-  data = data.field1
-  print, 'Time elapsed: ', systime(/seconds) - t_start
+  ; Open the file to read just the first 6 lines (header)
+  openr, lun, dem_file, /get_lun
+  header_lines = strarr(6)
+  readf, lun, header_lines
+  free_lun, lun
 
   ncols = fix(data[0, 0])
   nrows = fix(data[1, 0])
