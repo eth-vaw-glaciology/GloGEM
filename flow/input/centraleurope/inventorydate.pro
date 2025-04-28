@@ -1,8 +1,5 @@
 ; Close any open windows and clear memory in IDL
 compile_opt idl2
-device, window_state = ws
-for i = 0, n_elements(ws) - 1 do if ws[i] eq 1 then wdelete, i
-heap_gc ; garbage collection
 
 ; Import RGI data
 data = import_rgi_data('rgi/11_rgi60_CentralEurope.csv')

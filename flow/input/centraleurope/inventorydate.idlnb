@@ -36,7 +36,7 @@
     {
       "type": "code",
       "content": [
-        "data = import_rgi_data('/home/jabeer/projects/GloGEM/flow/input/rgi/11_rgi60_CentralEurope.csv')",
+        "data = import_rgi_data('/home/jabeer/projects/GloGEM/flow/input/centraleurope/rgi/11_rgi60_CentralEurope.csv')",
         "i = where(data eq -9999999, count)",
         "if count gt 0 then data[i] = !values.f_nan"
       ],
@@ -1568,35 +1568,6 @@
     {
       "type": "code",
       "content": [
-        "; Save to .dat file in the specified directory",
-        "openw, unit, '/flow/input/inventory_date.dat', /get_lun",
-        "for i = 0, n_elements(inventory_date) - 1 do printf, unit, inventory_date[i]",
-        "free_lun, unit"
-      ],
-      "metadata": {},
-      "outputs": [
-        {
-          "items": [
-            {
-              "mime": "text/plain",
-              "content": [
-                "% OPENW: Error opening file. Unit: 100",
-                "         File: /flow/input/inventory_date.dat",
-                "  No such file or directory",
-                "% Execution halted at: $MAIN$, Notebook: inventorydate.idlnb, Line 2",
-                ""
-              ]
-            }
-          ],
-          "metadata": {
-            "id": "not-saved"
-          }
-        }
-      ]
-    },
-    {
-      "type": "code",
-      "content": [
         "home_dir = file_dirname(file_expand_path('inventorydate.pro'))",
         ""
       ],
@@ -1660,12 +1631,11 @@
     {
       "type": "code",
       "content": [
-        "; Save to .dat file in the specified directory",
+        "; Save to .sav file in the specified directory",
         "home_dir = file_dirname(file_expand_path('inventorydate.pro'))",
-        "file_path = home_dir + '/flow/input/region/inventory_date.dat'",
-        "openw, unit, file_path, /get_lun",
-        "for i = 0, n_elements(inventory_date) - 1 do printf, unit, inventory_date[i]",
-        "free_lun, unit"
+        "file_path = home_dir + '/flow/input/centraleurope/inventory_date.sav'",
+        "save, inventory_date, filename=file_path",
+        ""
       ],
       "metadata": {},
       "outputs": []
