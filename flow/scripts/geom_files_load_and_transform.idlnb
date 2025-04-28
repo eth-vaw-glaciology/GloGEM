@@ -25,7 +25,8 @@
             {
               "mime": "text/plain",
               "content": [
-                "/home/jabeer/projects/GloGEM",
+                "% Variable is undefined: CURRENT_DIR.",
+                "% Execution halted at: $MAIN$, Notebook: geom_files_load_and_transform.idlnb, Line 4",
                 ""
               ]
             }
