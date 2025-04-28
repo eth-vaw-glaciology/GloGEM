@@ -20,15 +20,19 @@ time_resolution = 'monthly' ; 'daily'/'monthly' - SELECT TIME RESOLUTION OF MODE
 ; Dynamically detect the username and construct the directory path
 username = getenv('USER') ; Get the current user's username from the environment
 
-; input
+; set main directory
 main_dir = '/itet-stor/' + username + '/glogem/' ; Construct the main directory path
+main_dir = '~/remote/glogem/' ; when running on personal computer -> requires manual mounting of the data folder
+
+; input
 dir = main_dir + 'data/' ; Construct the general data folder path
 dir_data = main_dir + 'geometricdata/' + 'rgiv' + RGIversion + '/bands/bands_consensus2019/' ; thickness data
 dir_data_alt = main_dir + 'geometricdata/' + 'rgiv' + RGIversion + '/bands/bands_HF2012/' ; alternative thickness data (for cross-checks)
 dir_clim = main_dir + 'climatedata/' ; climate data
 
 ; output (same machine as you run on)scratch via the network
-dirres = '/scratch_net/vierzack04_fourth/jabeer/GloGEM/batch_results_diff_icetemp/firnice_perm/r' + RGIversion + '_' + time_resolution + '/' ; output folder  (same machine as you run on)scratch via the network
+dirres = '/scratch_net/vierzack04_fourth/jabeer/GloGEM/batch_results_diff_icetemp/firnice_perm/r' + RGIversion + w'_' + time_resolution + '/' ; output folder  (same machine as you run on)scratch via the network
+dirres = '~/remote/results/GloGEM/batch_results_diff_icetemp/firnice_perm/r' + RGIversion + '_' + time_resolution + '/' ; output folder when running on personal computer -> requires manual mounting of the data folder
 
 ; --- region selection
 ; regions can be selected in group via a range of region-IDs
