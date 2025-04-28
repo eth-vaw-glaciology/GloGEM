@@ -116,11 +116,11 @@ function load_glacier, glacier_id, region, dx, frontal_length, display_during_fl
   endif
 
   ; ; Check how much the volume and area have changed:
-  volume_Huss_1d = total((glacier_geom[*, 4] * 1e6) * glacier_geom[*, 5])
+  volume_Huss_1d = total((glacier_geom[*, 3] * 1e6) * glacier_geom[*, 4])
   print, 'volume_Huss_1d = ', volume_Huss_1d
   volume_Huss_1d_fixeddistance = total(width_x * th_x * dx)
   print, 'volume_Huss_1d_fixeddistance = ', volume_Huss_1d_fixeddistance
-  area_Huss_1d = total(glacier_geom[*, 4] * 1e6)
+  area_Huss_1d = total(glacier_geom[*, 3] * 1e6)
   print, 'area_Huss_1d = ', area_Huss_1d
   area_Huss_1d_fixeddistance = total(width_x * dx)
   print, 'area_Huss_1d_fixeddistance = ', area_Huss_1d_fixeddistance
