@@ -1,0 +1,91 @@
+{
+  "version": "2.0.0",
+  "cells": [
+    {
+      "type": "markdown",
+      "content": [
+        "### stats"
+      ],
+      "metadata": {},
+      "outputs": []
+    },
+    {
+      "type": "code",
+      "content": [
+        "; getting the directory of the current script",
+        "routine_path = ROUTINE_FILEPATH()",
+        "script_path = FILE_DIRNAME(routine_path)"
+      ],
+      "metadata": {},
+      "outputs": []
+    },
+    {
+      "type": "code",
+      "content": [
+        "; Close all graphics windows",
+        "while (!d.window ne -1) do wdelete",
+        "",
+        "t_start = systime(/seconds)",
+        "",
+        "data_glaciers = fltarr(3927, 3)",
+        "",
+        "; Read RGI data - note: you'll need to create an equivalent import_rgi_data function in IDL",
+        "data_rgi = import_rgi_data(script_path + '/rgi/11_rgi60_CentralEurope.csv')",
+        "restore, script_path + '/inventory_date.sav'"
+      ],
+      "metadata": {},
+      "outputs": []
+    },
+    {
+      "type": "code",
+      "content": [
+        "for glacier_id = 1, 3927 do begin ; Range over which geometry files exist",
+        "    print, 'Processing glacier ID: ', glacier_id",
+        "  ",
+        "    ; You'll need to create an equivalent import_glacier_geometry_1d function in IDL",
+        "    filename = string(glacier_id, format = '(\"flowline_geom/\",I05,\".dat\")')",
+        "    glacier_geom = import_glacier_geometry_1d(filename)",
+        "  ",
+        "    length_array = n_elements(glacier_geom[*, 0])",
+        "    data_glaciers[glacier_id - 1, 0] = glacier_geom[length_array - 1, 7] / 1000.0 ; Glacier length (km)",
+        "    data_glaciers[glacier_id - 1, 1] = total(glacier_geom[*, 4]) ; Glacier area (km^2)",
+        "  ",
+        "    vol = 0.0",
+        "    for i = 0, length_array - 1 do begin",
+        "      vol = vol + glacier_geom[i, 4] * glacier_geom[i, 5] / 1000.0 ; area*thick",
+        "    endfor",
+        "  ",
+        "    data_glaciers[glacier_id - 1, 2] = vol ; Glacier volume (km^3)",
+        "  endfor"
+      ],
+      "metadata": {},
+      "outputs": [
+        {
+          "items": [
+            {
+              "mime": "text/plain",
+              "content": [
+                "Processing glacier ID:            1% Attempt to call undefined function: 'IMPORT_GLACIER_GEOMETRY_1D'.",
+                "% Execution halted at: $MAIN$              6 /Users/janoschbeer/Library/Mobile",
+                "   Documents/com~apple~CloudDocs/PhD/projects/GloGEM/flow/input/centraleurope",
+                "  /stats_notebook_cell_X11sZmlsZQ==.pro",
+                ""
+              ]
+            }
+          ],
+          "metadata": {
+            "id": "not-saved"
+          }
+        }
+      ]
+    },
+    {
+      "type": "code",
+      "content": [
+        ""
+      ],
+      "metadata": {},
+      "outputs": []
+    }
+  ]
+}
