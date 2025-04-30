@@ -1,3 +1,9 @@
 flowline_geom/
 rgi/
 *.sav
+dem_extended/
+thickness_extended/
+*.png
+*.grid
+*.agr
+.DS_Store
