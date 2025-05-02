@@ -4,9 +4,7 @@
     {
       "type": "markdown",
       "content": [
-        "### My Amazing IDL Notebook",
-        "",
-        "> Don't forget to save me to disk in order to get hover-help and auto-complete!"
+        "### inventorydate"
       ],
       "metadata": {},
       "outputs": []
@@ -36,7 +34,7 @@
     {
       "type": "code",
       "content": [
-        "data = import_rgi_data('/home/jabeer/projects/GloGEM/flow/input/centraleurope/rgi/11_rgi60_CentralEurope.csv')",
+        "data = import_rgi_data('/Users/janoschbeer/Library/Mobile Documents/com~apple~CloudDocs/PhD/projects/GloGEM/flow/input/centraleurope/rgi/11_rgi60_CentralEurope.csv')",
         "i = where(data eq -9999999, count)",
         "if count gt 0 then data[i] = !values.f_nan"
       ],
@@ -1586,7 +1584,7 @@
             {
               "mime": "text/plain",
               "content": [
-                "/home/jabeer/projects/GloGEM",
+                "/Users/janoschbeer/Library/Mobile Documents/com~apple~CloudDocs/PhD/projects/GloGEM",
                 ""
               ]
             }
@@ -1618,7 +1616,8 @@
             {
               "mime": "text/plain",
               "content": [
-                "/home/jabeer/projects/GloGEM/flow/input/inventory_date.dat"
+                "/Users/janoschbeer/Library/Mobile Documents/com~apple~CloudDocs/PhD/projects/GloGEM/flow/input/inventory_date.dat",
+                ""
               ]
             }
           ],
@@ -1638,7 +1637,22 @@
         ""
       ],
       "metadata": {},
-      "outputs": []
+      "outputs": [
+        {
+          "items": [
+            {
+              "mime": "text/plain",
+              "content": [
+                "",
+                ""
+              ]
+            }
+          ],
+          "metadata": {
+            "id": "not-saved"
+          }
+        }
+      ]
     }
   ]
 }
