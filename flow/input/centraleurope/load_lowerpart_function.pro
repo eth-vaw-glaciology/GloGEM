@@ -1,6 +1,8 @@
 function load_lowerpart_function, glacier_id, dist, min_dist_to_previous
   compile_opt idl2
 
+  glacier_id = string(glacier_id, format = '(I05)')
+
   ; ; Surface elevation (DEM)
   t_start = systime(/seconds)
 
