@@ -186,11 +186,21 @@ function load_glacier, glacier_id, region, dx, frontal_length, display_during_fl
     sur_input[front_pos + smooth_range : *] = sur_input_smooth[front_pos + smooth_range : *]
   endif
 
-  ; ; Yet another plot that may be useful for debugging:
+  ; Yet another plot that may be useful for debugging:
   if display_during_flag eq 1 then begin
-    WINDOW, 8
-    PLOT, sur_input
-    oplot, sur_input - th_input ; bedrock
+    ; Create a new graphics window
+    w = window(dimensions = [800, 600])
+
+    ; Plot the surface elevation using object graphics
+    p1 = plot(sur_input, /current, $
+      title = 'Surface Elevation', $
+      xtitle = 'Index', ytitle = 'Elevation (m)', $
+      color = 'blue', thick = 2.5)
+
+    ; Optionally overlay the bedrock plot
+    p2 = plot(sur_input - th_input, /overplot, $
+      color = 'black', name = 'Bedrock', $
+      thick = 2.5)
   endif
 
   ; Return structure with all needed variables
