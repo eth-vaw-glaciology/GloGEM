@@ -719,22 +719,6 @@
           }
         }
       ]
-    },
-    {
-      "type": "code",
-      "content": [
-        ""
-      ],
-      "metadata": {},
-      "outputs": []
-    },
-    {
-      "type": "code",
-      "content": [
-        ""
-      ],
-      "metadata": {},
-      "outputs": []
     }
   ]
 }
