@@ -3,6 +3,7 @@ rgi/
 *.sav
 dem_extended/
 thickness_extended/
+smb_rcm/
 *.png
 *.grid
 *.agr
