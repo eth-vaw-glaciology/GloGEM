@@ -4,79 +4,99 @@
 function load_glacier, glacier_id, region, dx, frontal_length, display_during_flag
   compile_opt idl2
 
+  ; getting the directory of the current script
+  routine_path = routine_filepath()
+  current_dir = file_dirname(routine_path)
+
   ; ; Read in the data
-  glacier_geom = import_glacier_geometry('../input/' + region + '/flowline_geom/' + string(glacier_id, format = '(I05)') + '.dat')
+  glacier_geom = import_glacier_geometry(current_dir + '/../input/centraleurope/flowline_geom/' + string(glacier_id, format = '(I05)') + '.dat')
 
   ; ; Sometimes there is no mass in the lowest elevation bands --> remove these bands
-  i = where(glacier_geom[*, 5] eq 0, count)
+  i = where(glacier_geom[*, 4] eq 0, count)
   if count gt 0 then begin
-    glacier_geom = glacier_geom[where(glacier_geom[*, 5] ne 0), *]
+    glacier_geom = glacier_geom[where(glacier_geom[*, 4] ne 0), *]
   endif
 
-  ; ; (potentially) plot some figures illustrating this data (normally never plotted, but was useful for initial debugging)
+  ; (potentially) plot some figures illustrating this data (normally never plotted, but was useful for initial debugging)
   if display_during_flag eq 1 then begin
-    ; ;
-    WINDOW, 0
-    PLOT, glacier_geom[*, 7], (glacier_geom[*, 2] + glacier_geom[*, 3]) / 2, thick = 2
-    oplot, glacier_geom[*, 7], (glacier_geom[*, 2] + glacier_geom[*, 3]) / 2 - glacier_geom[*, 5], thick = 2
-    xyouts, 0.5, 0.05, 'Distance (m)', /normal, alignment = 0.5
-    xyouts, 0.05, 0.5, 'Elevation (m a.s.l)', /normal, alignment = 0.5, orientation = 90
+    ; Surface and bedrock elevation plot
+    w1 = window(dimensions = [600, 600])
+    p1 = plot(glacier_geom[*, 6], (glacier_geom[*, 1] + glacier_geom[*, 2]) / 2, /current, $
+      title = 'Surface and Bedrock Elevation', $
+      xtitle = 'Distance (m)', ytitle = 'Elevation (m a.s.l)', $
+      xrange = [min(glacier_geom[*, 6]), max(glacier_geom[*, 6])], $
+      color = 'red', thick = 2.5)
+    p2 = plot(glacier_geom[*, 6], (glacier_geom[*, 1] + glacier_geom[*, 2]) / 2 - glacier_geom[*, 4], /overplot, $
+      color = 'green', thick = 2.5)
 
-    ; ;
-    WINDOW, 1
-    !p.multi = [0, 1, 2]
-    PLOT, glacier_geom[*, 7], (glacier_geom[*, 2] + glacier_geom[*, 3]) / 2, thick = 2, xtitle = '', ytitle = 'Elevation (m a.s.l)'
-    oplot, glacier_geom[*, 7], (glacier_geom[*, 2] + glacier_geom[*, 3]) / 2 - glacier_geom[*, 5], thick = 2
+    ; Surface elevation plot
+    w2 = window(dimensions = [600, 600])
+    p3 = plot(glacier_geom[*, 6], (glacier_geom[*, 1] + glacier_geom[*, 2]) / 2, /current, $
+      title = 'Surface Elevation', $
+      xtitle = 'Distance (m)', ytitle = 'Elevation (m a.s.l)', $
+      xrange = [min(glacier_geom[*, 6]), max(glacier_geom[*, 6])], $
+      color = 'red', thick = 2.5)
+    p4 = plot(glacier_geom[*, 6], (glacier_geom[*, 1] + glacier_geom[*, 2]) / 2 - glacier_geom[*, 4], /overplot, $
+      color = 'green', thick = 2.5)
 
-    PLOT, glacier_geom[*, 7], glacier_geom[*, 4], thick = 2, xtitle = 'Distance (m)', ytitle = 'Area (km^2)'
-    !p.multi = 0
+    ; Glacier area plot
+    w3 = window(dimensions = [600, 600])
+    p5 = plot(glacier_geom[*, 6], glacier_geom[*, 3], /current, $
+      title = 'Glacier Area', $
+      xtitle = 'Distance (m)', ytitle = 'Area (km²)', $
+      xrange = [min(glacier_geom[*, 6]), max(glacier_geom[*, 6])], $
+      color = 'red', thick = 2.5)
 
-    ; ;
-    WINDOW, 2
-    !p.multi = [0, 1, 2]
-    PLOT, glacier_geom[*, 7], (glacier_geom[*, 2] + glacier_geom[*, 3]) / 2, thick = 2, xtitle = '', ytitle = 'Elevation (m a.s.l)'
-    oplot, glacier_geom[*, 7], (glacier_geom[*, 2] + glacier_geom[*, 3]) / 2 - glacier_geom[*, 5], thick = 2
+    ; Glacier width plot
+    w4 = window(dimensions = [600, 600])
+    p6 = plot(glacier_geom[*, 6], glacier_geom[*, 5], /current, $
+      title = 'Glacier Width', $
+      xtitle = 'Distance (m)', ytitle = 'Width (m)', $
+      xrange = [min(glacier_geom[*, 6]), max(glacier_geom[*, 6])], $
+      color = 'green', thick = 2.5)
 
-    PLOT, glacier_geom[*, 7], glacier_geom[*, 6], thick = 2, xtitle = 'Distance (m)', ytitle = 'Width (m)'
-    !p.multi = 0
-
-    ; ;
-    WINDOW, 3
-    !p.multi = [0, 1, 2]
-    PLOT, glacier_geom[*, 7], (glacier_geom[*, 2] + glacier_geom[*, 3]) / 2, thick = 2, xtitle = '', ytitle = 'Elevation (m a.s.l)'
-    oplot, glacier_geom[*, 7], (glacier_geom[*, 2] + glacier_geom[*, 3]) / 2 - glacier_geom[*, 5], thick = 2
-
-    PLOT, glacier_geom[*, 7], (glacier_geom[*, 4] * 1e6) * glacier_geom[*, 5], thick = 2, xtitle = 'Distance (m)', ytitle = 'Volume (m^3)'
-    !p.multi = 0
+    ; Glacier volume plot
+    w5 = window(dimensions = [600, 600])
+    p7 = plot(glacier_geom[*, 6], (glacier_geom[*, 3] * 1e6) * glacier_geom[*, 4], /current, $
+      title = 'Glacier Volume', $
+      xtitle = 'Distance (m)', ytitle = 'Volume (m³)', $
+      xrange = [min(glacier_geom[*, 6]), max(glacier_geom[*, 6])], $
+      color = 'purple', thick = 2.5)
   endif
 
   ; ; Determine the original horizontal resolution in data Matthias (not equidistant, as is derived from elevation bands and slope between them!)
   length_glacier_geom = n_elements(glacier_geom[*, 0])
   dx_original = fltarr(length_glacier_geom)
   for i = 1, length_glacier_geom - 1 do begin
-    dx_original[i] = glacier_geom[i, 7] - glacier_geom[i - 1, 7]
+    dx_original[i] = glacier_geom[i, 6] - glacier_geom[i - 1, 6]
   endfor
 
-  ; ; Other potential figure to be displayed, showing the variation in the spatial resolution in data Matthias (again, may be useful for debugging)
+  ; Other potential figure to be displayed, showing the variation in the spatial resolution in data Matthias (again, may be useful for debugging)
   if display_during_flag eq 1 then begin
-    WINDOW, 4
-    PLOT, dx_original, thick = 2, ytitle = 'Horizontal resolution of data Matthias (m)'
+    ; Create a new window with modern object graphics
+    w4 = window(dimensions = [600, 600])
+
+    ; Plot the horizontal resolution data using object graphics
+    p8 = plot(dx_original, /current, $
+      title = 'Horizontal Resolution', $
+      xtitle = 'Index', ytitle = 'Horizontal resolution of data Matthias (m)', $
+      color = 'blue', thick = 2.5)
   endif
 
   ; ; Interpolation to a regular (i.e. equidistant) grid:
   if dx eq 0 then begin ; If dx is not defined: 100 grid cells over domain --> this is normally always used (for all simulations in the paper)
-    dx = round(glacier_geom[length_glacier_geom - 1, 7] / 100)
+    dx = round(glacier_geom[length_glacier_geom - 1, 6] / 100)
   endif
   print, 'dx = ', dx
 
-  grid_cells = floor(glacier_geom[length_glacier_geom - 1, 7] / dx)
+  grid_cells = floor(glacier_geom[length_glacier_geom - 1, 6] / dx)
 
   x = findgen(grid_cells) * dx + dx
 
-  glacier_geom_lookup_x = glacier_geom[*, 7] ; m
-  glacier_geom_lookup_sur = (glacier_geom[*, 2] + glacier_geom[*, 3]) / 2 ; m
-  glacier_geom_lookup_width = glacier_geom[*, 6] ; m
-  glacier_geom_lookup_th = glacier_geom[*, 5] ; m
+  glacier_geom_lookup_x = glacier_geom[*, 6] ; Distance along the flowline (m)
+  glacier_geom_lookup_sur = (glacier_geom[*, 1] + glacier_geom[*, 2]) / 2 ; Surface elevation (m)
+  glacier_geom_lookup_width = glacier_geom[*, 5] ; Width (m)
+  glacier_geom_lookup_th = glacier_geom[*, 4] ; Thickness (m)
 
   i = where(glacier_geom_lookup_width eq 0, count) ; Remove elevation bands with no ice
   if count gt 0 then begin
@@ -87,9 +107,9 @@ function load_glacier, glacier_id, region, dx, frontal_length, display_during_fl
     glacier_geom_lookup_th = glacier_geom_lookup_th[good_indices]
   endif
 
-  sur_x = interpol(glacier_geom_lookup_sur, glacier_geom_lookup_x, x)
-  width_x = interpol(glacier_geom_lookup_width, glacier_geom_lookup_x, x)
-  i = where(x lt glacier_geom_lookup_x[0], count)
+  sur_x = interpol(glacier_geom_lookup_sur, glacier_geom_lookup_x, x) ; Surface elevation
+  width_x = interpol(glacier_geom_lookup_width, glacier_geom_lookup_x, x) ; Width
+  i = where(x lt glacier_geom_lookup_x[0], count) ; Remove elevation bands with no ice
   if count gt 0 then width_x[i] = glacier_geom_lookup_width[0] ; Width for cells lower than first point on Huss grid: same as width first point Huss grid
 
   th_x = interpol(glacier_geom_lookup_th, glacier_geom_lookup_x, x)
@@ -99,20 +119,38 @@ function load_glacier, glacier_id, region, dx, frontal_length, display_during_fl
 
   ; ; Additional figures displaying the interpolated data (normally never plotted, but was useful for initial debugging)
   if display_during_flag eq 1 then begin
-    WINDOW, 5
-    PLOT, glacier_geom[*, 7], glacier_geom[*, 6], thick = 2, xtitle = 'Horizontal distance (m)', $
-      ytitle = 'Width (m)', title = 'Original vs Interpolated Data'
-    oplot, x, width_x, thick = 2, color = 100
+    ; Width plot
+    w5 = window(dimensions = [600, 600])
+    p9 = plot(glacier_geom[*, 6], glacier_geom[*, 5], /current, $
+      title = 'Original vs Interpolated Data', $
+      xtitle = 'Horizontal distance (m)', ytitle = 'Width (m)', $
+      xrange = [min(glacier_geom[*, 6]), max(glacier_geom[*, 6])], $
+      color = 'black', thick = 2.5, name = 'Original')
+    p10 = plot(x, width_x, /overplot, $
+      color = 'red', thick = 2.5, name = 'Interpolated')
+    l1 = legend(target = [p9, p10], position = [9e3, 2.8e4], /data, /auto_text_color)
 
-    WINDOW, 6
-    PLOT, glacier_geom[*, 7], glacier_geom[*, 5], thick = 2, xtitle = 'Horizontal distance (m)', $
-      ytitle = 'Thickness (m)', title = 'Original vs Interpolated Data'
-    oplot, x, th_x, thick = 2, color = 100
+    ; Thickness plot
+    w6 = window(dimensions = [600, 600])
+    p11 = plot(glacier_geom[*, 6], glacier_geom[*, 4], /current, $
+      title = 'Original vs Interpolated Data', $
+      xtitle = 'Horizontal distance (m)', ytitle = 'Thickness (m)', $
+      xrange = [min(glacier_geom[*, 6]), max(glacier_geom[*, 6])], $
+      color = 'black', thick = 2.5, name = 'Original')
+    p12 = plot(x, th_x, /overplot, $
+      color = 'red', thick = 2.5, name = 'Interpolated')
+    l2 = legend(target = [p11, p12], position = [1.9e4, 460], /data, /auto_text_color)
 
-    WINDOW, 7
-    PLOT, glacier_geom[*, 7], (glacier_geom[*, 2] + glacier_geom[*, 3]) / 2, thick = 2, xtitle = 'Horizontal distance (m)', $
-      ytitle = 'Surface elevation (m)', title = 'Original vs Interpolated Data'
-    oplot, x, sur_x, thick = 2, color = 100
+    ; Surface elevation plot
+    w7 = window(dimensions = [600, 600])
+    p13 = plot(glacier_geom[*, 6], (glacier_geom[*, 1] + glacier_geom[*, 2]) / 2, /current, $
+      title = 'Original vs Interpolated Data', $
+      xtitle = 'Horizontal distance (m)', ytitle = 'Surface elevation (m)', $
+      xrange = [min(glacier_geom[*, 6]), max(glacier_geom[*, 6])], $
+      color = 'black', thick = 2.5, name = 'Original')
+    p14 = plot(x, sur_x, /overplot, $
+      color = 'red', thick = 2.5, name = 'Interpolated')
+    l3 = legend(target = [p13, p14], position = [0.8e4, 4300], /data, /auto_text_color)
   endif
 
   ; ; Check how much the volume and area have changed:
@@ -134,7 +172,7 @@ function load_glacier, glacier_id, region, dx, frontal_length, display_during_fl
   width_concat = fltarr(extra_grids) ; downstream of present-day glacier
 
   ; load the bedrock in pre-frontal region (spacing = 125 m between each point):
-  restore, '../input/' + region + '/dem_extended/prefrontal_elev_' + string(glacier_id, format = '(I05)') + '.sav' ; Loads 'lowest_point_save'
+  restore, current_dir + '/../input/centraleurope/dem_extended/prefrontal_elev_' + string(glacier_id, format = '(I05)') + '.sav' ; Loads 'lowest_point_save'
   prefrontal_elev = fltarr(n_elements(lowest_point_save[2 : *, 2]), 2)
   prefrontal_elev[*, 0] = lowest_point_save[2 : *, 2]
   prefrontal_elev[*, 1] = findgen(n_elements(prefrontal_elev[*, 0])) * 125 + 125
@@ -170,7 +208,7 @@ function load_glacier, glacier_id, region, dx, frontal_length, display_during_fl
   bias = (bed_x[0] - slope_bed) - sur_concat[n_elements(sur_concat) - 1]
   sur_concat = sur_concat + bias
 
-  x_input = [x_concat, x]
+  x_input = [x, x_concat]
   sur_input = [sur_concat, sur_x]
   th_input = [th_concat, th_x]
   width_input = [width_concat, width_x] ; values for the pre-frontal width (i.e. width_concat) are filled in later, in 'initial_geometry.pro'
@@ -192,14 +230,16 @@ function load_glacier, glacier_id, region, dx, frontal_length, display_during_fl
     w = window(dimensions = [800, 600])
 
     ; Plot the surface elevation using object graphics
-    p1 = plot(sur_input, /current, $
+    p1 = plot(x_input, sur_input, /current, $
       title = 'Surface Elevation', $
-      xtitle = 'Index', ytitle = 'Elevation (m)', $
+      xtitle = 'Distance (m)', ytitle = 'Elevation (m)', $
+      xrange = [min(x_input), max(x_input)], $
       color = 'blue', thick = 2.5)
 
     ; Optionally overlay the bedrock plot
-    p2 = plot(sur_input - th_input, /overplot, $
+    p2 = plot(x_input, sur_input - th_input, /overplot, $
       color = 'black', name = 'Bedrock', $
+      xrange = [min(x_input), max(x_input)], $
       thick = 2.5)
   endif
 
