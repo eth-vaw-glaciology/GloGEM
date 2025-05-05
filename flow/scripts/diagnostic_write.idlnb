@@ -1,0 +1,57 @@
+{
+  "version": "2.0.0",
+  "cells": [
+    {
+      "type": "markdown",
+      "content": [
+        "### diagnostic_write"
+      ],
+      "metadata": {},
+      "outputs": []
+    },
+    {
+      "type": "code",
+      "content": [
+        "counter_diag = 0",
+        "start_year = 0",
+        "time           = start_year; % Time (in years)"
+      ],
+      "metadata": {},
+      "outputs": []
+    },
+    {
+      "type": "code",
+      "content": [
+        "counter_diag = counter_diag + 1",
+        "print, 'Time = ', string(floor(time), format = '(I0)'), ' (exact time is ', string(time, format = '(F0.2)'), ')' ; When this is not printed on screen: slightly faster (ca. 5-10%): so could potentially comment this out",
+        "",
+        "; ; Calculate a few things:"
+      ],
+      "metadata": {},
+      "outputs": [
+        {
+          "items": [
+            {
+              "mime": "text/plain",
+              "content": [
+                "Time = 0 (exact time is 0.00)",
+                ""
+              ]
+            }
+          ],
+          "metadata": {
+            "id": "not-saved"
+          }
+        }
+      ]
+    },
+    {
+      "type": "code",
+      "content": [
+        ""
+      ],
+      "metadata": {},
+      "outputs": []
+    }
+  ]
+}
