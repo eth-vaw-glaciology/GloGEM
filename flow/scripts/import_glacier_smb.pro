@@ -28,7 +28,7 @@ function import_glacier_smb, filename, startRow, endRow
   delimiter = ' '
 
   ; Set default values for startRow and endRow if not provided
-  if n_params() lt 2 then startRow = 1 ; IDL is 0-based but we want to start from header line (1)
+  if n_params() lt 2 then startRow = 2 ; IDL is 0-based but we want to start from header line (1)
   if n_params() lt 3 then endRow = 0 ; 0 means read all rows
 
   ; Open the file
