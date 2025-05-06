@@ -1,0 +1,167 @@
+{
+  "version": "2.0.0",
+  "cells": [
+    {
+      "type": "markdown",
+      "content": [
+        "### ice_thickness",
+        "",
+        "This IDL notebook tests the functionality of the ice thickness calculation procedure.",
+        "",
+        "The procedure calculates the ice thickness per time step on the basis of the continuity equation, which is solved using a semi-implicit forward scheme.",
+        "",
+        "The continuity equation is given by:",
+        "",
+        "$$ \\frac{\\partial H}{\\partial t} = \\nabla \\cdot f + b $$",
+        "",
+        "Where:",
+        "- $\\nabla \\cdot f$ is the local divergence of the ice flux",
+        "- and $b$ is the surface mass balance",
+        "",
+        "Example calculations are performed for the Great Aletsch Glacier.",
+        "",
+        "Code authored by: Janosch Beer.",
+        ""
+      ],
+      "metadata": {},
+      "outputs": []
+    },
+    {
+      "type": "code",
+      "content": [
+        ".compile load_glacier"
+      ],
+      "metadata": {},
+      "outputs": [
+        {
+          "items": [
+            {
+              "mime": "text/plain",
+              "content": [
+                "% Compiled module: LOAD_GLACIER."
+              ]
+            }
+          ],
+          "metadata": {
+            "id": "not-saved"
+          }
+        }
+      ]
+    },
+    {
+      "type": "code",
+      "content": [
+        "; define necessary parameters",
+        "aflow = 1e-16     ; X = value of deformation-sliding factor (10^-16 Pa^-3 a^-1)",
+        "dt_flag = 0       ; 0 = adaptive time step (dynamic); X = time step in years",
+        "dtfactor = 1      ; X = multiply dt by a certain factor --> can be used to avoid numerical instability",
+        "start_year = 0    ; X = year in which the simulation starts (typically 0 for steady state experiments, and real year (e.g. 1950/1990) for transient simulations)",
+        "flag_startobs = 2 ; 0 = start from zero ice thickness; 1 = start from observed geometry (at RGI inventory date); 2 = start from modelled geometry",
+        "nyears = 5000     ; X = number of years for simulation (will stop earlier if steady state is reached, if numerical instability occurred, if ice is leaving the domain, or if there is no ice)"
+      ],
+      "metadata": {},
+      "outputs": []
+    },
+    {
+      "type": "code",
+      "content": [
+        "; load glacier data",
+        "result = load_glacier('01450', 'centraleurope', 0, 1.0/4.0, 0)",
+        "dx = result.dx",
+        "sur = result.sur_input",
+        "th = result.th_input",
+        "length_fixeddistance = result.length_fixeddistance",
+        "x_input = result.x_input"
+      ],
+      "metadata": {},
+      "outputs": [
+        {
+          "items": [
+            {
+              "mime": "text/plain",
+              "content": [
+                "dx =          202",
+                "volume_Huss_1d =    1.2761819e+10",
+                "volume_Huss_1d_fixeddistance =    1.2907665e+10",
+                "area_Huss_1d =        82165000.",
+                "area_Huss_1d_fixeddistance =        82722555.",
+                ""
+              ]
+            }
+          ],
+          "metadata": {
+            "id": "not-saved"
+          }
+        }
+      ]
+    },
+    {
+      "type": "code",
+      "content": [
+        "; load necessary constants",
+        "@constants_counters_initialvalues_sizevariables"
+      ],
+      "metadata": {},
+      "outputs": []
+    },
+    {
+      "type": "code",
+      "content": [
+        "for j = 0, 2 do begin ; 3 sub-steps used. Worked well. Maybe not really needed or better solutions --> will have to be tested for other regions in the world",
+        "",
+        "    ; ; Define unstaggered grid for flux (fun)",
+        "    fun = fltarr(xnum) ; Flux on unstaggered grid",
+        "    for i = 2, xnum - 1 do begin",
+        "      fun[i] = ((df[i - 1] + df[i]) / 2.0) * ((sur[i] - sur[i - 1]) / dx)",
+        "    endfor",
+        "  ",
+        "    ; ; Calculate new ice thickness",
+        "    for i = 1, xnum - 2 do begin",
+        "      fluxdiv[i] = ((fun[i + 1] - fun[i]) / dx)",
+        "      grad[i] = ((sur[i + 1] - sur[i - 1]) / (2 * dx)) ; surface gradient",
+        "      term1[i] = fluxdiv[i] * width_mid[i]",
+        "      term2[i] = ((width_mid[i + 1] - width_mid[i - 1]) / (2 * dx)) * grad[i] * df[i]",
+        "      term3[i] = (term1[i] + term2[i]) / width_surface[i]",
+        "      if ~finite(term3[i]) then term3[i] = 0 ; to avoid problems when width_surface == 0",
+        "      th[i] = th[i] + (1.0 / 3.0) * dt * (term3[i] + bal[i])",
+        "    endfor",
+        "  ",
+        "    i = where(th lt 0, count)",
+        "    if count gt 0 then th[i] = 0 ; Faster than using 'if' statement in loop",
+        "    th[xnum - 1] = th[xnum - 2] ; Thickness at last grid cell equals the thickness at penultimate grid cell",
+        "  ",
+        "    ; Call the script to renew various variables at these sub time-steps (surface elevation, width_mid and width_surface)",
+        "    @variables_renew",
+        "  endfor"
+      ],
+      "metadata": {},
+      "outputs": [
+        {
+          "items": [
+            {
+              "mime": "text/plain",
+              "content": [
+                "% Variable is undefined: WIDTH_MID.",
+                "% Execution halted at: $MAIN$             13 /Users/janoschbeer/Library/Mobile",
+                "   Documents/com~apple~CloudDocs/PhD/projects/GloGEM/flow/scripts/ice_thickne",
+                "  ss_notebook_cell_W5sZmlsZQ==.pro",
+                ""
+              ]
+            }
+          ],
+          "metadata": {
+            "id": "not-saved"
+          }
+        }
+      ]
+    },
+    {
+      "type": "code",
+      "content": [
+        ""
+      ],
+      "metadata": {},
+      "outputs": []
+    }
+  ]
+}
