@@ -4,6 +4,7 @@ rgi/
 dem_extended/
 thickness_extended/
 smb_rcm/
+output/
 *.png
 *.grid
 *.agr
