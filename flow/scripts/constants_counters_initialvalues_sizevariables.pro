@@ -1,4 +1,3 @@
-; filepath: /home/jabeer/projects/GloGEM/flow/constants_counters_initialvalues_sizevariables.pro
 ; Define constants, initialize counters, variables and parameters and set their size
 
 ; ; Constants
