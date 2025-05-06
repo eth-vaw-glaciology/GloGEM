@@ -6,7 +6,9 @@
       "content": [
         "### import_glacier_geometry_1d",
         "",
-        "This is an idl notebook to test the functionality of the import_glacier_geometry_1d function"
+        "This IDL notebook demonstrates the functionality of the import_glacier_geometry_1d procedure.",
+        "",
+        "Code authored by: Janosch Beer."
       ],
       "metadata": {},
       "outputs": []

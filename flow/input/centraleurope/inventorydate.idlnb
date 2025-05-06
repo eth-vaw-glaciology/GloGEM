@@ -4,7 +4,11 @@
     {
       "type": "markdown",
       "content": [
-        "### inventorydate"
+        "### inventorydate",
+        "",
+        "This IDL notebook tests the functionality of the inventorydate procedure.",
+        "",
+        "Code authored by: Janosch Beer."
       ],
       "metadata": {},
       "outputs": []
