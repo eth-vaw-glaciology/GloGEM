@@ -56,6 +56,7 @@ if flag_startobs ne 2 then begin ; If start from modelled geometry, don't want t
 endif
 term1 = fltarr(xnum) ; Part of the continuity equation (see 'ice_thickness.pro'), also used for fluxdiv_plot, in 'diagnostic_write.pro'
 term2 = fltarr(xnum) ; Part of the continuity equation (see 'ice_thickness.pro'), also used for fluxdiv_plot, in 'diagnostic_write.pro'
+term3 = fltarr(xnum) ; Part of the continuity equation (see 'ice_thickness.pro'), also used for fluxdiv_plot, in 'diagnostic_write.pro'
 if flag_startobs ne 2 then begin ; If start from modelled geometry, don't want to set the ice thickness to zero
   th = fltarr(xnum) ; Ice thickness
 endif
