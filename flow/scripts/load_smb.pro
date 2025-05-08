@@ -5,10 +5,15 @@
 
 ; ; Load SMB data
 compile_opt idl2
+
+; getting the directory of the current script
+routine_path = routine_filepath()
+current_dir = file_dirname(routine_path)
+
 if chain le 100 then begin ; chain from EURO-CORDEX ensemble
-  mb_obsrcm = import_glacier_smb('../input/' + region + '/smb_rcm/chain' + string(chain, format = '(I02)') + '/belev_' + string(glacier_id, format = '(I05)') + '.dat') ; SMB as calculated based on OBS/RCM output (data from Matthias)
+  mb_obsrcm = import_glacier_smb(current_dir + '/../input/centraleurope/smb_rcm/chain' + string(chain, format = '(I02)') + '/belev_' + string(glacier_id, format = '(I05)') + '.dat') ; SMB as calculated based on OBS/RCM output (data from Matthias)
 endif else begin ; For committed loss experiments: load data from chain01 (because are based on pre-2017 climate, and this is the same in every chain)
-  mb_obsrcm = import_glacier_smb('../input/' + region + '/smb_rcm/chain01/belev_' + string(glacier_id, format = '(I05)') + '.dat') ; SMB as calculated based on OBS/RCM output (data from Matthias)
+  mb_obsrcm = import_glacier_smb(current_dir + '/../input/centraleurope/smb_rcm/chain01/belev_' + string(glacier_id, format = '(I05)') + '.dat') ; SMB as calculated based on OBS/RCM output (data from Matthias)
 endelse
 
 ; ; Remove NaN's (-99 in data Matthias) and transform to m i.e. a^-1
@@ -51,8 +56,19 @@ endfor
 ; unique_vals = mean_mb[UNIQ(mean_mb, SORT(mean_mb))]
 ; ela_observed = INTERPOL(glacier_geom_lookup_sur[SORT(mean_mb)], mean_mb[SORT(mean_mb)], 0)
 ; From best fit (best option, because then obtain the same ELA at end of run, if SMB bias = 0)
-ela_observed1 = (-fit_order2_smb_mean[1] + sqrt(fit_order2_smb_mean[1] ^ 2 - 4 * fit_order2_smb_mean[0] * fit_order2_smb_mean[2])) / (2 * fit_order2_smb_mean[0]) ; Observed ELA based on 1960-1990 mean (first possible value)
-ela_observed2 = (-fit_order2_smb_mean[1] - sqrt(fit_order2_smb_mean[1] ^ 2 - 4 * fit_order2_smb_mean[0] * fit_order2_smb_mean[2])) / (2 * fit_order2_smb_mean[0]) ; Observed ELA based on 1960-1990 mean (second possible value)
+
+; Correctly set coefficients for quadratic formula ax² + bx + c = 0
+a = fit_order2_smb_mean[2] ; Quadratic coefficient
+b = fit_order2_smb_mean[1] ; Linear coefficient
+c = fit_order2_smb_mean[0] ; Constant term
+
+; Calculate discriminant
+discriminant = b ^ 2 - 4 * a * c
+
+; Calculate both solutions
+ela_observed1 = (-b + sqrt(discriminant)) / (2 * a)
+ela_observed2 = (-b - sqrt(discriminant)) / (2 * a)
+
 ela_observed = ela_observed1
 print, 'ela_observed = ', ela_observed
 
@@ -88,33 +104,40 @@ print, 'bal_mean_observed = ', bal_mean_observed
 
 ; ; Potentially display the fit
 if display_during_flag eq 1 then begin
-  window, 4
-  plot, mb_obsrcm[*, 0], mean_mb, thick = 3, title = 'Best fit SMB (before applying eventual SMB bias)', $
-    xtitle = 'Elevation (m)', ytitle = 'Average SMB (over selected time period)', /xstyle, /ystyle
+  window, /free, xsize = 800, ysize = 600, title = 'Best Fit SMB Plot'
+  p1 = plot(mb_obsrcm[*, 0], mean_mb, title = 'Best Fit SMB (before applying eventual SMB bias)', $
+    xtitle = 'Elevation (m)', ytitle = 'Average SMB (over selected time period)', color = 'blue', thick = 3, name = 'Data')
 
   x_range = findgen(100) * (max(mb_obsrcm[*, 0]) - min(mb_obsrcm[*, 0])) / 99 + min(mb_obsrcm[*, 0])
-  y_fit = fit_order2_smb_mean[0] * x_range ^ 2 + fit_order2_smb_mean[1] * x_range + fit_order2_smb_mean[2]
 
-  oplot, x_range, y_fit, thick = 2, linestyle = 2
+  c_const = fit_order2_smb_mean[0] ; constant term
+  b_linear = fit_order2_smb_mean[1] ; linear term
+  a_quadratic = fit_order2_smb_mean[2] ; quadratic term
+
+  y_fit = a_quadratic * x_range ^ 2 + b_linear * x_range + c_const
+
+  p2 = plot(x_range, y_fit, color = 'red', thick = 2, /overplot, name = 'Fit')
+  ; Add legend to the plot
+  leg = legend(target = [p1, p2], /data, /auto_text_color, position = [4200, 0])
 endif
 
 ; ; Apply potential biases
 if mb_bias_flag eq 0 then begin
   bias_to_be_applied = 0
-endif else if string(mb_bias_flag) eq 'on' then begin ; have an integrated SMB of 0 over the glacier (typically not used anymore; was used for initial tests)
+endif else if mb_bias_flag eq 1 then begin ; have an integrated SMB of 0 over the glacier (typically not used anymore; was used for initial tests)
   bias_to_be_applied = -1 * bal_mean_observed
   print, 'bias_to_be_applied = ', bias_to_be_applied
-endif else if mb_bias_flag ne 0 then begin
-  bias_to_be_applied = -1 * (fit_order2_smb_mean[0] * (ela_observed + mb_bias_flag) ^ 2 + $
+endif else if mb_bias_flag lt 1 then begin
+  bias_to_be_applied = -1 * (fit_order2_smb_mean[2] * (ela_observed + mb_bias_flag) ^ 2 + $
     fit_order2_smb_mean[1] * (ela_observed + mb_bias_flag) + $
-    fit_order2_smb_mean[2]) ; SMB at elevation where want ELA to be (multiplied by -1)
+    fit_order2_smb_mean[0]) ; SMB at elevation where want ELA to be (multiplied by -1)
   print, 'bias_to_be_applied = ', bias_to_be_applied
 endif
 
-fit_order2_smb_mean[2] = fit_order2_smb_mean[2] + bias_to_be_applied
-fit_order2_smb[*, 2] = fit_order2_smb[*, 2] + bias_to_be_applied
+fit_order2_smb_mean[0] = fit_order2_smb_mean[0] + bias_to_be_applied
+fit_order2_smb[*, 0] = fit_order2_smb[*, 0] + bias_to_be_applied
 
 ; ; For some RCM chains --> no 2099-2100 SMB --> take the one from the previous year (2098-2099) in this case and impose this as the 2099-2100 SMB
-if ~finite(fit_order2_smb[columns - 2, 0]) then begin ; Using columns-2 due to 0-based indexing
+if ~finite(fit_order2_smb[columns - 2, 2]) then begin ; Using columns-2 due to 0-based indexing
   fit_order2_smb[columns - 2, *] = fit_order2_smb[columns - 3, *]
 endif
