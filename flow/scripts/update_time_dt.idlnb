@@ -1,0 +1,149 @@
+{
+  "version": "2.0.0",
+  "cells": [
+    {
+      "type": "markdown",
+      "content": [
+        "### update_time_dt",
+        "",
+        "IDL Notebook to test the functionality of the update_time_dt script, which updates the maximum time step allowed `dt_max`, the time step itself `dt` and the time indeces (t and time)."
+      ],
+      "metadata": {},
+      "outputs": []
+    },
+    {
+      "type": "code",
+      "content": [
+        "dx = 202",
+        "start_year = 0",
+        "time = start_year",
+        "dt_flag = 0",
+        "dtfactor = 1",
+        "t = 3"
+      ],
+      "metadata": {},
+      "outputs": []
+    },
+    {
+      "type": "code",
+      "content": [
+        "; example diffusivity factor, computed for Great Aletsch glacier",
+        "df = [ $",
+        "    0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, $",
+        "    0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, $",
+        "    0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, $",
+        "    0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, $",
+        "    0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, $",
+        "    3748.2537, 16827.492, 11270.403, 11845.737, 15452.729, $",
+        "    20161.590, 25818.473, 33413.250, 40349.961, 53247.590, $",
+        "    78902.945, 111060.38, 138795.80, 159764.98, 156841.69, $",
+        "    139985.36, 127002.50, 143244.58, 218427.11, 269334.44, $",
+        "    257365.11, 194150.83, 183171.02, 171283.00, 184680.47, $",
+        "    152897.03, 148314.23, 142847.59, 162554.77, 206797.55, $",
+        "    246884.14, 284330.25, 330528.19, 402447.56, 499653.12, $",
+        "    539688.38, 504926.50, 461976.44, 478399.41, 559165.81, $",
+        "    650218.81, 602211.31, 429836.00, 276059.75, 209421.06, $",
+        "    216991.47, 253689.58, 320447.59, 410617.19, 435367.84, $",
+        "    369304.91, 295743.31, 315303.84, 393352.47, 457968.50, $",
+        "    489540.16, 504397.59, 462379.00, 369171.72, 277035.34, $",
+        "    188846.58, 107146.72, 74300.383, 83234.891, 105176.97, $",
+        "    95442.492, 66252.242, 49306.395, 48079.625, 53710.203, $",
+        "    63577.633, 71361.930, 77225.727, 74386.805, 60350.223, $",
+        "    48066.816, 44019.602, 39372.051, 38390.848, 38735.988, $",
+        "    37712.199, 25995.205, 14930.312, 12901.035, 12894.234, $",
+        "    22921.389, 35373.602, 46650.293, 35799.098, 19141.604, $",
+        "    15095.185, 11929.169, 11439.338, 9744.4326, 7155.2744, $",
+        "    4048.7095, 1541.5940, 0.0000000 $",
+        "]"
+      ],
+      "metadata": {},
+      "outputs": []
+    },
+    {
+      "type": "code",
+      "content": [
+        "dt_max = time / (dx * 2) ; Maximum allowed dt (dt will never be larger than this, even if the CFL criterion would allow for it). Small in the beginning --> increases with time",
+        "if dt_max lt 0.1 then begin",
+        "  dt_max = 0.1 ; Maximum time step should at least be 0.1 years (because otherwise very small in the beginning --> takes too long)",
+        "endif else if dt_max gt dtmb then begin ; Don't want the time step to be larger than the time step of DTMB (typically 1 year)",
+        "  dt_max = dtmb",
+        "endif"
+      ],
+      "metadata": {},
+      "outputs": []
+    },
+    {
+      "type": "code",
+      "content": [
+        "if dt_flag eq 0 and t gt 2 then begin ; Adapt the time step:",
+        "    dt = (dx ^ 2 / (max(df))) * dtfactor ; CFL type of criterion, multiplied with the 'dtfactor'",
+        "    if dt gt dt_max then dt = dt_max ; If needed: impose limit on the dt",
+        "  endif"
+      ],
+      "metadata": {},
+      "outputs": []
+    },
+    {
+      "type": "code",
+      "content": [
+        "t = t + 1 ; timestep (integer)",
+        "time = time + dt ; time (in years)"
+      ],
+      "metadata": {},
+      "outputs": []
+    },
+    {
+      "type": "code",
+      "content": [
+        "t"
+      ],
+      "metadata": {},
+      "outputs": [
+        {
+          "items": [
+            {
+              "mime": "text/plain",
+              "content": [
+                "           4",
+                ""
+              ]
+            }
+          ],
+          "metadata": {
+            "id": "not-saved"
+          }
+        }
+      ]
+    },
+    {
+      "type": "code",
+      "content": [
+        "time"
+      ],
+      "metadata": {},
+      "outputs": [
+        {
+          "items": [
+            {
+              "mime": "text/plain",
+              "content": [
+                "     0.062754259"
+              ]
+            }
+          ],
+          "metadata": {
+            "id": "not-saved"
+          }
+        }
+      ]
+    },
+    {
+      "type": "code",
+      "content": [
+        ""
+      ],
+      "metadata": {},
+      "outputs": []
+    }
+  ]
+}
