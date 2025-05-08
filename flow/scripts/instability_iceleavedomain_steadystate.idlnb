@@ -18,15 +18,10 @@
     {
       "type": "code",
       "content": [
-        "; define necessary parameters for the script to run",
-        "aflow = 1e-16            ; X = value of deformation-sliding factor (10^-16 Pa^-3 a^-1)",
-        "dt_flag = 0              ; 0 = adaptive time step (dynamic); X = time step in years",
-        "width_flag = 2           ; 0 = same width along the flowline (never used, may even not work anymore; was used for initial tests); 1 = rectangle transect (only used for sensitivity tests in paper); 2 = trapezium transect (classic)",
-        "display_during_flag = 0  ; 0 = do not display anything during run (geometry and smb stuff); 1 = display during run --> may be useful for debugging/checks (is normally not used)",
-        "dtfactor = 1             ; X = multiply dt by a certain factor --> can be used to avoid numerical instability",
-        "start_year = 0           ; X = year in which the simulation starts (typically 0 for steady state experiments, and real year (e.g. 1950/1990) for transient simulations)",
-        "flag_startobs = 2        ; 0 = start from zero ice thickness; 1 = start from observed geometry (at RGI inventory date); 2 = start from modelled geometry",
-        "nyears = 5000            ; X = number of years for simulation (will stop earlier if steady state is reached, if numerical instability occurred, if ice is leaving the domain, or if there is no ice)"
+        "; set necessary arguments",
+        "glacier_id = '01450'",
+        "region = 'centraleurope'",
+        "chain = 1"
       ],
       "metadata": {},
       "outputs": []
@@ -34,13 +29,35 @@
     {
       "type": "code",
       "content": [
-        "result = load_glacier('01450', 'centraleurope', 0, 1.0/4.0, 0)",
-        "dx = result.dx",
-        "sur_input = result.sur_input",
-        "th_input = result.th_input",
-        "width_input = result.width_input",
-        "length_fixeddistance = result.length_fixeddistance",
-        "x_input = result.x_input"
+        "; Define default parameters individually",
+        "aflow = 1e-16              ; X = value of deformation-sliding factor (10^-16 Pa^-3 a^-1)",
+        "calibration_method = 0     ; 0 = no calibration (for tests/examples, is not used in paper); 1 = 1990 steady state --> match inventory date length and volume; 2 = 1950 steady state --> match inventory date volume (important for read-in and read-out of various files)",
+        "dx = 0                     ; 0 = resolution will be chosen to ensure that the observed glacier is divided into 100 grid cells; X = resolution (m)",
+        "display_during_flag = 0    ; 0 = do not display anything during run (geometry and smb stuff); 1 = display during run --> may be useful for debugging/checks (is normally not used)",
+        "display_end_flag = 0       ; 0 = do not display anything in the end; 1 = save one final figure; 2 = display all, but no movie; 3 = time lapse movie with only geometry, 4 = time lapse movie with only geometry + save movie .pdf files; 5 = 'full' time lapse movie, 6 = full movie + save movie as .pdf files",
+        "dtfactor = 1               ; X = multiply dt by a certain factor --> can be used to avoid numerical instability",
+        "dt_flag = 0                ; 0 = adaptive time step (dynamic); X = time step in years",
+        "flag_startobs = 1          ; 0 = start from zero ice thickness; 1 = start from observed geometry (at RGI inventory date); 2 = start from modelled geometry",
+        "frontal_length = 1.0/4.0   ; X = length of proglacial area (defined as fraction of glacier length: e.g. 0.5 --> if glacier is 5 km long, a proglacial area of 2.5 km will be added)",
+        "mb_bias_flag = 0           ; 0 = run with original climatic data (no bias); 'on' = will impose mb bias on top of 1981-2016 (so that specific SMB observed geometry = 0), is typically not used; X = Bias to be applied on top of calculated SMB field (formulated as a change in ELA)",
+        "mb_sur_flag = 1            ; 0 = SMB is calculated based on observed geometry (i.e. no SMB-elevation feedback); 1 = dynamic, SMB is calculated based on prognostic geometry",
+        "mb_type_flag = 5           ; 1 = imposed ELA and SMB gradients (normally not used); 2 = 1980-2016 mean from GCM output; 3 = every year from 1980 to 2016 (from GCM) individually, in sequence; 4 = every year from 1990 to 2016 (from GCM) individually, in sequence; 5 = 1960-1990 mean from E-OBS (+ eventual perturbation); 6 = 1951-2099/2100 from E-OBS + EURO-CORDEX (transient runs)",
+        "nyears = 5000              ; X = number of years for simulation (will stop earlier if steady state is reached, if numerical instability occurred, if ice is leaving the domain, or if there is no ice)",
+        "smb_sinus_flag = 1         ; 0 = no perturbation on SMB signal; X = put sinusoidal signal on SMB, with frequency of X years (deviation is X m i.e. a^{-1} --> modify in massbal.m) (should only be used for testing purposes, never used for paper)",
+        "ss_criterion = 0.01        ; X = steady state is reached when the volume change is less than X percent per dtdiag (i.e. typically when the volume change is less than 0.01% per year)",
+        "start_year = 0             ; X = year in which the simulation starts (typically 0 for steady state experiments, and real year (e.g. 1950/1990) for transient simulations)",
+        "width_flag = 2             ; 0 = same width along the flowline (never used, may even not work anymore; was used for initial tests); 1 = rectangle transect (only used for sensitivity tests in paper); 2 = trapezium transect (classic)"
+      ],
+      "metadata": {},
+      "outputs": []
+    },
+    {
+      "type": "code",
+      "content": [
+        "; ------------------------------------------ ;",
+        "; Geometry preprocessing (load geometry files from Matthias Huss (elevation dependent) -> and transform them to our 1-D equidistant model grid + eventually load geometry from earlier model runs)",
+        "; (notice that this needs to be done before initialization and definition of variables, as in some cases their size depends on the geometry)",
+        "@geom_files_load_and_transform"
       ],
       "metadata": {},
       "outputs": [
@@ -67,9 +84,9 @@
     {
       "type": "code",
       "content": [
-        "g = 9.81 ; Gravitational acceleration in m/s^2",
-        "nflow = 3 ; Flow law exponent n",
-        "rho = 900 ; Density of ice in kg/m^3"
+        "; ------------------------------------------ ;",
+        "; Define constants, initialize counters, variables and parameters and set their size",
+        "@constants_counters_initialvalues_sizevariables"
       ],
       "metadata": {},
       "outputs": []
@@ -77,17 +94,9 @@
     {
       "type": "code",
       "content": [
-        "; Mass transport:",
-        "df_max = 0 ; Maximum modelled diffusivity factor",
-        "df_lim = (length_fixeddistance ^ 2) / 2 ; maximum value allowed for the diffusivity factor is related to the observed glacier length at inventory date (will likely have to be modified for other regions than the Alps)"
-      ],
-      "metadata": {},
-      "outputs": []
-    },
-    {
-      "type": "code",
-      "content": [
-        "df_lim"
+        "; ------------------------------------------ ;",
+        "; Define the initial geometry",
+        "@initial_geometry"
       ],
       "metadata": {},
       "outputs": [
@@ -96,7 +105,8 @@
             {
               "mime": "text/plain",
               "content": [
-                "   199960002"
+                "obs_vol_flowlinemodel =   1.29400e+10",
+                "obs_vol_trapezium =   1.29400e+10"
               ]
             }
           ],
@@ -109,46 +119,9 @@
     {
       "type": "code",
       "content": [
-        "; Time:",
-        "counter_diag = 0",
-        "if dt_flag eq 0 then begin ; Dynamic time step (i.e. dt changes over time). First value to be used is based on CFL-criterion",
-        "  dt = dtfactor * dx ^ 2 / (df_lim)",
-        "endif else begin",
-        "  dt = dt_flag",
-        "endelse",
-        "dtdiag = 1 ; Time step diagnostic output (years)",
-        "dtmb = 1 ; Time step surface mass balance model",
-        "next_time_diag = start_year ; Next time that diagnostic model output will be written out: set equal to start_year --> will immediately write out",
-        "next_time_mb = start_year ; Next time that diagnostic model output will be written out: set equal to start_year --> will immediately write out",
-        "t = 0 ; number of timesteps that have occurred so far",
-        "time = start_year ; Time (in years)"
-      ],
-      "metadata": {},
-      "outputs": []
-    },
-    {
-      "type": "code",
-      "content": [
-        "; Geometry:",
-        "domainsize = x_input[n_elements(x_input) - 1] ; in meter; from 'x_input', which was generated in 'load_glacier'",
-        "first_icp_min = 9999",
-        "; lambda_standard = TAN(0 * !DTOR) + TAN(0 * !DTOR) ; sensitivity test in paper --> saved in 'calibration 3' folder (manually)",
-        "lambda_standard = tan(45 * !dtor) + tan(45 * !dtor) ; i.e. lambda = 2",
-        "; lambda_standard = TAN(80 * !DTOR) + TAN(80 * !DTOR) ; sensitivity test in paper --> saved in 'calibration 4' folder (manually)",
-        "",
-        "last_icp_max = 0 ; last ice covered point (icp) (index)",
-        "xnum = floor(domainsize / dx) ; number of grid cells",
-        "if xnum gt n_elements(width_input) then begin",
-        "  xnum = xnum - 1",
-        "endif"
-      ],
-      "metadata": {},
-      "outputs": []
-    },
-    {
-      "type": "code",
-      "content": [
-        "domainsize"
+        "; ------------------------------------------ ;",
+        "; Load the SMB data (from RCM/GCM) and optionally apply bias",
+        "@load_smb"
       ],
       "metadata": {},
       "outputs": [
@@ -157,7 +130,144 @@
             {
               "mime": "text/plain",
               "content": [
-                "       25048.000",
+                "ela_observed =        3046.8074",
+                "bal_mean_observed =   -3.2195584e+08"
+              ]
+            }
+          ],
+          "metadata": {
+            "id": "not-saved"
+          }
+        }
+      ]
+    },
+    {
+      "type": "markdown",
+      "content": [
+        "### Arteficially create criterias for instability to occur to test functionality"
+      ],
+      "metadata": {},
+      "outputs": []
+    },
+    {
+      "type": "code",
+      "content": [
+        "; Artificially set mean(th) to infinity",
+        "th = [1.0, 2.0, 3.0] ; Example array",
+        "th[0] = !values.f_infinity ; Set the first element to infinity"
+      ],
+      "metadata": {},
+      "outputs": []
+    },
+    {
+      "type": "code",
+      "content": [
+        "breakindex = 0",
+        "",
+        "; Check for numerical instability",
+        "if ~finite(mean(th)) or mean(th) eq !values.f_infinity then begin",
+        "  print, 'Numerical instability! Glacier id = ', glacier_id",
+        "  breakindex = 1",
+        "  vol = !values.f_nan ; in case mean(th) eq Infinity --> give it NaN value, for volume_calibration",
+        "  return, breakindex",
+        "endif"
+      ],
+      "metadata": {},
+      "outputs": []
+    },
+    {
+      "type": "markdown",
+      "content": [
+        "### Arteficially let ice leave domain"
+      ],
+      "metadata": {},
+      "outputs": []
+    },
+    {
+      "type": "code",
+      "content": [
+        "th[domain_exit_index] = 1",
+        "smb_sinus_flag = 0"
+      ],
+      "metadata": {},
+      "outputs": []
+    },
+    {
+      "type": "code",
+      "content": [
+        "if th[domain_exit_index] gt 0 and smb_sinus_flag eq 0 then begin",
+        "    print, 'Ice is leaving the domain! Glacier id = ', glacier_id",
+        "    th[*] = !values.f_nan",
+        "",
+        "    ; Volume is smaller than 5x observed volume (likely that no 'explosion' occurred...)",
+        "    if vol lt 5 * obs_vol_flowlinemodel then begin",
+        "      vol = 'out'",
+        "    endif else begin",
+        "      ; Likely that a kind of explosion occurred (i.e. numerical instability)",
+        "      vol = !values.f_nan",
+        "    endelse",
+        "",
+        "    breakindex = 1",
+        "    return, breakindex",
+        "  endif",
+        ""
+      ],
+      "metadata": {},
+      "outputs": []
+    },
+    {
+      "type": "markdown",
+      "content": [
+        "### Arteficially create circumstances that are recocnized as steady state"
+      ],
+      "metadata": {},
+      "outputs": []
+    },
+    {
+      "type": "code",
+      "content": [
+        "; Set criteria to ensure the if statements in CELL INDEX: 15 are true",
+        "counter_diag = 3",
+        "mb_type_flag = 5",
+        "vol_hist = [1.0, 1.0, 1.0] ; Ensure no significant volume change",
+        "ss_criterion = 1e10",
+        "time = start_year + 51 + sqrt(10.0) ; Ensure time condition is met",
+        "smb_sinus_flag = 0",
+        "vol = 0 ; Ensure ice-free condition is met"
+      ],
+      "metadata": {},
+      "outputs": []
+    },
+    {
+      "type": "code",
+      "content": [
+        "  ; Check for steady state",
+        "  if counter_diag gt 2 and mb_type_flag ne 6 then begin",
+        "    ; Volume change less than [ss criterion] % and not for sinusoidal mode",
+        "    if abs((vol_hist[counter_diag-1] - vol_hist[counter_diag - 2]) / vol_hist[counter_diag-1]) lt ss_criterion / 100.0 $",
+        "      and smb_sinus_flag eq 0 and time gt start_year + 50 + sqrt(glacier_length) then begin",
+        "      print, 'Steady state reached!'",
+        "      breakindex = 1",
+        "    endif",
+        "",
+        "    ; Check for ice-free condition",
+        "    if vol eq 0 then begin",
+        "      print, 'Ice free!'",
+        "      breakindex = 1",
+        "    endif",
+        "  endif"
+      ],
+      "metadata": {},
+      "outputs": [
+        {
+          "items": [
+            {
+              "mime": "text/plain",
+              "content": [
+                "% Attempt to subscript VOL_HIST with COUNTER_DIAG is out of range.",
+                "% Execution halted at: $MAIN$              4 /Users/janoschbeer/Library/Mobile",
+                "   Documents/com~apple~CloudDocs/PhD/projects/GloGEM/flow/scripts/instability",
+                "  _iceleavedomain_steadystate_notebook_cell_X33sZmlsZQ==.pro",
                 ""
               ]
             }
@@ -167,58 +277,6 @@
           }
         }
       ]
-    },
-    {
-      "type": "code",
-      "content": [
-        "; SMB:",
-        "ela_ss = 0",
-        "",
-        "; ; Size variables that will (in most cases) be updated (i.e. overwritten) at every (few) time step(s)",
-        "bal = fltarr(xnum) ; Mass balance",
-        "bed = fltarr(xnum) ; Bedrock elevation",
-        "df = fltarr(xnum) ; Diffusivity factor",
-        "fluxdiv = fltarr(xnum) ; Flux divergence",
-        "fluxdiv_plot = fltarr(xnum) ; Flux divergence to be plotted",
-        "fluxdiv_plot2 = fltarr(xnum) ; Flux divergence to be plotted",
-        "grad = fltarr(xnum) ; Surface gradient",
-        "lambda = fltarr(xnum) ; Lambda: angle trapezium describing the glacier cross section",
-        "if flag_startobs ne 2 then begin ; If start from modelled geometry, don't want to set the surface elevation to zero",
-        "  sur = fltarr(xnum) ; Surface elevation",
-        "endif",
-        "term1 = fltarr(xnum) ; Part of the continuity equation (see 'ice_thickness.pro'), also used for fluxdiv_plot, in 'diagnostic_write.pro'",
-        "term2 = fltarr(xnum) ; Part of the continuity equation (see 'ice_thickness.pro'), also used for fluxdiv_plot, in 'diagnostic_write.pro'",
-        "if flag_startobs ne 2 then begin ; If start from modelled geometry, don't want to set the ice thickness to zero",
-        "  th = fltarr(xnum) ; Ice thickness",
-        "endif",
-        "vel = fltarr(xnum) ; Velocities"
-      ],
-      "metadata": {},
-      "outputs": []
-    },
-    {
-      "type": "code",
-      "content": [
-        "; ; Size prognostic variables that are written out every dtdiag timesteps (typically used to have overview at end of the run)",
-        "",
-        "; scalars:",
-        "aflow_hist = fltarr(ceil(nyears / dtdiag))",
-        "area_hist = fltarr(ceil(nyears / dtdiag))",
-        "bal_mean_hist = fltarr(ceil(nyears / dtdiag))",
-        "time_hist = fltarr(ceil(nyears / dtdiag))",
-        "dt_hist = fltarr(ceil(nyears / dtdiag))",
-        "df_max_hist = fltarr(ceil(nyears / dtdiag))",
-        "height_front_hist = fltarr(ceil(nyears / dtdiag))",
-        "length_hist = fltarr(ceil(nyears / dtdiag))",
-        "vol_hist = fltarr(ceil(nyears / dtdiag))",
-        "",
-        "; vectors:",
-        "bal_hist = fltarr(ceil(nyears / dtdiag), xnum)",
-        "fluxdiv_plot_hist = fltarr(ceil(nyears / dtdiag), xnum)",
-        "th_hist = fltarr(ceil(nyears / dtdiag), xnum)"
-      ],
-      "metadata": {},
-      "outputs": []
     }
   ]
 }

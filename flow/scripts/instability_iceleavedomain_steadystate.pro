@@ -1,80 +1,55 @@
-; Define constants, initialize counters, variables and parameters and set their size
+; This function checks whether an instability occurs, whether ice is
+; leaving the domain, whether a steady state is reached, or whether there
+; is no ice left. If this is the case --> breakindex will be equal to 1 and
+; in the 'glacier.pro' the time-loop will be interrupted and left
 
-; ; Constants
-compile_opt idl2
-g = 9.81 ; Gravitational acceleration in m/s^2
-nflow = 3 ; Flow law exponent n
-rho = 900 ; Density of ice in kg/m^3
+function instability_iceleavedomain_steadystate, glacier_id, th, smb_sinus_flag, vol_hist, counter_diag, ss_criterion, time, start_year, glacier_length, domain_exit_index, vol, obs_vol_flowlinemodel, mb_type_flag
+  compile_opt idl2
 
-; ; Counters, variables and parameters to be initialized
+  breakindex = 0
 
-; Mass transport:
-df_max = 0 ; Maximum modelled diffusivity factor
-df_lim = (length_fixeddistance ^ 2) / 2 ; maximum value allowed for the diffusivity factor is related to the observed glacier length at inventory date (will likely have to be modified for other regions than the Alps)
+  ; Check for numerical instability
+  if ~finite(mean(th)) or mean(th) eq !values.f_infinity then begin
+    print, 'Numerical instability! Glacier id = ', glacier_id
+    breakindex = 1
+    vol = !values.f_nan ; in case mean(th) eq Infinity --> give it NaN value, for volume_calibration
+    return, breakindex
+  endif
 
-; Time:
-counter_diag = 0
-if dt_flag eq 0 then begin ; Dynamic time step (i.e. dt changes over time). First value to be used is based on CFL-criterion
-  dt = dtfactor * dx ^ 2 / (df_lim)
-endif else begin
-  dt = dt_flag
-endelse
-dtdiag = 1 ; Time step diagnostic output (years)
-dtmb = 1 ; Time step surface mass balance model
-next_time_diag = start_year ; Next time that diagnostic model output will be written out: set equal to start_year --> will immediately write out
-next_time_mb = start_year ; Next time that diagnostic model output will be written out: set equal to start_year --> will immediately write out
-t = 0 ; number of timesteps that have occurred so far
-time = start_year ; Time (in years)
+  ; Check if ice is leaving the domain (but not for sinusoidal forcing)
+  if th[domain_exit_index] gt 0 and smb_sinus_flag eq 0 then begin
+    print, 'Ice is leaving the domain! Glacier id = ', glacier_id
+    th[*] = !values.f_nan
 
-; Geometry:
-domainsize = x_input[n_elements(x_input) - 1] ; in meter; from 'x_input', which was generated in 'load_glacier'
-first_icp_min = 9999
-; lambda_standard = TAN(0 * !DTOR) + TAN(0 * !DTOR) ; sensitivity test in paper --> saved in 'calibration 3' folder (manually)
-lambda_standard = tan(45 * !dtor) + tan(45 * !dtor) ; i.e. lambda = 2
-; lambda_standard = TAN(80 * !DTOR) + TAN(80 * !DTOR) ; sensitivity test in paper --> saved in 'calibration 4' folder (manually)
+    ; Volume is smaller than 5x observed volume (likely that no 'explosion' occurred...)
+    if vol lt 5 * obs_vol_flowlinemodel then begin
+      ; Can't assign string 'out' to a numeric variable
+      ; Either use a special numeric value like -999 or create a status variable
+      vol = -999 ; Use a special numeric code for "out" condition
+    endif else begin
+      ; Likely that a kind of explosion occurred (i.e. numerical instability)
+      vol = !values.f_nan
+    endelse
 
-last_icp_max = 0 ; last ice covered point (icp) (index)
-xnum = floor(domainsize / dx) ; number of grid cells
-if xnum gt n_elements(width_input) then begin
-  xnum = xnum - 1
-endif
+    breakindex = 1
+    return, breakindex
+  endif
 
-; SMB:
-ela_ss = 0
+  ; Check for steady state
+  if counter_diag gt 2 and mb_type_flag ne 6 then begin
+    ; Volume change less than [ss criterion] % and not for sinusoidal mode
+    if abs((vol_hist[counter_diag - 1] - vol_hist[counter_diag - 2]) / vol_hist[counter_diag - 1]) lt ss_criterion / 100.0 $
+      and smb_sinus_flag eq 0 and time gt start_year + 50 + sqrt(glacier_length) then begin
+      print, 'Steady state reached!'
+      breakindex = 1
+    endif
 
-; ; Size variables that will (in most cases) be updated (i.e. overwritten) at every (few) time step(s)
-bal = fltarr(xnum) ; Mass balance
-bed = fltarr(xnum) ; Bedrock elevation
-df = fltarr(xnum) ; Diffusivity factor
-fluxdiv = fltarr(xnum) ; Flux divergence
-fluxdiv_plot = fltarr(xnum) ; Flux divergence to be plotted
-fluxdiv_plot2 = fltarr(xnum) ; Flux divergence to be plotted
-grad = fltarr(xnum) ; Surface gradient
-lambda = fltarr(xnum) ; Lambda: angle trapezium describing the glacier cross section
-if flag_startobs ne 2 then begin ; If start from modelled geometry, don't want to set the surface elevation to zero
-  sur = fltarr(xnum) ; Surface elevation
-endif
-term1 = fltarr(xnum) ; Part of the continuity equation (see 'ice_thickness.pro'), also used for fluxdiv_plot, in 'diagnostic_write.pro'
-term2 = fltarr(xnum) ; Part of the continuity equation (see 'ice_thickness.pro'), also used for fluxdiv_plot, in 'diagnostic_write.pro'
-if flag_startobs ne 2 then begin ; If start from modelled geometry, don't want to set the ice thickness to zero
-  th = fltarr(xnum) ; Ice thickness
-endif
-vel = fltarr(xnum) ; Velocities
+    ; Check for ice-free condition
+    if vol eq 0 then begin
+      print, 'Ice free!'
+      breakindex = 1
+    endif
+  endif
 
-; ; Size prognostic variables that are written out every dtdiag timesteps (typically used to have overview at end of the run)
-
-; scalars:
-aflow_hist = fltarr(ceil(nyears / dtdiag))
-area_hist = fltarr(ceil(nyears / dtdiag))
-bal_mean_hist = fltarr(ceil(nyears / dtdiag))
-time_hist = fltarr(ceil(nyears / dtdiag))
-dt_hist = fltarr(ceil(nyears / dtdiag))
-df_max_hist = fltarr(ceil(nyears / dtdiag))
-height_front_hist = fltarr(ceil(nyears / dtdiag))
-length_hist = fltarr(ceil(nyears / dtdiag))
-vol_hist = fltarr(ceil(nyears / dtdiag))
-
-; vectors:
-bal_hist = fltarr(ceil(nyears / dtdiag), xnum)
-fluxdiv_plot_hist = fltarr(ceil(nyears / dtdiag), xnum)
-th_hist = fltarr(ceil(nyears / dtdiag), xnum)
+  return, breakindex
+end
