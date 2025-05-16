@@ -107,6 +107,9 @@ function glacier, glacier_id, region, chain, params = params
     endif
   endwhile
 
+  ; Post time loop: ELA at end, save most of the files and eventually apply final plotting
+  @post_timeloop
+
   return, 'breakindex = ' + strtrim(string(breakindex), 2)
   ; Check if the loop was exited due to a break condition
 end
