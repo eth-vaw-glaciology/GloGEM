@@ -13,6 +13,8 @@ ela_ss1 = (-fit_order2_smb_mean[1] + sqrt(fit_order2_smb_mean[1] ^ 2 - 4 * fit_o
 ; ela_ss2=(-fit_order2_smb_mean[1]-sqrt(fit_order2_smb_mean[1]^2-4*fit_order2_smb_mean[0]*fit_order2_smb_mean[2]))/(2*fit_order2_smb_mean[0])
 ela_ss = ela_ss1
 
+print, 'display_end_flag:', display_end_flag
+
 ; ; Some final plotting
 if (size(vol, /type) ne 7 && finite(vol)) || (size(vol, /type) eq 7 && vol ne 'out') then begin
   if display_end_flag gt 0 then begin
