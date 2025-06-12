@@ -892,14 +892,6 @@ if d eq 0 then st=bal_month else st=1
 if d eq 0 then en=dd_thresholds(3) else en=bal_month-1
 
 ; ****************************
-; GloGEMflow (Zekollari et al., 2019)
-
-if use_flow_model eq 'y' then begin
-   ; flow model -> GloGEMflow (Zekollari et al., 2019)
-   GLOGEMFLOW,ye,thick,thick_ini,elev,bed_elev,area,areas,area_ini,gl,dh_size,nb,dvol,bal,balv,advance,adv_fcrit,volume0,volume1,volumes,adv_iniar,adv_inithi,adv_iniamplification,expon,redistribute_vplus,adv_lookup,adv_lookup_data,flux_calv,dens
-endif
-
-; ****************************
 ; loop over months
 for m=st,en do begin
 
@@ -1161,6 +1153,14 @@ if ar_gl ne 0 then begin
          if bal_month eq dd_thresholds(0) then if m eq dd_thresholds(0)-1 then elev_mbsensall(count_mbelevsens+1,ye,*)=bal
       endif
    endif
+endif
+
+; ****************************
+; GloGEMflow (Zekollari et al., 2019)
+
+if use_flow_model eq 'y' then begin
+   ; flow model -> GloGEMflow (Zekollari et al., 2019)
+   GLOGEMFLOW,ye,thick,thick_ini,elev,bed_elev,area,areas,area_ini,gl,dh_size,nb,dvol,bal,balv,advance,adv_fcrit,volume0,volume1,volumes,adv_iniar,adv_inithi,adv_iniamplification,expon,redistribute_vplus,adv_lookup,adv_lookup_data,flux_calv,dens
 endif
 
 endfor                          ; loop over months
