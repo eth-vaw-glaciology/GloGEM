@@ -892,6 +892,14 @@ if d eq 0 then st=bal_month else st=1
 if d eq 0 then en=dd_thresholds(3) else en=bal_month-1
 
 ; ****************************
+; GloGEMflow (Zekollari et al., 2019)
+
+if use_flow_model eq 'y' then begin
+   ; flow model -> GloGEMflow (Zekollari et al., 2019)
+   GLOGEMFLOW,ye,thick,thick_ini,elev,bed_elev,area,areas,area_ini,gl,dh_size,nb,dvol,bal,balv,advance,adv_fcrit,volume0,volume1,volumes,adv_iniar,adv_inithi,adv_iniamplification,expon,redistribute_vplus,adv_lookup,adv_lookup_data,flux_calv,dens
+endif
+
+; ****************************
 ; loop over months
 for m=st,en do begin
 
@@ -1262,15 +1270,14 @@ dens=0.9 & dvol=dvol/dens
 CALVING_MODEL,thick,bed_elev,bed_elev_term,bed_elev_p,dvol,frontal_ablation,front_melt,calv_amplification,width,slope,length,alpha_f,length_corrfact,crit_ccorrdist,ccorr_expon,ccorr_param,area,acc,dens,ye,tran,id,gg,g,c_calving,ar_gl,calv_sep,glacier_retreat,single_glacier,flux_calv
 
 ; *******************************************
-; choose between dhdt-parameterization and flow model
+; dhdt-parameterization (Huss et al., 2010)
 
-if use_flow_model eq 'y' then begin
-   ; flow model
-   GLOGEMFLOW,ye,thick,thick_ini,elev,bed_elev,area,areas,area_ini,gl,dh_size,nb,dvol,bal,balv,advance,adv_fcrit,volume0,volume1,volumes,adv_iniar,adv_inithi,adv_iniamplification,expon,redistribute_vplus,adv_lookup,adv_lookup_data,flux_calv,dens
-
-elseif glacier_retreat eq 'y' then begin
-   ; dhdt-parameterization
-   GLACIER_RETREAT,ye,thick,thick_ini,elev,bed_elev,area,areas,area_ini,gl,dh_size,nb,dvol,bal,balv,advance,adv_fcrit,volume0,volume1,volumes,adv_iniar,adv_inithi,adv_iniamplification,expon,redistribute_vplus,adv_lookup,adv_lookup_data,flux_calv,dens,ar_gl
+if use_flow_model eq 'n' then begin
+   if glacier_retreat eq 'y' then begin
+      ; dhdt-parameterization (Huss et al., 2010)
+      GLACIER_RETREAT,ye,thick,thick_ini,elev,bed_elev,area,areas,area_ini,gl,dh_size,nb,dvol,bal,balv,advance,adv_fcrit,volume0,volume1,volumes,adv_iniar,adv_inithi,adv_iniamplification,expon,redistribute_vplus,adv_lookup,adv_lookup_data,flux_calv,dens,ar_gl
+   endif
+endif
 
 endif     ; glacier evolution model
 
