@@ -1,0 +1,69 @@
+{
+  "version": "2.0.0",
+  "cells": [
+    {
+      "type": "markdown",
+      "content": [
+        "### load_glacier_and_transform",
+        "",
+        "This idl notebook is meant to test the loading of the glacier data for the flow part of GloGEM. The script is to perform a grid conversion from vertically equidistant to horizontally equidistant. It should finally provide GloGEMflow with the following input:",
+        "",
+        "Horizontally equidistant elevation bin data:",
+        "- `sur input` - the current surface elevation of the ice",
+        "- `th_input` - the ice thickness",
+        "- `width_input` - glacier width",
+        "- `x_input` - distance along glacier (x direction)",
+        "- `dx` - size of grid points"
+      ],
+      "metadata": {},
+      "outputs": []
+    },
+    {
+      "type": "code",
+      "content": [
+        "; load example data hypsometry data",
+        "fn = ''",
+        "nb=file_lines(fn)-5",
+        "s=strarr(5) & da=dblarr(12,nb)",
+        "openr,1,fn & readf,1,s & readf,1,da & close,1"
+      ],
+      "metadata": {},
+      "outputs": []
+    },
+    {
+      "type": "code",
+      "content": [
+        "; Interpolation to a horizontally regular (i.e. equidistant) grid",
+        "dx_bin = da(6,*) ; bin size in x-direction",
+        "gl_length = dx_bin[-1] ; total length of the glacier grid in x-direction (glacier length)",
+        "dx = round(gl_length / 100)",
+        "printf, 'dx = %f\\n', dx"
+      ],
+      "metadata": {},
+      "outputs": [
+        {
+          "items": [
+            {
+              "mime": "text/plain",
+              "content": [
+                "Hello world! IDL Notebooks are awesome.",
+                ""
+              ]
+            }
+          ],
+          "metadata": {
+            "id": "not-saved"
+          }
+        }
+      ]
+    },
+    {
+      "type": "code",
+      "content": [
+        ""
+      ],
+      "metadata": {},
+      "outputs": []
+    }
+  ]
+}
