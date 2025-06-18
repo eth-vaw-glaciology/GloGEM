@@ -568,6 +568,8 @@ if a(0) ne '' then begin
 
 READ_HYPSOMETRYFILE,fn,gg,g,a_gl,nb,da,advance,adv_calving,adv_addband,adv_addband0,hmin, dir_data_alt,region,id
 
+; TODO: convert vertically equidistant grid to horizontally equidistant grid
+
 ; find geothermal heat flux for glacier
 if firnice_temperature eq 'y' then begin
    a=min(abs(latitudes(g)-fit_yy),indy) &  a=min(abs(longitudes(g)-fit_xx),indx)
@@ -1034,6 +1036,14 @@ end
 
 ENDCASE
 
+; ***************************************
+; flow model GloGEMflow (Zekollari et al. 2019)
+
+if use_flow_model eq 'y' then begin
+
+   @GLOGEMFLOW
+
+endif
 
 ; ***************************************
 ; ***********  refreezing (positive)
@@ -1155,14 +1165,6 @@ if ar_gl ne 0 then begin
    endif
 endif
 
-; ****************************
-; GloGEMflow (Zekollari et al., 2019)
-
-if use_flow_model eq 'y' then begin
-   ; flow model -> GloGEMflow (Zekollari et al., 2019)
-   GLOGEMFLOW,ye,thick,thick_ini,elev,bed_elev,area,areas,area_ini,gl,dh_size,nb,dvol,bal,balv,advance,adv_fcrit,volume0,volume1,volumes,adv_iniar,adv_inithi,adv_iniamplification,expon,redistribute_vplus,adv_lookup,adv_lookup_data,flux_calv,dens
-endif
-
 endfor                          ; loop over months
 
 endfor                          ; parts of hydrological year
@@ -1270,14 +1272,15 @@ dens=0.9 & dvol=dvol/dens
 CALVING_MODEL,thick,bed_elev,bed_elev_term,bed_elev_p,dvol,frontal_ablation,front_melt,calv_amplification,width,slope,length,alpha_f,length_corrfact,crit_ccorrdist,ccorr_expon,ccorr_param,area,acc,dens,ye,tran,id,gg,g,c_calving,ar_gl,calv_sep,glacier_retreat,single_glacier,flux_calv
 
 ; *******************************************
-; dhdt-parameterization (Huss et al., 2010)
+; choose between dhdt-parameterization and flow model
 
-if use_flow_model eq 'n' then begin
-   if glacier_retreat eq 'y' then begin
-      ; dhdt-parameterization (Huss et al., 2010)
-      GLACIER_RETREAT,ye,thick,thick_ini,elev,bed_elev,area,areas,area_ini,gl,dh_size,nb,dvol,bal,balv,advance,adv_fcrit,volume0,volume1,volumes,adv_iniar,adv_inithi,adv_iniamplification,expon,redistribute_vplus,adv_lookup,adv_lookup_data,flux_calv,dens,ar_gl
-   endif
-endif
+if use_flow_model eq 'y' then begin
+   ; flow model -> GloGEMflow (Zekollari et al., 2019)
+   @GLOGEMFLOW_geometry_update
+
+elseif glacier_retreat eq 'y' then begin
+   ; dhdt-parameterization (Huss et al., 2010)
+   GLACIER_RETREAT,ye,thick,thick_ini,elev,bed_elev,area,areas,area_ini,gl,dh_size,nb,dvol,bal,balv,advance,adv_fcrit,volume0,volume1,volumes,adv_iniar,adv_inithi,adv_iniamplification,expon,redistribute_vplus,adv_lookup,adv_lookup_data,flux_calv,dens,ar_gl
 
 endif     ; glacier evolution model
 
