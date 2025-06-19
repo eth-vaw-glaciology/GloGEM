@@ -31,8 +31,8 @@ dir_data_alt = main_dir + 'geometricdata/' + 'rgiv' + RGIversion + '/bands/bands
 dir_clim = main_dir + 'climatedata/' ; climate data
 
 ; output (same machine as you run on)scratch via the network
-; dirres = '/scratch_net/vierzack05_fourth/lvantrich/GloGEM'
-dirres = '/scratch_net/vierzack04_fourth/jabeer/GloGEM/batch_results_diff_icetemp/firnice_perm/r' + RGIversion + '_' + time_resolution + '/' ; output folder  (same machine as you run on)scratch via the network
+dirres = '/scratch_net/vierzack05_fourth/lvantrich/GloGEM'
+;dirres = '/scratch_net/vierzack04_fourth/jabeer/GloGEM/batch_results_diff_icetemp/firnice_perm/r' + RGIversion + '_' + time_resolution + '/' ; output folder  (same machine as you run on)scratch via the network
 ; dirres = '~/remote/results/GloGEM/batch_results_diff_icetemp/firnice_perm/r' + RGIversion + '_' + time_resolution + '/' ; output folder when running on personal computer -> requires manual mounting of the data folder
 
 ; --- region selection

@@ -106,13 +106,13 @@ endif
 ; ********************************************************
 ; LOOP over different regions
 
-for re=0,region_id_loop(1)-region_id_loop(0) do begin
+for re=0,region_id_loop[1]-region_id_loop[0] do begin
 
    rp_cali=0
    repeat_cali:
    DDFsnow=DDFsnow0 & DDFice=DDFice0
 
-if region_id_loop(0) eq 0 then begin
+if region_id_loop[0] eq 0 then begin
    region=region_n(re)
    if sub_region eq '' then sub_region=region
    if clim_subregion ne '' then sub_region=clim_subregion
@@ -122,10 +122,10 @@ endif else begin
    if calibrate eq 'y' then begin
       read_parameters='n' & calibration_phase='1'
    endif
-   region=region_loop_data(4,re+region_id_loop(0)-1)
-   dir_region=region_loop_data(2,re+region_id_loop(0)-1)
-   rgiregion=region_loop_data(1,re+region_id_loop(0)-1)
-   clim_subregion=region_loop_data(3,re+region_id_loop(0)-1)
+   region=region_loop_data[4,re+region_id_loop[0]-1]
+   dir_region=region_loop_data[2,re+region_id_loop[0]-1]
+   rgiregion=region_loop_data[1,re+region_id_loop[0]-1]
+   clim_subregion=region_loop_data[3,re+region_id_loop[0]-1]
    if clim_subregion eq 'xxx' then clim_subregion='' 
    if clim_subregion ne '' then sub_region=clim_subregion else sub_region=''
    if sub_region eq '' then sub_region=region
@@ -136,7 +136,7 @@ cali_calflux=0
 
 ; Define start of mass balance year
 if time_resolution eq 'daily' then dd_thresholds=[121,181,274,365] else dd_thresholds=[4,7,10,12]
-bal_month=dd_thresholds(2)          
+bal_month = dd_thresholds[2]          
 if dir_region eq 'SouthernAndes' or dir_region eq 'Antarctic' or dir_region eq 'LowLatitudes' or dir_region eq 'NewZealand' then bal_month=dd_thresholds(0)
 
 ; removing preexisting t_offset file for initial calibration
