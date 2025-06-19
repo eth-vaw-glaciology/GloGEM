@@ -10,7 +10,7 @@
 ; (IDL Version)
 
 ; --- RGI-version selection
-;compile_opt idl2
+compile_opt idl2
 RGIversion = '6' ; version of the RGI to be used
 
 ; --- Time resolution selection
@@ -22,7 +22,7 @@ username = getenv('USER') ; Get the current user's username from the environment
 
 ; set main directory
 main_dir = '/itet-stor/' + username + '/glogem/' ; Construct the main directory path
-;main_dir = '~/remote/glogem/' ; when running on personal computer -> requires manual mounting of the data folder
+; main_dir = '~/remote/glogem/' ; when running on personal computer -> requires manual mounting of the data folder
 
 ; input
 dir = main_dir + 'data/' ; Construct the general data folder path
@@ -31,9 +31,9 @@ dir_data_alt = main_dir + 'geometricdata/' + 'rgiv' + RGIversion + '/bands/bands
 dir_clim = main_dir + 'climatedata/' ; climate data
 
 ; output (same machine as you run on)scratch via the network
-dirres = '/scratch_net/vierzack05_fourth/lvantrich/GloGEM'
-;dirres = '/scratch_net/vierzack04_fourth/jabeer/GloGEM/batch_results_diff_icetemp/firnice_perm/r' + RGIversion + w'_' + time_resolution + '/' ; output folder  (same machine as you run on)scratch via the network
-;dirres = '~/remote/results/GloGEM/batch_results_diff_icetemp/firnice_perm/r' + RGIversion + '_' + time_resolution + '/' ; output folder when running on personal computer -> requires manual mounting of the data folder
+; dirres = '/scratch_net/vierzack05_fourth/lvantrich/GloGEM'
+dirres = '/scratch_net/vierzack04_fourth/jabeer/GloGEM/batch_results_diff_icetemp/firnice_perm/r' + RGIversion + '_' + time_resolution + '/' ; output folder  (same machine as you run on)scratch via the network
+; dirres = '~/remote/results/GloGEM/batch_results_diff_icetemp/firnice_perm/r' + RGIversion + '_' + time_resolution + '/' ; output folder when running on personal computer -> requires manual mounting of the data folder
 
 ; --- region selection
 ; regions can be selected in group via a range of region-IDs
