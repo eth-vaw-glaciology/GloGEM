@@ -4,11 +4,11 @@
     {
       "type": "markdown",
       "content": [
-        "### load_glacier_and_transform",
+        "### convert vertical to horizontally equidistant grid",
         "",
-        "This idl notebook is meant to test the loading of the glacier data for the flow part of GloGEM. The script is to perform a grid conversion from vertically equidistant to horizontally equidistant. It should finally provide GloGEMflow with the following input:",
+        "This idl notebook is meant to convert the vertically equidistant grid from GloGEM to a horizontally equidistant grid for GloGEMflow",
         "",
-        "Horizontally equidistant elevation bin data:",
+        "Horizontally equidistant elevation bin output data:",
         "- `sur input` - the current surface elevation of the ice",
         "- `th_input` - the ice thickness",
         "- `width_input` - glacier width",
