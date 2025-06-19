@@ -1,0 +1,6 @@
+{
+    "idl.problems.includeProblemsFromIDLPath": false,
+    "idl.problems.reportDocsProblems": false,
+    "idl.problems.reportProblems": false,
+    "idl.languageServer.fullParse": false
+}

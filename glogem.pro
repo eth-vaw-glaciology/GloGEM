@@ -13,7 +13,7 @@
 ; defining where procedures are found
 CD, CURRENT=base_dir ; define base directory
 a = !path            ; save current path
-!PATH = a + ':' + base_dir + '/procedures/read/:' + base_dir + '/procedures/write/:' + base_dir + '/procedures/processing/:' ; add path to procedures
+!PATH = a + ':' + base_dir + '/procedures/read/:' + base_dir + '/procedures/write/:' + base_dir + '/procedures/processing/:' + base_dir + '/glogemflow/:'; add path to procedures
 
 ; ******************************************************************
 ; saving/reading input file settings at the start of the main run
@@ -568,6 +568,9 @@ if a(0) ne '' then begin
 
 READ_HYPSOMETRYFILE,fn,gg,g,a_gl,nb,da,advance,adv_calving,adv_addband,adv_addband0,hmin, dir_data_alt,region,id
 
+; Test LVT 
+@convert_vertical_to_horizontal_grid
+
 ; TODO: convert vertically equidistant grid to horizontally equidistant grid
 
 ; find geothermal heat flux for glacier
@@ -1039,11 +1042,11 @@ ENDCASE
 ; ***************************************
 ; flow model GloGEMflow (Zekollari et al. 2019)
 
-if use_flow_model eq 'y' then begin
-
-   @GLOGEMFLOW
-
-endif
+;if use_flow_model eq 'y' then begin
+;
+;   @GLOGEMFLOW
+;
+;endif
 
 ; ***************************************
 ; ***********  refreezing (positive)
@@ -1274,15 +1277,15 @@ CALVING_MODEL,thick,bed_elev,bed_elev_term,bed_elev_p,dvol,frontal_ablation,fron
 ; *******************************************
 ; choose between dhdt-parameterization and flow model
 
-if use_flow_model eq 'y' then begin
+;if use_flow_model eq 'y' then begin
    ; flow model -> GloGEMflow (Zekollari et al., 2019)
-   @GLOGEMFLOW_geometry_update
+   ;@GLOGEMFLOW_geometry_update
 
-elseif glacier_retreat eq 'y' then begin
+   ;elseif glacier_retreat eq 'y' then begin
    ; dhdt-parameterization (Huss et al., 2010)
-   GLACIER_RETREAT,ye,thick,thick_ini,elev,bed_elev,area,areas,area_ini,gl,dh_size,nb,dvol,bal,balv,advance,adv_fcrit,volume0,volume1,volumes,adv_iniar,adv_inithi,adv_iniamplification,expon,redistribute_vplus,adv_lookup,adv_lookup_data,flux_calv,dens,ar_gl
+GLACIER_RETREAT,ye,thick,thick_ini,elev,bed_elev,area,areas,area_ini,gl,dh_size,nb,dvol,bal,balv,advance,adv_fcrit,volume0,volume1,volumes,adv_iniar,adv_inithi,adv_iniamplification,expon,redistribute_vplus,adv_lookup,adv_lookup_data,flux_calv,dens,ar_gl
 
-endif     ; glacier evolution model
+;endif     ; glacier evolution model
 
 
 endfor    ; Loop over years
