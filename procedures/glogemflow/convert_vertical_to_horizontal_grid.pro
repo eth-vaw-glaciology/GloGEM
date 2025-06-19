@@ -1,4 +1,4 @@
-
+compile_opt idl2
 print, 'TEST'
 
 glacier_geom = import_glacier_geometry(fn)
@@ -7,17 +7,17 @@ print, 'The file we want to open =', fn
 print, glacier_geom
 
 ; parameters (25% of the total lenght is added in the front)
-frontal_length = 1.0/4.0
+frontal_length = 1.0 / 4.0
 
 ; ; Determine the original horizontal resolution in data Matthias (not equidistant, as is derived from elevation bands and slope between them!)
 length_glacier_geom = n_elements(glacier_geom[*, 0])
 dx_original = fltarr(length_glacier_geom)
 for i = 1, length_glacier_geom - 1 do begin
-    dx_original[i] = glacier_geom[i, 6] - glacier_geom[i - 1, 6]
+  dx_original[i] = glacier_geom[i, 6] - glacier_geom[i - 1, 6]
 endfor
 
 ; Interpolation to a horizontally regular (i.e. equidistant) grid
-dx_bin = glacier_geom[*,6] ; bin size in x-direction
+dx_bin = glacier_geom[*, 6] ; bin size in x-direction
 gl_length = dx_bin[-1] ; total length of the glacier grid in x-direction (glacier length)
 dx = round(gl_length / 100)
 
@@ -32,15 +32,15 @@ glacier_geom_lookup_th = glacier_geom[*, 4] ; Thickness (m)
 
 i = where(glacier_geom_lookup_width eq 0, count) ; Remove elevation bands with no ice
 if count gt 0 then begin
-    good_indices = where(glacier_geom_lookup_width ne 0)
-    glacier_geom_lookup_x = glacier_geom_lookup_x[good_indices]
-    glacier_geom_lookup_sur = glacier_geom_lookup_sur[good_indices]
-    glacier_geom_lookup_width = glacier_geom_lookup_width[good_indices]
-    glacier_geom_lookup_th = glacier_geom_lookup_th[good_indices]
+  good_indices = where(glacier_geom_lookup_width ne 0)
+  glacier_geom_lookup_x = glacier_geom_lookup_x[good_indices]
+  glacier_geom_lookup_sur = glacier_geom_lookup_sur[good_indices]
+  glacier_geom_lookup_width = glacier_geom_lookup_width[good_indices]
+  glacier_geom_lookup_th = glacier_geom_lookup_th[good_indices]
 endif
 
-sur_x = interpol(glacier_geom_lookup_sur, glacier_geom_lookup_x, x)       ; Surface elevation (linear interpolation)
-width_x = interpol(glacier_geom_lookup_width, glacier_geom_lookup_x, x)   ; Width (linear interpolation)
+sur_x = interpol(glacier_geom_lookup_sur, glacier_geom_lookup_x, x) ; Surface elevation (linear interpolation)
+width_x = interpol(glacier_geom_lookup_width, glacier_geom_lookup_x, x) ; Width (linear interpolation)
 i = where(x lt glacier_geom_lookup_x[0], count)
 if count gt 0 then width_x[i] = glacier_geom_lookup_width[0]
 
@@ -48,7 +48,6 @@ th_x = interpol(glacier_geom_lookup_th, glacier_geom_lookup_x, x)
 i = where(x lt glacier_geom_lookup_x[0], count)
 if count gt 0 then th_x[i] = glacier_geom_lookup_th[0] ; Thickness for cells lower than first point on Huss grid: same as thickness first point Huss grid
 bed_x = sur_x - th_x
-
 
 ; ; Check how much the volume and area have changed:
 volume_Huss_1d = total((glacier_geom[*, 3] * 1e6) * glacier_geom[*, 4])
