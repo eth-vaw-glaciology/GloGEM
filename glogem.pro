@@ -95,12 +95,12 @@ if firnice_batch eq 'y' then begin
 ; make sure that other settings are fine
    ; DEACTIVE write_file='n' in potential FULL runs
    write_file='n' & calibrate='n'  
-   single_glacier=firnice_batch_data2(0,ffbl) ; define indivudal glacier to be run
-   firnice_profile_ID=firnice_batch_data2(1,ffbl)   ; define temperature profile ID
+   single_glacier=firnice_batch_data2[0,ffbl] ; define indivudal glacier to be run
+   firnice_profile_ID=firnice_batch_data2[1,ffbl]   ; define temperature profile ID
    ii=where(firnice_batch_data1[1,ffbl] eq region_loop_data[1,*],ci)         ; RGI region
    region_id_loop=[double(region_loop_data[0,ii[0]]),double(region_loop_data[0,ii[ci-1]])]   ; define RGI region
-   firnice_profile=[firnice_batch_data1(0,ffbl)]                                             ; define elevation
-   firnice_maxdepth=[firnice_batch_data1(2,ffbl)]
+   firnice_profile=[firnice_batch_data1[0,ffbl]]                                             ; define elevation
+   firnice_maxdepth=[firnice_batch_data1[2,ffbl]]
 endif
    
 ; ********************************************************
@@ -585,8 +585,9 @@ READ_HYPSOMETRYFILE,fn,gg,g,a_gl,nb,da,advance,adv_calving,adv_addband,adv_addba
 
 ; generate hypsometric information for glogemflow
 if use_flow_model eq 'y' then begin
-   @procedures/flow/constants_counters_initialvalues_sizevariables
+   @procedures/flow/set_flow_model_parameters
    @procedures/flow/convert_vertical_to_horizontal_grid
+   @procedures/flow/constants_counters_initialvalues_sizevariables
    @procedures/flow/initial_geometry
 endif
 
@@ -595,7 +596,7 @@ endif
 ; find geothermal heat flux for glacier
 if firnice_temperature eq 'y' then begin
    a=min(abs(latitudes[g]-fit_yy),indy) &  a=min(abs(longitudes[g]-fit_xx),indx)
-   geothermal_flux=firnice_geotherm_flux(indx,indy)
+   geothermal_flux=firnice_geotherm_flux[indx,indy]
 endif
 
 ; define variables
@@ -689,12 +690,6 @@ if write_mb_elevationbands eq 'y' then begin
    endif
 endif
 
-;PRINT, b
-; PRINT, dirres
-; PRINT, dirres+dir_region
-; PRINT, dirres+dir_region+b
-; PRINT, dirres+dir_region+b+'firnice_temperature'
-
 ; prepare output of ice temperature model
 if firnice_temperature eq 'y' then begin
    if firnice_write[0] eq 'y' then begin
@@ -703,7 +698,7 @@ if firnice_temperature eq 'y' then begin
          spawn,'mkdir '+dirres+dir_region+b+'/firnice_temperature' & spawn,'chmod a+rx '+dirres+dir_region+b+'/firnice_temperature'
       endif
       openw,45,dirres+dir_region+b+'/firnice_temperature/temp_1m_'+id[gg[g]]+'.dat'
-      a='' & for i=0,years-1 do a=a+string(i+tran(0),fo='(i4)')+'  '
+      a='' & for i=0,years-1 do a=a+string(i+tran[0],fo='(i4)')+'  '
       printf,45,'Elev  '+a 
       elev_firnicetemp=dblarr(4,years,nb)+snoval ; all layers
 
@@ -754,9 +749,9 @@ if firnice_temperature eq 'y' then begin
       endelse
       
       for j=0,n_elements(firnice_profile)-1 do begin
-         openw,51+j,dirres+dir_region+b+'/firnice_temperature/temp_ID'+firnice_profile_ID(j)+'_'+id(gg(g))+'.dat'
+         openw,51+j,dirres+dir_region+b+'/firnice_temperature/temp_ID'+firnice_profile_ID[j]+'_'+id[gg[g]]+'.dat'
          printf,51+j,'Point elevation  '+string(firnice_profile_ind[1,0],fo='(i4)')+' masl: Depth in m'
-         a='' & for i=1,total(fit_layers)-1 do a=a+string(fit_dz(1,i),fo='(i4)')+'  '
+         a='' & for i=1,total(fit_layers)-1 do a=a+string(fit_dz[1,i],fo='(i4)')+'  '
          printf,51+j,'Year  Month '+a 
       endfor
    endif
@@ -1119,6 +1114,7 @@ endif
 ;    only refer to the ice surface => weighted average for specific discharge
 difarea=area_iniconst-area & ii=where(difarea lt 0,ci) & if ci gt 0 then difarea[ii]=0
 ii=where(area_iniconst gt 0,ci) & dd=0
+print, 'len(sur)=', n_elements(sur), 'nb=', nb
 for i=0l,ci-1 do begin
    if sur[ii[i]] eq 1 then dd=dd+mel[ii[i]]*area_iniconst[ii[i]]+plg[ii[i]]*area_iniconst[ii[i]]-refr[ii[i]]*area_iniconst[ii[i]]-corrdis[ii[i]]*difarea[ii[i]] $
    else begin
