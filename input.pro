@@ -254,7 +254,7 @@ refreezing_full = 'y' ; ACTIVATE REFREEZING MODEL
 
 firnice_temperature = 'y' ; ACTIVATE ICE TEMPERATURE MODEL - compute firn/ice temperatures transiently (not just for refreezing)
 firnice_write = ['y', 'y'] ; output of overall (time series, annual) and detailed (profiles, monthly) files
-firnice_batch = 'y' ; run batch (all sites contained in icetemperature_batch.dat)
+firnice_batch = 'n' ; run batch (all sites contained in icetemperature_batch.dat)
 ; only relevant if defined manually (firnice_runbatch='n' )
 firnice_profile = [0.2, 0.65, 0.95] ; (max 3.) manually inserting elevations of profiles to be written (<1: ratio of elev. range, >1: masl)
 ; firnice_profile=[3000,3500,4000]
