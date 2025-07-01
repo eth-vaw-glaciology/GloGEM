@@ -1,0 +1,23 @@
+{
+  "version": "2.0.0",
+  "cells": [
+    {
+      "type": "markdown",
+      "content": [
+        "### Couples GloGEM & GloGEMflow test ",
+        "",
+        "IDL notebook to test the functionality of GloGEMflow integrated within the GloGEM framework. The flow model is now coupled to the elevation dependent mass balance. GloGEM updates geometries on the basis of ice flow equations as opposed to the dhdt parametrization."
+      ],
+      "metadata": {},
+      "outputs": []
+    },
+    {
+      "type": "code",
+      "content": [
+        "s = 2"
+      ],
+      "metadata": {},
+      "outputs": []
+    }
+  ]
+}
