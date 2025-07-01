@@ -95,9 +95,9 @@ catchment_selection = ''
 tran = [1950, 2100] ; time period of modelling
 ; tran=[2010,2030]                   ; time period of modelling
 
-; calibrate='n'                      ; DO NOT CALIBRATE, JUST RUN FORWARD       => output to files/
+calibrate='n'                      ; DO NOT CALIBRATE, JUST RUN FORWARD       => output to files/
 
-calibrate = 'y' ; PERFORM MODEL CALIBRATION                => no output, but calibration files to calibration/
+; calibrate = 'y' ; PERFORM MODEL CALIBRATION                => no output, but calibration files to calibration/
 
 ; calibrate='n' & tran=[1980,2019]  ; DO NOT CALIBRATE, BUT RUN MODEL FOR PAST   => output to PAST/
 
