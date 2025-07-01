@@ -6,6 +6,9 @@
 ; longer glaciers)
 compile_opt idl2
 
+time = ye+1 ; check the current time (in years)
+Print, dx
+
 dt_max = time / (dx * 2) ; Maximum allowed dt (dt will never be larger than this, even if the CFL criterion would allow for it). Small in the beginning --> increases with time
 if dt_max lt 0.1 then begin
   dt_max = 0.1 ; Maximum time step should at least be 0.1 years (because otherwise very small in the beginning --> takes too long)

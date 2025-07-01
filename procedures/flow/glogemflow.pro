@@ -4,11 +4,11 @@
 ; ------- glacierflow function: time-evolution of the glacier   --------- ;
 ; ----------------------------------------------------------------------- ;
 
-; Define default parameters
 compile_opt idl2
+
+; Define default parameters
 aflow = 1e-16 ; X = value of deformation-sliding factor (10^-16 Pa^-3 a^-1)
 calibration_method = 0 ; 0 = no calibration (for tests/examples, is not used in paper); 1 = 1990 steady state --> match inventory date length and volume; 2 = 1950 steady state --> match inventory date volume (important for read-in and read-out of various files)
-dx = 0 ; 0 = resolution will be chosen to ensure that the observed glacier is divided into 100 grid cells; X = resolution (m)
 display_during_flag = 0 ; 0 = do not display anything during run (geometry and smb stuff); 1 = display during run --> may be useful for debugging/checks (is normally not used)
 display_end_flag = 0 ; 0 = do not display anything in the end; 1 = save one final figure; 2 = display all, but no movie; 3 = time lapse movie with only geometry, 4 = time lapse movie with only geometry + save movie .pdf files; 5 = 'full' time lapse movie, 6 = full movie + save movie as .pdf files
 dtfactor = 1 ; X = multiply dt by a certain factor --> can be used to avoid numerical instability
@@ -24,17 +24,22 @@ ss_criterion = 0.01 ; X = steady state is reached when the volume change is less
 start_year = 0 ; X = year in which the simulation starts (typically 0 for steady state experiments, and real year (e.g. 1950/1990) for transient simulations)
 width_flag = 2 ; 0 = same width along the flowline (never used, may even not work anymore; was used for initial tests); 1 = rectangle transect (only used for sensitivity tests in paper); 2 = trapezium transect (classic)
 
-; TODO: conversion of vertically equidistant grid to horizontally equidistant grid
-@geom_files_load_and_transform
+; ------------------------------------------ ;
+; Define constants, initialize counters, variables and parameters and set their size
+@procedures/flow/constants_counters_initialvalues_sizevariables
 
 ; ------------------------------------------ ;
 ; Update the time and the time step
-@update_time_dt
+@procedures/flow/update_time_dt
+
+; ------------------------------------------ ;
+; Load surface mass balance (SMB) from GloGEM
+@procedures/flow/load_smb
 
 ; ------------------------------------------ ;
 ; Diffusivity factor calculation
-@diffusivity
+@procedures/flow/diffusivity
 
 ; ------------------------------------------ ;
 ; Ice thickness change calculation (i.e. solve continuity equation)
-@ice_thickness
+@procedures/flow/ice_thickness
