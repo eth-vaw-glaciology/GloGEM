@@ -27,7 +27,7 @@ t = 0 ; number of timesteps that have occurred so far
 time = start_year ; Time (in years)
 
 ; Geometry:
-domainsize = sur_x[n_elements(x_input) - 1] ; in meter; from 'x_input', which was generated in 'convert_vertical_to_horizontal.pro'
+domainsize = sur_x_input[n_elements(x_input) - 1] ; in meter; from 'x_input', which was generated in 'convert_vertical_to_horizontal.pro'
 first_icp_min = 9999
 ; lambda_standard = tan(0 * !DTOR) + tan(0 * !DTOR) ; sensitivity test in paper --> saved in 'calibration 3' folder (manually)
 lambda_standard = tan(45 * !dtor) + tan(45 * !dtor) ; i.e. lamda = 2
@@ -35,7 +35,7 @@ lambda_standard = tan(45 * !dtor) + tan(45 * !dtor) ; i.e. lamda = 2
 
 last_icp_max = 0 ; last ice covered point (icp) (index)
 xnum = floor(domainsize / dx) ; number of grid cells
-if xnum gt n_elements(width_input) then begin
+if xnum gt n_elements(width_x_input) then begin
   xnum = xnum - 1
 endif
 
@@ -44,21 +44,21 @@ ela_ss = 0
 
 ; ; Size variables that will (in most cases) be updated (i.e. overwritten) at every (few) time step(s)
 ; bal = fltarr(xnum) ; Mass balance
-bed = fltarr(xnum) ; Bedrock elevation
-df = fltarr(xnum) ; Diffusivity factor
-fluxdiv = fltarr(xnum) ; Flux divergence
-fluxdiv_plot = fltarr(xnum) ; Flux divergence to be plotted
-fluxdiv_plot2 = fltarr(xnum) ; Flux divergence to be plotted
-grad = fltarr(xnum) ; Surface gradient
-lambda = fltarr(xnum) ; Lambda: angle trapezium describing the glacier cross section
+bed_x = fltarr(xnum) ; Bedrock elevation
+df_x = fltarr(xnum) ; Diffusivity factor
+fluxdiv_x = fltarr(xnum) ; Flux divergence
+fluxdiv_plot_x = fltarr(xnum) ; Flux divergence to be plotted
+fluxdiv_plot2_x = fltarr(xnum) ; Flux divergence to be plotted
+grad_x = fltarr(xnum) ; Surface gradient
+lambda_x = fltarr(xnum) ; Lambda: angle trapezium describing the glacier cross section
 if flag_startobs ne 2 then begin ; If start from modelled geometry, don't want to set the surface elevation to zero
-  sur = fltarr(xnum) ; Surface elevation
+  sur_x = fltarr(xnum) ; Surface elevation
 endif
 term1 = fltarr(xnum) ; Part of the continuity equation (see 'ice_thickness.pro'), also used for fluxdiv_plot, in 'diagnostic_write.pro'
 term2 = fltarr(xnum) ; Part of the continuity equation (see 'ice_thickness.pro'), also used for fluxdiv_plot, in 'diagnostic_write.pro'
 term3 = fltarr(xnum) ; Part of the continuity equation (see 'ice_thickness.pro'), also used for fluxdiv_plot, in 'diagnostic_write.pro'
 if flag_startobs ne 2 then begin ; If start from modelled geometry, don't want to set the ice thickness to zero
-  th = fltarr(xnum) ; Ice thickness
+  th_x = fltarr(xnum) ; Ice thickness
 endif
 vel = fltarr(xnum) ; Velocities
 

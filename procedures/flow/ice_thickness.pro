@@ -10,23 +10,23 @@ for j = 0, 2 do begin ; 3 sub-steps used. Worked well. Maybe not really needed o
   ; ; Define unstaggered grid for flux (fun)
   fun = fltarr(xnum) ; Flux on unstaggered grid
   for i = 2, xnum - 1 do begin
-    fun[i] = ((df[i - 1] + df[i]) / 2.0) * ((sur[i] - sur[i - 1]) / dx)
+    fun[i] = ((df_x[i - 1] + df_x[i]) / 2.0) * ((sur[i] - sur[i - 1]) / dx)
   endfor
 
   ; ; Calculate new ice thickness
   for i = 1, xnum - 2 do begin
-    fluxdiv[i] = ((fun[i + 1] - fun[i]) / dx)
-    grad[i] = ((sur[i + 1] - sur[i - 1]) / (2 * dx)) ; surface gradient
-    term1[i] = fluxdiv[i] * width_mid[i]
-    term2[i] = ((width_mid[i + 1] - width_mid[i - 1]) / (2 * dx)) * grad[i] * df[i]
+    fluxdiv_x[i] = ((fun[i + 1] - fun[i]) / dx)
+    grad_x[i] = ((sur[i + 1] - sur[i - 1]) / (2 * dx)) ; surface gradient
+    term1[i] = fluxdiv_x[i] * width_mid[i]
+    term2[i] = ((width_mid[i + 1] - width_mid[i - 1]) / (2 * dx)) * grad_x[i] * df_x[i]
     term3[i] = (term1[i] + term2[i]) / width_surface[i]
     if ~finite(term3[i]) then term3[i] = 0 ; to avoid problems when width_surface == 0
-    th[i] = th[i] + (1.0 / 3.0) * dt * (term3[i] + bal[i])
+    th_x[i] = th_x[i] + (1.0 / 3.0) * dt * (term3[i] + bal[i])
   endfor
 
-  i = where(th lt 0, count)
-  if count gt 0 then th[i] = 0 ; Faster than using 'if' statement in loop
-  th[xnum - 1] = th[xnum - 2] ; Thickness at last grid cell equals the thickness at penultimate grid cell
+  i = where(th_x lt 0, count)
+  if count gt 0 then th_x[i] = 0 ; Faster than using 'if' statement in loop
+  th_x[xnum - 1] = th_x[xnum - 2] ; Thickness at last grid cell equals the thickness at penultimate grid cell
 
   ; Call the script to renew various variables at these sub time-steps (surface elevation, width_mid and width_surface)
   @variables_renew

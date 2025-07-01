@@ -24,13 +24,13 @@ grid_cells = floor(glacier_geom[length_glacier_geom - 1, 6] / dx) ; number of gr
 x = findgen(grid_cells) * dx + dx ; x-coordinates of the new grid (m)
 
 ; Create arrays to look up the Huss glacier geometry
-glacier_geom_lookup_x     = glacier_geom[*, 6] ; Distance along the flowline (m)
-glacier_geom_lookup_sur   = (glacier_geom[*, 1] + glacier_geom[*, 2]) / 2 ; Surface elevation (m)
-glacier_geom_lookup_width = glacier_geom[*, 5] ; Width (m)
-glacier_geom_lookup_th    = glacier_geom[*, 4] ; Thickness (m)
+glacier_geom_lookup_x     = glacier_geom[*, 6] ; Lookup Distance along the flowline (m)
+glacier_geom_lookup_sur   = (glacier_geom[*, 1] + glacier_geom[*, 2]) / 2 ; Lookup Surface elevation (m)
+glacier_geom_lookup_width = glacier_geom[*, 5] ; Lookup Width (m)
+glacier_geom_lookup_th    = glacier_geom[*, 4] ; Lookup Thickness (m)
 
-; Interpolate the surface elevation, width and thickness to the new grid
-i = where(glacier_geom_lookup_width eq 0, count) ; Remove elevation bands with no ice
+; Remove elevation bands with no ice
+i = where(glacier_geom_lookup_width eq 0, count)
 if count gt 0 then begin
   good_indices              = where(glacier_geom_lookup_width ne 0)
   glacier_geom_lookup_x     = glacier_geom_lookup_x[good_indices]
@@ -39,27 +39,27 @@ if count gt 0 then begin
   glacier_geom_lookup_th    = glacier_geom_lookup_th[good_indices]
 endif
 
-; Perform linear interpolation for surface elevation, width, and thickness
-sur_x   = interpol(glacier_geom_lookup_sur, glacier_geom_lookup_x, x) ; Surface elevation (linear interpolation)
-width_x = interpol(glacier_geom_lookup_width, glacier_geom_lookup_x, x) ; Width (linear interpolation)
+; Perform linear interpolation for surface elevation, width, and thickness to generate a horizontally equidistant grid
+sur_x_input   = interpol(glacier_geom_lookup_sur, glacier_geom_lookup_x, x) ; Surface elevation (linear interpolation)
+width_x_input = interpol(glacier_geom_lookup_width, glacier_geom_lookup_x, x) ; Width (linear interpolation)
 i = where(x lt glacier_geom_lookup_x[0], count)
-if count gt 0 then width_x[i] = glacier_geom_lookup_width[0]
+if count gt 0 then width_x_input[i] = glacier_geom_lookup_width[0]
 
-th_x = interpol(glacier_geom_lookup_th, glacier_geom_lookup_x, x) ; Thickness (linear interpolation)
+th_x_input = interpol(glacier_geom_lookup_th, glacier_geom_lookup_x, x) ; Thickness (linear interpolation)
 i = where(x lt glacier_geom_lookup_x[0], count)
-if count gt 0 then th_x[i] = glacier_geom_lookup_th[0] ; Thickness for cells lower than first point on Huss grid: same as thickness first point Huss grid
-bed_x = sur_x - th_x ; Bedrock elevation (m)
+if count gt 0 then th_x_input[i] = glacier_geom_lookup_th[0] ; Thickness for cells lower than first point on Huss grid: same as thickness first point Huss grid
+bed_x = sur_x_input - th_x_input ; Bedrock elevation (m)
 
 ; ; Check how much the volume and area have changed:
 volume_Huss_1d = total((glacier_geom[*, 3] * 1e6) * glacier_geom[*, 4])
 ; print, 'volume_Huss_1d = ', volume_Huss_1d
-volume_Huss_1d_fixeddistance = total(width_x * th_x * dx)
+volume_Huss_1d_fixeddistance = total(width_x_input * th_x_input * dx)
 ; print, 'volume_Huss_1d_fixeddistance = ', volume_Huss_1d_fixeddistance
 area_Huss_1d = total(glacier_geom[*, 3] * 1e6)
 ; print, 'area_Huss_1d = ', area_Huss_1d
-area_Huss_1d_fixeddistance = total(width_x * dx)
+area_Huss_1d_fixeddistance = total(width_x_input * dx)
 ; print, 'area_Huss_1d_fixeddistance = ', area_Huss_1d_fixeddistance
-i = where(th_x gt 1, count)
+i = where(th_x_input gt 1, count)
 length_fixeddistance = count * dx
 
 difference_volume = volume_Huss_1d_fixeddistance - volume_Huss_1d
