@@ -2,7 +2,7 @@
 
 ; ; Constants
 compile_opt idl2
-g = 9.81 ; Gravitational acceleration in m/s^2
+g_grav = 9.81 ; Gravitational acceleration in m/s^2
 nflow = 3 ; Flow law exponent n
 rho = 900 ; Density of ice in kg/m^3
 
