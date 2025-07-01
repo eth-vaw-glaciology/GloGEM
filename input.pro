@@ -31,8 +31,8 @@ dir_data_alt = main_dir + 'geometricdata/' + 'rgiv' + RGIversion + '/bands/bands
 dir_clim = main_dir + 'climatedata/' ; climate data
 
 ; output (same machine as you run on)scratch via the network
-dirres = '/scratch_net/vierzack05_fourth/lvantrich/GloGEM'
-;dirres = '/scratch_net/vierzack04_fourth/jabeer/GloGEM/batch_results_diff_icetemp/firnice_perm/r' + RGIversion + '_' + time_resolution + '/' ; output folder  (same machine as you run on)scratch via the network
+; dirres = '/scratch_net/vierzack05_fourth/lvantrich/GloGEM'
+dirres = '/scratch_net/vierzack04_fourth/jabeer/GloGEM/batch_results_diff_icetemp/firnice_perm/r' + RGIversion + '_' + time_resolution + '/' ; output folder  (same machine as you run on)scratch via the network
 ; dirres = '~/remote/results/GloGEM/batch_results_diff_icetemp/firnice_perm/r' + RGIversion + '_' + time_resolution + '/' ; output folder when running on personal computer -> requires manual mounting of the data folder
 
 ; --- region selection
@@ -266,9 +266,11 @@ advection_write = 'n' ; write out advection of temperature in firn/ice
 firn_permeability = 'y' ; 'y' to activate firn permeability model
 ice_permeability = 'y' ; 'y' to activate ice  permeability model
 
-; ----- glacier retreat module
+; ------ glacier evolution model
+use_flow_model = 'y' ; (y/n) ACTIVATE FLOW MODEL (GloGEMflow, Zekollari et al., 2019)
+glacier_retreat = 'n' ; (y/n) ACTIVATE GLACIER RETREAT MODEL(dhdt-parameterization, Huss et al., 2010)
 
-glacier_retreat = 'y' ; ACTIVATE GLACIER GEOMETRY CHANGE MODEL
+; ----- glacier retreat module
 
 expon = 2. ; Parameter for valley shape regulating band area loss depending on thickness loss
 
