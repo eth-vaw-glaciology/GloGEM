@@ -583,15 +583,13 @@ if a[0] ne '' then begin
 
 READ_HYPSOMETRYFILE,fn,gg,g,a_gl,nb,da,advance,adv_calving,adv_addband,adv_addband0,hmin, dir_data_alt,region,id
 
-; generate hypsometric information for glogemflow
+; generate hypsometric information & parameters for glogemflow
 if use_flow_model eq 'y' then begin
    @procedures/flow/set_flow_model_parameters
    @procedures/flow/convert_vertical_to_horizontal_grid
    @procedures/flow/constants_counters_initialvalues_sizevariables
    @procedures/flow/initial_geometry
 endif
-
-; TODO: convert vertically equidistant grid to horizontally equidistant grid
 
 ; find geothermal heat flux for glacier
 if firnice_temperature eq 'y' then begin
@@ -1114,7 +1112,6 @@ endif
 ;    only refer to the ice surface => weighted average for specific discharge
 difarea=area_iniconst-area & ii=where(difarea lt 0,ci) & if ci gt 0 then difarea[ii]=0
 ii=where(area_iniconst gt 0,ci) & dd=0
-print, 'len(sur)=', n_elements(sur), 'nb=', nb
 for i=0l,ci-1 do begin
    if sur[ii[i]] eq 1 then dd=dd+mel[ii[i]]*area_iniconst[ii[i]]+plg[ii[i]]*area_iniconst[ii[i]]-refr[ii[i]]*area_iniconst[ii[i]]-corrdis[ii[i]]*difarea[ii[i]] $
    else begin
