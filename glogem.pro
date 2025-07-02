@@ -393,9 +393,9 @@ if calibrate ne 'y' and write_file eq 'y' then begin
    openw,6,dirres+dir_region+subpath+long_GCM+sub_region+cc+'.dat'
    printf,6,'ID    lat  lon    Area0    Volume0  dA(%)  dV(%)'
 
-   y=indgen(years)+tran(0)
+   y=indgen(years)+tran[0]
    for fid=10,10+n_elements(where(outf_names ne ''))-1 do begin
-      openw,string(fid,fo='(i2)'),dirres+dir_region+subpath+long_GCM+sub_region+'_'+outf_names(fid-10)+'_'+experi_short+cc+'.dat'
+      openw,string(fid,fo='(i2)'),dirres+dir_region+subpath+long_GCM+sub_region+'_'+outf_names[fid-10]+'_'+experi_short+cc+'.dat'
       if fid lt 23 then printf,string(fid,fo='(i2)'),'ID  '+string(y,fo='('+strcompress(string(years),/remove_all)+'i6)') $
         else printf,string(fid,fo='(i2)'),'ID  hydr.year  Area(km2) day 274 275 ... 1 2 3 ... 273 (unit: mm/day) '
    endfor
@@ -649,7 +649,7 @@ if write_mb_elevationbands eq 'y' then begin
    endif
 
    openw,8,dirres+dir_region+b+'/mb_elevation/belev_'+id[gg[g]]+'.dat'
-   a='' & for i=0,years-1 do a=a+string(i+tran(0),fo='(i4)')+'  '
+   a='' & for i=0,years-1 do a=a+string(i+tran[0],fo='(i4)')+'  '
    printf,8,'Elev  '+a+a
    elev_bmb=dblarr(years,nb)+snoval & elev_bwb=elev_bmb 
 
@@ -659,7 +659,7 @@ if write_mb_elevationbands eq 'y' then begin
       spawn,'mkdir '+dirres+dir_region+b+'/refr_elevation' & spawn,'chmod a+rx '+dirres+dir_region+b+'/refr_elevation'
    endif
    openw,40,dirres+dir_region+b+'/refr_elevation/refrelev_'+id[gg[g]]+'.dat'
-   a='' & for i=0,years-1 do a=a+string(i+tran(0),fo='(i4)')+'  '
+   a='' & for i=0,years-1 do a=a+string(i+tran[0],fo='(i4)')+'  '
    printf,40,'Elev  '+a &  elev_refr=dblarr(years,nb)+snoval 
 
    if debris_supraglacial eq 'y' then begin
@@ -669,7 +669,7 @@ if write_mb_elevationbands eq 'y' then begin
          spawn,'mkdir '+dirres+dir_region+b+'/debris_elevation' & spawn,'chmod a+rx '+dirres+dir_region+b+'/debris_elevation'
       endif
       openw,41,dirres+dir_region+b+'/debris_elevation/debthick_'+id[gg[g]]+'.dat'
-      a='' & for i=0,years-1 do a=a+string(i+tran(0),fo='(i4)')+'  '
+      a='' & for i=0,years-1 do a=a+string(i+tran[0],fo='(i4)')+'  '
       printf,41,'Elev  '+a &  elev_debthick=dblarr(years,nb)+snoval 
 
       openw,42,dirres+dir_region+b+'/debris_elevation/debfrac_'+id[gg[g]]+'.dat'
@@ -717,7 +717,7 @@ if firnice_temperature eq 'y' then begin
       ENDIF
 
       openw,70,dirres+dir_region+b+'/firnice_temperature/adv_horizontal_'+id[gg[g]]+'.dat'
-      a='' & FOR i=0,years-1 DO a=a+string(i+tran(0),fo='(i4)')+'  '
+      a='' & FOR i=0,years-1 DO a=a+string(i+tran[0],fo='(i4)')+'  '
       printf,70,'Elev  '+a
       elev_adv_horiz=dblarr(years,nb)+snoval
 
@@ -768,7 +768,7 @@ if write_hypsometry_files eq 'y' then begin
    openw,35,dirres+dir_region+b+'/hypsometry/temp_'+id[gg[g]]+'.dat'
 
    ctt=0 & h=strarr(1)
-   for i=tran(0),tran(1) do begin
+   for i=tran[0],tran[1] do begin
       if i mod 10 eq 0 then begin
          ctt=ctt+1 & h=h+string(i,fo='(i4)')+'        '
       endif
@@ -1580,7 +1580,7 @@ endif
 anorm=areas/areas(0) & vnorm=volumes/volumes(0)
 
 pos=cm2norm(1.2,0.7,8.3,7.2,xscm,yscm)
-plot,[0],[0],xra=[tran(0)-1,tran(1)+1],yra=[-0.02,max([vnorm,anorm])+0.02],/xsty,/ysty,ytit='Norm. Area / Volume (-)',pos=pos,/noerase
+plot,[0],[0],xra=[tran[0]-1,tran[1]+1],yra=[-0.02,max([vnorm,anorm])+0.02],/xsty,/ysty,ytit='Norm. Area / Volume (-)',pos=pos,/noerase
 
 oplot,t,anorm,thi=6,col=2
 oplot,t,vnorm,thi=6,col=4
@@ -1792,7 +1792,7 @@ endif
 ; --------------------------------
 ; write file for volume below sea level
 if calibrate ne 'y' and write_file eq 'y' then begin
-   for i=0,years-1 do printf,7,tran(0)+i,vol_bz(i),fo='(i4,f12.2)'
+   for i=0,years-1 do printf,7,tran[0]+i,vol_bz(i),fo='(i4,f12.2)'
    close,7
    close,33
 endif
