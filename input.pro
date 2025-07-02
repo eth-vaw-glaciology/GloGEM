@@ -21,7 +21,8 @@ time_resolution = 'monthly' ; 'daily'/'monthly' - SELECT TIME RESOLUTION OF MODE
 username = getenv('USER') ; Get the current user's username from the environment
 
 ; set main directory
-main_dir = '/itet-stor/' + username + '/glogem/' ; Construct the main directory path
+; main_dir = '/itet-stor/' + username + '/glogem/' ; Construct the main directory path
+main_dir = '/Volumes/jabeer/glogem/' ; main directory on the cluster
 ; main_dir = '~/remote/glogem/' ; when running on personal computer -> requires manual mounting of the data folder
 
 ; input
@@ -32,8 +33,8 @@ dir_clim = main_dir + 'climatedata/' ; climate data
 
 ; output (same machine as you run on)scratch via the network
 ; dirres = '/scratch_net/vierzack05_fourth/lvantrich/GloGEM'
-dirres = '/scratch_net/vierzack04_fourth/jabeer/GloGEM/batch_results_diff_icetemp/firnice_perm/r' + RGIversion + '_' + time_resolution + '/' ; output folder  (same machine as you run on)scratch via the network
-; dirres = '~/remote/results/GloGEM/batch_results_diff_icetemp/firnice_perm/r' + RGIversion + '_' + time_resolution + '/' ; output folder when running on personal computer -> requires manual mounting of the data folder
+; dirres = '/scratch_net/vierzack04_fourth/jabeer/GloGEM/batch_results_diff_icetemp/firnice_perm/r' + RGIversion + '_' + time_resolution + '/' ; output folder  (same machine as you run on)scratch via the network
+dirres = '/Users/janoschbeer/Library/Mobile Documents/com~apple~CloudDocs/PhD/projects/GloGEM/results_flow_model/r' + RGIversion + '_' + time_resolution + '/' ; output folder when running on personal computer -> requires manual mounting of the data folder
 
 ; --- region selection
 ; regions can be selected in group via a range of region-IDs
@@ -95,7 +96,7 @@ catchment_selection = ''
 tran = [1950, 2100] ; time period of modelling
 ; tran=[2010,2030]                   ; time period of modelling
 
-calibrate='n'                      ; DO NOT CALIBRATE, JUST RUN FORWARD       => output to files/
+calibrate = 'n' ; DO NOT CALIBRATE, JUST RUN FORWARD       => output to files/
 
 ; calibrate = 'y' ; PERFORM MODEL CALIBRATION                => no output, but calibration files to calibration/
 
@@ -252,7 +253,7 @@ debris_thick_gradient = 1.0 ; [cm a-1 km-1]  thickening linearly increasing from
 
 refreezing_full = 'y' ; ACTIVATE REFREEZING MODEL
 
-firnice_temperature = 'y' ; ACTIVATE ICE TEMPERATURE MODEL - compute firn/ice temperatures transiently (not just for refreezing)
+firnice_temperature = 'n' ; ACTIVATE ICE TEMPERATURE MODEL - compute firn/ice temperatures transiently (not just for refreezing)
 firnice_write = ['y', 'y'] ; output of overall (time series, annual) and detailed (profiles, monthly) files
 firnice_batch = 'n' ; run batch (all sites contained in icetemperature_batch.dat)
 ; only relevant if defined manually (firnice_runbatch='n' )
