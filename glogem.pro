@@ -758,7 +758,7 @@ endif
 
 ;prepare output for hypsometry-evolution file
 if write_hypsometry_files eq 'y' then begin
-   b='/files'+mtt+'/'+GCM_model(gcms)+'/'+GCM_rcp(rcps)
+   b='/files'+mtt+'/'+GCM_model[gcms]+'/'+GCM_rcp[rcps]
    if reanalysis_direct eq 'y' then b='/PAST'
    c=findfile(dirres+dir_region+b+'/hypsometry')
 
@@ -1750,7 +1750,7 @@ if cphl eq 3 then caliphase_statistics[cphl-1]=ci*100/anz-caliphase_statistics[c
 endfor                 ; calibration phases
 
 print, 'FINISHED region !!! '+region+' !!! '+clim_subregion
-if reanalysis_direct ne 'y' then print, '    calculated with GCM: '+GCM_model(gcms)+' / '+GCM_rcp(rcps)+' / '+GCM_experiment(experis)
+if reanalysis_direct ne 'y' then print, '    calculated with GCM: '+GCM_model[gcms]+' / '+GCM_rcp[rcps]+' / '+GCM_experiment[experis]
 print, '    calculated with Re-analysis data set '+reanalysis
 
 print, '**********'
@@ -1822,7 +1822,7 @@ endfor                          ; experiments
 ; zipping and removing files
 if write_hypsometry_files eq 'y' then begin
    if meltmodel eq '1' then mtt='' else mtt='_m3'
-   b='/files'+mtt+'/'+GCM_model(gcms)+'/'+GCM_rcp(rcps)
+   b='/files'+mtt+'/'+GCM_model[gcms]+'/'+GCM_rcp[rcps]
    if reanalysis_direct eq 'y' then b='/PAST'
    ; zipping automatically,  but not for RGI-regions with subregions
    if region ne 'lowlatitudes' and region ne 'antarctic' and region ne 'northasia' then begin
