@@ -9,3 +9,4 @@ output/
 *.grid
 *.agr
 .DS_Store
+results_flow_model/
