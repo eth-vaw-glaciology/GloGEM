@@ -271,6 +271,9 @@ ice_permeability = 'y' ; 'y' to activate ice  permeability model
 use_flow_model = 'y' ; (y/n) ACTIVATE FLOW MODEL (GloGEMflow, Zekollari et al., 2019)
 glacier_retreat = 'n' ; (y/n) ACTIVATE GLACIER RETREAT MODEL(dhdt-parameterization, Huss et al., 2010)
 
+; ----- option to write out glacier geometry for testing different evolution models
+write_geometry_output = 'y' ; (y/n) write out glacier geometry as .sav file for testing
+
 ; ----- glacier retreat module
 
 expon = 2. ; Parameter for valley shape regulating band area loss depending on thickness loss
