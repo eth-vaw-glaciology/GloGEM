@@ -349,27 +349,24 @@ b = '/' + date_str + '/'
 
 if tran[1] le tt then b='/PAST'+version_past+mtt
 
-c=findfile(dirres+dir_region)
-if c[0] eq '' then begin
-   spawn,'mkdir '+dirres+dir_region & spawn,'chmod a+rx '+dirres+dir_region 
-   spawn,'mkdir '+dirres+dir_region+'/calibration' & spawn,'chmod a+rx '+dirres+dir_region+'/calibration' ; calibration folder
-   spawn,'mkdir '+dirres+dir_region+'/files'+mtt & spawn,'chmod a+rx '+dirres+dir_region+'/files'+mtt     ; result files
-   spawn,'mkdir '+dirres+dir_region+'/PAST'+mtt & spawn,'chmod a+rx '+dirres+dir_region+'/PAST'+mtt       ; past files
+; Use FILE_TEST and FILE_MKDIR instead of findfile and spawn
+if ~FILE_TEST(dirres+dir_region, /DIRECTORY) then begin
+   FILE_MKDIR, dirres+dir_region
+   FILE_MKDIR, dirres+dir_region+'/calibration'  ; calibration folder
+   FILE_MKDIR, dirres+dir_region+'/files'+mtt    ; result files
+   FILE_MKDIR, dirres+dir_region+'/PAST'+mtt     ; past files
 endif
 
-c=findfile(dirres+dir_region+'/files/SINGLE') 
-if c[0] eq '' then begin
-   spawn,'mkdir '+dirres+dir_region+'/files/SINGLE' & spawn,'chmod a+rx '+dirres+dir_region+'/files/SINGLE'
+if ~FILE_TEST(dirres+dir_region+'/files/SINGLE', /DIRECTORY) then begin
+   FILE_MKDIR, dirres+dir_region+'/files/SINGLE'
 endif
 
-c=findfile(dirres+dir_region+'/files'+mtt+'/'+GCM_model[gcms])
-if c[0] eq '' then begin
-   spawn,'mkdir '+dirres+dir_region+'/files'+mtt+'/'+GCM_model[gcms] & spawn,'chmod a+rx '+dirres+dir_region+'/files'+mtt+'/'+GCM_model[gcms]
+if ~FILE_TEST(dirres+dir_region+'/files'+mtt+'/'+GCM_model[gcms], /DIRECTORY) then begin
+   FILE_MKDIR, dirres+dir_region+'/files'+mtt+'/'+GCM_model[gcms]
 endif
-c=findfile(dirres+dir_region+'/files'+mtt+'/'+GCM_model[gcms]+'/'+GCM_rcp[rcps])
-if c[0] eq '' then begin
-   spawn,'mkdir '+dirres+dir_region+'/files'+mtt+'/'+GCM_model[gcms]+'/'+GCM_rcp[rcps]
-   spawn,'chmod a+rx '+dirres+dir_region+'/files'+mtt+'/'+GCM_model[gcms]+'/'+GCM_rcp[rcps]
+
+if ~FILE_TEST(dirres+dir_region+'/files'+mtt+'/'+GCM_model[gcms]+'/'+GCM_rcp[rcps], /DIRECTORY) then begin
+   FILE_MKDIR, dirres+dir_region+'/files'+mtt+'/'+GCM_model[gcms]+'/'+GCM_rcp[rcps]
 endif
 
 ; ------------------------------
@@ -760,9 +757,20 @@ endif
 if write_hypsometry_files eq 'y' then begin
    b='/files'+mtt+'/'+GCM_model[gcms]+'/'+GCM_rcp[rcps]
    if reanalysis_direct eq 'y' then b='/PAST'
-   c=findfile(dirres+dir_region+b+'/hypsometry')
+   
+   ; Use FILE_TEST instead of findfile
+   dir_path = dirres+dir_region+b+'/hypsometry'
+   dir_exists = FILE_TEST(dir_path, /DIRECTORY)
+   
+   print, b
+   print, 'Directory exists:', dir_exists
+   print, dir_path
 
-   if c[0] eq '' then spawn,'mkdir '+dirres+dir_region+b+'/hypsometry' & if b[0] eq '' then spawn,'chmod a+rx '+dirres+dir_region+b+'/hypsometry'
+   ; Create hypsometry directory if it does not exist
+   if ~dir_exists then begin
+      spawn, 'mkdir -p "'+dir_path+'"'
+      spawn, 'chmod a+rx "'+dir_path+'"'
+   endif
    openw,9,dirres+dir_region+b+'/hypsometry/hypso_'+id[gg[g]]+'.dat'
    openw,34,dirres+dir_region+b+'/hypsometry/volume_'+id[gg[g]]+'.dat'
    openw,35,dirres+dir_region+b+'/hypsometry/temp_'+id[gg[g]]+'.dat'
@@ -891,6 +899,8 @@ tl_fit=te_fit
 
 
 for ye=0,years-1 do begin
+
+Print,'Processing year: ', ye+tran[0], ' for glacier: ', id[gg[g]]
 
 if eval_mbelevsensitivity eq 'y' then begin
    count_mbelevsens=count_mbelevsens_v0 ; initialising to start value of counter
@@ -1304,6 +1314,31 @@ endif else begin
    GLACIER_RETREAT,ye,thick,thick_ini,elev,bed_elev,area,areas,area_ini,gl,dh_size,nb,dvol,bal,balv,advance,adv_fcrit,volume0,volume1,volumes,adv_iniar,adv_inithi,adv_iniamplification,expon,redistribute_vplus,adv_lookup,adv_lookup_data,flux_calv,dens,ar_gl
 endelse    
 
+; write geometry files
+if write_geometry_output eq 'y' then begin
+   ; Initialize arrays on first year
+   if ye eq 0 then begin
+      thick_hist = dblarr(nb, years)
+      elev_hist = dblarr(nb, years)
+      bed_elev_hist = dblarr(nb, years)
+      length_hist = dblarr(nb, years)
+      year_hist = lonarr(years)
+   endif
+
+   ; Store geometry for this year (per elevation band)
+   thick_hist[*, ye] = thick
+   elev_hist[*, ye] = elev
+   bed_elev_hist[*, ye] = bed_elev
+   length_hist[*, ye] = length
+   year_hist[ye] = ye + tran[0]
+
+   ; At the end of the last year, save all geometry in one structure
+   if ye eq years-1 then begin
+      geometry_hist = {thick: thick_hist, elev: elev_hist, bed_elev: bed_elev_hist, length: length_hist, years: year_hist}
+      save_file = dirres + dir_region + '/geometry_' + id[gg[g]] + '.sav'
+      save, geometry_hist, file=save_file
+   endif
+endif
 
 endfor    ; Loop over years
 
@@ -1664,7 +1699,6 @@ endif
 
 count_glaciers=count_glaciers+1
 
-
 endfor   ; loop over glaciers
 
 endfor    ; grids y
@@ -1792,7 +1826,7 @@ endif
 ; --------------------------------
 ; write file for volume below sea level
 if calibrate ne 'y' and write_file eq 'y' then begin
-   for i=0,years-1 do printf,7,tran[0]+i,vol_bz(i),fo='(i4,f12.2)'
+   for i=0,years-1 do printf,7,tran[0]+i,vol_bz[i],fo='(i4,f12.2)'
    close,7
    close,33
 endif
@@ -1826,8 +1860,13 @@ if write_hypsometry_files eq 'y' then begin
    if reanalysis_direct eq 'y' then b='/PAST'
    ; zipping automatically,  but not for RGI-regions with subregions
    if region ne 'lowlatitudes' and region ne 'antarctic' and region ne 'northasia' then begin
-      spawn, 'zip -r '+dirres+dir_region+b+'/hypsometry.zip  '+dirres+dir_region+b+'/hypsometry'
-      spawn, 'rm -r '+dirres+dir_region+b+'/hypsometry'
+      parent_dir = dirres+dir_region+b
+      dir_name = 'hypsometry'
+      zip_path = parent_dir+'/hypsometry.zip'
+      
+      ; Change to parent directory and zip only the directory name
+      spawn, 'cd "'+parent_dir+'" && zip -r "hypsometry.zip" "'+dir_name+'"'
+      spawn, 'rm -r "'+parent_dir+'/'+dir_name+'"'
    endif
 endif
 
