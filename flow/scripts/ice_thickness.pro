@@ -31,3 +31,16 @@ for j = 0, 2 do begin ; 3 sub-steps used. Worked well. Maybe not really needed o
   ; Call the script to renew various variables at these sub time-steps (surface elevation, width_mid and width_surface)
   @variables_renew
 endfor
+
+; Add these diagnostics to your ice_thickness.pro
+print, 'Before thickness update:'
+print, '  Max bal: ', max(abs(bal))
+print, '  Max term3: ', max(abs(term3))
+print, '  Max dt*term3: ', max(abs(dt * term3))
+print, '  Max dt*bal: ', max(abs(dt * bal))
+print, '  Min width_surface: ', min(width_surface[where(width_surface gt 0)])
+
+; After thickness update
+print, 'After thickness update:'
+print, '  Max thickness: ', max(th)
+print, '  Thickness change: ', max(abs(dt * (term3 + bal)))
