@@ -14,7 +14,7 @@ endif else if dt_max gt dtmb then begin ; Don't want the time step to be larger 
 endif
 
 if dt_flag eq 0 and t gt 2 then begin ; Adapt the time step:
-  dt = (dx ^ 2 / (max(df))) * dtfactor ; CFL type of criterion, multiplied with the 'dtfactor'
+  dt = (dx ^ 2 / (max(df_x))) * dtfactor ; CFL type of criterion, multiplied with the 'dtfactor'
   if dt gt dt_max then dt = dt_max ; If needed: impose limit on the dt
 endif
 
