@@ -179,3 +179,18 @@ endif else begin ; Ice flow from 'left to right'
   domain_exit_index = xnum - 3
   print, 'domain_exit_index = ', domain_exit_index
 endelse
+
+; Diagnoistic print outs to check the initial geometry
+print, 'first_icp = ', first_icp
+print, 'obs_vol_flowlinemodel = ', obs_vol_flowlinemodel
+print, 'obs_vol_trapezium = ', obs_vol_trapezium
+print, 'obs_th = ', obs_th
+print, 'obs_sur = ', obs_sur
+print, 'bed_x = ', bed_x
+print, 'width_base = ', width_base
+print, 'width_mid = ', width_mid
+print, 'width_mid_obs = ', width_mid_obs
+print, 'lambda_x = ', lambda_x
+print, 'th_x = ', th_x
+print, 'sur_x = ', sur_x
+print, 'domain_exit_index = ', domain_exit_index
