@@ -1322,6 +1322,8 @@ if write_geometry_output eq 'y' then begin
       elev_hist = dblarr(nb, years)
       bed_elev_hist = dblarr(nb, years)
       length_hist = dblarr(nb, years)
+      ; velocity_hist = dblarr(nb, years)
+      area_hist = dblarr(nb, years)
       year_hist = lonarr(years)
    endif
 
@@ -1330,11 +1332,13 @@ if write_geometry_output eq 'y' then begin
    elev_hist[*, ye] = elev
    bed_elev_hist[*, ye] = bed_elev
    length_hist[*, ye] = length
+   ; velocity_hist[*, ye] = velocity
+   area_hist[*, ye] = area
    year_hist[ye] = ye + tran[0]
 
    ; At the end of the last year, save all geometry in one structure
    if ye eq years-1 then begin
-      geometry_hist = {thick: thick_hist, elev: elev_hist, bed_elev: bed_elev_hist, length: length_hist, years: year_hist}
+      geometry_hist = {thick: thick_hist, elev: elev_hist, bed_elev: bed_elev_hist, length: length_hist, area: area_hist, years: year_hist}
       save_file = dirres + dir_region + '/geometry_' + id[gg[g]] + '.sav'
       save, geometry_hist, file=save_file
    endif
