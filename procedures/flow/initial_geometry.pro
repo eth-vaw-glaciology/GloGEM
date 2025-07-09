@@ -10,11 +10,11 @@ for i = 0, xnum - 1 do begin
 endfor
 
 ; ; Observed volume per grid and surface elevation
-x = fltarr(xnum)
+x_dist = fltarr(xnum)
 obs_vol = fltarr(xnum)
 obs_sur = fltarr(xnum)
 for i = 0, xnum - 1 do begin
-  x[i] = ((i + 1) / float(xnum)) * domainsize
+  x_dist[i] = ((i + 1) / float(xnum)) * domainsize
   obs_vol[i] = th_x_input[i] * width_x_input[i] * dx
   obs_sur[i] = sur_x_input[i] ; In some cases 'obs_sur' is needed for SMB calculations (when this is based on observed geometry and not on modelled geometry)
 endfor
