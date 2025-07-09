@@ -64,3 +64,5 @@ if smb_sinus_flag gt 0 then begin
   b = sin((a / freq) * !pi * 2) ; Note: IDL uses radians, not degrees like MATLAB's sind()
   bal = bal + b * amplitude
 endif
+
+; print, bal
