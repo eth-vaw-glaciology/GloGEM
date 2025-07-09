@@ -12,6 +12,9 @@ rho = 900 ; Density of ice in kg/m^3
 df_max = 0 ; Maximum modelled diffusivity factor
 df_lim = (length_fixeddistance ^ 2) / 2 ; maximum value allowed for the diffusivity factor is related to the observed glacier length at inventory date (will likely have to be modified for other regions than the Alps)
 
+print, 'length_fixeddistance = ', length_fixeddistance
+print, 'df_lim = (length_fixeddistance ^ 2) / 2 = ', df_lim
+
 ; Time:
 counter_diag = 0
 if dt_flag eq 0 then begin ; Dynamic time step (i.e. dt changes over time). First value to be used is based on CFL-criterion
