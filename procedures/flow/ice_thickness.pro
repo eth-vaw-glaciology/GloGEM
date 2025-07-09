@@ -21,7 +21,7 @@ for j = 0, 2 do begin ; 3 sub-steps used. Worked well. Maybe not really needed o
     term2[i] = ((width_mid[i + 1] - width_mid[i - 1]) / (2 * dx)) * grad_x[i] * df_x[i]
     term3[i] = (term1[i] + term2[i]) / width_surface[i]
     if ~finite(term3[i]) then term3[i] = 0 ; to avoid problems when width_surface == 0
-    th_x[i] = th_x[i] + (1.0 / 3.0) * dt * (term3[i] + bal[i])
+    th_x[i] = th_x[i] + (1.0 / 3.0) * dt * (term3[i] + bal_x[i])
   endfor
 
   i = where(th_x lt 0, count)
