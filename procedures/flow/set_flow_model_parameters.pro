@@ -1,8 +1,8 @@
-;---------------------------------
+; ---------------------------------
 
 ; This script sets the flow parameters for GloGEMflow
 
-;---------------------------------
+; ---------------------------------
 
 ; Define default parameters
 compile_opt idl2
@@ -22,3 +22,4 @@ smb_sinus_flag = 0 ; 0 = no perturbation on SMB signal; X = put sinusoidal signa
 ss_criterion = 0.01 ; X = steady state is reached when the volume change is less than X percent per dtdiag (i.e. typically when the volume change is less than 0.01% per year)
 start_year = 0 ; X = year in which the simulation starts (typically 0 for steady state experiments, and real year (e.g. 1950/1990) for transient simulations)
 width_flag = 2 ; 0 = same width along the flowline (never used, may even not work anymore; was used for initial tests); 1 = rectangle transect (only used for sensitivity tests in paper); 2 = trapezium transect (classic)
+smb_method_flag = 1 ; 0 = use interpolation method; 1 = use polynomial method (i.e. use polynomial fit to calculate SMB at each point along the flowline, which is the default method)
