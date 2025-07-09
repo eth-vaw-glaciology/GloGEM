@@ -6,18 +6,38 @@
 
 compile_opt idl2
 
-; ------------------------------------------ ;
-; Update the time and the time step
-@procedures/flow/update_time_dt
+time = ye ; get the current time in years -> note the time step within the glogemflow model is smaller & adaptive
 
-; ------------------------------------------ ;
-; Load surface mass balance (SMB) from GloGEM
-@procedures/flow/load_smb
+; Loop over the time steps from start year to end year
+while time lt tran[1] do begin
+  ; ------------------------------------------ ;
+  ; Update the time and the time step
+  @procedures/flow/update_time_dt
 
-; ------------------------------------------ ;
-; Diffusivity factor calculation
-@procedures/flow/diffusivity
+  ; ------------------------------------------ ;
+  ; Load & apply surface mass balance (SMB) from GloGEM
+  if (time - next_time_mb) ge 0 then begin
+    @procedures/flow/massbal
+    next_time_mb = next_time_mb + dtmb
+  endif
 
-; ------------------------------------------ ;
-; Ice thickness change calculation (i.e. solve continuity equation)
-@procedures/flow/ice_thickness
+  ; ------------------------------------------ ;
+  ; Diffusivity factor calculation
+  @procedures/flow/diffusivity
+
+  ; ------------------------------------------ ;
+  ; Ice thickness change calculation (i.e. solve continuity equation)
+  @procedures/flow/ice_thickness
+
+  ; ------------------------------------------ ;
+  ; Update vertical grid geometry
+  ; @procedures/flow/update_vertical_grid
+  @procedures/flow/conservative_volume_vertical_grid_update
+
+  ; ------------------------------------------ ;
+  ; Write diagnostic output
+  ; @procedures/flow/diagnostic_write
+
+  print, 'Time step (years): ', time
+  break
+endwhile
