@@ -1,0 +1,863 @@
+{
+  "version": "2.0.0",
+  "cells": [
+    {
+      "type": "markdown",
+      "content": [
+        "### conservative_volume_vertical_grid_update",
+        "This notebook is to test the back conversion from the horizontally equidistant grid to the vertically equidistant grid"
+      ],
+      "metadata": {},
+      "outputs": []
+    },
+    {
+      "type": "code",
+      "content": [
+        "; ========== CREATE ARTIFICIAL GLACIER DATA ==========",
+        "print, '=== CREATING ARTIFICIAL GLACIER DATA ==='",
+        "",
+        "; Horizontal grid parameters",
+        "xnum = 50",
+        "x_dist = findgen(xnum) * 500.0  ; 500m spacing, 25km total length",
+        "dx = x_dist[1] - x_dist[0]  ; Constant spacing",
+        "",
+        "; Create realistic glacier profile",
+        "bed_x = 1500.0 + x_dist * 0.05  ; Gentle upward bed slope",
+        "th_x = dblarr(xnum)",
+        "",
+        "; Create realistic thickness profile (thick in middle, thin at ends)",
+        "for i = 0, xnum-1 do begin",
+        "  ; Parabolic thickness profile",
+        "  relative_pos = float(i) / (xnum-1)  ; 0 to 1",
+        "  if relative_pos le 0.1 then begin",
+        "    ; Thin near terminus",
+        "    th_x[i] = 50.0 * relative_pos / 0.1",
+        "  endif else if relative_pos ge 0.9 then begin",
+        "    ; Thin near head",
+        "    th_x[i] = 50.0 * (1.0 - relative_pos) / 0.1",
+        "  endif else begin",
+        "    ; Thick in middle (parabolic)",
+        "    mid_factor = 4.0 * (relative_pos - 0.1) * (0.9 - relative_pos) / (0.8^2)",
+        "    th_x[i] = 50.0 + 200.0 * mid_factor",
+        "  endelse",
+        "endfor",
+        "",
+        "; Calculate surface elevation",
+        "sur_x = bed_x + th_x",
+        "",
+        "; Create width profile (wider in middle)",
+        "width_base = 100.0 + 300.0 * sin(!pi * findgen(xnum) / (xnum-1))",
+        "lambda_x = dblarr(xnum) + 2.0  ; Constant shape factor",
+        "width_surface_original = width_base + lambda_x * th_x",
+        "",
+        "print, 'Horizontal grid created:'",
+        "print, '  Points: ', xnum",
+        "print, '  Length: ', max(x_dist) - min(x_dist), ' m'",
+        "print, '  Elevation range: ', min(sur_x), ' to ', max(sur_x), ' m'",
+        "print, '  Max thickness: ', max(th_x), ' m'",
+        "print, '  Width range: ', min(width_surface_original), ' to ', max(width_surface_original), ' m'"
+      ],
+      "metadata": {},
+      "outputs": [
+        {
+          "items": [
+            {
+              "mime": "text/plain",
+              "content": [
+                "=== CREATING ARTIFICIAL GLACIER DATA ===",
+                "Horizontal grid created:",
+                "  Points:           50",
+                "  Length:       24500.0 m",
+                "  Elevation range:        1500.0000 to        2725.0000 m",
+                "  Max thickness:        249.86983 m",
+                "  Width range:        99.999977 to        899.58551 m",
+                ""
+              ]
+            }
+          ],
+          "metadata": {
+            "id": "not-saved"
+          }
+        }
+      ]
+    },
+    {
+      "type": "code",
+      "content": [
+        "width_surface_original"
+      ],
+      "metadata": {},
+      "outputs": [
+        {
+          "items": [
+            {
+              "mime": "text/plain",
+              "content": [
+                "       100.00000000000000       139.62923240661621       179.17947006225586",
+                "       218.57208251953125       257.72902679443359       298.60369873046875",
+                "       356.21817016601562       411.28756713867188       463.73960876464844",
+                "       513.50424194335938       560.51394653320312       604.70382690429688",
+                "       646.01214599609375       684.38031005859375       719.75350952148438",
+                "       752.08044433593750       781.31375122070312       807.41040039062500",
+                "       830.33169555664062       850.04318237304688       866.51538085937500",
+                "       879.72323608398438       889.64678955078125       896.27093505859375",
+                "       899.58551025390625       899.58551025390625       896.27090454101562",
+                "       889.64678955078125       879.72317504882812       866.51535034179688",
+                "       850.04318237304688       830.33163452148438       807.41033935546875",
+                "       781.31365966796875       752.08035278320312       719.75341796875000",
+                "       684.38034057617188       646.01205444335938       604.70376586914062",
+                "       560.51394653320312       513.50410461425781       463.73954772949219",
+                "       411.28746032714844       356.21809387207031       298.60357666015625",
+                "       257.72904205322266       218.57205581665039       179.17940521240234",
+                "       139.62925338745117       99.999977111816406"
+              ]
+            }
+          ],
+          "metadata": {
+            "id": "not-saved"
+          }
+        }
+      ]
+    },
+    {
+      "type": "code",
+      "content": [
+        "th_x"
+      ],
+      "metadata": {},
+      "outputs": [
+        {
+          "items": [
+            {
+              "mime": "text/plain",
+              "content": [
+                "       0.0000000000000000       10.204081535339355       20.408163070678711",
+                "       30.612243652343750       40.816326141357422       52.035614013671875",
+                "       71.819030761718750       90.561218261718750       108.26216888427734",
+                "       124.92189025878906       140.54039001464844       155.11764526367188",
+                "       168.65368652343750       181.14845275878906       192.60203552246094",
+                "       203.01437377929688       212.38545227050781       220.71530151367188",
+                "       228.00395202636719       234.25132751464844       239.45750427246094",
+                "       243.62243652343750       246.74612426757812       248.82859802246094",
+                "       249.86982727050781       249.86982727050781       248.82858276367188",
+                "       246.74612426757812       243.62240600585938       239.45748901367188",
+                "       234.25132751464844       228.00392150878906       220.71528625488281",
+                "       212.38542175292969       203.01432800292969       192.60200500488281",
+                "       181.14845275878906       168.65365600585938       155.11763000488281",
+                "       140.54039001464844       124.92185211181641       108.26213836669922",
+                "       90.561187744140625       71.819007873535156       52.035598754882812",
+                "       40.816333770751953       30.612230300903320       20.408153533935547",
+                "       10.204076766967773       0.0000000000000000"
+              ]
+            }
+          ],
+          "metadata": {
+            "id": "not-saved"
+          }
+        }
+      ]
+    },
+    {
+      "type": "code",
+      "content": [
+        "bed_x"
+      ],
+      "metadata": {},
+      "outputs": [
+        {
+          "items": [
+            {
+              "mime": "text/plain",
+              "content": [
+                "       1500.0000       1525.0000       1550.0000       1575.0000       1600.0000",
+                "       1625.0000       1650.0000       1675.0000       1700.0000       1725.0000",
+                "       1750.0000       1775.0000       1800.0000       1825.0000       1850.0000",
+                "       1875.0000       1900.0000       1925.0000       1950.0000       1975.0000",
+                "       2000.0000       2025.0000       2050.0000       2075.0000       2100.0000",
+                "       2125.0000       2150.0000       2175.0000       2200.0000       2225.0000",
+                "       2250.0000       2275.0000       2300.0000       2325.0000       2350.0000",
+                "       2375.0000       2400.0000       2425.0000       2450.0000       2475.0000",
+                "       2500.0000       2525.0000       2550.0000       2575.0000       2600.0000",
+                "       2625.0000       2650.0000       2675.0000       2700.0000       2725.0000"
+              ]
+            }
+          ],
+          "metadata": {
+            "id": "not-saved"
+          }
+        }
+      ]
+    },
+    {
+      "type": "code",
+      "content": [
+        "x_dist"
+      ],
+      "metadata": {},
+      "outputs": [
+        {
+          "items": [
+            {
+              "mime": "text/plain",
+              "content": [
+                "       0.0000000       500.00000       1000.0000       1500.0000       2000.0000",
+                "       2500.0000       3000.0000       3500.0000       4000.0000       4500.0000",
+                "       5000.0000       5500.0000       6000.0000       6500.0000       7000.0000",
+                "       7500.0000       8000.0000       8500.0000       9000.0000       9500.0000",
+                "       10000.000       10500.000       11000.000       11500.000       12000.000",
+                "       12500.000       13000.000       13500.000       14000.000       14500.000",
+                "       15000.000       15500.000       16000.000       16500.000       17000.000",
+                "       17500.000       18000.000       18500.000       19000.000       19500.000",
+                "       20000.000       20500.000       21000.000       21500.000       22000.000",
+                "       22500.000       23000.000       23500.000       24000.000       24500.000"
+              ]
+            }
+          ],
+          "metadata": {
+            "id": "not-saved"
+          }
+        }
+      ]
+    },
+    {
+      "type": "code",
+      "content": [
+        "dx"
+      ],
+      "metadata": {},
+      "outputs": [
+        {
+          "items": [
+            {
+              "mime": "text/plain",
+              "content": [
+                "       500.00000",
+                ""
+              ]
+            }
+          ],
+          "metadata": {
+            "id": "not-saved"
+          }
+        }
+      ]
+    },
+    {
+      "type": "code",
+      "content": [
+        "; ========== CREATE VERTICAL GRID ==========",
+        "print, ''",
+        "print, '=== CREATING VERTICAL GRID ==='",
+        "",
+        "; Vertical grid parameters",
+        "step = 25.0  ; 25m elevation bands",
+        "elev_min = min(sur_x)  ; Minimum surface elevation",
+        "elev_max = max(sur_x)",
+        "nb = fix((elev_max - elev_min) / step) + 1",
+        "elev = elev_min + findgen(nb) * step",
+        "",
+        "; Initialize vertical arrays",
+        "thick = dblarr(nb)",
+        "area = dblarr(nb)",
+        "width = dblarr(nb)",
+        "gl = dblarr(nb)",
+        "bed_elev = elev - 100.0  ; Initialize with some thickness",
+        "noval = -9999.0",
+        "",
+        "print, 'Vertical grid created:'",
+        "print, '  Bands: ', nb",
+        "print, '  Elevation range: ', min(elev), ' to ', max(elev), ' m'",
+        "print, '  Band size: ', step, ' m'",
+        ""
+      ],
+      "metadata": {},
+      "outputs": [
+        {
+          "items": [
+            {
+              "mime": "text/plain",
+              "content": [
+                "",
+                "=== CREATING VERTICAL GRID ===",
+                "Vertical grid created:",
+                "  Bands:           50",
+                "  Elevation range:        1500.0000 to        2725.0000 m",
+                "  Band size:       25.0000 m",
+                ""
+              ]
+            }
+          ],
+          "metadata": {
+            "id": "not-saved"
+          }
+        }
+      ]
+    },
+    {
+      "type": "code",
+      "content": [
+        "elev"
+      ],
+      "metadata": {},
+      "outputs": [
+        {
+          "items": [
+            {
+              "mime": "text/plain",
+              "content": [
+                "       1500.0000000000000       1525.0000000000000       1550.0000000000000",
+                "       1575.0000000000000       1600.0000000000000       1625.0000000000000",
+                "       1650.0000000000000       1675.0000000000000       1700.0000000000000",
+                "       1725.0000000000000       1750.0000000000000       1775.0000000000000",
+                "       1800.0000000000000       1825.0000000000000       1850.0000000000000",
+                "       1875.0000000000000       1900.0000000000000       1925.0000000000000",
+                "       1950.0000000000000       1975.0000000000000       2000.0000000000000",
+                "       2025.0000000000000       2050.0000000000000       2075.0000000000000",
+                "       2100.0000000000000       2125.0000000000000       2150.0000000000000",
+                "       2175.0000000000000       2200.0000000000000       2225.0000000000000",
+                "       2250.0000000000000       2275.0000000000000       2300.0000000000000",
+                "       2325.0000000000000       2350.0000000000000       2375.0000000000000",
+                "       2400.0000000000000       2425.0000000000000       2450.0000000000000",
+                "       2475.0000000000000       2500.0000000000000       2525.0000000000000",
+                "       2550.0000000000000       2575.0000000000000       2600.0000000000000",
+                "       2625.0000000000000       2650.0000000000000       2675.0000000000000",
+                "       2700.0000000000000       2725.0000000000000"
+              ]
+            }
+          ],
+          "metadata": {
+            "id": "not-saved"
+          }
+        }
+      ]
+    },
+    {
+      "type": "code",
+      "content": [
+        "; ; ========== CORRECTED INTERPOLATION WITH DISTANCE SAMPLING ==========",
+        "; print, ''",
+        "; print, '=== CORRECTED INTERPOLATION (DISTANCE SAMPLING) ==='",
+        "",
+        "; ; Calculate volume on vertical grid by finding distance represented by each elevation band",
+        "; thick_new = dblarr(nb)",
+        "; width_new = dblarr(nb)",
+        "; area_new = dblarr(nb)",
+        "; distance_per_band = dblarr(nb)",
+        "",
+        "; thick_new[valid_bands] = thick_interp",
+        "; width_new[valid_bands] = width_interp",
+        "",
+        "; ; KEY FIX: Calculate actual distance represented by each elevation band",
+        "; for i = 0, n_elements(valid_bands)-1 do begin",
+        ";   band_idx = valid_bands[i]",
+        ";   elev_target = elev_bands[band_idx]",
+        "  ",
+        ";   ; Find the distance range that corresponds to this elevation band",
+        ";   elev_band_min = elev_target - step/2.0",
+        ";   elev_band_max = elev_target + step/2.0",
+        "  ",
+        ";   ; Find all horizontal points within this elevation band",
+        ";   points_in_band = where((sur_x ge elev_band_min) and (sur_x le elev_band_max), n_points_in_band)",
+        "  ",
+        ";   if n_points_in_band gt 0 then begin",
+        ";     ; Calculate the distance range covered by this elevation band",
+        ";     x_min_in_band = min(x_dist[points_in_band])",
+        ";     x_max_in_band = max(x_dist[points_in_band])",
+        ";     distance_covered = x_max_in_band - x_min_in_band",
+        "    ",
+        ";     ; For single points, use interpolation to estimate distance coverage",
+        ";     if distance_covered eq 0 and n_points_in_band eq 1 then begin",
+        ";       ; Estimate distance coverage by looking at neighboring elevation gradient",
+        ";       point_idx = points_in_band[0]",
+        "      ",
+        ";       if point_idx gt 0 and point_idx lt n_elements(sur_x)-1 then begin",
+        ";         ; Calculate local elevation gradient",
+        ";         elev_grad = (sur_x[point_idx+1] - sur_x[point_idx-1]) / (x_dist[point_idx+1] - x_dist[point_idx-1])",
+        ";         if abs(elev_grad) gt 0.001 then begin  ; Avoid division by zero",
+        ";           distance_covered = step / abs(elev_grad)  ; Distance for this elevation step",
+        ";         endif else begin",
+        ";           distance_covered = dx  ; Use default distance step for flat areas",
+        ";         endelse",
+        ";       endif else begin",
+        ";         distance_covered = dx  ; Use default for end points",
+        ";       endelse",
+        ";     endif",
+        "    ",
+        ";     ; Store the distance this band represents",
+        ";     distance_per_band[band_idx] = distance_covered",
+        "    ",
+        ";     ; Calculate area using actual distance coverage",
+        ";     area_new[band_idx] = width_new[band_idx] * distance_covered / 1000.0  ; Convert to km²",
+        "    ",
+        ";   endif else begin",
+        ";     ; No points in this band - should not contribute to volume",
+        ";     distance_per_band[band_idx] = 0.0",
+        ";     area_new[band_idx] = 0.0",
+        ";   endelse",
+        "; endfor",
+        "",
+        "; total_volume_vertical_corrected = total(thick_new * area_new * 1000.)  ; Convert back to m³",
+        "; volume_error_corrected = abs(total_volume_flow - total_volume_vertical_corrected) / total_volume_flow",
+        "",
+        "; print, ''",
+        "; print, '=== CORRECTED VOLUME COMPARISON ==='",
+        "; print, 'Reference volume: ', total_volume_flow, ' m³'",
+        "; print, 'Corrected interpolated volume: ', total_volume_vertical_corrected, ' m³'",
+        "; print, 'Corrected volume error: ', volume_error_corrected * 100., '%'",
+        "",
+        "; ; Diagnostic: Show distance coverage per elevation band",
+        "; print, ''",
+        "; print, 'Distance coverage per elevation band (first/last 5):'",
+        "; for i = 0, 4 do begin",
+        ";   band_idx = valid_bands[i]",
+        ";   print, '  Band ', band_idx, ' (', elev_bands[band_idx], 'm): ', distance_per_band[band_idx], 'm distance'",
+        "; endfor",
+        "; print, '  ...'",
+        "; for i = n_elements(valid_bands)-5, n_elements(valid_bands)-1 do begin",
+        ";   band_idx = valid_bands[i]",
+        ";   print, '  Band ', band_idx, ' (', elev_bands[band_idx], 'm): ', distance_per_band[band_idx], 'm distance'",
+        "; endfor",
+        "",
+        "; print, 'Total distance covered: ', total(distance_per_band), 'm'",
+        "; print, 'Original glacier length: ', (n_valid_flow-1) * dx, 'm'"
+      ],
+      "metadata": {},
+      "outputs": []
+    },
+    {
+      "type": "code",
+      "content": [
+        "; ========== IMPROVED DISTANCE-BASED INTERPOLATION ==========",
+        "print, ''",
+        "print, '=== IMPROVED DISTANCE-BASED INTERPOLATION ==='",
+        "",
+        "; Calculate volume on vertical grid using continuous distance mapping",
+        "thick_new = dblarr(nb)",
+        "width_new = dblarr(nb)",
+        "area_new = dblarr(nb)",
+        "distance_per_band = dblarr(nb)",
+        "",
+        "thick_new[valid_bands] = thick_interp",
+        "width_new[valid_bands] = width_interp",
+        "",
+        "; IMPROVED METHOD: Map each elevation band to its distance along glacier",
+        "for i = 0, n_elements(valid_bands)-1 do begin",
+        "  band_idx = valid_bands[i]",
+        "  elev_target = elev_bands[band_idx]",
+        "  ",
+        "  ; Find the corresponding distance using interpolation",
+        "  ; Interpolate x_dist based on surface elevation",
+        "  if elev_target ge min(sur_x) and elev_target le max(sur_x) then begin",
+        "    ; Find distance corresponding to this elevation",
+        "    x_interp = interpol(x_dist, sur_x, elev_target)",
+        "    ",
+        "    ; Calculate distance step by looking at neighboring elevations",
+        "    if i eq 0 then begin",
+        "      ; First band - use distance to next band",
+        "      if n_elements(valid_bands) gt 1 then begin",
+        "        next_elev = elev_bands[valid_bands[1]]",
+        "        if next_elev le max(sur_x) then begin",
+        "          next_x = interpol(x_dist, sur_x, next_elev)",
+        "          distance_step = abs(next_x - x_interp)",
+        "        endif else begin",
+        "          distance_step = dx  ; Default",
+        "        endelse",
+        "      endif else begin",
+        "        distance_step = dx",
+        "      endelse",
+        "    endif else if i eq n_elements(valid_bands)-1 then begin",
+        "      ; Last band - use distance from previous band",
+        "      prev_elev = elev_bands[valid_bands[i-1]]",
+        "      if prev_elev ge min(sur_x) then begin",
+        "        prev_x = interpol(x_dist, sur_x, prev_elev)",
+        "        distance_step = abs(x_interp - prev_x)",
+        "      endif else begin",
+        "        distance_step = dx",
+        "      endelse",
+        "    endif else begin",
+        "      ; Middle bands - use average of distances to neighbors",
+        "      prev_elev = elev_bands[valid_bands[i-1]]",
+        "      next_elev = elev_bands[valid_bands[i+1]]",
+        "      ",
+        "      if prev_elev ge min(sur_x) and next_elev le max(sur_x) then begin",
+        "        prev_x = interpol(x_dist, sur_x, prev_elev)",
+        "        next_x = interpol(x_dist, sur_x, next_elev)",
+        "        distance_step = abs(next_x - prev_x) / 2.0",
+        "      endif else begin",
+        "        distance_step = dx",
+        "      endelse",
+        "    endelse",
+        "    ",
+        "    ; Store the distance this band represents",
+        "    distance_per_band[band_idx] = distance_step",
+        "    ",
+        "  endif else begin",
+        "    ; Outside glacier range",
+        "    distance_per_band[band_idx] = 0.0",
+        "  endelse",
+        "  ",
+        "  ; Calculate area using actual distance coverage",
+        "  area_new[band_idx] = width_new[band_idx] * distance_per_band[band_idx] / 1000.0  ; Convert to km²",
+        "endfor",
+        "",
+        "total_volume_vertical_improved = total(thick_new * area_new * 1000.)  ; Convert back to m³",
+        "volume_error_improved = abs(total_volume_flow - total_volume_vertical_improved) / total_volume_flow",
+        "",
+        "print, ''",
+        "print, '=== IMPROVED VOLUME COMPARISON ==='",
+        "print, 'Reference volume: ', total_volume_flow, ' m³'",
+        "print, 'Improved interpolated volume: ', total_volume_vertical_improved, ' m³'",
+        "print, 'Improved volume error: ', volume_error_improved * 100., '%'",
+        "",
+        "; Diagnostic: Show improved distance coverage",
+        "print, ''",
+        "print, 'Improved distance coverage per elevation band (first/last 5):'",
+        "for i = 0, 4 do begin",
+        "  band_idx = valid_bands[i]",
+        "  print, '  Band ', band_idx, ' (', elev_bands[band_idx], 'm): ', distance_per_band[band_idx], 'm distance'",
+        "endfor",
+        "print, '  ...'",
+        "for i = n_elements(valid_bands)-5, n_elements(valid_bands)-1 do begin",
+        "  band_idx = valid_bands[i]",
+        "  print, '  Band ', band_idx, ' (', elev_bands[band_idx], 'm): ', distance_per_band[band_idx], 'm distance'",
+        "endfor",
+        "",
+        "print, 'Total distance covered (improved): ', total(distance_per_band), 'm'",
+        "print, 'Original glacier length: ', (n_valid_flow-1) * dx, 'm'",
+        "print, 'Distance coverage ratio: ', total(distance_per_band) / ((n_valid_flow-1) * dx) * 100., '%'"
+      ],
+      "metadata": {},
+      "outputs": [
+        {
+          "items": [
+            {
+              "mime": "text/plain",
+              "content": [
+                "",
+                "=== IMPROVED DISTANCE-BASED INTERPOLATION ===",
+                "",
+                "=== IMPROVED VOLUME COMPARISON ===",
+                "Reference volume:    2.7310106e+09 m³",
+                "Improved interpolated volume:    2.7345868e+09 m³",
+                "Improved volume error:       0.13095064%",
+                "",
+                "Improved distance coverage per elevation band (first/last 5):",
+                "  Band            1 (       1525.0000m):        355.07246m distance",
+                "  Band            2 (       1550.0000m):        355.07247m distance",
+                "  Band            3 (       1575.0000m):        355.07247m distance",
+                "  Band            4 (       1600.0000m):        355.07247m distance",
+                "  Band            5 (       1625.0000m):        353.24445m distance",
+                "  ...",
+                "  Band           45 (       2625.0000m):        1514.0484m distance",
+                "  Band           46 (       2650.0000m):        1402.8300m distance",
+                "  Band           47 (       2675.0000m):        925.14042m distance",
+                "  Band           48 (       2700.0000m):        844.82748m distance",
+                "  Band           49 (       2725.0000m):        844.82731m distance",
+                "Total distance covered (improved):        24744.877m",
+                "Original glacier length:       23500.0m",
+                "Distance coverage ratio:        105.29735%"
+              ]
+            }
+          ],
+          "metadata": {
+            "id": "not-saved"
+          }
+        }
+      ]
+    },
+    {
+      "type": "code",
+      "content": [
+        "; ========== MASS CONSERVATIVE VOLUME CORRECTION ==========",
+        "; Calculate current volume error",
+        "current_volume = total(thick_new * area_new * 1000.)",
+        "volume_error = abs(total_volume_flow - current_volume) / total_volume_flow",
+        "",
+        "; Apply weighted correction if error > 0.1%",
+        "if volume_error gt 0.001 then begin",
+        "  volume_correction_factor = total_volume_flow / current_volume",
+        "  ice_bands = where(thick_new gt 0, n_ice_bands)",
+        "  ",
+        "  if n_ice_bands gt 0 then begin",
+        "    total_distance_ice = total(distance_per_band[ice_bands])",
+        "    ",
+        "    if total_distance_ice gt 0 then begin",
+        "      ; Apply distance-weighted thickness correction",
+        "      for i = 0, n_ice_bands-1 do begin",
+        "        band_idx = ice_bands[i]",
+        "        distance_weight = distance_per_band[band_idx] / total_distance_ice",
+        "        local_correction = 1.0 + (volume_correction_factor - 1.0) * distance_weight * n_ice_bands",
+        "        ",
+        "        ; Conservative limits",
+        "        local_correction = local_correction > 0.7 < 1.5",
+        "        thick_new[band_idx] = thick_new[band_idx] * local_correction",
+        "      endfor",
+        "    endif",
+        "  endif",
+        "endif",
+        "",
+        "; Final volume check",
+        "final_volume = total(thick_new * area_new * 1000.)",
+        "final_error = abs(total_volume_flow - final_volume) / total_volume_flow",
+        "",
+        "print, 'Reference volume: ', total_volume_flow, ' m³'",
+        "print, 'Final volume: ', final_volume, ' m³'",
+        "print, 'Final volume error: ', final_error * 100., '%'",
+        "print, 'Volume correction: ', volume_error*100., '% -> ', final_error*100., '%'"
+      ],
+      "metadata": {},
+      "outputs": [
+        {
+          "items": [
+            {
+              "mime": "text/plain",
+              "content": [
+                "Reference volume:    2.7310106e+09 m³",
+                "Final volume:    2.7303531e+09 m³",
+                "Final volume error:      0.024075242%",
+                "Volume correction:      0.024075242% ->      0.024075242%",
+                ""
+              ]
+            }
+          ],
+          "metadata": {
+            "id": "not-saved"
+          }
+        }
+      ]
+    },
+    {
+      "type": "code",
+      "content": [
+        "elev_bands"
+      ],
+      "metadata": {},
+      "outputs": [
+        {
+          "items": [
+            {
+              "mime": "text/plain",
+              "content": [
+                "       1500.0000       1525.0000       1550.0000       1575.0000       1600.0000",
+                "       1625.0000       1650.0000       1675.0000       1700.0000       1725.0000",
+                "       1750.0000       1775.0000       1800.0000       1825.0000       1850.0000",
+                "       1875.0000       1900.0000       1925.0000       1950.0000       1975.0000",
+                "       2000.0000"
+              ]
+            }
+          ],
+          "metadata": {
+            "id": "not-saved"
+          }
+        }
+      ]
+    },
+    {
+      "type": "code",
+      "content": [
+        "thick_interp"
+      ],
+      "metadata": {},
+      "outputs": [
+        {
+          "items": [
+            {
+              "mime": "text/plain",
+              "content": [
+                "       7.2463767625183344       14.492753525036669       21.739130199218437",
+                "       28.985506480793248       36.231883508321303       43.661061275543148",
+                "       51.405062145926308       62.180307101439695       73.181978645740315",
+                "       83.893712883997139       94.473904210170673       104.83722772199391",
+                "       114.95562706405713       124.95192477462214       134.56484736515083",
+                "       144.02459194944743       153.23269339388952       162.10145484177775",
+                "       170.76853377566937       179.09954066668647"
+              ]
+            }
+          ],
+          "metadata": {
+            "id": "not-saved"
+          }
+        }
+      ]
+    },
+    {
+      "type": "code",
+      "content": [
+        "width_interp"
+      ],
+      "metadata": {},
+      "outputs": [
+        {
+          "items": [
+            {
+              "mime": "text/plain",
+              "content": [
+                "       128.16539548262003       156.25179621426349       184.31763727568870",
+                "       212.29210202977734       240.13677732893231       268.09310842582573",
+                "       296.30644055988955       328.14769194313220       360.22286375251537",
+                "       391.69671092388523       422.88176739456236       453.59070997151434",
+                "       483.73379015134321       513.59464202908350       542.52832056989575",
+                "       571.07604921009874       598.98973353020074       626.01651567292879",
+                "       652.50628960889560       678.08863610338108       702.67314961487477",
+                "       726.50690472771248       749.32870667989846       770.77967015534011",
+                "       791.19070638278833       810.45205239970767       828.19922888591861",
+                "       844.20725479546081       858.63133509276474       871.28973644769417",
+                "       881.97358435706053       890.44266021278145       896.42003324061534",
+                "       899.58551025390625       899.56750133549804       895.93231663124106",
+                "       888.17075222450603       875.68027569989636       857.74201353950752",
+                "       833.48916795826301       800.70272728044677       757.71854487108430",
+                "       700.43544957834854       623.14418950197410       513.03781426065518",
+                "       321.08569997925548       233.42468905865218       166.90519818730300",
+                "       100.07910156250000"
+              ]
+            }
+          ],
+          "metadata": {
+            "id": "not-saved"
+          }
+        }
+      ]
+    },
+    {
+      "type": "code",
+      "content": [
+        "area_new"
+      ],
+      "metadata": {},
+      "outputs": [
+        {
+          "items": [
+            {
+              "mime": "text/plain",
+              "content": [
+                "       0.0000000000000000       3.2041348870655004       3.9062949053565870",
+                "       4.6079409318922169       5.3073025507444331       6.0034194332233071",
+                "       6.7023277106456431       7.4076610139972390       8.2036922985783054",
+                "       9.0055715938128831       9.7924177730971316       10.572044184864058",
+                "       11.339767749287859       12.093344753783580       12.839866050727087",
+                "       13.563208014247394       14.276901230252468       14.974743338255019",
+                "       15.650412891823221       16.312657240222389       16.952215902584527",
+                "       17.566828740371868       18.162672618192815       18.733217666997461",
+                "       19.269491753883504       19.779767659569707       20.261301309992689",
+                "       20.704980722147965       21.105181369886520       21.465783377319120",
+                "       21.782243411192354       22.049339608926513       22.261066505319537",
+                "       22.410500831015383       22.489637756347655       22.489187533387451",
+                "       22.398307915781029       22.204268805612649       21.892006892497406",
+                "       21.443550338487686       20.837229198956575       20.017568182011168",
+                "       18.942963621777107       17.510886239458713       15.578604737549353",
+                "       12.825945356516380       8.0271424994813874       5.8356172264663044",
+                "       4.1726299546825745       2.5019775390625001"
+              ]
+            }
+          ],
+          "metadata": {
+            "id": "not-saved"
+          }
+        }
+      ]
+    },
+    {
+      "type": "code",
+      "content": [
+        "; ========== INTERPOLATION DIAGNOSTIC ==========",
+        "print, ''",
+        "print, '=== INTERPOLATION DIAGNOSTIC ==='",
+        "",
+        "; Check the data we're interpolating",
+        "print, 'Input data for interpolation:'",
+        "print, '  sur_sorted range:', min(sur_sorted), ' to ', max(sur_sorted), ' m'",
+        "print, '  th_sorted range:', min(th_sorted), ' to ', max(th_sorted), ' m'",
+        "print, '  width_sorted range:', min(width_sorted), ' to ', max(width_sorted), ' m'",
+        "",
+        "print, 'Target elevations for interpolation:'",
+        "print, '  elev_bands[valid_bands] range:', min(elev_bands[valid_bands]), ' to ', max(elev_bands[valid_bands]), ' m'",
+        "",
+        "; Check how many points have zero thickness after interpolation",
+        "zero_thick = where(thick_interp eq 0, n_zero)",
+        "print, 'Zero thickness points after interpolation:', n_zero, '/', n_elements(thick_interp)",
+        "",
+        "; Manual volume calculation check",
+        "print, ''",
+        "print, 'Manual volume calculation:'",
+        "manual_volume = 0.",
+        "for i = 0, n_elements(thick_interp)-1 do begin",
+        "  vol_contribution = thick_interp[i] * width_interp[i] * step",
+        "  manual_volume += vol_contribution",
+        "  if i lt 5 or i gt n_elements(thick_interp)-6 then begin",
+        "    print, '  Band ', i, ': th=', thick_interp[i], ', w=', width_interp[i], ', vol=', vol_contribution",
+        "  endif",
+        "endfor",
+        "print, 'Manual volume total:', manual_volume, ' m³'",
+        "",
+        "; Compare interpolation vs direct mapping",
+        "print, ''",
+        "print, 'Comparing horizontal vs vertical grid:'",
+        "print, '  Horizontal: ', n_valid_flow, ' points, dx=', dx, 'm'",
+        "print, '  Vertical: ', n_elements(thick_interp), ' bands, step=', step, 'm'",
+        "print, '  Horizontal total length:', (n_valid_flow-1) * dx, 'm'",
+        "print, '  Vertical total range:', n_elements(thick_interp) * step, 'm'"
+      ],
+      "metadata": {},
+      "outputs": [
+        {
+          "items": [
+            {
+              "mime": "text/plain",
+              "content": [
+                "",
+                "=== INTERPOLATION DIAGNOSTIC ===",
+                "Input data for interpolation:",
+                "  sur_sorted range:       1535.2041 to        2710.2041 m",
+                "  th_sorted range:       10.204077 to        249.86983 m",
+                "  width_sorted range:       139.62923 to        899.58551 m",
+                "Target elevations for interpolation:",
+                "  elev_bands[valid_bands] range:       1525.0000 to        2725.0000 m",
+                "Zero thickness points after interpolation:           1/          49",
+                "",
+                "Manual volume calculation:",
+                "  Band            0: th=       7.2463768, w=       128.16540, vol=",
+                "       23218.369",
+                "  Band            1: th=       14.492754, w=       156.25180, vol=",
+                "       56612.969",
+                "  Band            2: th=       21.739130, w=       184.31764, vol=",
+                "       100172.63",
+                "  Band            3: th=       28.985506, w=       212.29210, vol=",
+                "       153834.85",
+                "  Band            4: th=       36.231884, w=       240.13678, vol=",
+                "       217515.19",
+                "  Band           44: th=       124.76575, w=       513.03781, vol=",
+                "       1600238.7",
+                "  Band           45: th=       59.755407, w=       321.08570, vol=",
+                "       479665.17",
+                "  Band           46: th=       34.482748, w=       233.42469, vol=",
+                "       201228.12",
+                "  Band           47: th=       17.241365, w=       166.90520, vol=",
+                "       71941.838",
+                "  Band           48: th=       0.0000000, w=       100.07910, vol=",
+                "       0.0000000",
+                "Manual volume total:   1.3654828e+08 m³",
+                "",
+                "Comparing horizontal vs vertical grid:",
+                "  Horizontal:           48 points, dx=      500.000m",
+                "  Vertical:           49 bands, step=      25.0000m",
+                "  Horizontal total length:      23500.0m",
+                "  Vertical total range:      1225.00m"
+              ]
+            }
+          ],
+          "metadata": {
+            "id": "not-saved"
+          }
+        }
+      ]
+    },
+    {
+      "type": "code",
+      "content": [
+        ""
+      ],
+      "metadata": {},
+      "outputs": []
+    }
+  ]
+}
