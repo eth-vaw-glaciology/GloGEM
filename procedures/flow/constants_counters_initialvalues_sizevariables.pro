@@ -26,8 +26,11 @@ next_time_mb = start_year ; Next time that diagnostic model output will be writt
 t = 0 ; number of timesteps that have occurred so far
 time = start_year ; Time (in years)
 
+print, 'length_fixeddistance = ', length_fixeddistance
+print, 'df_lim = (length_fixeddistance ^ 2) / 2 = ', df_lim
+
 ; Geometry:
-domainsize = sur_x_input[n_elements(x_input) - 1] ; in meter; from 'x_input', which was generated in 'convert_vertical_to_horizontal.pro'
+domainsize = x[n_elements(x) - 1]
 first_icp_min = 9999
 ; lambda_standard = tan(0 * !DTOR) + tan(0 * !DTOR) ; sensitivity test in paper --> saved in 'calibration 3' folder (manually)
 lambda_standard = tan(45 * !dtor) + tan(45 * !dtor) ; i.e. lamda = 2
@@ -60,7 +63,7 @@ term3 = fltarr(xnum) ; Part of the continuity equation (see 'ice_thickness.pro')
 if flag_startobs ne 2 then begin ; If start from modelled geometry, don't want to set the ice thickness to zero
   th_x = fltarr(xnum) ; Ice thickness
 endif
-vel = fltarr(xnum) ; Velocities
+velocity = fltarr(xnum) ; Velocities
 
 ; ; Size prognostic variables that are written out every dtdiag timesteps (typically used to have overview at end of the run)
 
