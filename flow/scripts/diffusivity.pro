@@ -16,3 +16,9 @@ for i = 1, xnum - 2 do begin
     df[i] = df_lim
   endif
 endfor
+
+; Add this to both models in diffusivity.pro
+print, 'Diffusivity diagnostics:'
+print, '  Max th: ', max(th) ; or max(th) for working model
+print, '  Max df: ', max(df) ; or max(df) for working model
+print, '  te3 (th^5): ', max((th) ^ 5) ; Check if th^5 is exploding
