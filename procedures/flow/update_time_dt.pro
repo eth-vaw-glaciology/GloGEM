@@ -6,8 +6,6 @@
 ; longer glaciers)
 compile_opt idl2
 
-time = ye + 1 ; check the current time (in years)
-
 dt_max = time / (dx * 2) ; Maximum allowed dt (dt will never be larger than this, even if the CFL criterion would allow for it). Small in the beginning --> increases with time
 if dt_max lt 0.1 then begin
   dt_max = 0.1 ; Maximum time step should at least be 0.1 years (because otherwise very small in the beginning --> takes too long)
@@ -16,9 +14,38 @@ endif else if dt_max gt dtmb then begin ; Don't want the time step to be larger 
 endif
 
 if dt_flag eq 0 and t gt 2 then begin ; Adapt the time step:
+  ; Print diagnostics to understand why dt is so small and stays the same
+  print, 'Diagnostics for dt calculation:'
+  print, '  dx = ', dx
+  print, '  dtfactor = ', dtfactor
+  print, '  max(df_x) = ', max(df_x)
+  print, '  Raw dt calculation = ', (dx ^ 2 / (max(df_x))) * dtfactor
+  print, '  dt_max = ', dt_max
+  print, '  Previous dt = ', dt
+
   dt = (dx ^ 2 / (max(df_x))) * dtfactor ; CFL type of criterion, multiplied with the 'dtfactor'
   if dt gt dt_max then dt = dt_max ; If needed: impose limit on the dt
+
+  print, '  Updated dt = ', dt
 endif
 
 t = t + 1 ; timestep (integer)
 time = time + dt ; time (in years)
+
+; print, 'Time step: ', dt, ' years'
+
+; if dt_flag eq 0 and t gt 2 then begin
+; ; Add detailed diagnostics
+; max_df = max(df_x)
+; ; print, 'max(df_x) = ', max_df
+; ; print, 'dx^2 = ', dx ^ 2
+; ; print, 'dtfactor = ', dtfactor
+; ; print, 'dx^2/max(df_x) = ', dx ^ 2 / max_df
+; ; print, 'Raw dt calculation = ', (dx ^ 2 / max_df) * dtfactor
+
+; dt = (dx ^ 2 / (max(df_x))) * dtfactor
+; if dt gt dt_max then dt = dt_max
+
+; ; print, 'Final dt = ', dt
+; ; print, 'dt_max = ', dt_max
+; endif
