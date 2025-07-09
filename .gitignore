@@ -10,3 +10,5 @@ output/
 *.agr
 .DS_Store
 results_flow_model/
+matlab_scripts/
+centraleurope/
