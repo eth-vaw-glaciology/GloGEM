@@ -30,14 +30,14 @@ while time lt tran[1] do begin
   @procedures/flow/ice_thickness
 
   ; ------------------------------------------ ;
-  ; Update vertical grid geometry
-  ; @procedures/flow/update_vertical_grid
-  @procedures/flow/conservative_volume_vertical_grid_update
-
-  ; ------------------------------------------ ;
   ; Write diagnostic output
   ; @procedures/flow/diagnostic_write
 
   print, 'Time step (years): ', time
   break
 endwhile
+
+; ------------------------------------------ ;
+; Update vertical grid geometry
+; @procedures/flow/update_vertical_grid
+@procedures/flow/conservative_volume_vertical_grid_update
