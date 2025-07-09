@@ -47,6 +47,32 @@ for i = 1, xnum - 2 do begin
   if df_x[i] gt max_df_after then max_df_after = df_x[i]
 endfor
 
+; CRITICAL DIAGNOSTIC: Track what causes diffusivity spike
+if max_df_before gt 1e8 then begin
+  print, '*** DIFFUSIVITY SPIKE DETECTED! ***'
+  extreme_idx = where(df_x eq df_lim) ; Find points that hit the limit
+  if n_elements(extreme_idx) gt 0 then begin
+    i = extreme_idx[0]
+    print, '  Location i=', i
+    print, '  th_x[i]=', th_x[i]
+    surf_grad = (sur_x[i + 1] - sur_x[i - 1]) / (2.0 * dx)
+    print, '  surface gradient=', surf_grad
+    print, '  sur_x values: [', sur_x[i - 1], ', ', sur_x[i], ', ', sur_x[i + 1], ']'
+
+    ; Recalculate components to see which exploded
+    te1_debug = 2 * aflow / (nflow + 2)
+    te2_debug = (rho * g_grav) ^ (nflow)
+    te3_debug = (th_x[i]) ^ (nflow + 2)
+    te4_debug = ((sur_x[i + 1] - sur_x[i - 1]) / (2.0 * dx)) ^ (nflow - 1)
+
+    print, '  te1 (flow factor)=', te1_debug
+    print, '  te2 (rho*g)^n=', te2_debug
+    print, '  te3 (thickness^5)=', te3_debug
+    print, '  te4 (gradient^2)=', te4_debug
+    print, '  df_x before limit=', te1_debug * te2_debug * te3_debug * te4_debug
+  endif
+endif
+
 ; Summary diagnostics
 ; print, 'Max diffusivity before limiting:', max_df_before
 ; print, 'Max diffusivity after limiting:', max_df_after
@@ -63,3 +89,9 @@ valid_gradients = gradients[where(gradients ne 0)]
 if n_elements(valid_gradients) gt 0 then begin
   ; print, 'Surface gradient range: min=', min(valid_gradients), ' max=', max(valid_gradients)
 endif
+
+; Add this to both models in diffusivity.pro
+print, 'Diffusivity diagnostics:'
+print, '  Max th: ', max(th_x) ; or max(th) for working model
+print, '  Max df: ', max(df_x) ; or max(df) for working model
+print, '  te3 (th^5): ', max((th_x) ^ 5) ; Check if th^5 is exploding
