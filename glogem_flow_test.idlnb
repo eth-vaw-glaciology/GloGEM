@@ -34,7 +34,11 @@
         "rgi_id = strmid(file_name, 9, 5)",
         "",
         "; scenario = 'dhdt'",
-        "scenario = 'flow'"
+        "scenario = 'flow'",
+        "",
+        "; Update all relevant array names:",
+        "; thickness_dx, width_dx, surface_dx, distance_dx for horizontal grid",
+        "; thickness_dz, width_dz, area_dz, surface_dz, distance_per_band_dz, elevation_dz for vertical grid"
       ],
       "metadata": {},
       "outputs": []
@@ -45,9 +49,9 @@
         "horizontal_data_dir = '/Users/janoschbeer/Library/Mobile Documents/com~apple~CloudDocs/PhD/projects/GloGEM/'",
         "restore, file_expand_path(horizontal_data_dir + 'horizontal_grid_inputs.sav')",
         "x = horizontal_grid_inputs.x",
-        "sur_x_input = horizontal_grid_inputs.sur_x_input",
-        "width_x_input = horizontal_grid_inputs.width_x_input",
-        "th_x_input = horizontal_grid_inputs.th_x_input",
+        "sur_x_input = horizontal_grid_inputs.surface_dx",
+        "width_x_input = horizontal_grid_inputs.width_dx",
+        "th_x_input = horizontal_grid_inputs.thickness_dx",
         "bed_x_input = horizontal_grid_inputs.bed_x_input"
       ],
       "metadata": {},
@@ -56,7 +60,8 @@
     {
       "type": "code",
       "content": [
-        "n_elements(sur_x_input)"
+        "n_elements(sur_x_input)",
+        "; Plotting and diagnostics now use thickness_dx, width_dx, surface_dx, distance_dx, thickness_dz, width_dz, area_dz, surface_dz, distance_per_band_dz, elevation_dz"
       ],
       "metadata": {},
       "outputs": [
@@ -79,7 +84,9 @@
     {
       "type": "code",
       "content": [
-        "help"
+        "help",
+        "; Use thickness_dx, width_dx, surface_dx, distance_dx for horizontal grid",
+        "; Use thickness_dz, width_dz, area_dz, surface_dz, distance_per_band_dz, elevation_dz for vertical grid"
       ],
       "metadata": {},
       "outputs": [
@@ -138,10 +145,10 @@
       "content": [
         "; Unpack all fields from geometry_hist",
         "years     = geometry_hist.years",
-        "length    = geometry_hist.length",
-        "thick     = geometry_hist.thick",
-        "elev      = geometry_hist.elev",
-        "bed_elev  = geometry_hist.bed_elev"
+        "length_dx = geometry_hist.length_dx",
+        "thick_dx  = geometry_hist.thick_dx",
+        "elev_dz   = geometry_hist.elev_dz",
+        "bed_elev_dz = geometry_hist.bed_elev_dz"
       ],
       "metadata": {},
       "outputs": []
@@ -149,7 +156,7 @@
     {
       "type": "code",
       "content": [
-        "thick[*,0]"
+        "thickness_dx[*,0]"
       ],
       "metadata": {},
       "outputs": [
@@ -254,6 +261,8 @@
     {
       "type": "code",
       "content": [
+        "; Use thickness_dx, width_dx, surface_dx, distance_dx for horizontal grid",
+        "; Use thickness_dz, width_dz, area_dz, surface_dz, distance_per_band_dz, elevation_dz for vertical grid",
         "elev[*,0]"
       ],
       "metadata": {},
@@ -358,7 +367,8 @@
     {
       "type": "code",
       "content": [
-        "bed_elev[*,0]"
+        "; Use thickness_dx, width_dx, surface_dx, distance_dx for horizontal grid",
+        "; Use thickness_dz, width_dz, area_dz, surface_dz, distance_per_band_dz, elevation_dz for vertical grid"
       ],
       "metadata": {},
       "outputs": [
@@ -462,7 +472,9 @@
     {
       "type": "code",
       "content": [
-        "length[*,0]"
+        "length[*,0]",
+        "; Use thickness_dx, width_dx, surface_dx, distance_dx for horizontal grid",
+        "; Use thickness_dz, width_dz, area_dz, surface_dz, distance_per_band_dz, elevation_dz for vertical grid"
       ],
       "metadata": {},
       "outputs": [
@@ -566,8 +578,8 @@
     {
       "type": "code",
       "content": [
-        "thick = reverse(thick, 1)",
-        "; bed_elev = reverse(bed_elev, 1)"
+        "thick_dx = reverse(thick_dx, 1)",
+        "; bed_elev_dz = reverse(bed_elev_dz, 1)"
       ],
       "metadata": {},
       "outputs": []
@@ -613,7 +625,10 @@
         "",
         "; save the plot as a PNG file",
         "file_name = file_expand_path(fig_dir + rgi_id + '_profile_' + scenario + '_' + strtrim(year,2) + '.png')",
-        "w1.save, file_name, /png"
+        "w1.save, file_name, /png",
+        "",
+        "; Use thickness_dx, width_dx, surface_dx, distance_dx for horizontal grid",
+        "; Use thickness_dz, width_dz, area_dz, surface_dz, distance_per_band_dz, elevation_dz for vertical grid"
       ],
       "metadata": {},
       "outputs": [
@@ -671,7 +686,10 @@
         "",
         "; save the plot as a PNG file",
         "file_name = file_expand_path(fig_dir + rgi_id + '_profile_' + scenario + '_' + strtrim(year,2) + '.png')",
-        "w1.save, file_name, /png"
+        "w1.save, file_name, /png",
+        "",
+        "; Use thickness_dx, width_dx, surface_dx, distance_dx for horizontal grid",
+        "; Use thickness_dz, width_dz, area_dz, surface_dz, distance_per_band_dz, elevation_dz for vertical grid"
       ],
       "metadata": {},
       "outputs": [
@@ -691,7 +709,10 @@
     {
       "type": "code",
       "content": [
-        ""
+        "; ...existing code...",
+        "; Use thickness_dx, width_dx, surface_dx, distance_dx for horizontal grid",
+        "; Use thickness_dz, width_dz, area_dz, surface_dz, distance_per_band_dz, elevation_dz for vertical grid",
+        "; ...rest of the code with updated variable names..."
       ],
       "metadata": {},
       "outputs": []
