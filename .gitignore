@@ -9,5 +9,6 @@ output/
 *.grid
 *.agr
 .DS_Store
-results_flow_model/
+results_glogemflow/
+results_dhdt/
 products/
