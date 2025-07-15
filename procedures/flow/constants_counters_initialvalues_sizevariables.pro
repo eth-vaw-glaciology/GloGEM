@@ -47,21 +47,21 @@ ela_ss = 0
 
 ; ; Size variables that will (in most cases) be updated (i.e. overwritten) at every (few) time step(s)
 ; bal = fltarr(xnum) ; Mass balance
-bed_x = fltarr(xnum) ; Bedrock elevation
-df_x = fltarr(xnum) ; Diffusivity factor
-fluxdiv_x = fltarr(xnum) ; Flux divergence
-fluxdiv_plot_x = fltarr(xnum) ; Flux divergence to be plotted
-fluxdiv_plot2_x = fltarr(xnum) ; Flux divergence to be plotted
-grad_x = fltarr(xnum) ; Surface gradient
-lambda_x = fltarr(xnum) ; Lambda: angle trapezium describing the glacier cross section
+bed_dx = fltarr(xnum) ; Bedrock elevation
+df_dx = fltarr(xnum) ; Diffusivity factor
+fluxdiv_dx = fltarr(xnum) ; Flux divergence
+fluxdiv_plot_dx = fltarr(xnum) ; Flux divergence to be plotted
+fluxdiv_plot2_dx = fltarr(xnum) ; Flux divergence to be plotted
+grad_dx = fltarr(xnum) ; Surface gradient
+lambda_dx = fltarr(xnum) ; Lambda: angle trapezium describing the glacier cross section
 if flag_startobs ne 2 then begin ; If start from modelled geometry, don't want to set the surface elevation to zero
-  sur_x = fltarr(xnum) ; Surface elevation
+  sur_dx = fltarr(xnum) ; Surface elevation
 endif
 term1 = fltarr(xnum) ; Part of the continuity equation (see 'ice_thickness.pro'), also used for fluxdiv_plot, in 'diagnostic_write.pro'
 term2 = fltarr(xnum) ; Part of the continuity equation (see 'ice_thickness.pro'), also used for fluxdiv_plot, in 'diagnostic_write.pro'
 term3 = fltarr(xnum) ; Part of the continuity equation (see 'ice_thickness.pro'), also used for fluxdiv_plot, in 'diagnostic_write.pro'
 if flag_startobs ne 2 then begin ; If start from modelled geometry, don't want to set the ice thickness to zero
-  th_x = fltarr(xnum) ; Ice thickness
+  th_dx = fltarr(xnum) ; Ice thickness
 endif
 velocity = fltarr(xnum) ; Velocities
 
