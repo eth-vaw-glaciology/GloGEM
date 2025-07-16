@@ -24,17 +24,17 @@ if smb_method_flag eq 0 then begin
     surf_elev_valid = surf_elev_eq[valid_idx]
 
     ; Interpolate using only valid data
-    bal_x = interpol(bal_valid, surf_elev_valid, sur_x)
+    bal_dx = interpol(bal_valid, surf_elev_valid, sur_dx)
 
     ; Set SMB to zero for elevations outside glacier range
     min_glacier_elev = min(surf_elev_valid)
     max_glacier_elev = max(surf_elev_valid)
-    no_ice_idx = where(sur_x lt min_glacier_elev or sur_x gt max_glacier_elev, count_no_ice)
-    if count_no_ice gt 0 then bal_x[no_ice_idx] = 0.0
+    no_ice_idx = where(sur_dx lt min_glacier_elev or sur_dx gt max_glacier_elev, count_no_ice)
+    if count_no_ice gt 0 then bal_dx[no_ice_idx] = 0.0
   endif else begin
     ; Glacier has completely disappeared
     ; print, 'Warning: Glacier has completely disappeared'
-    bal_x = replicate(0.0, n_elements(sur_x))
+    bal_dx = replicate(0.0, n_elements(sur_dx))
   endelse
 endif
 
@@ -58,10 +58,10 @@ if smb_method_flag eq 1 then begin
     poly_coeffs = poly_fit(surf_elev_valid, bal_valid, poly_order, /double)
 
     ; Calculate polynomial SMB for each grid point
-    bal_x = fltarr(n_elements(sur_x))
-    for i = 0, n_elements(sur_x) - 1 do begin
+    bal_dx = fltarr(n_elements(sur_dx))
+    for i = 0, n_elements(sur_dx) - 1 do begin
       ; Use current surface elevation but cap for stability
-      elev_for_smb = sur_x[i]
+      elev_for_smb = sur_dx[i]
 
       ; Cap elevation to reasonable range (prevent feedback instability)
       min_elev = min(surf_elev_valid)
@@ -73,13 +73,13 @@ if smb_method_flag eq 1 then begin
       for j = 0, poly_order do begin
         smb_value += poly_coeffs[j] * elev_capped ^ j
       endfor
-      bal_x[i] = smb_value
+      bal_dx[i] = smb_value
 
       ; Prevent positive SMB where no ice exists (like original GloGEMflow)
-      if th_x[i] eq 0 and bal_x[i] gt 0 then bal_x[i] = 0.0
+      if thick_dx[i] eq 0 and bal_dx[i] gt 0 then bal_dx[i] = 0.0
 
       ; Set SMB to zero outside original glacier elevation range
-      if sur_x[i] lt min_elev or sur_x[i] gt max_elev then bal_x[i] = 0.0
+      if sur_dx[i] lt min_elev or sur_dx[i] gt max_elev then bal_dx[i] = 0.0
     endfor
 
     ; Print polynomial coefficients for debugging
@@ -89,38 +89,38 @@ if smb_method_flag eq 1 then begin
     ; Too few points for polynomial, use mean value
     ; print, 'Too few points for polynomial fit, using mean SMB'
     mean_smb = mean(bal[valid_idx])
-    bal_x = replicate(mean_smb, n_elements(sur_x))
+    bal_dx = replicate(mean_smb, n_elements(sur_dx))
 
     ; Apply same constraints as above
     surf_elev_valid = surf_elev_eq[valid_idx]
     min_elev = min(surf_elev_valid)
     max_elev = max(surf_elev_valid)
-    for i = 0, n_elements(sur_x) - 1 do begin
-      if th_x[i] eq 0 and bal_x[i] gt 0 then bal_x[i] = 0.0
-      if sur_x[i] lt min_elev or sur_x[i] gt max_elev then bal_x[i] = 0.0
+    for i = 0, n_elements(sur_dx) - 1 do begin
+      if thick_dx[i] eq 0 and bal_dx[i] gt 0 then bal_dx[i] = 0.0
+      if sur_dx[i] lt min_elev or sur_dx[i] gt max_elev then bal_dx[i] = 0.0
     endfor
   endif else begin
     ; Glacier has completely disappeared
     ; print, 'Warning: Glacier has completely disappeared'
-    bal_x = replicate(0.0, n_elements(sur_x))
+    bal_dx = replicate(0.0, n_elements(sur_dx))
   endelse
 endif
 
 ; ===== COMMON POST-PROCESSING =====
 ; Additional safety checks regardless of method
-for i = 0, n_elements(bal_x) - 1 do begin
+for i = 0, n_elements(bal_dx) - 1 do begin
   ; Check for non-finite values
-  if ~finite(bal_x[i]) then bal_x[i] = 0.0
+  if ~finite(bal_dx[i]) then bal_dx[i] = 0.0
 
   ; Cap extreme values (safety net)
-  if abs(bal_x[i]) gt 50.0 then begin ; 50 m/year is very extreme
-    ; print, 'Warning: Extreme SMB value ', bal_x[i], ' at point ', i, ' - capping'
-    bal_x[i] = bal_x[i] > (-50.0) < 50.0
+  if abs(bal_dx[i]) gt 50.0 then begin ; 50 m/year is very extreme
+    ; print, 'Warning: Extreme SMB value ', bal_dx[i], ' at point ', i, ' - capping'
+    bal_dx[i] = bal_dx[i] > (-50.0) < 50.0
   endif
 endfor
 
 ; Debug output
 ; print, 'SMB method used:', smb_method_flag
 ; print, 'bal range: ', min(bal[where(bal ne -99)]), ' to ', max(bal[where(bal ne -99)])
-; print, 'bal_x range: ', min(bal_x), ' to ', max(bal_x)
+; print, 'bal_dx range: ', min(bal_dx), ' to ', max(bal_dx)
 ; print, 'Number of valid SMB points:', count
