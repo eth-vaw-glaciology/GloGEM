@@ -156,27 +156,30 @@ distance_dz = distance_dz / 1000.0 ; convert to km
 
 ; ========== STEP 4: APPLY THICKNESS CORRECTION IF NECESSARY TO CONSERVE VOLUME ==========
 
-; Save pre-correction thickness
-thickness_dz_before = thickness_dz
+; Calculate current volume
+current_volume = total(thick_dz * area_dz * 1000.)
+volume_error = abs(total_volume_dx - current_volume) / total_volume_dx
 
-; Apply thickness correction proportional to local thickness if error > 0.05%
-if volume_error gt 0.0005 then begin
+; Save pre-correction thickness
+thickness_dz_before = thick_dz
+
+; Apply thickness correction proportional to local volume contribution if error > 0.1%
+if volume_error gt 0.001 then begin
   print, 'Applying proportional thickness correction due to volume error: ', volume_error * 100., '%'
-  ; Calculate total thickness sum for weighting (only where thickness > 0 and area > 0)
-  valid = where((thickness_dz gt 0) and (area_dz gt 0), n_valid) ; only bands with ice
+  ; Calculate total volume sum for weighting (only where thickness > 0 and area > 0)
+  valid = where((thick_dz gt 0) and (area_dz gt 0), n_valid)
   if n_valid gt 0 then begin
-    total_thick = total(thickness_dz[valid])
-    for i = 0, n_elements(thickness_dz) - 1 do begin
-      if (thickness_dz[i] gt 0) and (area_dz[i] gt 0) then begin
-        weight = thickness_dz[i] / total_thick
-        ; Correction only for valid bands, avoid division by zero
-        thickness_dz[i] = thickness_dz[i] + (total_volume_dx - current_volume) / (area_dz[i] * 1000.) * weight
+    total_vol = total(thick_dz[valid] * area_dz[valid])
+    for i = 0, n_elements(thick_dz) - 1 do begin
+      if (thick_dz[i] gt 0) and (area_dz[i] gt 0) then begin
+        weight = (thick_dz[i] * area_dz[i]) / total_vol ; weight based on band volume contribution
+        thick_dz[i] = thick_dz[i] + (total_volume_dx - current_volume) * weight / (area_dz[i] * 1000.)
       endif
     endfor
   endif
 endif
 ; Final volume check
-final_volume = total(thickness_dz * area_dz * 1000.)
+final_volume = total(thick_dz * area_dz * 1000.)
 final_error = abs(total_volume_dx - final_volume) / total_volume_dx
 
 print, 'Reference volume: ', total_volume_dx, ' m³'
