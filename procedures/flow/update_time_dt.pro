@@ -18,12 +18,12 @@ if dt_flag eq 0 and t gt 2 then begin ; Adapt the time step:
   print, 'Diagnostics for dt calculation:'
   print, '  dx = ', dx
   print, '  dtfactor = ', dtfactor
-  print, '  max(df_x) = ', max(df_x)
-  print, '  Raw dt calculation = ', (dx ^ 2 / (max(df_x))) * dtfactor
+  print, '  max(df_dx) = ', max(df_dx)
+  print, '  Raw dt calculation = ', (dx ^ 2 / (max(df_dx))) * dtfactor
   print, '  dt_max = ', dt_max
   print, '  Previous dt = ', dt
 
-  dt = (dx ^ 2 / (max(df_x))) * dtfactor ; CFL type of criterion, multiplied with the 'dtfactor'
+  dt = (dx ^ 2 / (max(df_dx))) * dtfactor ; CFL type of criterion, multiplied with the 'dtfactor'
   if dt gt dt_max then dt = dt_max ; If needed: impose limit on the dt
 
   print, '  Updated dt = ', dt
@@ -36,14 +36,14 @@ time = time + dt ; time (in years)
 
 ; if dt_flag eq 0 and t gt 2 then begin
 ; ; Add detailed diagnostics
-; max_df = max(df_x)
-; ; print, 'max(df_x) = ', max_df
+; max_df = max(df_dx)
+; ; print, 'max(df_dx) = ', max_df
 ; ; print, 'dx^2 = ', dx ^ 2
 ; ; print, 'dtfactor = ', dtfactor
-; ; print, 'dx^2/max(df_x) = ', dx ^ 2 / max_df
+; ; print, 'dx^2/max(df_dx) = ', dx ^ 2 / max_df
 ; ; print, 'Raw dt calculation = ', (dx ^ 2 / max_df) * dtfactor
 
-; dt = (dx ^ 2 / (max(df_x))) * dtfactor
+; dt = (dx ^ 2 / (max(df_dx))) * dtfactor
 ; if dt gt dt_max then dt = dt_max
 
 ; ; print, 'Final dt = ', dt
