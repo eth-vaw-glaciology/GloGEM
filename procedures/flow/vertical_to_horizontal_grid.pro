@@ -40,31 +40,31 @@ if count gt 0 then begin
 endif
 
 ; Perform linear interpolation for surface elevation, width, and thickness to generate a horizontally equidistant grid
-sur_x_input = interpol(glacier_geom_lookup_sur, glacier_geom_lookup_x, x) ; Surface elevation (linear interpolation)
-width_x_input = interpol(glacier_geom_lookup_width, glacier_geom_lookup_x, x) ; Width (linear interpolation)
+sur_dx = interpol(glacier_geom_lookup_sur, glacier_geom_lookup_x, x) ; Surface elevation (linear interpolation)
+width_dx = interpol(glacier_geom_lookup_width, glacier_geom_lookup_x, x) ; Width (linear interpolation)
 i = where(x lt glacier_geom_lookup_x[0], count)
-if count gt 0 then width_x_input[i] = glacier_geom_lookup_width[0]
+if count gt 0 then width_dx[i] = glacier_geom_lookup_width[0]
 
-th_x_input = interpol(glacier_geom_lookup_th, glacier_geom_lookup_x, x) ; Thickness (linear interpolation)
+thick_dx = interpol(glacier_geom_lookup_th, glacier_geom_lookup_x, x) ; Thickness (linear interpolation)
 i = where(x lt glacier_geom_lookup_x[0], count)
-if count gt 0 then th_x_input[i] = glacier_geom_lookup_th[0] ; Thickness for cells lower than first point on Huss grid: same as thickness first point Huss grid
-bed_x_input = sur_x_input - th_x_input ; Bedrock elevation (m)
+if count gt 0 then thick_dx[i] = glacier_geom_lookup_th[0] ; Thickness for cells lower than first point on Huss grid: same as thickness first point Huss grid
+bed_dx = sur_dx - thick_dx ; Bedrock elevation (m)
 
 ; ; Check how much the volume and area have changed:
 volume_Huss_1d = total((glacier_geom[*, 3] * 1e6) * glacier_geom[*, 4])
 ; print, 'volume_Huss_1d = ', volume_Huss_1d
-volume_Huss_1d_fixeddistance = total(width_x_input * th_x_input * dx)
+volume_Huss_1d_fixeddistance = total(width_dx * thick_dx * dx)
 ; print, 'volume_Huss_1d_fixeddistance = ', volume_Huss_1d_fixeddistance
 area_Huss_1d = total(glacier_geom[*, 3] * 1e6)
 ; print, 'area_Huss_1d = ', area_Huss_1d
-area_Huss_1d_fixeddistance = total(width_x_input * dx)
+area_Huss_1d_fixeddistance = total(width_dx * dx)
 ; print, 'area_Huss_1d_fixeddistance = ', area_Huss_1d_fixeddistance
-i = where(th_x_input gt 1, count)
+i = where(thick_dx gt 1, count)
 length_fixeddistance = count * dx
 
 difference_volume = volume_Huss_1d_fixeddistance - volume_Huss_1d
 ; print, 'difference_volume = ', difference_volume
 ; print, 'difference_in_percentage = ', (difference_volume / volume_Huss_1d) * 100, '%'
 
-horizontal_grid_inputs = {x: x, sur_x_input: sur_x_input, width_x_input: width_x_input, th_x_input: th_x_input, bed_x_input: bed_x_input}
+horizontal_grid_inputs = {x: x, sur_dx: sur_dx, width_dx: width_dx, thick_dx: thick_dx, bed_dx: bed_dx}
 save, horizontal_grid_inputs, file = 'horizontal_grid_inputs.sav'
