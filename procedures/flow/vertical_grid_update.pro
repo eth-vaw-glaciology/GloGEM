@@ -40,57 +40,20 @@ sur_dz = sur_dz[where(sur_dz le surf_max)]
 
 nb = n_elements(sur_dz)
 
-; ========== STEP 1b: CALCULATE FLOW MODEL VOLUME ==========
-total_volume_flow = 0.
-valid_flow = where(th_x gt 0, n_valid_flow)
-
-if n_valid_flow eq 0 then begin
-  thick = dblarr(nb)
-  area = dblarr(nb)
-  width = dblarr(nb)
-  gl = dblarr(nb) + noval
-  goto, skip_conversion
-endif
-
-; Use the original width_surface stored before flow model modifications
-if n_elements(width_surface_original) eq n_elements(th_x) then begin
-  width_for_volume = width_surface_original
-  print, 'Using stored original width_surface for volume calculation'
-endif else begin
-  ; Fallback: reconstruct from width_base and lambda
-  width_for_volume = width_base + lambda_x * th_x
-  print, 'WARNING: Using reconstructed width (width_surface_original not available)'
-endelse
-
-; Calculate volume from horizontal grid using trapezoidal rule
-for i = 0, n_elements(th_x) - 2 do begin
-  dx = x_dist[i + 1] - x_dist[i]
-  avg_thickness = (th_x[i] + th_x[i + 1]) / 2.
-  avg_width = (width_for_volume[i] + width_for_volume[i + 1]) / 2.
-  if avg_thickness gt 0 then total_volume_flow += avg_thickness * avg_width * dx
-endfor
-
-print, 'Flow model volume: ', total_volume_flow, ' m³'
-
-; ========== STEP 2: IMPROVED DISTANCE-BASED INTERPOLATION WITH MONOTONIC SEGMENTS ==========
+; ========== STEP 2: DISTANCE-BASED INTERPOLATION WITHOUT REDUNDANT ARRAYS ==========
 
 ; 1. Get valid elevation bands
 surf_min_dx = min(sur_dx)
 surf_max_dx = max(sur_dx)
 valid_bands = where((sur_dz ge surf_min_dx) and (sur_dz le surf_max_dx), n_valid_bands)
 
-; 2. Use original horizontal grid data (no smoothing)
-sur_dx_used = sur_dx
-thick_dx_used = th_x
-width_dx_used = width_for_volume
-dist_dx_used = x_dist
-dx_used = x_dist[1] - x_dist[0]
+; 2. Use original horizontal grid data directly
 nb_dz = n_elements(sur_dz)
 
 ; 3. Find monotonic segments in the surface
-d_surface = deriv(sur_dx_used)
+d_surface = deriv(sur_dx)
 sign_change = where(d_surface * shift(d_surface, -1) lt 0, n_change)
-segment_edges = [0, sign_change + 1, n_elements(sur_dx_used)]
+segment_edges = [0, sign_change + 1, n_elements(sur_dx)]
 
 ; 4. Prepare output arrays for the vertical grid
 thick_dz = dblarr(nb_dz)
@@ -102,9 +65,9 @@ gl_dz = dblarr(nb_dz) + noval
 for s = 0, n_elements(segment_edges) - 2 do begin
   seg_start = segment_edges[s]
   seg_end = segment_edges[s + 1] - 1
-  seg_surface = sur_dx_used[seg_start : seg_end]
-  seg_thick = thick_dx_used[seg_start : seg_end]
-  seg_width = width_dx_used[seg_start : seg_end]
+  seg_surface = sur_dx[seg_start : seg_end]
+  seg_thick = th_x[seg_start : seg_end]
+  seg_width = width_for_volume[seg_start : seg_end]
   ; Sort segment by surface elevation
   sort_idx = sort(seg_surface)
   seg_surface_sorted = seg_surface[sort_idx]
@@ -129,23 +92,23 @@ distance_per_band_dz = dblarr(nb_dz)
 ; 7. Map each elevation band to its distance along glacier and compute area
 for i = 0, nb_dz - 1 do begin
   elev_target = sur_dz[i]
-  x_interp = interpol(dist_dx_used, sur_dx_used, elev_target)
+  x_interp = interpol(dist_dx, sur_dx, elev_target)
   ; Calculate distance step by looking at neighboring elevations
   if i eq 0 then begin
     if nb_dz gt 1 then begin
       next_elev = sur_dz[1]
-      next_x = interpol(dist_dx_used, sur_dx_used, next_elev)
+      next_x = interpol(dist_dx, sur_dx, next_elev)
       distance_step = abs(next_x - x_interp)
-    endif else distance_step = dx_used
+    endif else distance_step = dist_dx[1] - dist_dx[0]
   endif else if i eq nb_dz - 1 then begin
     prev_elev = sur_dz[nb_dz - 2]
-    prev_x = interpol(dist_dx_used, sur_dx_used, prev_elev)
+    prev_x = interpol(dist_dx, sur_dx, prev_elev)
     distance_step = abs(x_interp - prev_x)
   endif else begin
     prev_elev = sur_dz[i - 1]
     next_elev = sur_dz[i + 1]
-    prev_x = interpol(dist_dx_used, sur_dx_used, prev_elev)
-    next_x = interpol(dist_dx_used, sur_dx_used, next_elev)
+    prev_x = interpol(dist_dx, sur_dx, prev_elev)
+    next_x = interpol(dist_dx, sur_dx, next_elev)
     distance_step = abs(next_x - prev_x) / 2.0
   endelse
   distance_per_band_dz[i] = distance_step
@@ -162,21 +125,21 @@ thick_dz = thick_dz > 0.
 width_dz = width_dz > 0.
 
 ; 10. Reference volume from horizontal grid (trapezoidal rule)
-total_volume_flow = 0.
+total_volume_dx = 0.
 for i = 0, n_elements(th_x) - 2 do begin
   avg_th = (th_x[i] + th_x[i + 1]) / 2.
   avg_w = (width_for_volume[i] + width_for_volume[i + 1]) / 2.
-  dx = x_dist[i + 1] - x_dist[i]
-  total_volume_flow += avg_th * avg_w * dx
+  dx = dist_dx[i + 1] - dist_dx[i]
+  total_volume_dx += avg_th * avg_w * dx
 endfor
 
 ; 11. Calculate vertical grid volume and error
-total_volume_vertical = total(thick_dz * area_dz * 1000.) ; m³
+total_volume_dz = total(thick_dz * area_dz * 1000.) ; m³
 volume_error = 0.
-if total_volume_flow gt 0 then volume_error = abs(total_volume_flow - total_volume_vertical) / total_volume_flow
+if total_volume_dx gt 0 then volume_error = abs(total_volume_dx - total_volume_dz) / total_volume_dx
 
-print, 'Reference volume: ', total_volume_flow, ' m³'
-print, 'Vertical grid volume: ', total_volume_vertical, ' m³'
+print, 'Reference volume: ', total_volume_dx, ' m³'
+print, 'Vertical grid volume: ', total_volume_dz, ' m³'
 print, 'Volume error: ', volume_error * 100., ' %'
 
 ; ========== STEP 3: COMPUTE DISTANCE ALONG VERTICAL GRID ==========
