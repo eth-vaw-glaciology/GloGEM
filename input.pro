@@ -34,7 +34,7 @@ dir_clim = main_dir + 'climatedata/' ; climate data
 ; output (same machine as you run on)scratch via the network
 ; dirres = '/scratch_net/vierzack05_fourth/lvantrich/GloGEM'
 ; dirres = '/scratch_net/vierzack04_fourth/jabeer/GloGEM/batch_results_diff_icetemp/firnice_perm/r' + RGIversion + '_' + time_resolution + '/' ; output folder  (same machine as you run on)scratch via the network
-dirres = '/Users/janoschbeer/Library/Mobile Documents/com~apple~CloudDocs/PhD/projects/GloGEM/results_flow_model/r' + RGIversion + '_' + time_resolution + '/' ; output folder when running on personal computer -> requires manual mounting of the data folder
+dirres = '/Users/janoschbeer/Library/Mobile Documents/com~apple~CloudDocs/PhD/projects/GloGEM/results_glogemflow/r' + RGIversion + '_' + time_resolution + '/' ; output folder when running on personal computer -> requires manual mounting of the data folder
 
 ; --- region selection
 ; regions can be selected in group via a range of region-IDs
