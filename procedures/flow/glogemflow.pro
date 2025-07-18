@@ -8,8 +8,10 @@ compile_opt idl2
 
 time = ye ; get the current time in years -> note the time step within the glogemflow model is smaller & adaptive
 
-; Loop over the time steps from start year to end year
-while time lt tran[1] do begin
+@procedures/flow/load_initial_geometry ; Load the initial geometry of the glacier at year 0
+
+; increments time over the current year -> GloGEMflow model runs on an adaptive time step
+while time lt ye + 1 do begin
   ; ------------------------------------------ ;
   ; Update the time and the time step
   @procedures/flow/update_time_dt
@@ -33,11 +35,13 @@ while time lt tran[1] do begin
   ; Write diagnostic output
   ; @procedures/flow/diagnostic_write
 
-  print, 'Time step (years): ', time
-  break
+  ; print, 'Time step (years): ', time
 endwhile
 
 ; ------------------------------------------ ;
-; Update vertical grid geometry
-; @procedures/flow/update_vertical_grid
-@procedures/flow/conservative_volume_vertical_grid_update
+; Update vertical grid geometry (convert back from horizontal to vertical grid)
+@procedures/flow/vertical_grid_update
+
+; ------------------------------------------ ;
+; Optional diagnostics -> can be commented out
+@procedures/flow/diagnostics
