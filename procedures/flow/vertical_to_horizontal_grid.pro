@@ -21,50 +21,61 @@ dx = round(gl_length / 100)
 
 ; Create a new grid with equidistant spacing
 grid_cells = floor(glacier_geom[length_glacier_geom - 1, 6] / dx) ; number of grid cells
-x = findgen(grid_cells) * dx + dx ; x-coordinates of the new grid (m)
+dist_dx_init = findgen(grid_cells) * dx + dx ; x-coordinates of the new grid (m)
 
 ; Create arrays to look up the Huss glacier geometry
-glacier_geom_lookup_x = glacier_geom[*, 6] ; Lookup Distance along the flowline (m)
-glacier_geom_lookup_sur = (glacier_geom[*, 1] + glacier_geom[*, 2]) / 2 ; Lookup Surface elevation (m)
-glacier_geom_lookup_width = glacier_geom[*, 5] ; Lookup Width (m)
-glacier_geom_lookup_th = glacier_geom[*, 4] ; Lookup Thickness (m)
+dist_dz_init = glacier_geom[*, 6] ; Lookup Distance along the flowline (m)
+sur_dz_init = (glacier_geom[*, 1] + glacier_geom[*, 2]) / 2 ; Lookup Surface elevation (m)
+width_dz_init = glacier_geom[*, 5] ; Lookup Width (m)
+thick_dz_init = glacier_geom[*, 4] ; Lookup Thickness (m)
 
 ; Remove elevation bands with no ice
-i = where(glacier_geom_lookup_width eq 0, count)
+i = where(width_dz_init eq 0, count)
 if count gt 0 then begin
-  good_indices = where(glacier_geom_lookup_width ne 0)
-  glacier_geom_lookup_x = glacier_geom_lookup_x[good_indices]
-  glacier_geom_lookup_sur = glacier_geom_lookup_sur[good_indices]
-  glacier_geom_lookup_width = glacier_geom_lookup_width[good_indices]
-  glacier_geom_lookup_th = glacier_geom_lookup_th[good_indices]
+  good_indices = where(width_dz_init ne 0)
+  dist_dz_init = dist_dz_init[good_indices]
+  sur_dz_init = sur_dz_init[good_indices]
+  width_dz_init = width_dz_init[good_indices]
+  thick_dz_init = thick_dz_init[good_indices]
 endif
 
 ; Perform linear interpolation for surface elevation, width, and thickness to generate a horizontally equidistant grid
-sur_dx = interpol(glacier_geom_lookup_sur, glacier_geom_lookup_x, x) ; Surface elevation (linear interpolation)
-width_dx = interpol(glacier_geom_lookup_width, glacier_geom_lookup_x, x) ; Width (linear interpolation)
-i = where(x lt glacier_geom_lookup_x[0], count)
-if count gt 0 then width_dx[i] = glacier_geom_lookup_width[0]
+sur_dx_init = interpol(sur_dz_init, dist_dz_init, dist_dx_init) ; Surface elevation (linear interpolation)
+width_dx_init = interpol(width_dz_init, dist_dz_init, dist_dx_init) ; Width (linear interpolation)
+i = where(dist_dx_init lt dist_dz_init[0], count)
+if count gt 0 then width_dx_init[i] = width_dz_init[0]
 
-thick_dx = interpol(glacier_geom_lookup_th, glacier_geom_lookup_x, x) ; Thickness (linear interpolation)
-i = where(x lt glacier_geom_lookup_x[0], count)
-if count gt 0 then thick_dx[i] = glacier_geom_lookup_th[0] ; Thickness for cells lower than first point on Huss grid: same as thickness first point Huss grid
-bed_dx = sur_dx - thick_dx ; Bedrock elevation (m)
+thick_dx_init = interpol(thick_dz_init, dist_dz_init, dist_dx_init) ; Thickness (linear interpolation)
+i = where(dist_dx_init lt dist_dz_init[0], count)
+if count gt 0 then thick_dx_init[i] = thick_dz_init[0] ; Thickness for cells lower than first point on Huss grid: same as thickness first point Huss grid
+bed_dx_init = sur_dx_init - thick_dx_init ; Bedrock elevation (m)
+
+; Find indices where sur_dx_init is within the range of sur_dz_init
+valid_idx = where((sur_dx_init ge min(sur_dz_init)) and (sur_dx_init le max(sur_dz_init)), count)
+
+if count gt 0 then begin
+  sur_dx_init = sur_dx_init[valid_idx]
+  dist_dx_init = dist_dx_init[valid_idx]
+  width_dx_init = width_dx_init[valid_idx]
+  thick_dx_init = thick_dx_init[valid_idx]
+  bed_dx_init = bed_dx_init[valid_idx]
+endif
 
 ; ; Check how much the volume and area have changed:
 volume_Huss_1d = total((glacier_geom[*, 3] * 1e6) * glacier_geom[*, 4])
 ; print, 'volume_Huss_1d = ', volume_Huss_1d
-volume_Huss_1d_fixeddistance = total(width_dx * thick_dx * dx)
+volume_Huss_1d_fixeddistance = total(width_dx_init * thick_dx_init * dx)
 ; print, 'volume_Huss_1d_fixeddistance = ', volume_Huss_1d_fixeddistance
 area_Huss_1d = total(glacier_geom[*, 3] * 1e6)
 ; print, 'area_Huss_1d = ', area_Huss_1d
-area_Huss_1d_fixeddistance = total(width_dx * dx)
+area_Huss_1d_fixeddistance = total(width_dx_init * dx)
 ; print, 'area_Huss_1d_fixeddistance = ', area_Huss_1d_fixeddistance
-i = where(thick_dx gt 1, count)
+i = where(thick_dx_init gt 1, count)
 length_fixeddistance = count * dx
 
 difference_volume = volume_Huss_1d_fixeddistance - volume_Huss_1d
 ; print, 'difference_volume = ', difference_volume
 ; print, 'difference_in_percentage = ', (difference_volume / volume_Huss_1d) * 100, '%'
 
-horizontal_grid_inputs = {x: x, sur_dx: sur_dx, width_dx: width_dx, thick_dx: thick_dx, bed_dx: bed_dx}
+horizontal_grid_inputs = {dist_dx: dist_dx_init, sur_dx: sur_dx_init, width_dx: width_dx_init, thick_dx: thick_dx_init, bed_dx: bed_dx_init}
 save, horizontal_grid_inputs, file = 'horizontal_grid_inputs.sav'
