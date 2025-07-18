@@ -8,37 +8,22 @@
 
 compile_opt idl2
 
-; ========== STEP 1: CREATE VERTICAL GRID WITHOUT SEGMENTATION ==========
+; ========== STEP 1: READ VERTICAL GRID WITHOUT SEGMENTATION ==========
 print, ''
-print, '=== CREATING VERTICAL GRID ==='
+print, '=== READ VERTICAL GRID ==='
 
-; Smooth surface to reduce noise
-sur_dx_smooth = smooth(sur_dx, 5)
-
-; Set initial vertical band spacing and options
-dz = 10.0
-min_elev_span = 1000.0 ; <-- minimum elevation span in meters (option)
-
-; Find min and max surface elevation (rounded to nearest 10)
-surf_min = min(sur_dx_smooth)
-surf_max = max(sur_dx_smooth)
-surf_min_rounded = ceil(surf_min / 10.0) * 10.0
-surf_max_rounded = floor(surf_max / 10.0) * 10.0
-
-; Calculate elevation span
-elev_span = surf_max_rounded - surf_min_rounded
-
-; Adjust dz if elevation span is below threshold
-if elev_span lt min_elev_span then begin
-  dz = dz * (elev_span / min_elev_span)
-  print, '  dz reduced to ', dz, ' m due to low elevation span (', elev_span, ' m, min allowed: ', min_elev_span, ' m)'
-endif
-
-; Always create ascending vertical grid
-sur_dz = surf_min_rounded + findgen(fix((surf_max_rounded - surf_min_rounded) / dz) + 1) * dz
-sur_dz = sur_dz[where(sur_dz le surf_max)]
-
-nb = n_elements(sur_dz)
+; Read vertical grid data from main GloGEM script at the start of the model run
+if ye eq 0 then begin
+  bed_dz = bed_elev ; Bedrock elevation (m), does not need a _init suffix as it will always be the same
+  sur_dz = elev ; Surface elevation (m), can be initialized from the original elevation band centers
+  nb_dz = n_elements(sur_dz) ; number of elevation bands in vertical grid
+  print, 'Elevation range of vertical grid (sur_dz): ', min(sur_dz), ' to ', max(sur_dz)
+  print, 'Elevation range of horizontal grid (sur_dx): ', min(sur_dx_init), ' to ', max(sur_dx_init)
+endif else begin
+  nb_dz = n_elements(sur_dz) ; number of elevation bands in recent vertical grid
+  print, 'Elevation range of vertical grid (sur_dz): ', min(sur_dz), ' to ', max(sur_dz)
+  print, 'Elevation range of horizontal grid (sur_dx): ', min(sur_dx), ' to ', max(sur_dx)
+endelse
 
 ; ========== STEP 2: DISTANCE-BASED INTERPOLATION WITHOUT REDUNDANT ARRAYS ==========
 
@@ -47,27 +32,24 @@ surf_min_dx = min(sur_dx)
 surf_max_dx = max(sur_dx)
 valid_bands = where((sur_dz ge surf_min_dx) and (sur_dz le surf_max_dx), n_valid_bands)
 
-; 2. Use original horizontal grid data directly
-nb_dz = n_elements(sur_dz)
-
-; 3. Find monotonic segments in the surface
+; 2. Find monotonic segments in the surface
 d_surface = deriv(sur_dx)
 sign_change = where(d_surface * shift(d_surface, -1) lt 0, n_change)
 segment_edges = [0, sign_change + 1, n_elements(sur_dx)]
 
-; 4. Prepare output arrays for the vertical grid
+; 3. Prepare output arrays for the vertical grid
 thick_dz = dblarr(nb_dz)
 width_dz = dblarr(nb_dz)
 area_dz = dblarr(nb_dz)
 gl_dz = dblarr(nb_dz) + noval
 
-; 5. Interpolate within each monotonic segment
+; 4. Interpolate within each monotonic segment
 for s = 0, n_elements(segment_edges) - 2 do begin
   seg_start = segment_edges[s]
   seg_end = segment_edges[s + 1] - 1
   seg_surface = sur_dx[seg_start : seg_end]
-  seg_thick = th_x[seg_start : seg_end]
-  seg_width = width_for_volume[seg_start : seg_end]
+  seg_thick = thick_dx[seg_start : seg_end]
+  seg_width = width_dx[seg_start : seg_end]
   ; Sort segment by surface elevation
   sort_idx = sort(seg_surface)
   seg_surface_sorted = seg_surface[sort_idx]
@@ -86,10 +68,10 @@ for s = 0, n_elements(segment_edges) - 2 do begin
   endif
 endfor
 
-; 6. Prepare arrays for area and distance per band
+; 5. Prepare arrays for area and distance per band
 distance_per_band_dz = dblarr(nb_dz)
 
-; 7. Map each elevation band to its distance along glacier and compute area
+; 6. Map each elevation band to its distance along glacier and compute area
 for i = 0, nb_dz - 1 do begin
   elev_target = sur_dz[i]
   x_interp = interpol(dist_dx, sur_dx, elev_target)
@@ -117,23 +99,17 @@ endfor
 
 if nb_dz gt 1 then distance_per_band_dz[0] = distance_per_band_dz[1]
 
-; 8. Assign elevation to gl_dz
+; 7. Assign elevation to gl_dz
 gl_dz = sur_dz
 
-; 9. Apply physical constraints
+; 8. Apply physical constraints
 thick_dz = thick_dz > 0.
 width_dz = width_dz > 0.
 
-; 10. Reference volume from horizontal grid (trapezoidal rule)
-total_volume_dx = 0.
-for i = 0, n_elements(th_x) - 2 do begin
-  avg_th = (th_x[i] + th_x[i + 1]) / 2.
-  avg_w = (width_for_volume[i] + width_for_volume[i + 1]) / 2.
-  dx = dist_dx[i + 1] - dist_dx[i]
-  total_volume_dx += avg_th * avg_w * dx
-endfor
+; 9. Reference volume from horizontal grid (simple sum)
+total_volume_dx = total(thick_dx * width_dx * dx) ; m³
 
-; 11. Calculate vertical grid volume and error
+; 10. Calculate vertical grid volume and error
 total_volume_dz = total(thick_dz * area_dz * 1000.) ; m³
 volume_error = 0.
 if total_volume_dx gt 0 then volume_error = abs(total_volume_dx - total_volume_dz) / total_volume_dx
@@ -161,7 +137,7 @@ current_volume = total(thick_dz * area_dz * 1000.)
 volume_error = abs(total_volume_dx - current_volume) / total_volume_dx
 
 ; Save pre-correction thickness
-thickness_dz_before = thick_dz
+thick_dz_before = thick_dz
 
 ; Apply thickness correction proportional to local volume contribution if error > 0.1%
 if volume_error gt 0.001 then begin
@@ -188,7 +164,10 @@ print, 'Final volume error: ', final_error * 100., '%'
 
 ; ========== STEP 5: FINAL ASSIGNMENT =========
 
-thick = thickness_dz
+sur_dz = bed_dz + thick_dz ; Update surface elevation based on bedrock and thickness
+
+; Assign final arrays so that they can be used in the main model
+thick = thick_dz
 elev = sur_dz
 distance = distance_dz
 width = width_dz
