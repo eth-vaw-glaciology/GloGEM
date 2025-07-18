@@ -583,7 +583,7 @@ READ_HYPSOMETRYFILE,fn,gg,g,a_gl,nb,da,advance,adv_calving,adv_addband,adv_addba
 ; generate hypsometric information & parameters for glogemflow
 if use_flow_model eq 'y' then begin
    @procedures/flow/set_flow_model_parameters
-   @procedures/flow/convert_vertical_to_horizontal_grid
+   @procedures/flow/vertical_to_horizontal_grid
    @procedures/flow/constants_counters_initialvalues_sizevariables
    @procedures/flow/initial_geometry
 endif
