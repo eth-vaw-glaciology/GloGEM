@@ -15,18 +15,18 @@ endif
 
 if dt_flag eq 0 and t gt 2 then begin ; Adapt the time step:
   ; Print diagnostics to understand why dt is so small and stays the same
-  print, 'Diagnostics for dt calculation:'
-  print, '  dx = ', dx
-  print, '  dtfactor = ', dtfactor
-  print, '  max(df_dx) = ', max(df_dx)
-  print, '  Raw dt calculation = ', (dx ^ 2 / (max(df_dx))) * dtfactor
-  print, '  dt_max = ', dt_max
-  print, '  Previous dt = ', dt
+  ; print, 'Diagnostics for dt calculation:'
+  ; print, '  dx = ', dx
+  ; print, '  dtfactor = ', dtfactor
+  ; print, '  max(df_dx) = ', max(df_dx)
+  ; print, '  Raw dt calculation = ', (dx ^ 2 / (max(df_dx))) * dtfactor
+  ; print, '  dt_max = ', dt_max
+  ; print, '  Previous dt = ', dt
 
   dt = (dx ^ 2 / (max(df_dx))) * dtfactor ; CFL type of criterion, multiplied with the 'dtfactor'
   if dt gt dt_max then dt = dt_max ; If needed: impose limit on the dt
 
-  print, '  Updated dt = ', dt
+  ; print, '  Updated dt = ', dt
 endif
 
 t = t + 1 ; timestep (integer)
