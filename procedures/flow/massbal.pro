@@ -4,6 +4,8 @@
 ; ---------------------------------
 compile_opt idl2
 
+bal_dz = bal ; get mass balance in m w.e. from main GloGEM model
+
 ; SMB calculation method flag (set this in your main parameter file)
 ; smb_method_flag = 0: Use interpolation (original method)
 ; smb_method_flag = 1: Use polynomial fit (smooth alternative)
@@ -16,11 +18,11 @@ if smb_method_flag eq 0 then begin
   surf_elev_eq = (glacier_geom[*, 1] + glacier_geom[*, 2]) / 2
 
   ; Find valid (non-missing) data points
-  valid_idx = where(bal ne -99.0, count)
+  valid_idx = where(bal_dz ne -99.0, count)
 
   if count gt 0 then begin
     ; Use only valid data for interpolation
-    bal_valid = bal[valid_idx]
+    bal_valid = bal_dz[valid_idx]
     surf_elev_valid = surf_elev_eq[valid_idx]
 
     ; Interpolate using only valid data
@@ -45,10 +47,10 @@ if smb_method_flag eq 1 then begin
   surf_elev_eq = (glacier_geom[*, 1] + glacier_geom[*, 2]) / 2
 
   ; Find valid (non-missing) data points
-  valid_idx = where(bal ne -99.0, count)
+  valid_idx = where(bal_dz ne -99.0, count)
 
   if count gt 3 then begin ; Need at least 4 points for cubic fit
-    bal_valid = bal[valid_idx]
+    bal_valid = bal_dz[valid_idx]
     surf_elev_valid = surf_elev_eq[valid_idx]
 
     ; Polynomial order (2 = quadratic, 3 = cubic)
@@ -88,7 +90,7 @@ if smb_method_flag eq 1 then begin
   endif else if count gt 0 then begin
     ; Too few points for polynomial, use mean value
     ; print, 'Too few points for polynomial fit, using mean SMB'
-    mean_smb = mean(bal[valid_idx])
+    mean_smb = mean(bal_dz[valid_idx])
     bal_dx = replicate(mean_smb, n_elements(sur_dx))
 
     ; Apply same constraints as above
@@ -118,9 +120,3 @@ for i = 0, n_elements(bal_dx) - 1 do begin
     bal_dx[i] = bal_dx[i] > (-50.0) < 50.0
   endif
 endfor
-
-; Debug output
-; print, 'SMB method used:', smb_method_flag
-; print, 'bal range: ', min(bal[where(bal ne -99)]), ' to ', max(bal[where(bal ne -99)])
-; print, 'bal_dx range: ', min(bal_dx), ' to ', max(bal_dx)
-; print, 'Number of valid SMB points:', count
