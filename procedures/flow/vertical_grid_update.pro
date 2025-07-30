@@ -8,6 +8,11 @@
 
 compile_opt idl2
 
+; Set ice thickness in the horizontal grid to 0 where it is lower than 1m (for stability and consistency)
+for i = 0, n_elements(thick_dx) - 1 do begin
+  if thick_dx[i] lt 1.0 then thick_dx[i] = 0.0
+endfor
+
 ; ========== STEP 1: READ VERTICAL GRID WITHOUT SEGMENTATION ==========
 print, ''
 print, '=== READ VERTICAL GRID ==='
@@ -103,11 +108,21 @@ if nb_dz gt 1 then distance_per_band_dz[0] = distance_per_band_dz[1]
 gl_dz = sur_dz
 
 ; 8. Apply physical constraints
+
+; Set ice thickness to 0 if it is already below 1m (for stability and physical consistency)
+for i = 0, n_elements(thick_dz) - 1 do begin
+  if thick_dz[i] lt 1.0 then thick_dz[i] = 0.0
+endfor
+
 thick_dz = thick_dz > 0.
 width_dz = width_dz > 0.
 
 ; 9. Reference volume from horizontal grid (simple sum)
 total_volume_dx = total(thick_dx * width_dx * dx) ; m³
+
+print, 'thick_dx: ', thick_dx
+print, 'width_dx: ', width_dx
+print, 'dx: ', dx
 
 ; 10. Calculate vertical grid volume and error
 total_volume_dz = total(thick_dz * area_dz * 1000.) ; m³
@@ -132,6 +147,9 @@ distance_dz = distance_dz / 1000.0 ; convert to km
 
 ; ========== STEP 4: APPLY THICKNESS CORRECTION IF NECESSARY TO CONSERVE VOLUME ==========
 
+; Add a switch to enable/disable thickness correction
+apply_thickness_correction = 0 ; set to 1 to enable, 0 to disable
+
 ; Calculate current volume
 current_volume = total(thick_dz * area_dz * 1000.)
 volume_error = abs(total_volume_dx - current_volume) / total_volume_dx
@@ -140,20 +158,30 @@ volume_error = abs(total_volume_dx - current_volume) / total_volume_dx
 thick_dz_before = thick_dz
 
 ; Apply thickness correction proportional to local volume contribution if error > 0.1%
-if volume_error gt 0.001 then begin
-  print, 'Applying proportional thickness correction due to volume error: ', volume_error * 100., '%'
-  ; Calculate total volume sum for weighting (only where thickness > 0 and area > 0)
-  valid = where((thick_dz gt 0) and (area_dz gt 0), n_valid)
-  if n_valid gt 0 then begin
-    total_vol = total(thick_dz[valid] * area_dz[valid])
-    for i = 0, n_elements(thick_dz) - 1 do begin
-      if (thick_dz[i] gt 0) and (area_dz[i] gt 0) then begin
-        weight = (thick_dz[i] * area_dz[i]) / total_vol ; weight based on band volume contribution
-        thick_dz[i] = thick_dz[i] + (total_volume_dx - current_volume) * weight / (area_dz[i] * 1000.)
-      endif
-    endfor
+if apply_thickness_correction eq 1 then begin
+  if volume_error gt 0.001 then begin
+    print, 'Applying proportional thickness correction due to volume error: ', volume_error * 100., '%'
+    ; Only correct where thickness > threshold and area > 0
+    threshold = 1.0 ; meters
+    valid = where((thick_dz gt threshold) and (area_dz gt 0), n_valid)
+    if n_valid gt 0 then begin
+      total_vol = total(thick_dz[valid] * area_dz[valid])
+      for i = 0, n_elements(thick_dz) - 1 do begin
+        if (thick_dz[i] gt threshold) and (area_dz[i] gt 0) then begin
+          weight = (thick_dz[i] * area_dz[i]) / total_vol ; weight based on band volume contribution
+          thick_dz[i] = thick_dz[i] + (total_volume_dx - current_volume) * weight / (area_dz[i] * 1000.)
+        endif
+      endfor
+    endif
   endif
 endif
+
+; After correction, set very small thicknesses to zero for stability
+min_thick = 1e-3 ; meters
+for i = 0, n_elements(thick_dz) - 1 do begin
+  if thick_dz[i] lt min_thick then thick_dz[i] = 0.0
+endfor
+
 ; Final volume check
 final_volume = total(thick_dz * area_dz * 1000.)
 final_error = abs(total_volume_dx - final_volume) / total_volume_dx
@@ -161,6 +189,9 @@ final_error = abs(total_volume_dx - final_volume) / total_volume_dx
 print, 'Reference volume: ', total_volume_dx, ' m³'
 print, 'Final volume: ', final_volume, ' m³'
 print, 'Final volume error: ', final_error * 100., '%'
+
+print, 'Thickness before correction: ', thick_dz_before
+print, 'Thickness after correction: ', thick_dz
 
 ; ========== STEP 5: FINAL ASSIGNMENT =========
 
