@@ -10,7 +10,7 @@ aflow = 1e-16 ; X = value of deformation-sliding factor (10^-16 Pa^-3 a^-1)
 calibration_method = 0 ; 0 = no calibration (for tests/examples, is not used in paper); 1 = 1990 steady state --> match inventory date length and volume; 2 = 1950 steady state --> match inventory date volume (important for read-in and read-out of various files)
 display_during_flag = 0 ; 0 = do not display anything during run (geometry and smb stuff); 1 = display during run --> may be useful for debugging/checks (is normally not used)
 display_end_flag = 0 ; 0 = do not display anything in the end; 1 = save one final figure; 2 = display all, but no movie; 3 = time lapse movie with only geometry, 4 = time lapse movie with only geometry + save movie .pdf files; 5 = 'full' time lapse movie, 6 = full movie + save movie as .pdf files
-dtfactor = 1 ; X = multiply dt by a certain factor --> can be used to avoid numerical instability
+dtfactor = 0.9 ; X = multiply dt by a certain factor --> can be used to avoid numerical instability
 dt_flag = 0 ; 0 = adaptive time step (dynamic); X = time step in years
 flag_startobs = 1 ; 0 = start from zero ice thickness; 1 = start from observed geometry (at RGI inventory date); 2 = start from modelled geometry
 frontal_length = 1.0 / 4.0 ; X = length of proglacial area (defined as fraction of glacier length: e.g. 0.5 --> if glacier is 5 km long, a proglacial area of 2.5 km will be added)
