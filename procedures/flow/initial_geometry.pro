@@ -120,13 +120,19 @@ endif else begin
   print, 'domain_exit_index = ', domain_exit_index
 endelse
 
-; Diagnoistic print outs to check the initial geometry
+; ; print length of width_dx_init and width_surface_dx_init
+; print, 'length of width_dx_init: ', n_elements(width_dx_init)
+; print, 'length of width_surface_dx_init: ', n_elements(width_surface_dx_init)
+
+; ; Diagnoistic print outs to check the initial geometry
+; print, 'width_dx_init: ', width_dx_init
 ; print, 'first_icp = ', first_icp
 ; print, 'obs_vol_flowlinemodel = ', obs_vol_flowlinemodel
 ; print, 'obs_vol_trapezium = ', obs_vol_trapezium
 ; print, 'obs_th_init = ', obs_th_init
 ; print, 'obs_sur_init = ', obs_sur_init
 ; print, 'bed_dx_init = ', bed_dx_init
+; print, 'width_surface_dx_init = ', width_surface_dx_init
 ; print, 'width_base_dx_init = ', width_base_dx_init
 ; print, 'width_mid_dx_init = ', width_mid_dx_init
 ; print, 'width_mid_obs_dx_init = ', width_mid_obs_dx_init
