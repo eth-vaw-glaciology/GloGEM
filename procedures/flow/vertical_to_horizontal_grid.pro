@@ -61,15 +61,52 @@ if count gt 0 then begin
   bed_dx_init = bed_dx_init[valid_idx]
 endif
 
+; --- After interpolation to the regular grid, smooth geometry arrays to improve stability ---
+sur_dx_init = smooth(sur_dx_init, 3)
+width_dx_init = smooth(width_dx_init, 3)
+thick_dx_init = smooth(thick_dx_init, 3)
+bed_dx_init = smooth(bed_dx_init, 3)
+
+; --- Add frontal padding (pre-frontal region) ---
+
+frontal_length = 0.25 ; 25% of glacier length
+extra_grids = ceil((dist_dx_init[-1] * frontal_length) / dx)
+x_concat = findgen(extra_grids) * dx + dist_dx_init[-1] + dx
+
+; update xnum after padding
+xnum = n_elements(dist_dx_init) + extra_grids
+
+; Zero arrays for padding
+thick_concat = fltarr(extra_grids)
+width_concat = fltarr(extra_grids)
+
+; Extrapolate bedrock elevation in prefrontal region
+bedrock_elev = sur_dx_init - thick_dx_init
+upper_bound_index = round(0.1 * n_elements(sur_dx_init))
+avg_slope = (bedrock_elev[upper_bound_index] - bedrock_elev[0]) / (upper_bound_index * dx)
+lowest_bedrock_elev = bedrock_elev[0]
+prefrontal_elev = lowest_bedrock_elev - (findgen(extra_grids) * avg_slope * dx)
+prefrontal_elev = reverse(prefrontal_elev)
+
+; Surface elevation in prefrontal region (set equal to bedrock for zero thickness)
+sur_concat = prefrontal_elev
+
+; Merge arrays: prepend prefrontal region to glacier arrays
+dist_dx_init = [dist_dx_init, x_concat]
+sur_dx_init = [sur_concat, sur_dx_init]
+width_dx_init = [width_concat, width_dx_init]
+thick_dx_init = [thick_concat, thick_dx_init]
+bed_dx_init = [prefrontal_elev, bed_dx_init]
+
 ; ; Check how much the volume and area have changed:
 volume_Huss_1d = total((glacier_geom[*, 3] * 1e6) * glacier_geom[*, 4])
-; print, 'volume_Huss_1d = ', volume_Huss_1d
+print, 'volume_Huss_1d = ', volume_Huss_1d
 volume_Huss_1d_fixeddistance = total(width_dx_init * thick_dx_init * dx)
-; print, 'volume_Huss_1d_fixeddistance = ', volume_Huss_1d_fixeddistance
+print, 'volume_Huss_1d_fixeddistance = ', volume_Huss_1d_fixeddistance
 area_Huss_1d = total(glacier_geom[*, 3] * 1e6)
-; print, 'area_Huss_1d = ', area_Huss_1d
+print, 'area_Huss_1d = ', area_Huss_1d
 area_Huss_1d_fixeddistance = total(width_dx_init * dx)
-; print, 'area_Huss_1d_fixeddistance = ', area_Huss_1d_fixeddistance
+print, 'area_Huss_1d_fixeddistance = ', area_Huss_1d_fixeddistance
 i = where(thick_dx_init gt 1, count)
 length_fixeddistance = count * dx
 
