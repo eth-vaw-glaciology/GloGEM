@@ -81,7 +81,7 @@ if smb_method_flag eq 1 then begin
       if thick_dx[i] eq 0 and bal_dx[i] gt 0 then bal_dx[i] = 0.0
 
       ; Set SMB to zero outside original glacier elevation range
-      if sur_dx[i] lt min_elev or sur_dx[i] gt max_elev then bal_dx[i] = 0.0
+      ; if sur_dx[i] lt min_elev or sur_dx[i] gt max_elev then bal_dx[i] = 0.0
     endfor
 
     ; Print polynomial coefficients for debugging
@@ -120,3 +120,8 @@ for i = 0, n_elements(bal_dx) - 1 do begin
     bal_dx[i] = bal_dx[i] > (-50.0) < 50.0
   endif
 endfor
+
+; Apply smoothing to the final SMB to avoid abrupt changes
+bal_dx = smooth(bal_dx, 3)
+
+; print, 'Final SMB values (bal_dx):', bal_dx
