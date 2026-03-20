@@ -8,7 +8,9 @@ output/
 *.png
 *.grid
 *.agr
+*.log
 .DS_Store
+.vscode/
 results_glogemflow/
 results_dhdt/
 products/

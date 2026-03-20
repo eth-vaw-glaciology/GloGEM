@@ -52,7 +52,7 @@ for j = 0, 2 do begin
 
   thick_dx = thick_dx_new
 
-  @variables_renew
+  @procedures/flow/variables_renew
 endfor
 
 ; ; --- Diagnostics after thickness update ---

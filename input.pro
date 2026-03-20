@@ -19,11 +19,24 @@ time_resolution = 'monthly' ; 'daily'/'monthly' - SELECT TIME RESOLUTION OF MODE
 
 ; Dynamically detect the username and construct the directory path
 username = getenv('USER') ; Get the current user's username from the environment
+username_set = 'jabeer' ; set username manually if working on local machine and auto-detection does not work
+if username_set ne '' then username = username_set
 
-; set main directory
-; main_dir = '/itet-stor/' + username + '/glogem/' ; Construct the main directory path
-main_dir = '/Volumes/jabeer/glogem/' ; main directory on the cluster
-; main_dir = '~/remote/glogem/' ; when running on personal computer -> requires manual mounting of the data folder
+; --- Data source selection and auto-mounting ---
+main_dir = ''
+
+; Option A: SMB share on macOS (recommended for local runs)
+use_smb_data = 'y'
+smb_host = 'itet-stor'
+smb_share = username
+smb_mount = '/Volumes/' + smb_share
+
+if use_smb_data ne 'y' then message, 'Only Option A is enabled in input.pro. Set use_smb_data=''y''.'
+
+if ~file_test(smb_mount, /directory) then spawn, 'open smb://' + smb_host + '/' + smb_share
+if ~file_test(smb_mount, /directory) then message, 'SMB share not mounted: ' + smb_mount
+
+main_dir = smb_mount + '/glogem/'
 
 ; input
 dir = main_dir + 'data/' ; Construct the general data folder path
@@ -268,8 +281,10 @@ firn_permeability = 'y' ; 'y' to activate firn permeability model
 ice_permeability = 'y' ; 'y' to activate ice  permeability model
 
 ; ------ glacier evolution model
-use_flow_model = 'y' ; (y/n) ACTIVATE FLOW MODEL (GloGEMflow, Zekollari et al., 2019)
-glacier_retreat = 'n' ; (y/n) ACTIVATE GLACIER RETREAT MODEL(dhdt-parameterization, Huss et al., 2010)
+use_flow_model = 'y' ; (y/n) use SIA flow model (GloGEMflow, Zekollari et al., 2019)
+                      ; 'y': flowline mass balance + SIA dynamics (Option A)
+                      ; 'n': dhdt-parameterization (Huss et al., 2010)
+glacier_retreat = 'y' ; (y/n) allow glacier geometry to evolve (set automatically by find_startyear)
 
 ; ----- option to write out glacier geometry for testing different evolution models
 write_geometry_output = 'y' ; (y/n) write out glacier geometry as .sav file for testing
@@ -519,7 +534,7 @@ if short_gcmchoice[0] ne 0 then begin
     rcp_batch[0] = 0
     expe_batch[0] = 0
     first_GCM = 0
-  endif else begin
+  end else begin
     tt = ['BCC-CSM2-MR', 'CAMS-CSM1-0', 'CESM2', 'CESM2-WACCM', 'EC-Earth3', 'EC-Earth3-Veg', 'FGOALS-f3-L', 'GFDL-ESM4', 'INM-CM4-8', 'INM-CM5-0', 'MPI-ESM1-2-HR', 'MRI-ESM2-0', 'NorESM2-MM', 'CanESM5']
     GCM_model = [tt[short_gcmchoice[0] - 1]]
     tt = ['ssp126', 'ssp245', 'ssp370', 'ssp585', 'ssp119']
@@ -532,5 +547,4 @@ if short_gcmchoice[0] ne 0 then begin
     first_GCM = 0
   endelse
 endif
-
 end

@@ -267,12 +267,12 @@ if toff_grid eq 'y' and calibration_phase eq '1' and calibrate eq 'y' then begin
    fn=dircali+dir_region+'/calibration/toff_m'+meltmodel+'_cID'+string(calperiod_ID,fo='(i1)')+'_'+sub_region+cc+'.dat'
    a=findfile(fn)
    if a[0] ne '' then begin
-      anz=file_lines(fn) & da=dblarr(5,anz)  & openr,1,fn & readf,1,da & close,1
-      toff_data=dblarr(anz) & cali_id_toff=da[0,*]
-      for i=1,max(da[3,*]) do begin
-         for j=1,max(da[4,*]) do begin
-            ii = where((da[3,*] eq i) AND (da[4,*] eq j), ci)
-            if ci gt 0 then toff_data[ii] = mean(da[1,ii])
+      anz=file_lines(fn) & da_toff=dblarr(5,anz)  & openr,1,fn & readf,1,da_toff & close,1
+      toff_data=dblarr(anz) & cali_id_toff=da_toff[0,*]
+      for i=1,max(da_toff[3,*]) do begin
+         for j=1,max(da_toff[4,*]) do begin
+            ii = where((da_toff[3,*] eq i) AND (da_toff[4,*] eq j), ci)
+            if ci gt 0 then toff_data[ii] = mean(da_toff[1,ii])
          endfor
       endfor
    endif else toff_grid='n'
@@ -559,6 +559,7 @@ endif                               ; is there a glacier in the cell?
 ; *****************************************************
 ; MAIN LOOP over all glaciers
 
+
 for g=0l,cg-1 do begin
 
 ; ******************************
@@ -578,15 +579,14 @@ fn=dir_data+'/'+region+'/'+id[gg[g]]+'.dat' & a=findfile(fn)
 
 if a[0] ne '' then begin
 
+; Always include advance bands so that flow and dhdt runs have the same nb
+advance_save = advance
+if use_flow_model eq 'y' then advance = 'y'
 READ_HYPSOMETRYFILE,fn,gg,g,a_gl,nb,da,advance,adv_calving,adv_addband,adv_addband0,hmin, dir_data_alt,region,id
+advance = advance_save
 
-; generate hypsometric information & parameters for glogemflow
-if use_flow_model eq 'y' then begin
-   @procedures/flow/set_flow_model_parameters
-   @procedures/flow/vertical_to_horizontal_grid
-   @procedures/flow/constants_counters_initialvalues_sizevariables
-   @procedures/flow/initial_geometry
-endif
+; NOTE: GloGEMflow initialisation is now handled inside glogemflow_coupled.pro
+; at the first call (ye==0). No pre-initialisation needed here.
 
 ; find geothermal heat flux for glacier
 if firnice_temperature eq 'y' then begin
@@ -1252,7 +1252,7 @@ if cj gt 0 then begin
    ht1=elev[jj[0]] 
    ii=where(bal[jj] gt 0,ci) & if ci gt 0 then aar[ye]=total(area_stor[jj[ii]])*100./area1 else aar[ye]=0
    btongue[ye]=min(bal[jj],ind) &  if ci gt 0 then ela[ye]=elev[jj[ii[0]]] else ela[ye]=max(elev)
-   da=(elev[jj[ind]]-ela[ye]) & if abs(da) gt 20 then dbdz[ye]=btongue[ye]/da else dbdz[ye]=0.
+   d_ela=(elev[jj[ind]]-ela[ye]) & if abs(d_ela) gt 20 then dbdz[ye]=btongue[ye]/d_ela else dbdz[ye]=0.
 endif else ht1=max(elev)
 hmin_g[ye]=ht1
 
@@ -1306,8 +1306,11 @@ CALVING_MODEL,thick,bed_elev,bed_elev_term,bed_elev_p,dvol,frontal_ablation,fron
 ; choose between dhdt-parameterization and flow model
 
 if use_flow_model eq 'y' then begin
-   ; flow model -> GloGEMflow (Zekollari et al., 2019)
-   @procedures/flow/glogemflow
+   ; Coupled GloGEMflow (Zekollari et al., 2019) — Option A
+   ; Mass balance computed directly on flowline grid
+   ; Volume and area computed from flowline grid (no writeback)
+   ; GloGEM's vertical-band arrays are NOT modified by the flow model
+   @procedures/flow/glogemflow_coupled
 
 endif else begin
    ; dhdt-parameterization (Huss et al., 2010)
@@ -1321,26 +1324,82 @@ if write_geometry_output eq 'y' then begin
       thick_hist = dblarr(nb, years)
       elev_hist = dblarr(nb, years)
       bed_elev_hist = dblarr(nb, years)
-      length_hist = dblarr(nb, years)
-      ; velocity_hist = dblarr(nb, years)
+      width_hist = dblarr(nb, years)
       area_hist = dblarr(nb, years)
+      bal_hist = dblarr(nb, years)
+      length_hist_bands = dblarr(nb, years)
       year_hist = lonarr(years)
+      vol_hist = dblarr(years)
+      area_total_hist = dblarr(years)
+      mb_hist = dblarr(years)
    endif
 
    ; Store geometry for this year (per elevation band)
-   thick_hist[*, ye] = thick
-   elev_hist[*, ye] = elev
-   bed_elev_hist[*, ye] = bed_elev
-   length_hist[*, ye] = length
-   ; velocity_hist[*, ye] = velocity
-   area_hist[*, ye] = area
+   thick_hist[*, ye] = reform(thick)
+   elev_hist[*, ye] = reform(elev)
+   bed_elev_hist[*, ye] = reform(bed_elev)
+   width_hist[*, ye] = reform(width)
+   area_hist[*, ye] = reform(area)
+   bal_hist[*, ye] = reform(bal)
+   length_hist_bands[*, ye] = reform(length)
    year_hist[ye] = ye + tran[0]
+   vol_hist[ye] = volumes[ye]
+   area_total_hist[ye] = areas[ye]
+   mb_hist[ye] = mb[ye]
 
    ; At the end of the last year, save all geometry in one structure
    if ye eq years-1 then begin
-      geometry_hist = {thick: thick_hist, elev: elev_hist, bed_elev: bed_elev_hist, length: length_hist, area: area_hist, years: year_hist}
-      save_file = dirres + dir_region + '/geometry_' + id[gg[g]] + '.sav'
+      scenario_tag = 'dhdt'
+      if use_flow_model eq 'y' then scenario_tag = 'flow'
+
+      ; Ensure output directory exists
+      out_dir = dirres + dir_region
+      if ~file_test(out_dir, /directory) then spawn, 'mkdir -p "' + out_dir + '"'
+
+      ; --- Save vertical-band geometry (for comparison with dhdt) ---
+      geometry_hist = { $
+         thick: thick_hist, $
+         elev: elev_hist, $
+         bed_elev: bed_elev_hist, $
+         width: width_hist, $
+         area: area_hist, $
+         bal: bal_hist, $
+         length: length_hist_bands, $
+         years: year_hist, $
+         volume: vol_hist, $
+         area_total: area_total_hist, $
+         mb: mb_hist, $
+         glacier_id: id[gg[g]], $
+         scenario: scenario_tag, $
+         nb: nb $
+      }
+
+      save_file = dirres + dir_region + '/geometry_' + id[gg[g]] + '_' + scenario_tag + '.sav'
       save, geometry_hist, file=save_file
+      print, 'Saved geometry: ' + save_file
+
+      ; --- Save flowline grid history (if flow model was used) ---
+      if use_flow_model eq 'y' and n_elements(thick_dx) gt 0 then begin
+         flow_hist = { $
+            thick: flow_thick_hist, $
+            sur: flow_sur_hist, $
+            bal: flow_bal_hist, $
+            width: flow_width_hist, $
+            bed_dx: bed_dx, $
+            dist_dx: dist_dx, $
+            dx: dx, $
+            xnum: xnum, $
+            years: year_hist, $
+            volume: vol_hist, $
+            area_total: area_total_hist, $
+            mb: mb_hist, $
+            glacier_id: id[gg[g]], $
+            scenario: 'flow' $
+         }
+         save_file_flow = dirres + dir_region + '/flowgrid_' + id[gg[g]] + '_' + scenario_tag + '.sav'
+         save, flow_hist, file=save_file_flow
+         print, 'Saved flow grid: ' + save_file_flow
+      endif
    endif
 endif
 
@@ -1879,6 +1938,4 @@ endfor                          ; RCPs
 endfor                          ; GCMs
 
 if plot eq 'y' or areaplot eq 'y' then device,/close_file
-
-
 end

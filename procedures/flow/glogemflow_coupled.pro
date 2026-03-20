@@ -1,0 +1,212 @@
+; ----------------------------------------------------------------------- ;
+; ---- GloGEMflow coupled driver (Option A: flowline mass balance)  ---- ;
+; ---- Based on Zekollari, Huss & Farinotti (2019)                  ---- ;
+; ---- Adapted for coupled GloGEM runs by Janosch Beer (2025)       ---- ;
+; ----------------------------------------------------------------------- ;
+;
+; KEY DESIGN: Mass balance is computed DIRECTLY on the flowline grid.
+; No grid conversion needed. No writeback into the feedback loop.
+;
+; The flow model is self-contained:
+; - Geometry lives on the horizontal flowline grid (thick_dx, sur_dx)
+; - Mass balance is computed at each flowline cell using sur_dx elevation
+; - The SIA advances the geometry by 1 year
+; - GloGEM's vertical-band arrays are NOT modified (no writeback)
+;
+; GloGEM continues to compute its own mass balance on elevation bands
+; for diagnostics and output, but this does NOT feed into the flow model.
+;
+; Volume and area for reporting are computed from the flowline grid.
+; ----------------------------------------------------------------------- ;
+compile_opt idl2
+
+; ---- Skip flow model before the survey year ----
+if glacier_retreat ne 'y' then goto, skip_flow
+
+; ========== STEP 1: ONE-TIME INITIALISATION ========== ;
+if n_elements(flow_initialised) eq 0 then begin
+  ; ---- Convert vertical bands to horizontal equidistant grid ----
+  @procedures/flow/vertical_to_horizontal_grid
+
+  ; ---- Set flow model parameters ----
+  @procedures/flow/set_flow_model_parameters
+
+  ; ---- Build trapezoid cross-sections and size arrays ----
+  @procedures/flow/constants_counters_initialvalues_sizevariables
+  @procedures/flow/initial_geometry
+
+  ; ---- Initialise flow model geometry ----
+  dist_dx = horizontal_grid_inputs.dist_dx
+  width_dx = horizontal_grid_inputs.width_dx
+  bed_dx = bed_dx_init
+
+  ; Initialise cross-section geometry from initial_geometry.pro
+  width_surface_dx = width_surface_dx_init
+  width_mid_dx = width_mid_dx_init
+  width_base_dx = width_base_dx_init
+  lambda_dx = lambda_dx_init
+
+  ; ---- Run spin-up: steady state + A_flow calibration ----
+  ; This starts from zero ice, runs to steady state under 1961-1990
+  ; mean SMB, and calibrates A_flow to match observed volume.
+  ; After spin-up, thick_dx and sur_dx contain the dynamically
+  ; consistent steady-state geometry.
+  @procedures/flow/spinup_flowmodel
+
+  ; Initialise time-stepping state
+  t = 0l
+  time = 0d0
+  next_time_mb = 0d0
+
+  ; ---- Initialise flowline history arrays ----
+  flow_thick_hist = dblarr(xnum, years)
+  flow_sur_hist = dblarr(xnum, years)
+  flow_bal_hist = dblarr(xnum, years)
+  flow_width_hist = dblarr(xnum, years)
+
+  ; Store initial state
+  flow_thick_hist[*, ye] = thick_dx
+  flow_sur_hist[*, ye] = sur_dx
+  flow_width_hist[*, ye] = width_surface_dx
+
+  ; Compute the flow model's initial volume and area.
+  ; From this year onwards, volume/area are computed from the flowline grid.
+  ; Pre-flow years keep GloGEM's values (computed from elevation bands).
+  ; The small difference at the transition reflects the different geometric
+  ; representations (elevation bands vs flowline cross-sections) and is
+  ; well within ice thickness uncertainty (~30%, Farinotti et al. 2019).
+  ii_init = where(thick_dx gt 0, c_init)
+  if c_init gt 0 then begin
+    flow_vol_init_m3 = total(thick_dx[ii_init] * width_dx[ii_init] * dx)
+    flow_area_init_km2 = total(width_surface_dx[ii_init] * dx) / 1d6
+  endif else begin
+    flow_vol_init_m3 = 0d0
+    flow_area_init_km2 = 0d0
+  endelse
+  print, 'Flow model initial volume: ', flow_vol_init_m3 / 1d9, ' km3'
+  print, 'Flow model initial area:   ', flow_area_init_km2, ' km2'
+  print, 'GloGEM volume at survey yr: ', volumes[ye], ' km3'
+  print, 'GloGEM area at survey yr:   ', areas[ye], ' km2'
+
+  flow_initialised = 1
+  print, 'GloGEMflow coupled: initialised at year ' + $
+    strtrim(ye + tran[0], 2) + $
+    ' (xnum=' + strtrim(xnum, 2) + ', dx=' + strtrim(dx, 2) + ' m)'
+endif
+
+; ========== STEP 2: COMPUTE MASS BALANCE ON FLOWLINE GRID ========== ;
+; This computes bal_dx (m ice/yr) directly on the horizontal grid
+; using sur_dx for elevation — same T-index model as GloGEM.
+@procedures/flow/flowline_massbal
+
+; ========== STEP 3: ADVANCE FLOW MODEL BY 1 YEAR ========== ;
+time_flow = 0d0
+year_end_flow = 1d0
+iter_flow = 0l
+max_iter_flow = 50000l
+
+while (time_flow lt year_end_flow) and (iter_flow lt max_iter_flow) do begin
+  ; ---- Adaptive time step (CFL criterion) ----
+  if max(df_dx) gt 0 then begin
+    dt = dtfactor * (dx ^ 2) / max(df_dx)
+  endif else begin
+    dt = 0.25d0
+  endelse
+  dt = dt < 0.25d0 ; cap
+  dt = dt > 1d-4 ; floor
+  if time_flow + dt gt year_end_flow then dt = year_end_flow - time_flow
+
+  ; ---- Diffusivity ----
+  @procedures/flow/diffusivity
+
+  ; ---- Ice thickness update (3-step Runge-Kutta) ----
+  @procedures/flow/ice_thickness
+
+  time_flow = time_flow + dt
+  iter_flow = iter_flow + 1l
+
+  ; Safety: bail out if thickness blows up
+  if max(thick_dx) gt 5000d0 or total(~finite(thick_dx)) gt 0 then begin
+    print, 'WARNING: GloGEMflow blow-up at iter=' + strtrim(iter_flow, 2) + $
+      ', max(thick_dx)=' + strtrim(max(thick_dx), 2)
+    break
+  endif
+endwhile
+
+if iter_flow ge max_iter_flow then $
+  print, 'WARNING: GloGEMflow hit max iterations for year ' + strtrim(ye + tran[0], 2)
+
+; ========== STEP 4: UPDATE GEOMETRY + TERMINUS CLEANUP ========== ;
+; Remove thin ice at the glacier terminus.
+; The SIA can leave residual ice layers (< 1 grid cell thick) at the
+; front because the finite-difference scheme doesn't enforce a sharp
+; terminus. We clean this up by removing isolated thin-ice cells
+; and ensuring the terminus touches the bed.
+;
+; Find the terminus: the lowest-index ice cell (closest to tongue)
+ii_ice_cleanup = where(thick_dx gt 0, c_cleanup)
+if c_cleanup gt 0 then begin
+  i_terminus = min(ii_ice_cleanup)  ; lowest ice cell (tongue end)
+  i_head = max(ii_ice_cleanup)      ; highest ice cell (head end)
+  ; Remove thin ice at the terminus (< 10 m threshold)
+  ; Walk from the terminus upward and remove thin cells until we
+  ; hit substantial ice
+  for i_clean = i_terminus, i_head do begin
+    if thick_dx[i_clean] lt 10d0 then begin
+      thick_dx[i_clean] = 0d0
+    endif else break  ; hit substantial ice, stop cleaning
+  endfor
+  ; Also clean from the head downward (thin ice at the divide)
+  for i_clean = i_head, i_terminus, -1 do begin
+    if thick_dx[i_clean] lt 10d0 then begin
+      thick_dx[i_clean] = 0d0
+    endif else break
+  endfor
+endif
+
+sur_dx = bed_dx + thick_dx
+width_surface_dx = width_base_dx + lambda_dx * thick_dx
+width_mid_dx = (width_base_dx + width_surface_dx) / 2.0
+
+; ========== STEP 5: COMPUTE VOLUME AND AREA FROM FLOWLINE GRID ========== ;
+; These are the authoritative values — computed directly from the flow model.
+; No writeback to GloGEM's vertical bands is needed for the feedback loop.
+ii_ice_dx = where(thick_dx gt 0, c_ice_dx)
+if c_ice_dx gt 0 then begin
+  ; Volume: use thick * width_dx * dx (rectangular, consistent with GloGEM)
+  ; The trapezoidal cross-section is used internally for SIA flux computation
+  ; but volume reporting uses the surface width to match GloGEM's convention.
+  flow_vol = total(thick_dx[ii_ice_dx] * width_dx[ii_ice_dx] * dx)
+  ; Area from surface width
+  flow_area = total(width_surface_dx[ii_ice_dx] * dx) / 1d6 ; m² → km²
+  ; Glacier-wide mass balance (m w.e./yr)
+  flow_mb = total(bal_dx[ii_ice_dx] * width_surface_dx[ii_ice_dx] * dx * 0.917d0) / $
+    total(width_surface_dx[ii_ice_dx] * dx)
+endif else begin
+  flow_vol = 0d0
+  flow_area = 0d0
+  flow_mb = 0d0
+endelse
+
+; Store in GloGEM's output arrays (same definition as initialisation)
+volumes[ye] = flow_vol / 1d9 ; m3 -> km3
+areas[ye] = flow_area ; km2
+mb[ye] = flow_mb
+
+; ========== STEP 6: STORE ANNUAL FLOWLINE HISTORY ========== ;
+flow_thick_hist[*, ye] = thick_dx
+flow_sur_hist[*, ye] = sur_dx
+flow_bal_hist[*, ye] = bal_dx * 0.917d0 ; store as m w.e.
+flow_width_hist[*, ye] = width_surface_dx
+
+; Print diagnostic (show scaled values for consistency with GloGEM)
+print, 'Flow: vol=' + strtrim(string(volumes[ye], fo = '(f8.3)'), 2) + ' km3' + $
+  ' area=' + strtrim(string(areas[ye], fo = '(f7.1)'), 2) + ' km2' + $
+  ' mb=' + strtrim(string(flow_mb, fo = '(f7.3)'), 2) + ' m w.e.'
+
+; Increment persistent time counter
+t = t + 1l
+time = double(ye + 1)
+next_time_mb = double(ye + 1)
+
+skip_flow:

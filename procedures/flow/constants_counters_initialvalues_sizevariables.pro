@@ -66,18 +66,18 @@ velocity = fltarr(xnum) ; Velocities
 
 ; ; Size prognostic variables that are written out every dtdiag timesteps (typically used to have overview at end of the run)
 
-; scalars:
-aflow_hist = fltarr(ceil(nyears / dtdiag))
-area_hist = fltarr(ceil(nyears / dtdiag))
-bal_mean_hist = fltarr(ceil(nyears / dtdiag))
-time_hist = fltarr(ceil(nyears / dtdiag))
-dt_hist = fltarr(ceil(nyears / dtdiag))
-df_max_hist = fltarr(ceil(nyears / dtdiag))
-height_front_hist = fltarr(ceil(nyears / dtdiag))
-length_hist = fltarr(ceil(nyears / dtdiag))
-vol_hist = fltarr(ceil(nyears / dtdiag))
+; scalars (prefixed with flow_ to avoid collision with GloGEM history arrays):
+flow_aflow_hist = fltarr(ceil(nyears / dtdiag))
+flow_area_hist = fltarr(ceil(nyears / dtdiag))
+flow_bal_mean_hist = fltarr(ceil(nyears / dtdiag))
+flow_time_hist = fltarr(ceil(nyears / dtdiag))
+flow_dt_hist = fltarr(ceil(nyears / dtdiag))
+flow_df_max_hist = fltarr(ceil(nyears / dtdiag))
+flow_height_front_hist = fltarr(ceil(nyears / dtdiag))
+flow_length_hist = fltarr(ceil(nyears / dtdiag))
+flow_vol_hist = fltarr(ceil(nyears / dtdiag))
 
 ; vectors:
-bal_hist = fltarr(ceil(nyears / dtdiag), xnum)
-fluxdiv_plot_hist = fltarr(ceil(nyears / dtdiag), xnum)
-th_hist = fltarr(ceil(nyears / dtdiag), xnum)
+flow_bal_hist = fltarr(ceil(nyears / dtdiag), xnum)
+flow_fluxdiv_plot_hist = fltarr(ceil(nyears / dtdiag), xnum)
+flow_th_hist = fltarr(ceil(nyears / dtdiag), xnum)
