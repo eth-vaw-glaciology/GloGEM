@@ -128,7 +128,7 @@ rcp_batch=[4,5,4,4,5,5,4,5,4,4,4,5,4]     ; number of SSPs per GCMs
 expe_batch=[1,1,1,1,1,1,1,1,1,1,1,1,1]    ; number of experiments for GCMs
 
 GCM_model=['BCC-CSM2-MR','CAMS-CSM1-0','CESM2','CESM2-WACCM','EC-Earth3','EC-Earth3-Veg','FGOALS-f3-L','GFDL-ESM4','INM-CM4-8','INM-CM5-0','MPI-ESM1-2-HR','MRI-ESM2-0','NorESM2-MM'] 
-   
+
 GCM_rcp=['ssp126','ssp245','ssp370','ssp585','ssp119','ssp534-over']
 
 GCM_experiment=['r1i1p1f1','r2i1p1f1','r3i1p1f1','r4i1p1f1','r5i1p1f1','r6i1p1f1','r7i1p1f1']
@@ -181,7 +181,7 @@ calibration_phase='1'        ; 1: calibrate c_prec ; 2: DDF_snow ; 3: adjust tem
     t_offset=0.              ; default temperature correction of re-analysis data
 
 repeat_calibration='y'       ; Repeat calibration iteratively for Toff_grid until all glaciers are calibrated 
-    
+
 ; ***********
 ; other options
 
@@ -242,12 +242,12 @@ debris_supraglacial='n'              ; ACTIVATE MODEL FOR SUPRAGLACIAL DEBRIS
 
    debris_thickening='y'       ; thickening of debris over time
       debris_thick_gradient=1.0  ; [cm a-1 km-1]  thickening linearly increasing from ELA towards glacier terminus
-      
+
 ; ------- refreezing / englacial temperature model
 
 refreezing_full='y'      ; ACTIVATE REFREEZING MODEL
 
-firnice_temperature='y'      ; ACTIVATE ICE TEMPERATURE MODEL - compute firn/ice temperatures transiently (not just for refreezing)
+firnice_temperature='n'      ; ACTIVATE ICE TEMPERATURE MODEL - compute firn/ice temperatures transiently (not just for refreezing)
    firnice_write=['y','y']   ; output of overall (time series, annual) and detailed (profiles, monthly) files
    firnice_batch='y'      ; run batch (all sites contained in icetemperature_batch.dat)
       ; only relevant if defined manually (firnice_runbatch='n' )
@@ -283,13 +283,13 @@ advance='y'        ; Glacier advance model (might results in model instabilities
 frontal_ablation='y'     ; ACTIVATE FRONTAL ABLATION MODEL (only marine-terminating, no lakes at the moment)
                          ; according to Oerlemans&Nick, 2005
 
-	alpha_f=0.7      ; parameters of calving model (irrelevant, read from file)
+ alpha_f=0.7      ; parameters of calving model (irrelevant, read from file)
    calv_sep=1.25    ; [m w.e.] as threshold: separate calving flux into gl geom. change AND direct break off at terminus
-	c_calving=2.4
-	regparams_readfromfile='y'    ; reading parameters from regional file or use above ones?
+ c_calving=2.4
+ regparams_readfromfile='y'    ; reading parameters from regional file or use above ones?
 
         length_corrfact=1.4     ; correction factor for length (according to Oerlemans)
-        
+
         ccorr_expon=2.5               ; bedrock profile corrected for parabola-shape
         crit_ccorrdist=3000.          ; bedrock profile corrected for parabola-shape
         bedrock_parabolacorr=0.2      ; bedrock profile corrected for parabola-shape
@@ -325,7 +325,7 @@ write_mb_elevationbands='n'     ; write out seasonal mass balance in elevation b
 past_out='y'                 ; if files for PAST (runs only with observed climate) should be written to external folder (not files/)
 
 write_hypsometry_files='n'   ; write out annual hypsometry for all glaciers
-        
+
 ; --------------------------------------
 ; options for region to be calculated
 
