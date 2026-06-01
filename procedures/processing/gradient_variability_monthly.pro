@@ -1,4 +1,3 @@
-PRO GRADIENT_VARIABILITY_MONTHLY, cc,bb,rtg,dtdz,submonth_variability,rvariab,variab
 compile_opt idl2
 
 
@@ -21,5 +20,3 @@ for m=1,12 do begin
 endfor
 
 endif
-
-end

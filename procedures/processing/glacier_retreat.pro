@@ -1,4 +1,3 @@
-PRO GLACIER_RETREAT,ye,thick,thick_ini,elev,bed_elev,area,areas,area_ini,gl,dh_size,nb,dvol,bal,balv,advance,adv_fcrit,volume0,volume1,volumes,adv_iniar,adv_inithi,adv_iniamplification,expon,redistribute_vplus,adv_lookup,adv_lookup_data,flux_calv,dens,ar_gl
 compile_opt idl2
 
 noval=-9999
@@ -218,5 +217,3 @@ endif
 ; storing of results
 ;if ye mod 10 eq 0 then gls(cnp,*)=elev
 ;if ye mod 10 eq 0 then cnp=cnp+1
-
-end

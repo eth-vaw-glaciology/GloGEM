@@ -1,4 +1,3 @@
-PRO DOWNSCALE_GCMDATA_DAILY,gcm_year,gcm_mon,gcm_day,ryear,rmon,rday,m,rea_eval,rmid,years,tran,tempgcm,tempre,precgcm,precre,prec_orig,min_tempbias,min_precbias,write_file,meltmodel,variability_bias_longterm,p_thres, temp,prec,rad,cyear,cday,cmon
 compile_opt idl2
 
 noval=-9999
@@ -105,5 +104,3 @@ if variability_bias_longterm eq 'y' then begin
    for i=0,years do for m=0,11 do temp[12*i+m]=tm_smooth[m,i]+(temp[12*i+m]-tm_smooth[m,i])*bias[2,m]
 
 endif
-
-end

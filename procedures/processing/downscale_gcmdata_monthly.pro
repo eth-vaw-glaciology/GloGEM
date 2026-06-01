@@ -1,4 +1,3 @@
-PRO DOWNSCALE_GCMDATA_MONTHLY,gcm_year,gcm_mon,ryear,rmon,m,rea_eval,rmid,gmid,gcm_lat,gcm_lon,rlat,rlon,relev,years,tran,rtemp,rprec,rrad,gcm_temp,gcm_prec,min_tempbias,min_precbias,write_file,meltmodel,reanalysis_direct,variability_bias,p_thres, temp,prec,rad,cyear,cmon,nlons,nlats,hclim,cc,bb
 compile_opt idl2
 
 noval=-9999
@@ -149,6 +148,3 @@ if variability_bias eq 'y' then begin
 endif
 
 endelse
-
-
-end

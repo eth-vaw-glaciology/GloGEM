@@ -1,4 +1,3 @@
-pro CALCULATEDEBRISMELT, debris_supraglacial, sur, tg, t_melt, debris_thick, debris_frac, debris_type_th, debris_type_red, debris_ponddens, debris_pond_enhancementfactor, mel, imelt, ye, ar_gl, area, time_resolution, icemel, write_mb_elevationbands
 compile_opt idl2
 
   ; Check if supraglacial debris influence should be considered
@@ -48,5 +47,3 @@ compile_opt idl2
     endif  ; End check for valid debris-covered ice
 
   endif  ; End check for supraglacial debris effect
-
-end  

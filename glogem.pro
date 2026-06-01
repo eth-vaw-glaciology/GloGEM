@@ -41,8 +41,10 @@ print, reanalysis
 ; READ batch-file for individual glaciers (icetemperature-batch)
 
 if firnice_temperature eq 'y' then begin
-   READ_GEOTHERMAL,dir,firnice_geotherm_flux,fit_xx,fit_yy
-   if firnice_batch eq 'y' then READ_FIRNICEBATCH,dir,firnice_batch_data1,firnice_batch_data2,nffbl
+   @procedures/read/read_geothermal.pro
+   if firnice_batch eq 'y' then begin
+      @procedures/read/read_firnicebatch.pro
+   endif
 endif
 
 ; ***************************************************
@@ -81,7 +83,7 @@ for experis=0,ne_GCM_experiment-1 do begin
 
 experi_short=strmid(GCM_experiment[experis],0,2)
 
-READ_REGIONBATCH,dir,region_loop_data
+@procedures/read/read_regionbatch.pro
 
 ; ********************************************************
 ; LOOP individual glaciers in different regions specified in batch
@@ -157,10 +159,10 @@ if time_resolution eq 'monthly' then begin
    
   ; GCM --- CLIMATE FILE
    if reanalysis_direct ne 'y' then begin
-      READ_GCMDATA_MONTHLY,dir_clim,GCM_data,dir_region,long_GCM,ccl,GCM_model,GCM_rcp,GCM_experiment,  gcms,rcps,experis,rmid,  gcm_temp,gcm_prec,gcm_year,gcm_mon,gcm_lon,gcm_lat, time_resolution
+      @procedures/read/read_gcmdata_monthly.pro
    endif
 
-   READ_CLIMATEPAST_MONTHLY, dir_clim, dir_region, clim_subregion, reanalysis, submonth_variability, rtemp, rprec, rvariab, rtg, rlon, rlat, relev, nlons, nlats, lon0, lat0, ntime, ryear, rmon, rvlat, rvmon, rvday, rvlon, nmonths, ndays, nvar, time_resolution
+   @procedures/read/read_climatepast_monthly.pro
 
 endif
 
@@ -177,7 +179,9 @@ endif
 ; -----------------------------
 ; read regional parameter file
 
-if regparams_readfromfile eq 'y' then READ_regionalparams, dir,reanalysis,dir_region,clim_subregion,size_range_overwrite, c_calving,c_prec,c1_tolerance,t_offset,toff_grid,toff_grid0,p_thres,size_range,time_resolution
+if regparams_readfromfile eq 'y' then begin
+   @procedures/read/read_regionalparams.pro
+endif
 
 if catchment_selection ne '' then size_range=[0,100000.]
 
@@ -199,7 +203,7 @@ endfor
 ; *** Glacier-specific calibration file
 endif else begin
 
-   READ_GEODETICDATA,dir,dir_region,region_loop_data,calibrate_glacierspecific_period,calimb_bn,calimb_p0,calimb_p1,calimb_gid
+   @procedures/read/read_geodeticdata.pro
 
 endelse
 
@@ -520,16 +524,16 @@ gys=strcompress(string(rmid[1],fo='(f7.2)'),/remove_all)
 ; ------------------------------
 ; meteo time series read from re-analysis data (past)
 
-READ_CLIMATEPAST_DAILY,dir_clim,dir_region,reanalysis,gxs,gys, tempre,precre,p_thres,ryear,rday,rmon,dtdz,prec_orig,cyear,cday,temp,prec,hclim, time_resolution
+@procedures/read/read_climatepast_daily.pro
 
 ; ---------------------------------
 ; ---------------------------------
 ; meteo time series downscaled from GCMs or whatever (future)
 if reanalysis_direct eq 'n' then begin
 
-   READ_GCMDATA_DAILY,dir_clim,GCM_data,dir_region,GCM_model,GCM_rcp,gcms,rcps, rmid,  tempgcm,precgcm,gcm_year,gcm_mon,gcm_day, time_resolution 
+   @procedures/read/read_gcmdata_daily.pro
 
-   DOWNSCALE_GCMDATA_DAILY,gcm_year,gcm_mon,gcm_day,ryear,rmon,rday,m,rea_eval,rmid,years,tran,tempgcm,tempre,precgcm,precre,prec_orig,min_tempbias,min_precbias,write_file,meltmodel,variability_bias_longterm,p_thres, temp,prec,rad,cyear,cday,cmon
+   @procedures/processing/downscale_gcmdata_daily.pro
 
 endif
 
@@ -541,9 +545,9 @@ if time_resolution eq 'monthly' then begin
 
    gmid=[mean(latitudes),mean(longitudes)]
 
-   DOWNSCALE_GCMDATA_MONTHLY,gcm_year,gcm_mon,ryear,rmon,m,rea_eval,rmid,gmid,gcm_lat,gcm_lon,rlat,rlon,relev,years,tran,rtemp,rprec,rrad,gcm_temp,gcm_prec,min_tempbias,min_precbias,write_file,meltmodel,reanalysis_direct,variability_bias,p_thres, temp,prec,rad,cyear,cmon,nlons,nlats,hclim,cc,bb
+   @procedures/processing/downscale_gcmdata_monthly.pro
 
-   GRADIENT_VARIABILITY_MONTHLY, cc,bb,rtg,dtdz,submonth_variability,rvariab,variab
+   @procedures/processing/gradient_variability_monthly.pro
    
 endif
 
@@ -572,7 +576,7 @@ fn=dir_data+'/'+region+'/'+id[gg[g]]+'.dat' & a=findfile(fn)
 
 if a[0] ne '' then begin
 
-READ_HYPSOMETRYFILE,fn,gg,g,a_gl,nb,da,advance,adv_calving,adv_addband,adv_addband0,hmin, dir_data_alt,region,id
+@procedures/read/read_hypsometryfile.pro
 
 ; find geothermal heat flux for glacier
 if firnice_temperature eq 'y' then begin
@@ -773,7 +777,7 @@ endif
 ; potential radiation time series
 if meltmodel eq '3' then begin
 
-   POTENTIAL_SOLARRADIATION,nb,da,slope,decl_sun,latutudes,g,sw_rad
+   @procedures/processing/potential_solarradiation.pro
 
 endif
 
@@ -782,7 +786,7 @@ endif
 
 if debris_supraglacial eq 'y' then begin
   
-Read_SUPRAGLACIALDEBRIS, debris_supraglacial, region, id, gg, g, dir_data, advance, nb, adv_addband, debris_pond_enhancementfactor, debris_thick0, debris_thick, debris_frac, debris_mf, debris_ponddens, debris_type_th, debris_type_red
+@procedures/read/read_supraglacialdebris.pro
 
 endif
 
@@ -986,7 +990,7 @@ endif
 
 if debris_supraglacial eq 'y' then begin
 
-CALCULATEDEBRISMELT, debris_supraglacial, sur, tg, t_melt, debris_thick, debris_frac, debris_type_th, debris_type_red, debris_ponddens, debris_pond_enhancementfactor, mel, imelt, ye, ar_gl, area, time_resolution, icemel, write_mb_elevationbands
+@procedures/processing/calculatedebrismelt.pro
 
 
 endif                           ; debris
@@ -1046,7 +1050,7 @@ ENDCASE
 
 if refreezing_full eq 'y' then begin
 
-REFREEZING_FULL,gl,ye,mel,plg,sno,dens_rf,rf_melcrit,rf_ind,rf_dsc,rf_dz,rf_dt,rf_layers,rf_cold,lh_rf,tl_rf,te_rf,cond,cap,tgs,firn,ar_gl,refr,area,refre
+@procedures/processing/refreezing_full.pro
 
 endif
 
@@ -1057,11 +1061,7 @@ endif
 
 if firnice_temperature eq 'y' then begin
 
-   FIRNICE_TEMPERATURE_MODEL,gl,fit_layers,fit_dens,fit_dz, rf_dsc,rf_dt,Lh_rf, $
-   tgs,tl_fit,te_fit,geothermal_flux, cair,cice,kair,kice, sno,mel,plg,thick,slope,firn, $
-   firnice_batch,firnice_write,firnice_maxdepth, fit_water,elev_firnicetemp,firnice_profile, $
-   firnice_profile_ind,ye,tran,m, firn_permeability,ice_permeability, enable_advection=enable_advection, $
-   diff_coef=diff_coef, elev_adv_horiz=elev_adv_horiz, elev_adv_vert=elev_adv_vert, advection_write=advection_write
+   @procedures/processing/firnice_temperature_model.pro
 
 endif    ; firn-ice temperature model
 
@@ -1245,7 +1245,7 @@ endif
 ; annually adapting debris cover extent and thickness
 if debris_supraglacial eq 'y' and ar_gl gt 0 then begin
 
-DEBRIS_MODEL, ye, nb, step, gl, noval, area, ar_gl, ela, bal, mb, elev, debris_expansion, debris_seed_bands, debris_seed_meters, debris_thickening, debris_frac, debris_thick, debris_thick_gradient, debris_ponddens, debris_pond_gradient, debris_ponddens_max, tran, survey_year, write_mb_elevationbands, debris_exp_gradient, debris_initialband, debris_red_factor, debris_thick0, elev_debthick, elev_debfrac, elev_debfactor, elev_pondarea, g, gg
+@procedures/processing/debris_model.pro
 
 
 endif
@@ -1265,13 +1265,13 @@ dens=0.9 & dvol=dvol/dens
 ; -----------------------------
 ; volume loss due to frontal ablation
 
-CALVING_MODEL,thick,bed_elev,bed_elev_term,bed_elev_p,dvol,frontal_ablation,front_melt,calv_amplification,width,slope,length,alpha_f,length_corrfact,crit_ccorrdist,ccorr_expon,ccorr_param,area,acc,dens,ye,tran,id,gg,g,c_calving,ar_gl,calv_sep,glacier_retreat,single_glacier,flux_calv
+@procedures/processing/calving_model.pro
 
 ; *******************************************
 
 if glacier_retreat eq 'y' then begin
 
-   GLACIER_RETREAT,ye,thick,thick_ini,elev,bed_elev,area,areas,area_ini,gl,dh_size,nb,dvol,bal,balv,advance,adv_fcrit,volume0,volume1,volumes,adv_iniar,adv_inithi,adv_iniamplification,expon,redistribute_vplus,adv_lookup,adv_lookup_data,flux_calv,dens,ar_gl
+   @procedures/processing/glacier_retreat.pro
 
 endif                           ; glacier retreat
 
@@ -1424,9 +1424,9 @@ cali_calflux=cali_calflux+mean(flux_calv)/1000.*ar_gl
 if write_file eq 'y' then begin
    ; Output for daily results
    if time_resolution eq 'daily' then begin
-      WRITE_RESULTS_FILES_DAILY, format_of, time_resolution, outf_names, areas, volumes, mb, wb, smelt, imelt, accum, rain, ela, aar, refre, hmin_g, flux_calv, discharge, discharge_gl, accday, rainday, snowmeltday, icemeltday, refrday, snowlineday, id, gg, g, years, y     
+      @procedures/write/write_results_files_daily.pro
    endif else if time_resolution eq 'monthly' then begin
-      WRITE_RESULTS_FILES_MONTHLY, format_of, time_resolution, outf_names, areas, volumes, mb, wb, smelt, imelt, accum, rain, ela, aar, refre, hmin_g, flux_calv, discharge, discharge_gl, balmo, precmo, accmo, mellmo, refrmo, id, gg, g, years, y
+      @procedures/write/write_results_files_monthly.pro
    endif else begin
       PRINT, 'Error: temporal resolution is required.'
    endelse

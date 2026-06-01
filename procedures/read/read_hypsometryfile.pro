@@ -1,4 +1,3 @@
-PRO READ_HYPSOMETRYFILE,fn,gg,g,a_gl,nb,da,advance,adv_calving,adv_addband,adv_addband0,hmin, dir_data_alt, region,id
 compile_opt idl2
   
   nb=file_lines(fn)-5
@@ -22,5 +21,3 @@ if advance eq 'y' and nb gt 3 then begin
    nb0=nb & nb=nb+adv_addband & tt=da & da=dblarr(12,nb) & da[*,nb-nb0:nb-1]=tt[*,0:nb0-1]
    for i=nb-nb0-1,0,-1 do da[1,i]=da[1,i+1]-10.
 endif
-
-end

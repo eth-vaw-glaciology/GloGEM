@@ -1,4 +1,3 @@
-PRO read_geothermal,dir,firnice_geotherm_flux,fit_xx,fit_yy
 compile_opt idl2
 
 ; read grid-file for geothermal heatflux
@@ -11,5 +10,3 @@ compile_opt idl2
    cellsize=double(strmid(header[4],9,40))
    a=cellsize/2d & fit_xx=lindgen(ncols)*cellsize+xllcorner+a & fit_yy=lindgen(nrows)*cellsize+yllcorner+a
    firnice_geotherm_flux=rotate(da,7)/1000.
-
-end

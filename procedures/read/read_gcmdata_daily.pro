@@ -1,4 +1,3 @@
-PRO READ_GCMDATA_DAILY,dir_clim,GCM_data,dir_region,GCM_model,GCM_rcp,gcms,rcps,rmid,  tempgcm,precgcm,gcm_year,gcm_mon,gcm_day, time_resolution
 compile_opt idl2
 
 ; find closest GCM-point
@@ -20,6 +19,4 @@ gyg=strcompress(string(gcm_mid[1],fo='(f7.2)'),/remove_all)
 fn=dir_clim+'/future/'+time_resolution+'/'+GCM_data+'/'+dir_region+'/'+GCM_model[gcms]+'/'+GCM_rcp[rcps]+'/'+'clim_'+gxg+'_'+gyg+'.dat'
 anz=file_lines(fn)-3 & da=dblarr(6,anz) & tt=strarr(3)
 openr,1,fn & readf,1,tt & readf,1,da & close,1
-tempgcm=da[4,*] & precgcm=da[5,*] & gcm_year=da[0,*] & gcm_mon=da[1,*]  & gcm_day=da[2,*] 
-
-end
+tempgcm=da[4,*] & precgcm=da[5,*] & gcm_year=da[0,*] & gcm_mon=da[1,*]  & gcm_day=da[2,*]

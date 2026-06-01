@@ -1,4 +1,3 @@
-PRO READ_CLIMATEPAST_MONTHLY, dir_clim, dir_region, clim_subregion, reanalysis, submonth_variability, rtemp, rprec, rvariab, rtg, rlon, rlat, relev, nlons, nlats, lon0, lat0, ntime, ryear, rmon, rvlat, rvmon, rvday, rvlon, nmonths, ndays, nvar, time_resolution
 compile_opt idl2
 
    if clim_subregion ne '' then ccl='_'+clim_subregion else ccl=''
@@ -79,5 +78,3 @@ endif else begin
    ii=where(rlon ge 180,ci) & if ci gt 0 then rlon[ii]=rlon[ii]-360
    ii=where(rvlon ge 180,ci) & if ci gt 0 then rvlon[ii]=rvlon[ii]-360
 endelse
-
-end
