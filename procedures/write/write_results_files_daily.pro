@@ -39,20 +39,11 @@
 ;-----------------------------------------------------------
 
 
-PRO WRITE_RESULTS_FILES_DAILY, format_of, time_resolution, outf_names, areas, volumes, mb, wb, smelt, imelt, accum, rain, ela, aar, refre, hmin_g, flux_calv, discharge, discharge_gl, accday, rainday, snowmeltday, icemeltday, refrday, snowlineday, id, gg, g, years, y
 compile_opt idl2
     
     ; Validate inputs
-    IF N_ELEMENTS(outf_names) EQ 0 THEN BEGIN
-        PRINT, 'Error: outf_names is required.'
-        RETURN
-    ENDIF
-
-    ; Validate time resolution (ensure it's daily)
-    IF time_resolution NE 'daily' THEN BEGIN
-        PRINT, 'Error: time_resolution must be "daily".'
-        RETURN
-    ENDIF
+    IF N_ELEMENTS(outf_names) EQ 0 THEN MESSAGE, 'Error: outf_names is required.'
+    IF time_resolution NE 'daily' THEN MESSAGE, 'Error: time_resolution must be "daily".'
 
     if time_resolution eq 'daily' then begin
         ii=where(outf_names ne '',ci)
@@ -91,8 +82,7 @@ compile_opt idl2
             endfor
             endelse
         endfor
-    endif 
-end
+    endif
 
 
 

@@ -1,4 +1,3 @@
-PRO read_geodeticdata,dir,dir_region,region_loop_data,calibrate_glacierspecific_period,calimb_bn,calimb_p0,calimb_p1,calimb_gid
 compile_opt idl2
 
 ii=where(dir_region eq region_loop_data[2,*])
@@ -17,5 +16,3 @@ ii=where(tt2[5,*] eq 1,ci) & jj=where(tt2[5,*] eq 2,cj) & if cj eq 0 then calimb
 a=stdev(calimb_bn[ii])
 jj=where(calimb_bn[ii] lt mean(calimb_bn[ii])-2*a and tt2[0,ii] lt 20,cj) & if cj gt 0 then calimb_bn[ii[jj]]=calimb_bn[anz-1]  
 jj=where(calimb_bn[ii] gt mean(calimb_bn[ii])+2*a and tt2[0,ii] lt 20,cj) & if cj gt 0 then calimb_bn[ii[jj]]=calimb_bn[anz-1]
-
-end

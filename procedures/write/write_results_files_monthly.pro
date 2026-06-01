@@ -38,20 +38,11 @@
 ;-----------------------------------------------------------
 
 
-PRO WRITE_RESULTS_FILES_MONTHLY, format_of, time_resolution, outf_names, areas, volumes, mb, wb, smelt, imelt, accum, rain, ela, aar, refre, hmin_g, flux_calv, discharge, discharge_gl, balmo, precmo, accmo, mellmo, refrmo, id, gg, g, years, y
 compile_opt idl2
     
     ; Validate inputs
-    IF N_ELEMENTS(outf_names) EQ 0 THEN BEGIN
-        PRINT, 'Error: outf_names is required.'
-        RETURN
-    ENDIF
-
-    ; Validate time resolution (ensure it's monthly)
-    IF time_resolution NE 'monthly' THEN BEGIN
-        PRINT, 'Error: time_resolution must be "monthly".'
-        RETURN
-    ENDIF
+    IF N_ELEMENTS(outf_names) EQ 0 THEN MESSAGE, 'Error: outf_names is required.'
+    IF time_resolution NE 'monthly' THEN MESSAGE, 'Error: time_resolution must be "monthly".'
 
     if time_resolution eq 'monthly' then begin
         ii=where(outf_names ne '',ci)
@@ -81,8 +72,7 @@ compile_opt idl2
          	if ii[i] ge 13 then a=12 else a=1
 	   		printf,string(i+10,fo='(i2)'),id[gg[g]]+' '+string(var,fo='('+strcompress(string(years)*a,/remove_all)+format_of[i]+')')
    		endfor
-    endif 
-end
+    endif
 
 
 

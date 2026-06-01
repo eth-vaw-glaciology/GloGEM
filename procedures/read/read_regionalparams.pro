@@ -1,4 +1,3 @@
-PRO READ_regionalparams, dir,reanalysis,dir_region,clim_subregion,size_range_overwrite, c_calving,c_prec,c1_tolerance,t_offset,toff_grid,toff_grid0,p_thres,size_range,time_resolution
 compile_opt idl2
   
   fn=dir+'regional_parameters_'+reanalysis+'.dat'
@@ -32,5 +31,3 @@ compile_opt idl2
          if size_range_overwrite eq 'y' then size_range=size_range_ovw[*,ii[jj[0]]]
       endif
    endelse
-
-end

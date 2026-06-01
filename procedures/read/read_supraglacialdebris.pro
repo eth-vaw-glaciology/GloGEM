@@ -1,4 +1,3 @@
-pro Read_SUPRAGLACIALDEBRIS, debris_supraglacial, region, id, gg, g, dir_data, advance, nb, adv_addband, debris_pond_enhancementfactor, debris_thick0, debris_thick, debris_frac, debris_mf, debris_ponddens, debris_type_th, debris_type_red
 compile_opt idl2
 
   ; Check if supraglacial debris data should be read
@@ -67,5 +66,3 @@ compile_opt idl2
     debris_type_th = da[1, *]  ; Thickness values for melt-reduction
     debris_type_red = da[2, *]  ; Reduction factors corresponding to thickness
   endif
-
-end

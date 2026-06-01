@@ -1,4 +1,3 @@
-PRO READ_CLIMATEPAST_DAILY,dir_clim,dir_region,reanalysis,gxs,gys, tempre,precre,p_thres,ryear,rday,rmon,dtdz,prec_orig,cyear,cday,temp,prec,hclim, time_resolution
 compile_opt idl2
 
 
@@ -12,6 +11,3 @@ cyear=ryear & cday=rday & temp=tempre & prec=precre
 
 ; removing low daily precipitation amounts
 ii=where(prec lt p_thres,ci) & if ci gt 0 then prec[ii]=0
-
-
-end
