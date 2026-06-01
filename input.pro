@@ -47,7 +47,7 @@ dir_clim = main_dir + 'climatedata/' ; climate data
 ; output (same machine as you run on)scratch via the network
 ; dirres = '/scratch_net/vierzack05_fourth/lvantrich/GloGEM'
 ; dirres = '/scratch_net/vierzack04_fourth/jabeer/GloGEM/batch_results_diff_icetemp/firnice_perm/r' + RGIversion + '_' + time_resolution + '/' ; output folder  (same machine as you run on)scratch via the network
-dirres = '/Users/janoschbeer/Library/Mobile Documents/com~apple~CloudDocs/PhD/projects/GloGEM/results_glogemflow/r' + RGIversion + '_' + time_resolution + '/' ; output folder when running on personal computer -> requires manual mounting of the data folder
+dirres = '/Users/janoschbeer/Library/Mobile Documents/com~apple~CloudDocs/PhD/projects/GloGEM/results_dhdt_vs_flow/r' + RGIversion + '_' + time_resolution + '/' ; output folder when running on personal computer -> requires manual mounting of the data folder
 
 ; --- region selection
 ; regions can be selected in group via a range of region-IDs
@@ -98,7 +98,17 @@ size_range = [20, 10000] ; [km2]     size_range to be calculated
 ; -- glacier / catchment selection
 
 ; single_glacier=''                  ; calculate all glaciers in region
-single_glacier = '01450' ; calculate one single glacier only
+single_glacier = '' ; set to '' when using glacier_list below
+
+; Representative sample of 25 glaciers across the Central European Alps
+; Stratified by size: 2 large (>50 km2) down to 2 very small (<0.1 km2)
+; NOTE: glaciers < ~0.3 km2 may fail (too few flowline grid cells for SIA)
+glacier_list = ['01450', '02822', '01478', '03643', '01328', $
+  '01827', '02739', '00872', '01698', '03466', $
+  '02477', '03647', '02916', '02113', '03164', $
+  '03148', '01786', '01338', '03377', '00574', $
+  '03270', '02146', '02938', '03450', '01530']
+; set glacier_list = [''] to disable (run all or single_glacier instead)
 
 catchment_selection = ''
 ; catchment_selection='Alps_g5km2'
@@ -106,7 +116,7 @@ catchment_selection = ''
 ; --------------------------------------
 ; MAIN SETTINGS / MODES
 
-tran = [1950, 2100] ; time period of modelling
+tran = [1990, 2100] ; time period of modelling
 ; tran=[2010,2030]                   ; time period of modelling
 
 calibrate = 'n' ; DO NOT CALIBRATE, JUST RUN FORWARD       => output to files/
@@ -138,7 +148,7 @@ GCM_data = 'cmip6'
 ; 9:'INM-CM4-8', 10:'INM-CM5-0', 11:'MPI-ESM1-2-HR', 12:'MRI-ESM2-0', 13:'NorESM2-MM'
 
 ; options for running one individual model
-short_gcmchoice = [1, 1, 1] ; GCM, SSP, experiment
+short_gcmchoice = [1, 4, 1] ; GCM, SSP, experiment  (1=BCC-CSM2-MR, 4=ssp585, 1=r1i1p1f1)
 ; short_gcmchoice=0        ; default - batch processing, all models
 
 first_GCM = 0 ; First GCM to start with in batch processing; number MINUS 1 (referring to list below)
@@ -199,7 +209,7 @@ c2_tolerance = [1.75, 4.5] ; DDF_snow tolerance - M1  (irrelevant, as ranges are
 c2m3_tolerance = [7., 15.] ; C1 tolerance - M3
 t_offset = 0. ; default temperature correction of re-analysis data
 
-repeat_calibration = 'y' ; Repeat calibration iteratively for Toff_grid until all glaciers are calibrated
+repeat_calibration = 'n' ; set 'y' only when actively calibrating; 'n' for forward runs (params read from file)
 
 ; ***********
 ; other options
@@ -282,8 +292,8 @@ ice_permeability = 'y' ; 'y' to activate ice  permeability model
 
 ; ------ glacier evolution model
 use_flow_model = 'y' ; (y/n) use SIA flow model (GloGEMflow, Zekollari et al., 2019)
-                      ; 'y': flowline mass balance + SIA dynamics (Option A)
-                      ; 'n': dhdt-parameterization (Huss et al., 2010)
+; 'y': flowline mass balance + SIA dynamics (Option A)
+; 'n': dhdt-parameterization (Huss et al., 2010)
 glacier_retreat = 'y' ; (y/n) allow glacier geometry to evolve (set automatically by find_startyear)
 
 ; ----- option to write out glacier geometry for testing different evolution models

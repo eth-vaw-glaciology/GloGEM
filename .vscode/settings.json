@@ -3,5 +3,5 @@
     "idl.problems.reportDocsProblems": false,
     "idl.problems.reportProblems": false,
     "idl.languageServer.fullParse": false,
-    "CodeGPT.apiKey": "Google AI Studio"
+    "CodeGPT.apiKey": "Anthropic"
 }

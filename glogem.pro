@@ -473,6 +473,24 @@ if single_glacier ne '' then begin
    endif
 endif
 
+; Narrow bounding box when glacier_list is used (avoids loading climate
+; data for the full region, which makes the run much faster)
+if n_elements(glacier_list) gt 0 then begin
+  if glacier_list[0] ne '' then begin
+    gg_bbox = []
+    for gl_ = 0, n_elements(glacier_list) - 1 do begin
+      ii_ = where(id eq glacier_list[gl_], c_ii_)
+      if c_ii_ gt 0 then gg_bbox = [gg_bbox, ii_]
+    endfor
+    if n_elements(gg_bbox) gt 0 then begin
+      lon0 = [fix(min(lon_gl[gg_bbox])/grid_step)*grid_step - grid_step/2., $
+              fix(max(lon_gl[gg_bbox])/grid_step)*grid_step + grid_step/2.]
+      lat0 = [fix(min(lat_gl[gg_bbox])/grid_step)*grid_step - grid_step/2., $
+              fix(max(lat_gl[gg_bbox])/grid_step)*grid_step + grid_step/2.]
+    endif
+  endif
+endif
+
 if grid_run eq 'n' then begin
    ngx=1 & ngy=1
    lat=lat0 & lon=lon0
@@ -497,6 +515,24 @@ if lat[0] ne -99 and size_range[0] ne -99 then gg=where(xy[1,*] gt lat[0] and xy
 if lat[0] ne -99 and size_range[0] eq -99 then gg=where(xy[1,*] gt lat[0] and xy[1,*] lt lat[1] and xy[0,*] gt lon[0] and xy[0,*] lt lon[1] and volume_ini gt 0,cg)
 if lat[0] eq -99 and size_range[0] ne -99 then gg=where(a_gl gt size_range[0] and a_gl lt size_range[1] and volume_ini gt 0,cg)
 if single_glacier ne '' then gg=where(id eq single_glacier and volume_ini gt 0,cg)
+
+; glacier_list: run a specific set of glaciers by ID (bypasses size_range)
+if n_elements(glacier_list) gt 0 then begin
+  if glacier_list[0] ne '' then begin
+    gg_list = []
+    for gl_ = 0, n_elements(glacier_list) - 1 do begin
+      ii_ = where(id eq glacier_list[gl_] and volume_ini gt 0, c_ii_)
+      if c_ii_ gt 0 then gg_list = [gg_list, ii_]
+    endfor
+    if n_elements(gg_list) gt 0 then begin
+      gg = gg_list[sort(gg_list)]
+      cg = n_elements(gg)
+      print, 'glacier_list active: ', cg, ' glaciers selected'
+    endif else begin
+      print, 'WARNING: glacier_list matched no glaciers in id array'
+    endelse
+  endif
+endif
 
 latitudes=lat_gl[gg] & longitudes=lon_gl[gg]
 
@@ -561,6 +597,15 @@ endif                               ; is there a glacier in the cell?
 
 
 for g=0l,cg-1 do begin
+
+; Reset per-glacier flow model state so every glacier gets a fresh spin-up
+; and fresh flowline mass balance initialisation.
+undefine, flow_initialised
+undefine, sno_dx
+undefine, snostor_dx
+undefine, sur_type_dx
+undefine, firn_dx
+undefine, bal_yr_dx
 
 ; ******************************
 ; CALIBRATION LOOP - for single-glacier calibration
@@ -1352,11 +1397,11 @@ if write_geometry_output eq 'y' then begin
       scenario_tag = 'dhdt'
       if use_flow_model eq 'y' then scenario_tag = 'flow'
 
-      ; Ensure output directory exists
-      out_dir = dirres + dir_region
+      ; Ensure output directory exists — organised by GCM / scenario
+      out_dir = dirres + dir_region + '/' + GCM_model[gcms] + '/' + GCM_rcp[rcps]
       if ~file_test(out_dir, /directory) then spawn, 'mkdir -p "' + out_dir + '"'
 
-      ; --- Save vertical-band geometry (for comparison with dhdt) ---
+      ; --- Save vertical-band geometry ---
       geometry_hist = { $
          thick: thick_hist, $
          elev: elev_hist, $
@@ -1371,10 +1416,12 @@ if write_geometry_output eq 'y' then begin
          mb: mb_hist, $
          glacier_id: id[gg[g]], $
          scenario: scenario_tag, $
+         gcm: GCM_model[gcms], $
+         rcp: GCM_rcp[rcps], $
          nb: nb $
       }
 
-      save_file = dirres + dir_region + '/geometry_' + id[gg[g]] + '_' + scenario_tag + '.sav'
+      save_file = out_dir + '/geometry_' + id[gg[g]] + '_' + scenario_tag + '.sav'
       save, geometry_hist, file=save_file
       print, 'Saved geometry: ' + save_file
 
@@ -1394,9 +1441,13 @@ if write_geometry_output eq 'y' then begin
             area_total: area_total_hist, $
             mb: mb_hist, $
             glacier_id: id[gg[g]], $
-            scenario: 'flow' $
+            scenario: 'flow', $
+            gcm: GCM_model[gcms], $
+            rcp: GCM_rcp[rcps], $
+            spinup_aflow: (n_elements(spinup_aflow) gt 0 ? spinup_aflow : !values.d_nan), $
+            spinup_ela_bias: (n_elements(spinup_ela_bias) gt 0 ? spinup_ela_bias : 0d0) $
          }
-         save_file_flow = dirres + dir_region + '/flowgrid_' + id[gg[g]] + '_' + scenario_tag + '.sav'
+         save_file_flow = out_dir + '/flowgrid_' + id[gg[g]] + '_' + scenario_tag + '.sav'
          save, flow_hist, file=save_file_flow
          print, 'Saved flow grid: ' + save_file_flow
       endif

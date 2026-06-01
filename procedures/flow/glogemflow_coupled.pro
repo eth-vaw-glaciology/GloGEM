@@ -46,11 +46,11 @@ if n_elements(flow_initialised) eq 0 then begin
   width_base_dx = width_base_dx_init
   lambda_dx = lambda_dx_init
 
-  ; ---- Run spin-up: steady state + A_flow calibration ----
-  ; This starts from zero ice, runs to steady state under 1961-1990
-  ; mean SMB, and calibrates A_flow to match observed volume.
-  ; After spin-up, thick_dx and sur_dx contain the dynamically
-  ; consistent steady-state geometry.
+  ; ---- Run spin-up: full Zekollari (2019) calibration ----
+  ; Calibrates A_flow (volume) + ELA bias (length) via nested loops.
+  ; Each iteration: spin-up to SS → historical run tran[0]→survey year.
+  ; After return: thick_dx/sur_dx are the model state AT the survey year
+  ; (not the SS geometry), ready for the transient projection.
   @procedures/flow/spinup_flowmodel
 
   ; Initialise time-stepping state
@@ -148,19 +148,18 @@ ii_ice_cleanup = where(thick_dx gt 0, c_cleanup)
 if c_cleanup gt 0 then begin
   i_terminus = min(ii_ice_cleanup)  ; lowest ice cell (tongue end)
   i_head = max(ii_ice_cleanup)      ; highest ice cell (head end)
-  ; Remove thin ice at the terminus (< 10 m threshold)
-  ; Walk from the terminus upward and remove thin cells until we
-  ; hit substantial ice
+  ; Remove truly residual ice at the terminus and head (< 1 m threshold).
+  ; A low threshold means cells only zero out when almost gone, so the
+  ; fractional area correction handles the continuous thinning phase.
+  ; Using 10 m caused multiple cells to be removed at once in late stages,
+  ; producing large discrete steps in area.
   for i_clean = i_terminus, i_head do begin
-    if thick_dx[i_clean] lt 10d0 then begin
-      thick_dx[i_clean] = 0d0
-    endif else break  ; hit substantial ice, stop cleaning
+    if thick_dx[i_clean] lt 1d0 then thick_dx[i_clean] = 0d0 $
+    else break
   endfor
-  ; Also clean from the head downward (thin ice at the divide)
   for i_clean = i_head, i_terminus, -1 do begin
-    if thick_dx[i_clean] lt 10d0 then begin
-      thick_dx[i_clean] = 0d0
-    endif else break
+    if thick_dx[i_clean] lt 1d0 then thick_dx[i_clean] = 0d0 $
+    else break
   endfor
 endif
 
@@ -177,8 +176,23 @@ if c_ice_dx gt 0 then begin
   ; The trapezoidal cross-section is used internally for SIA flux computation
   ; but volume reporting uses the surface width to match GloGEM's convention.
   flow_vol = total(thick_dx[ii_ice_dx] * width_dx[ii_ice_dx] * dx)
-  ; Area from surface width
-  flow_area = total(width_surface_dx[ii_ice_dx] * dx) / 1d6 ; m² → km²
+  ; Continuous area: apply fractional contribution to both the terminus
+  ; and head cells, based on each cell's thickness relative to its
+  ; adjacent interior neighbour. This smooths retreat from both ends.
+  i_term_a = min(ii_ice_dx)
+  i_head_a = max(ii_ice_dx)
+  area_sum = total(width_surface_dx[ii_ice_dx] * dx)
+  if i_term_a lt i_head_a then begin
+    if thick_dx[i_term_a + 1] gt 0 then begin
+      frac_term = (thick_dx[i_term_a] / thick_dx[i_term_a + 1]) < 1d0
+      area_sum += (frac_term - 1d0) * width_surface_dx[i_term_a] * dx
+    endif
+    if thick_dx[i_head_a - 1] gt 0 then begin
+      frac_head = (thick_dx[i_head_a] / thick_dx[i_head_a - 1]) < 1d0
+      area_sum += (frac_head - 1d0) * width_surface_dx[i_head_a] * dx
+    endif
+  endif
+  flow_area = (area_sum > 0d0) / 1d6  ; m² → km²
   ; Glacier-wide mass balance (m w.e./yr)
   flow_mb = total(bal_dx[ii_ice_dx] * width_surface_dx[ii_ice_dx] * dx * 0.917d0) / $
     total(width_surface_dx[ii_ice_dx] * dx)

@@ -36,33 +36,25 @@ lambda_standard = tan(45 * !dtor) + tan(45 * !dtor) ; i.e. lamda = 2
 ; lambda_standard = tan(80 * !DTOR) + tan(80 * !DTOR) ; sensitivity test in paper --> saved in 'calibration 4' folder (manually)
 
 last_icp_max = 0 ; last ice covered point (icp) (index)
-xnum = floor(domainsize / dx) ; number of grid cells
-if xnum gt n_elements(width_dx_init) then begin
-  xnum = xnum - 1
-endif
+; xnum is already set by vertical_to_horizontal_grid.pro — do NOT recalculate
+; xnum = floor(domainsize / dx) ; REMOVED: was overriding the correct value
 
 ; SMB:
 ela_ss = 0
 
-; ; Size variables that will (in most cases) be updated (i.e. overwritten) at every (few) time step(s)
-; bal = fltarr(xnum) ; Mass balance
-bed_dx_init = fltarr(xnum) ; Bedrock elevation
+; ; Size working variables (NOT geometry — geometry comes from vertical_to_horizontal_grid.pro)
 df_dx = fltarr(xnum) ; Diffusivity factor
 fluxdiv_dx = fltarr(xnum) ; Flux divergence
 fluxdiv_plot_dx = fltarr(xnum) ; Flux divergence to be plotted
 fluxdiv_plot2_dx = fltarr(xnum) ; Flux divergence to be plotted
 grad_dx = fltarr(xnum) ; Surface gradient
-lambda_dx = fltarr(xnum) ; Lambda: angle trapezium describing the glacier cross section
-; if flag_startobs ne 2 then begin ; If start from modelled geometry, don't want to set the surface elevation to zero
-; sur_dx_init = fltarr(xnum) ; Surface elevation
-; endif
-term1 = fltarr(xnum) ; Part of the continuity equation (see 'ice_thickness.pro'), also used for fluxdiv_plot, in 'diagnostic_write.pro'
-term2 = fltarr(xnum) ; Part of the continuity equation (see 'ice_thickness.pro'), also used for fluxdiv_plot, in 'diagnostic_write.pro'
-term3 = fltarr(xnum) ; Part of the continuity equation (see 'ice_thickness.pro'), also used for fluxdiv_plot, in 'diagnostic_write.pro'
-if flag_startobs ne 2 then begin ; If start from modelled geometry, don't want to set the ice thickness to zero
-  th_dx_init = fltarr(xnum) ; Ice thickness
-endif
+term1 = fltarr(xnum) ; Part of the continuity equation
+term2 = fltarr(xnum) ; Part of the continuity equation
+term3 = fltarr(xnum) ; Part of the continuity equation
 velocity = fltarr(xnum) ; Velocities
+; NOTE: bed_dx_init, thick_dx_init, sur_dx_init, lambda_dx, width arrays
+; are set by vertical_to_horizontal_grid.pro and initial_geometry.pro
+; Do NOT reinitialize them here!
 
 ; ; Size prognostic variables that are written out every dtdiag timesteps (typically used to have overview at end of the run)
 
