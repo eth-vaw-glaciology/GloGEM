@@ -2,6 +2,7 @@
 ; *****************************************
 
 ; INPUT SECTION
+compile_opt idl2
 
 ; *****************************************
 ; *****************************************
@@ -369,7 +370,7 @@ lhf=334000.          ; [J kg-1] latent heat of fusion
 
 ; ----------------------------------
 ; some more definitions
-if lat0(0) eq -9999 then grid_run='n'
+if lat0[0] eq -9999 then grid_run='n'
 if grid_run eq 'n' then areaplot='n'
 
 ; declination of sun for all months (mid-month)
@@ -378,7 +379,7 @@ decl_sun=[-21.26,-13.50,-2.11,9.85,19.16,23.31,21.18,13.34,1.91,-10.03,-19.27,-2
 asp_class=[0,45,90,135,180]
 
 rddf_si=ddfice0/ddfsnow0
-years=tran(1)-tran(0)+1
+years=tran[1]-tran[0]+1
 
 ; days of month
 if time_resolution eq 'monthly' then mon_len=[31,28,31,30,31,30,31,31,30,31,30,31] else mon_len=dblarr(365)+1   
@@ -393,7 +394,7 @@ if calibrate eq 'y' then begin
    reanalysis_direct='y'
    read_parameters='n'
    write_mb_elevationbands='n'
-   rcp_batch(0)=0 & expe_batch(0)=0 & first_GCM=0
+   rcp_batch[0]=0 & expe_batch[0]=0 & first_GCM=0
    find_startyear='n'
    debris_expansion='n' & debris_thickening='n'
    firnice_temperature='n'
@@ -401,7 +402,7 @@ if calibrate eq 'y' then begin
    short_gcmchoice=[1,1,1]   ; make sure that only one run is performed!
 endif
 
-if calibrate eq 'n' and tran(1) lt 2021 then begin   ; end year currently set by extent of available ERA5-dataset (2020)
+if calibrate eq 'n' and tran[1] lt 2021 then begin   ; end year currently set by extent of available ERA5-dataset (2020)
    reanalysis_direct='y' 
    short_gcmchoice=[1,1,1]   ; make sure that only one run is performed!
    glacier_retreat='n'
@@ -420,7 +421,7 @@ if read_parameters eq 'y' then calibrate='n'     ; read parameter-mode - no cali
 
 if single_glacier ne '' then grid_run='n'
 
-if tran(1) gt 2020 then hindcast_dynamic='n'
+if tran[1] gt 2020 then hindcast_dynamic='n'
 
 if meltmodel eq '3' then c2_tolerance=c2m3_tolerance
 
@@ -469,52 +470,52 @@ max_f = 0.5
 fit_dz = dblarr(2, total(fit_layers))
 
 ; Set thickness of first layers
-for i = 0, fit_layers(0) - 1 do begin
-    fit_dz(0, i) = fit_dzstep(0)
+for i = 0, fit_layers[0] - 1 do begin
+    fit_dz[0, i] = fit_dzstep[0]
 endfor
 
 ; Set thickness of second set of layers
-for i = fit_layers(0), total(fit_layers(0:1)) - 1 do begin
-    fit_dz(0, i) = fit_dzstep(1)
+for i = fit_layers[0], total(fit_layers[0:1]) - 1 do begin
+    fit_dz[0, i] = fit_dzstep[1]
 endfor
 
 ; Set thickness of third set of layers
-for i = total(fit_layers(0:1)), total(fit_layers(0:2)) - 1 do begin
-    fit_dz(0, i) = fit_dzstep(2)
+for i = total(fit_layers[0:1]), total(fit_layers[0:2]) - 1 do begin
+    fit_dz[0, i] = fit_dzstep[2]
 endfor
 
 ; Accumulate thicknesses
 for i = 1, total(fit_layers) - 1 do begin
-    fit_dz(1, i) = fit_dz(1, i - 1) + fit_dz(0, i)
+    fit_dz[1, i] = fit_dz[1, i - 1] + fit_dz[0, i]
 endfor
 
 ; -------------------------------------
 ; short_gcmchoice - get individual GCMs
 ;   (does only need adapting when short_gcmchoice option is used)
 
-if short_gcmchoice(0) ne 0 then begin
+if short_gcmchoice[0] ne 0 then begin
 
 if CMIP6 eq 'n' then begin
 
 tt=['BCC-CSM1-1','CanESM2','CCSM4','CNRM-CM5','CSIRO-Mk3-6-0','GFDL-CM3','GISS-E2-R','HadGEM2-ES','INMCM4','IPSL-CM5A-LR','MIROC-ESM','MPI-ESM-LR','MRI-CGCM3','NorESM1-M']
-GCM_model=[tt(short_gcmchoice(0)-1)]
+GCM_model=[tt[short_gcmchoice[0]-1]]
 tt=['rcp45','rcp85','rcp26']
-GCM_rcp=[tt(short_gcmchoice(1)-1)]
+GCM_rcp=[tt[short_gcmchoice[1]-1]]
 tt=['r1i1p1','r2i1p1','r3i1p1','r4i1p1','r5i1p1']
-GCM_experiment=[tt(short_gcmchoice(2)-1)]
+GCM_experiment=[tt[short_gcmchoice[2]-1]]
 
-rcp_batch(0)=0 & expe_batch(0)=0 & first_GCM=0
+rcp_batch[0]=0 & expe_batch[0]=0 & first_GCM=0
 
 endif else begin
 
 tt=['BCC-CSM2-MR','CAMS-CSM1-0','CESM2','CESM2-WACCM','EC-Earth3','EC-Earth3-Veg','FGOALS-f3-L','GFDL-ESM4','INM-CM4-8','INM-CM5-0','MPI-ESM1-2-HR','MRI-ESM2-0','NorESM2-MM','CanESM5']
-GCM_model=[tt(short_gcmchoice(0)-1)]
+GCM_model=[tt[short_gcmchoice[0]-1]]
 tt=['ssp126','ssp245','ssp370','ssp585','ssp119']
-GCM_rcp=[tt(short_gcmchoice(1)-1)]
+GCM_rcp=[tt[short_gcmchoice[1]-1]]
 tt=['r1i1p1f1','r2i1p1f1','r3i1p1f1','r4i1p1f1','r5i1p1f1','r6i1p1f1','r7i1p1f1']
-GCM_experiment=[tt(short_gcmchoice(2)-1)]
+GCM_experiment=[tt[short_gcmchoice[2]-1]]
 
-rcp_batch(0)=0 & expe_batch(0)=0 & first_GCM=0
+rcp_batch[0]=0 & expe_batch[0]=0 & first_GCM=0
 
 endelse
 

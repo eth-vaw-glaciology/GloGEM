@@ -39,6 +39,7 @@
 
 
 PRO WRITE_RESULTS_FILES_MONTHLY, format_of, time_resolution, outf_names, areas, volumes, mb, wb, smelt, imelt, accum, rain, ela, aar, refre, hmin_g, flux_calv, discharge, discharge_gl, balmo, precmo, accmo, mellmo, refrmo, id, gg, g, years, y
+compile_opt idl2
     
     ; Validate inputs
     IF N_ELEMENTS(outf_names) EQ 0 THEN BEGIN
@@ -55,7 +56,7 @@ PRO WRITE_RESULTS_FILES_MONTHLY, format_of, time_resolution, outf_names, areas, 
     if time_resolution eq 'monthly' then begin
         ii=where(outf_names ne '',ci)
         for i=0,ci-1 do begin
-	        case ii(i) of
+	        case ii[i] of
 			0: var = areas
 			1: var = volumes
 			2: var = mb
@@ -77,8 +78,8 @@ PRO WRITE_RESULTS_FILES_MONTHLY, format_of, time_resolution, outf_names, areas, 
 			18: var = melmo
 			19: var = refrmo
             endcase
-         	if ii(i) ge 13 then a=12 else a=1
-	   		printf,string(i+10,fo='(i2)'),id(gg(g))+' '+string(var,fo='('+strcompress(string(years)*a,/remove_all)+format_of(i)+')')
+         	if ii[i] ge 13 then a=12 else a=1
+	   		printf,string(i+10,fo='(i2)'),id[gg[g]]+' '+string(var,fo='('+strcompress(string(years)*a,/remove_all)+format_of[i]+')')
    		endfor
     endif 
 end
