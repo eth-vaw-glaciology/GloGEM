@@ -1,4 +1,3 @@
-PRO REFREEZING_FULL,gl,ye,mel,plg,sno,dens_rf,rf_melcrit,rf_ind,rf_dsc,rf_dz,rf_dt,rf_layers,rf_cold,lh_rf,tl_rf,te_rf,cond,cap,tgs,firn,ar_gl,refr,area,refre
 compile_opt idl2
 
   noval=-9999 & snoval=-99
@@ -54,6 +53,3 @@ endelse    ; use cold reservoir
 endfor
 
 if ar_gl ne 0 then refre[ye]=refre[ye]+total(refr*area)/ar_gl
-
-
-end

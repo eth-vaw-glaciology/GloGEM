@@ -1,4 +1,3 @@
-PRO potential_solarradiation,nb,da,slope,decl_sun,latutudes,g,sw_rad
 compile_opt idl2
 
    sw_rad=dblarr(nb,12) & z=dblarr(12) & phi0=dblarr(12) & aspect=da[8,*]
@@ -23,5 +22,3 @@ compile_opt idl2
    for j=0,nb-1 do for i=0,11 do sw_rad[j,i]=mrad[i]*(cos(slope[j]/180.*3.14159)*cos(z[i]/180.*3.14159)+ $
       sin(slope[j]/180.*3.14159)*sin(z[i]/180.*3.14159)*cos((180-asp_class[aspect[j]-1])/180.*3.14159))/phi0[i]
 	ii=where(sw_rad lt 0,ci) & if ci gt 0 then sw_rad[ii]=0
-
-end
