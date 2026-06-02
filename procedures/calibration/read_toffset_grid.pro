@@ -9,7 +9,7 @@
 compile_opt idl2
 
 if catchment_selection ne '' then cc='_'+catchment_selection else cc=''
-fn=dircali+dir_region+'/calibration/toff_m'+meltmodel+'_cID'+string(calperiod_ID,fo='(i1)')+'_'+sub_region+cc+'.dat'
+fn=dircali+'/'+time_resolution+'/'+dir_region+'/calibration/toff_m'+meltmodel+'_cID'+string(calperiod_ID,fo='(i1)')+'_'+sub_region+cc+'.dat'
 a=findfile(fn)
 if a[0] ne '' then begin
    anz=file_lines(fn) & da=dblarr(5,anz) & openr,1,fn & readf,1,da & close,1

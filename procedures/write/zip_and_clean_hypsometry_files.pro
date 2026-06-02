@@ -10,6 +10,6 @@ b='/files'+mtt+'/'+GCM_model[gcms]+'/'+GCM_rcp[rcps]
 if reanalysis_direct eq 'y' then b='/PAST'
 ; zipping automatically,  but not for RGI-regions with subregions
 if region ne 'lowlatitudes' and region ne 'antarctic' and region ne 'northasia' then begin
-    spawn, 'zip -r '+dirres+dir_region+b+'/hypsometry.zip  '+dirres+dir_region+b+'/hypsometry'
-    spawn, 'rm -r '+dirres+dir_region+b+'/hypsometry'
+    spawn, 'zip -r '+dirres+'/'+time_resolution+'/'+dir_region+b+'/hypsometry.zip  '+dirres+dir_region+b+'/hypsometry'
+    spawn, 'rm -r '+dirres+'/'+time_resolution+'/'+dir_region+b+'/hypsometry'
 endif

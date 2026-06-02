@@ -8,12 +8,12 @@ compile_opt idl2
 
 b='/files'+mtt+'/'+GCM_model[gcms]+'/'+GCM_rcp[rcps]
 if reanalysis_direct eq 'y' then b='/PAST'
-c=findfile(dirres+dir_region+b+'/hypsometry')
+c=findfile(dirres+'/'+time_resolution+'/'+dir_region+b+'/hypsometry')
 
 if c[0] eq '' then spawn,'mkdir '+dirres+dir_region+b+'/hypsometry' & if b[0] eq '' then spawn,'chmod a+rx '+dirres+dir_region+b+'/hypsometry'
-openw,9,dirres+dir_region+b+'/hypsometry/hypso_'+id[gg[g]]+'.dat'
-openw,34,dirres+dir_region+b+'/hypsometry/volume_'+id[gg[g]]+'.dat'
-openw,35,dirres+dir_region+b+'/hypsometry/temp_'+id[gg[g]]+'.dat'
+openw,9,dirres+'/'+time_resolution+'/'+dir_region+b+'/hypsometry/hypso_'+id[gg[g]]+'.dat'
+openw,34,dirres+'/'+time_resolution+'/'+dir_region+b+'/hypsometry/volume_'+id[gg[g]]+'.dat'
+openw,35,dirres+'/'+time_resolution+'/'+dir_region+b+'/hypsometry/temp_'+id[gg[g]]+'.dat'
 
 ctt=0 & h=strarr(1)
 for i=tran[0],tran[1] do begin

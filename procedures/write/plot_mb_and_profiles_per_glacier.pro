@@ -8,7 +8,7 @@
 
 compile_opt idl2
 xscm=20 & yscm=28.
-PSCAL,'ps',xscm,yscm,name=dirres+dir_region+'/plots/'+sub_region+'/'+id[gg[g]]
+PSCAL,'ps',xscm,yscm,name=dirres+'/'+time_resolution+'/'+dir_region+'/plots/'+sub_region+'/'+id[gg[g]]
 
 device,/bold
 

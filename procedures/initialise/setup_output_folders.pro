@@ -21,11 +21,11 @@ b = '/' + date_str + '/'
 if tran[1] le tt then b='/PAST'+version_past+mtt
 
 SPAWN, 'mkdir -p ' + $
-   dirres + dir_region + ' ' + $
-   dirres + dir_region + '/calibration ' + $
-   dirres + dir_region + '/files' + mtt + ' ' + $
-   dirres + dir_region + '/PAST' + mtt + ' ' + $
-   dirres + dir_region + '/files/SINGLE ' + $
-   dirres + dir_region + '/files' + mtt + '/' + GCM_model[gcms] + ' ' + $
-   dirres + dir_region + '/files' + mtt + '/' + GCM_model[gcms] + '/' + GCM_rcp[rcps]
-SPAWN, 'chmod -R a+rx ' + dirres + dir_region
+   dirres + time_resolution + '/' + dir_region + ' ' + $
+   dirres + time_resolution + '/' + dir_region + '/calibration ' + $
+   dirres + time_resolution + '/' + dir_region + '/files' + mtt + ' ' + $
+   dirres + time_resolution + '/' + dir_region + '/PAST' + mtt + ' ' + $
+   dirres + time_resolution + '/' + dir_region + '/files/SINGLE ' + $
+   dirres + time_resolution + '/' + dir_region + '/files' + mtt + '/' + GCM_model[gcms] + ' ' + $
+   dirres + time_resolution + '/' + dir_region + '/files' + mtt + '/' + GCM_model[gcms] + '/' + GCM_rcp[rcps]
+SPAWN, 'chmod -R a+rx ' + dirres +'/'+time_resolution+'/'+ dir_region

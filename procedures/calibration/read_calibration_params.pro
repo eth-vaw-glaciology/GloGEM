@@ -11,7 +11,7 @@ compile_opt idl2
 
 if calibration_phase eq '2' or calibration_phase eq '3' then a='' else a='_final_'+reanalysis
 if catchment_selection ne '' then cc='_'+catchment_selection else cc=''
-fn=dircali+dir_region+'/calibration/calibrate_m'+meltmodel+'_cID'+string(calperiod_ID,fo='(i1)')+'_'+sub_region+a+cc+'.dat'
+fn=dircali+'/'+time_resolution+'/'+dir_region+'/calibration/calibrate_m'+meltmodel+'_cID'+string(calperiod_ID,fo='(i1)')+'_'+sub_region+a+cc+'.dat'
 a=findfile(fn) & if a[0] eq '' then print,'!!! Parameter-File for '+sub_region+' is not available !!!'
 cnc=12+double(meltmodel)
 anz=file_lines(fn)-1 & da=dblarr(cnc,anz) & tt=strarr(1)

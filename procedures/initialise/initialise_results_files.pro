@@ -21,21 +21,21 @@ if past_out eq 'y' and hindcast_dynamic eq 'y' and reanalysis_direct eq 'y' then
 
 if catchment_selection ne '' then cc='_'+catchment_selection else cc=''
 
-openw,6,dirres+dir_region+subpath+long_GCM+sub_region+cc+'.dat'
+openw,6,dirres+'/'+time_resolution+'/'+dir_region+subpath+long_GCM+sub_region+cc+'.dat'
 printf,6,'ID    lat  lon    Area0    Volume0  dA(%)  dV(%)'
 
 y=indgen(years)+tran[0]
 for fid=10,10+n_elements(where(outf_names ne ''))-1 do begin
-    openw,string(fid,fo='(i2)'),dirres+dir_region+subpath+long_GCM+sub_region+'_'+outf_names[fid-10]+'_'+experi_short+cc+'.dat'
+    openw,string(fid,fo='(i2)'),dirres+'/'+time_resolution+'/'+dir_region+subpath+long_GCM+sub_region+'_'+outf_names[fid-10]+'_'+experi_short+cc+'.dat'
     if fid lt 23 then printf,string(fid,fo='(i2)'),'ID  '+string(y,fo='('+strcompress(string(years),/remove_all)+'i6)') $
         else printf,string(fid,fo='(i2)'),'ID  hydr.year  Area(km2) day 274 275 ... 1 2 3 ... 273 (unit: mm/day) '
 endfor
 
-openw,5,dirres+dir_region+subpath+long_GCM+sub_region+cc+'_bias.dat'
+openw,5,dirres+'/'+time_resolution+'/'+dir_region+subpath+long_GCM+sub_region+cc+'_bias.dat'
 printf,5,'Lat  Lon(rea) dtemp  dprec  dvariab'
 
-openw,7,dirres+dir_region+subpath+long_GCM+sub_region+cc+'_SLE_volbz.dat'
+openw,7,dirres+'/'+time_resolution+'/'+dir_region+subpath+long_GCM+sub_region+cc+'_SLE_volbz.dat'
 printf,7,'Year  vol_<0masl(km3)'
 
-openw,33,dirres+dir_region+subpath+long_GCM+sub_region+cc+'_calving_flux.dat'
+openw,33,dirres+'/'+time_resolution+'/'+dir_region+subpath+long_GCM+sub_region+cc+'_calving_flux.dat'
 printf,33,'ID  frontal ablation (Gt/a)'

@@ -1,14 +1,14 @@
-; *****************************************
-; *****************************************
-
-; INPUT SECTION
 compile_opt idl2
 
 ; *****************************************
 ; *****************************************
 
+; INPUT SECTION
+
+; *****************************************
+; *****************************************
+
 ; GloGEM.pro
-; (IDL Version)
 ; Input file for GloGEM, including all settings for running the model, calibration, and output specifications
 ; Settings are read in the main GloGEM.pro and then passed to the different subroutines
 ; Settings are structured in different sections, but some settings (e.g. calibration) also have sub-sections
@@ -24,15 +24,17 @@ time_resolution='daily'           ; 'daily'/'monthly' - SELECT TIME RESOLUTION O
 ; Dynamically detect the username and construct the directory path
 username = GETENV('USER')  ; Get the current user's username from the environment
 
-; input
+; Input folders where the geoemtric and climate data are stored (GloGEM shares)
 main_dir     = '/itet-stor/' + username + '/glogem/'  ; Construct the main directory path
 dir          = main_dir+'data/'                       ; Construct the general data folder path
 dir_data     = main_dir+'/geometricdata/'+'rgiv'+RGIversion+'/bands/bands_consensus2019/' ; thickness data
 dir_data_alt = main_dir+'/geometricdata/'+'rgiv'+RGIversion+'/bands/bands_HF2012/'        ; alternative thickness data (for cross-checks)
 dir_clim     = main_dir+'climatedata/'                                  ; climate data
 
-; output (same machine as you run on)scratch via the network
-dirres='/scratch_net/vierzack04_fourth/jabeer/GloGEM/hackathon_test_outputs' ; Output folder  (same machine as you run on) scratch via the network
+; Output (same machine as you run on)scratch via the network
+; This is th only folder you need to change to store the results on your machine, 
+; The rest of the paths are defined relative to this one
+dirres='/scratch_net/vierzack05_fourth/lvantrich/GloGEM/results/' ; Output folder  (same machine as you run on) scratch via the network
 
 ; --- region selection
 region_id_loop=[14,14]             ; Specify IDs of regions to be run according to region_batch.dat
@@ -51,10 +53,9 @@ catchment_selection=''             ; Leave empty if running a single glacier or 
 ; MAIN SETTINGS / MODES
 ; --------------------------------------
 
-tran=[1950,2100]                   ; Time period of modelling. It uses reanalysis data as long as possible
+tran=[1940,2100]                   ; Time period of modelling. It uses reanalysis data as long as possible
 find_startyear='y'                 ; Automatically determine first year of future modelling (based on date of inventory); 'n' ALSO to drive static output for GloGEMflow
-calibrate = 'y'                    ; Calibrate model? 'y' to calibrate, 'n' to run model with given parameters
-;calibrate='n' & tran=[1980,2019]  ; DO NOT CALIBRATE, BUT RUN MODEL FOR PAST   => output to PAST/
+calibrate = 'n'                    ; Calibrate model? 'y' to calibrate, 'n' to run model with given parameters
 meltmodel='1'                      ; Select melt model to be used - 1: Classic degree-day model -  3: Simple energy-balance model (Oerlemans,2001)
 
 ; ---------------------------------------
@@ -88,16 +89,24 @@ if long_GCM ne '' then begin
    rcp_batch=[6,6,6,6,6,6,6,6,6,6,6,6,6,6]
 endif
 
+; --------------------------------------
 ; Re-analysis
-reanalysis='era5land'            ; Reanalysis data set, grid step is 0.1 
+; --------------------------------------
+
+; For the daily model: 
+;reanalysis='era5land'            ; Reanalysis data set, grid step is 0.1 
 ;reanalysis='chelsaw5e5'          ; Grid step needs to be changed to 0.08333333333333333
 ;reanalysis='ch2018'
 ;reanalysis='gswp3w5e5'
-;reanalysis='era5'
+reanalysis='era5'
+
+; For the monthly model
+;reanalysis='ERA5'
+; 
 rea_eval=[1980,2025]              ; Important setting -> Time period for evaluating the bias of GCMs
 grid_step=0.1                     ; Grid stepping of reanalysis data set
 bias_correction='y'               ; Bias correction of GCM data based on re-analysis data? 'y' to activate, 'n' to use GCM data as they are
-bias_correction_method=2          ; 1: Bias correction based on delta method; 2: Bias correction based on quantile mapping, working only for daily model and temperature for now
+bias_correction_method=1          ; 1: Bias correction based on delta method; 2: Bias correction based on quantile mapping, working only for daily model and temperature for now
 
 ; --------------------------------------
 ; calibration (main setting given in the beginning)
@@ -121,7 +130,6 @@ calperiod_ID=9              ; ID for specifying different calibration periods fo
                                 ; ID 9: glacier-specific calibration (Hugonnet2021)
 
 caliphase_loop=3             ; 1: default (NO loop); 2; calibration phases 1-2; 3; calibration phases 1-3
-
 calibration_phase='1'        ; 1: calibrate c_prec ; 2: DDF_snow ; 3: adjust temperature bias in ERA-data
 c1_tolerance=[.8,2.4]    ; c_prec tolerance (irrelevant, as ranges are given in file)
 c2_tolerance=[1.75,4.5]  ; DDF_snow tolerance - M1  (irrelevant, as ranges are given in file)
