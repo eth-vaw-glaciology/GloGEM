@@ -132,9 +132,6 @@ endif else begin
    if sub_region eq '' then sub_region=region
 endelse
 
-; Create folders
-;folder = GETENV('PWD') + '/' + dir_region + '/calibration'
-;SPAWN, 'mkdir -p "' + folder + '"'
 
 count_glaciers=1
 cali_calflux=0
