@@ -202,14 +202,7 @@ if calibration_phase eq '2' or calibration_phase eq '3' then read_parameters='y'
 ; -------------------------------------
 ; determine calibration periods and target
 if calibrate eq 'y' then begin
-   if calibrate_glacierspecific eq 'n' then begin
-      ii=where(calimb_regname eq dir_region and calimb_sregname eq sub_region and calimb_idname eq calperiod_ID,ci)
-      if ci eq 0 then print, '!!! No calibration data available for this region / period !!!'
-      target=calimb_bn[ii[0]] & target_uc=calimb_uc[ii[0]] & cran=[calimb_p0[ii[0]],calimb_p1[ii[0]]]
-      ; *** glacier-specific calibration
-   endif else begin
-      target_spec=calimb_bn & cran=[min(calimb_p0),max(calimb_p1)]
-   endelse
+   @procedures/calibration/determine_calibration_target.pro
 endif
 
 ; ------------------------------
