@@ -46,44 +46,48 @@ endif
 
 ; time series with Bias-corrected GCM-data
 temp=dblarr((years+1)*365.) & prec=temp & rad=temp & cyear=temp & cday=temp & cmon=temp & n=0l
-tic
 for i=0,years do begin
-; use re-analysis data as long as available!!
-   if i+tran[0] le max(ryear) then begin
-      for d=1,365 do begin
-         hh=where(ryear eq i+tran[0]-1 and rday eq d,ci)
-         cyear[n]=i+tran[0]-1 & cday[n]=d & cmon[n]=rmon[hh[0]]
-         temp[n]=tempre[hh[0]]
-         prec[n]=precre[hh[0]]
-         if meltmodel ne '1' then rad[n]=mrad[m-1]         
-         n=n+1.
-      endfor
-   endif else begin
-; use projections only for unmeasured future   
-      hh=where(gcm_year eq i+tran[0]-1)
-      for d=1,365 do begin
-         kk=where(gcm_year eq i+tran[0]-1 and gcm_day eq d,ck)
-         cyear[n]=i+tran[0]-1 & cday[n]=d & cmon[n]=gcm_mon[kk[0]]
-         if ck gt 0 then begin
-            temp[n]=tempgcm[kk[0]]-bias[0,gcm_mon[kk[0]]-1]
-            prec[n]=precgcm[kk[0]]/bias[1,gcm_mon[kk[0]]-1]
-            ; correct for errors in day-to-day temperature variability
-            ; !!! NOT YET IMPLEMENTED !!!
-         endif
-         if meltmodel ne '1' then rad[n]=mrad[m-1]
-         n=n+1.
-      endfor
+   ; use re-analysis data as long as available!!
+      if i+tran[0] le max(ryear) then begin
+         for d=1,365 do begin
+            hh=where(ryear eq i+tran[0] and rday eq d,ci)
+            cyear[n]=i+tran[0]
+            cday[n]=d
+            cmon[n]=rmon[hh[0]]
+            temp[n]=tempre[hh[0]]
+            prec[n]=precre[hh[0]]
+            if meltmodel ne '1' then rad[n]=mrad[m-1]         
+            n=n+1.
+         endfor
+      endif else begin
+   ; use projections only for unmeasured future   
+         hh=where(gcm_year eq i+tran[0])
+         for d=1,365 do begin
+            kk=where(gcm_year eq i+tran[0] and gcm_day eq d,ck)
+            cyear[n]=i+tran[0] & cday[n]=d & cmon[n]=gcm_mon[kk[0]]
+            if ck gt 0 then begin
+               temp[n]=tempgcm[kk[0]]-bias[0,gcm_mon[kk[0]]-1]
+               prec[n]=precgcm[kk[0]]/bias[1,gcm_mon[kk[0]]-1]
+               ; correct for errors in day-to-day temperature variability
+               ; !!! NOT YET IMPLEMENTED !!!
+            endif
+            if meltmodel ne '1' then rad[n]=mrad[m-1]
+            n=n+1.
+         endfor
+         ; filter strange temperatures
+         ; !!! needs to be improved - completely wrong at the moment!
+         ii=where(temp lt -50,ci) & if ci gt 0 then temp[ii]=0
+         ;filter addded GCM data for precipitation threshold
+         ii=where(prec lt p_thres,ci) & if ci gt 0 then prec[ii]=0 
+      endelse
+   endfor 
 
-      ; filter strange temperatures
-      ; !!! needs to be improved - completely wrong at the moment!
-      ii=where(temp lt -50,ci) & if ci gt 0 then temp[ii]=0
+; filter strange temperatures
+; !!! needs to be improved - completely wrong at the moment!
+ii=where(temp lt -50,ci) & if ci gt 0 then temp[ii]=0
+;filter addded GCM data for precipitation threshold
+ii=where(prec lt p_thres,ci) & if ci gt 0 then prec[ii]=0 
 
-      ;filter addded GCM data for precipitation threshold
-      ii=where(prec lt p_thres,ci) & if ci gt 0 then prec[ii]=0 
-
-   endelse
-endfor
-toc
 ; --------------------
 ; adapt temperature variability of GCM to re-analysis
 ; NOT implemented (or feasible?) in daily model version!!

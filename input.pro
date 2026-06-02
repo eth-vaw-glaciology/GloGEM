@@ -35,49 +35,45 @@ dir_clim     = main_dir+'climatedata/'                                  ; climat
 dirres='/scratch_net/vierzack05_fourth/lvantrich/GloGEM/' ; Output folder  (same machine as you run on) scratch via the network
 
 ; --- region selection
-region_id_loop=[14,14]            ; Specify IDs of regions to be run according to region_batch.dat
-;region_id_loop=[0,0]             ; Default, no loop
+region_id_loop=[14,14]             ; Specify IDs of regions to be run according to region_batch.dat
+;region_id_loop=[0,0]              ; Default, no loop
 
 ; -- size selection
-size_range_overwrite='n'          ; Automatically overwriting size range of glaciers to be computed with value specied in regional_parameters_*
-size_range=[0.002,100000]         ; [km2]     size_range to be calculated
+size_range_overwrite='n'           ; Automatically overwriting size range of glaciers to be computed with value specied in regional_parameters_*
+size_range=[0.002,100000]          ; [km2]     size_range to be calculated
 
 ; -- glacier / catchment selection
-single_glacier='01450'            ; Calculate one single glacier only (specify RGI ID, e.g. 01450 for Aletschgletscher)
-catchment_selection=''            ; Leave empty if running a single glacier or entire region; 
-;catchment_selection='Alps_g5km2' ; Calculate glaciers in a specific catchment (specify name of catchment, e.g. Alps_g5km2 for all glaciers in the Alps larger than 5 km2)
+single_glacier='01450'             ; Calculate one single glacier only (specify RGI ID, e.g. 01450 for Aletschgletscher)
+catchment_selection=''             ; Leave empty if running a single glacier or entire region; 
+;catchment_selection='Alps_g5km2'  ; Calculate glaciers in a specific catchment (specify name of catchment, e.g. Alps_g5km2 for all glaciers in the Alps larger than 5 km2)
 
 ; --------------------------------------
 ; MAIN SETTINGS / MODES
 ; --------------------------------------
 
-tran=[1950,2100]                   ; Time period of modelling
+tran=[1950,2100]                   ; Time period of modelling. It uses reanalysis data as long as possible
 find_startyear='y'                 ; Automatically determine first year of future modelling (based on date of inventory); 'n' ALSO to drive static output for GloGEMflow
-calibrate = 'y'                    ; Calibrate model? 'y' to calibrate, 'n' to run model with given parameters
+calibrate = 'n'                    ; Calibrate model? 'y' to calibrate, 'n' to run model with given parameters
 ;calibrate='n' & tran=[1980,2019]  ; DO NOT CALIBRATE, BUT RUN MODEL FOR PAST   => output to PAST/
 meltmodel='1'                      ; Select melt model to be used - 1: Classic degree-day model -  3: Simple energy-balance model (Oerlemans,2001)
 
 ; ---------------------------------------
 ; climate data
 ; --------------------------------------
-; 
+ 
 ; --- GCM data specifications
-CMIP6='y'             ; CMIP6 GCMs to be used?
-long_GCM=''           ; runs until 2100
-;long_GCM='long_'     ; runs until 2300
+CMIP6='y'                          ; CMIP6 GCMs to be used?
+long_GCM=''                        ; runs until 2100
+;long_GCM='long_'                  ; runs until 2300
 ;GCM_data= 'cmip6'
-;GCM_data= 'long_cmip6' ;runs until 2300
+;GCM_data= 'long_cmip6'            ;runs until 2300
 GCM_data= 'cmip6'
 
-; Codes for CMIP6-GCMs
-; 1: 'BCC-CSM2-MR', 2: 'CAMS-CSM1-0', 3:'CESM2', 4:'CESM2-WACCM', 5:'EC-Earth3', 6:'EC-Earth3-Veg', 7:'FGOALS-f3-L', 8:'GFDL-ESM4',
-; 9:'INM-CM4-8', 10:'INM-CM5-0', 11:'MPI-ESM1-2-HR', 12:'MRI-ESM2-0', 13:'NorESM2-MM'
+; Options for running one individual model
+short_gcmchoice=[1,1,1]            ; GCM, SSP, experiment
+;short_gcmchoice=0                 ; default - batch processing, all models
 
-; options for running one individual model
-short_gcmchoice=[1,1,1]   ; GCM, SSP, experiment
-;short_gcmchoice=0        ; default - batch processing, all models
-
-first_GCM=0                ; First GCM to start with in batch processing; number MINUS 1 (referring to list below)
+first_GCM=0                        ; First GCM to start with in batch processing; number MINUS 1 (referring to list below)
 
 rcp_batch=[4,5,4,4,5,5,4,5,4,4,4,5,4]     ; number of SSPs per GCMs
 expe_batch=[1,1,1,1,1,1,1,1,1,1,1,1,1]    ; number of experiments for GCMs
@@ -86,35 +82,35 @@ GCM_model=['BCC-CSM2-MR','CAMS-CSM1-0','CESM2','CESM2-WACCM','EC-Earth3','EC-Ear
 GCM_rcp=['ssp126','ssp245','ssp370','ssp585','ssp119','ssp534-over']
 GCM_experiment=['r1i1p1f1','r2i1p1f1','r3i1p1f1','r4i1p1f1','r5i1p1f1','r6i1p1f1','r7i1p1f1']
 
-; for runs until 2300 (long_)
+; For runs until 2300 (long_)
 if long_GCM ne '' then begin
    GCM_model=['ACCESS-CM2','ACCESS-ESM1-5','CESM2-WACCM','CanESM5','GISS-E2-1-G','GISS-E2-1-H','GISS-E2-2-G','IPSL-CM6A-LR','MIROC-ES2L','MRI-ESM2-0','UKESM1-0-LL']
    rcp_batch=[6,6,6,6,6,6,6,6,6,6,6,6,6,6]
 endif
 
-; --- Re-analysis
-reanalysis='era5land'            ; reanalysis data set, grid step is 0.1 
-;reanalysis='chelsaw5e5'         ; grid step needs to be changed to 0.08333333333333333
+; Re-analysis
+;reanalysis='era5land'            ; Reanalysis data set, grid step is 0.1 
+;reanalysis='chelsaw5e5'          ; Grid step needs to be changed to 0.08333333333333333
 ;reanalysis='ch2018'
 ;reanalysis='gswp3w5e5'
-;reanalysis='era5'
-if time_resolution eq 'monthly' then reanalysis='ERA5'     ; reanalysis data set for monthly resolution
-rea_eval=[1980,2024]            ; time period for evaluating the bias
-grid_step=0.1                           ; grid stepping of reanalysis data set
+reanalysis='era5'
+rea_eval=[1980,2025]              ; Important setting -> Time period for evaluating the bias of GCMs
+grid_step=0.1                     ; Grid stepping of reanalysis data set
+bias_correction_method=1          ; 1: Bias correction based on delta method; 2: Bias correction based on quantile mapping, working only for daily model and temperature for now
 
 
 
 
-; ***********
+; --------------------------------------
 ; calibration (main setting given in the beginning)
-
+; --------------------------------------
 valiglaciers_only='n'    ; perform a calibration run for the WGMS validation glaciers only 
 validation_dataset='seasonal/validate_final2017/validate_WGMS_'  ; to be updated
 calibrate_individual='y'     ; parameter optimization for individual glaciers
 calibrate_glacierspecific='y'  ; glacier-specific calibration based mb_glspec* files
 calibrate_glacierspecific_period='2000_2020'
 rhodv_iteration=''          ; default 
-   ;rhodv_iteration='_iteration2'     ; iterating for density of volume change (target directory, reference No -1)
+;rhodv_iteration='_iteration2'     ; iterating for density of volume change (target directory, reference No -1)
 
 ; read calibration periods etc based on file "calibration.dat"
 sub_region=''               ; for subregion - a file defining extent may be provided
