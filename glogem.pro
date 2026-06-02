@@ -1096,7 +1096,7 @@ endif
 
 ; ------------------------
 ; write hypsometry-evolution file
-@procedures/write/write_hypsometry_files.pro
+@procedures/write/write_hypsometry_evolution_file.pro
 
 endif                           ; bedrock-file available?
 
@@ -1339,7 +1339,7 @@ endif
 
 endfor                          ; RCPs
 
-                                ; GCMs
+endfor                          ; GCMs
 
 toc
 
