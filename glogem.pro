@@ -36,7 +36,7 @@ endif
 
 ; === START OF PROGRAM
 
-tic
+tic ; to check how long the program runs
 
 ; === LOOP OVER DIFFERENT GCMs
 
@@ -412,7 +412,6 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
                         if eval_mbelevsensitivity eq 'y' then begin
                           count_mbelevsens=count_mbelevsens_v0 ; initialising to start value of counter
-
                           mbelevsensitivity_again:
                           elev=elev0-count_mbelevsens*50.  ; elevation step
                           count_mbelevsens=count_mbelevsens-1
@@ -571,9 +570,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                         @procedures/processing/calving_model.pro
 
                         if glacier_retreat eq 'y' then begin
-
                           @procedures/processing/glacier_retreat.pro
-
                         endif                           ; glacier retreat
 
                       endfor    ; Loop over years
@@ -600,7 +597,6 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                   ; write calibration file
                   if calibrate eq 'y' then begin
                     @procedures/calibration/write_calibration_results.pro
-
                   endif
 
                   cali_calflux=cali_calflux+mean(flux_calv)/1000.*ar_gl
@@ -645,9 +641,9 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
                 endfor   ; loop over glaciers
 
-              endfor    ; grids y
+              endfor   ; grids y
 
-            endfor                          ; grids x
+            endfor   ; grids x
 
             ; === Optimization - OVERALL MASS BALANCE
 
@@ -664,10 +660,8 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
           ; close result files
           if write_file eq 'y' then begin
-
             close,5 & close,6 & close,61
             for fid=10,10+n_elements(where(outf_names ne ''))-1 do close,string(fid,fo='(i2)')
-
           endif
 
           ; calculate statistics for calibration phases
@@ -702,13 +696,13 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
           @procedures/write/copy_input_to_output.pro
         endif
 
-      endfor                          ; regions
+      endfor   ; regions
 
-    endfor                                  ; firnice_batch_loop
+    endfor   ; firnice_batch_loop
 
     next_GCM:
 
-  endfor                          ; experiments
+  endfor   ; experiments
 
   ; zipping and removing files
   if write_hypsometry_files eq 'y' then begin
@@ -717,9 +711,9 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
 endfor                          ; RCPs
 
-endfor                          ; GCMs
+                                ; GCMs
 
-toc
+toc ; print runtime
 
 if plot eq 'y' or areaplot eq 'y' then device,/close_file
 
