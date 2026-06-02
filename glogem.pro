@@ -818,7 +818,7 @@ endif
 
 endfor                          ; RCPs
 
-                                ; GCMs
+endfor                          ; GCMs
 
 toc
 
