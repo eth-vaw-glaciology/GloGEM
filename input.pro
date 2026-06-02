@@ -34,7 +34,7 @@ dir_clim     = main_dir+'climatedata/'                                  ; climat
 ; Output (same machine as you run on)scratch via the network
 ; This is th only folder you need to change to store the results on your machine, 
 ; The rest of the paths are defined relative to this one
-dirres='/scratch_net/vierzack05_fourth/lvantrich/GloGEM/results/' ; Output folder  (same machine as you run on) scratch via the network
+dirres='/scratch_net/vierzack04_fourth/jabeer/GloGEM/hackathon_test_outputs' ; Output folder  (same machine as you run on) scratch via the network
 
 ; --- region selection
 region_id_loop=[14,14]             ; Specify IDs of regions to be run according to region_batch.dat
