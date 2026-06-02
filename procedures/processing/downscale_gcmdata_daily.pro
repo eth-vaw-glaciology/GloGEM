@@ -46,6 +46,7 @@ endif
 
 ; time series with Bias-corrected GCM-data
 temp=dblarr((years+1)*365.) & prec=temp & rad=temp & cyear=temp & cday=temp & cmon=temp & n=0l
+tic
 for i=0,years do begin
 ; use re-analysis data as long as available!!
    if i+tran[0] le max(ryear) then begin
@@ -81,9 +82,8 @@ for i=0,years do begin
       ii=where(prec lt p_thres,ci) & if ci gt 0 then prec[ii]=0 
 
    endelse
-   
 endfor
-
+toc
 ; --------------------
 ; adapt temperature variability of GCM to re-analysis
 ; NOT implemented (or feasible?) in daily model version!!

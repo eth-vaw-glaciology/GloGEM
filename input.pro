@@ -9,13 +9,17 @@ compile_opt idl2
 
 ; GloGEM.pro
 ; (IDL Version)
+; Input file for GloGEM, including all settings for running the model, calibration, and output specifications
+; Settings are read in the main GloGEM.pro and then passed to the different subroutines
+; Settings are structured in different sections, but some settings (e.g. calibration) also have sub-sections
+; Settings are defined in the beginning of the file, but some settings are also dynamically adapted based on other settings (e.g. if calibrate='y' then some settings are automatically adapted to be consistent with calibration mode) 
 
 ; --- RGI-version selection
 RGIversion='6'       ; version of the RGI to be used
 
 ; --- Time resolution selection 
 time_resolution='daily'           ; 'daily'/'monthly' - SELECT TIME RESOLUTION OF MODELLING
-time_resolution='monthly'           ; 'daily'/'monthly' - SELECT TIME RESOLUTION OF MODELLING
+;time_resolution='monthly'           ; 'daily'/'monthly' - SELECT TIME RESOLUTION OF MODELLING
 
 ; Dynamically detect the username and construct the directory path
 username = GETENV('USER')  ; Get the current user's username from the environment
@@ -28,88 +32,39 @@ dir_data_alt = main_dir+'/geometricdata/'+'rgiv'+RGIversion+'/bands/bands_HF2012
 dir_clim     = main_dir+'climatedata/'                                  ; climate data
 
 ; output (same machine as you run on)scratch via the network
-dirres='/scratch_net/vierzack04_fourth/jabeer/GloGEM/batch_results_diff_icetemp/firn_perm/r'+RGIversion+'_'+time_resolution+'/'   ; output folder  (same machine as you run on)scratch via the network
+dirres='/scratch_net/vierzack05_fourth/lvantrich/GloGEM/' ; Output folder  (same machine as you run on) scratch via the network
 
 ; --- region selection
-; regions can be selected in group via a range of region-IDs
-; (diverging from RGI region IDs due to subregions)
-; alternatively regions can also be directly selected by putting region_id_loop=[0,0]	
-
-; individual regions / subregions to be run (mostly working with region-loop)
-;dir_region='Alaska' & region_n=['alaska']  ; *1
-;dir_region='WesternCanada' & region_n=['westerncanada']    ; *2
-;dir_region='ArcticCanadaN' & region_n=['arcticcanadaN']   ; *3
-;dir_region='ArcticCanadaS' & region_n=['arcticcanadaS']   ; *4
-;dir_region='Greenland' & region_n=['greenland']           ; *5
-;dir_region='Iceland' & region_n=['iceland']                ; *6
-;dir_region='Svalbard' & region_n=['svalbard']             ; *7
-;dir_region='Scandinavia' & region_n=['scandinavia']      ; *8
-;dir_region='RussianArctic' & region_n=['russianarctic']   ; *9
-;dir_region='NorthAsia' & region_n=['northasia']  & clim_subregion='Altay'; *10
-;dir_region='NorthAsia' & region_n=['northasia']  & clim_subregion='Chukotka'; *11
-;dir_region='NorthAsia' & region_n=['northasia']  & clim_subregion='East'; *12
-;dir_region='NorthAsia' & region_n=['northasia']  & clim_subregion='North'; *13
-;dir_region='CentralEurope' & region_n=['centraleurope']  ; *14
-;dir_region='Caucasus' & region_n=['caucasus']            ; *15
-;dir_region='CentralAsia' & region_n=['centralasiaN']  ; *16
-;dir_region='SouthAsiaWest' & region_n=['centralasiaW'] ; *17
-;dir_region='SouthAsiaEast' & region_n=['centralasiaS'] ; *18
-;dir_region='LowLatitudes' & region_n=['lowlatitudes'] & clim_subregion='Andes'; *19
-;dir_region='LowLatitudes' & region_n=['lowlatitudes'] & clim_subregion='Africa'; *20
-;dir_region='LowLatitudes' & region_n=['lowlatitudes'] & clim_subregion='Mexico'; *21
-;dir_region='LowLatitudes' & region_n=['lowlatitudes'] & clim_subregion='Newguinea' ; *22
-;dir_region='SouthernAndes' & region_n=['southernandes']  ; *23
-;dir_region='NewZealand' & region_n=['newzealand']       ; *24
-;dir_region='Antarctic' & region_n=['antarctic'] & clim_subregion='Atlantic'; *25
-;dir_region='Antarctic' & region_n=['antarctic'] & clim_subregion='Indian'; *26
-;dir_region='Antarctic' & region_n=['antarctic'] & clim_subregion='Pacific'; *27
-;dir_region='Antarctic' & region_n=['antarctic'] & clim_subregion='MaudWilkes'; *28
-;dir_region='Antarctic' & region_n=['antarctic'] & clim_subregion='Victoria'; *29
-;dir_region='Antarctic' & region_n=['antarctic'] & clim_subregion='Peninsula'; *30
-; dir_region='Antarctic' & region_n=['antarctic'] & clim_subregion='MarieByrd'; *31
-
-region_id_loop=[14,14]       ; specify IDs of regions to be run according to region_batch.dat
-;region_id_loop=[0,0]        ; default, no loop
+region_id_loop=[14,14]            ; Specify IDs of regions to be run according to region_batch.dat
+;region_id_loop=[0,0]             ; Default, no loop
 
 ; -- size selection
-size_range_overwrite='n'        ; Automatically overwriting size range of glaciers to be computed with value specied in regional_parameters_*
-size_range=[0.002,100000]          ; [km2]     size_range to be calculated
-size_range=[20,10000]          ; [km2]     size_range to be calculated
+size_range_overwrite='n'          ; Automatically overwriting size range of glaciers to be computed with value specied in regional_parameters_*
+size_range=[0.002,100000]         ; [km2]     size_range to be calculated
 
 ; -- glacier / catchment selection
-
-; single_glacier=''                  ; calculate all glaciers in region
-single_glacier='01450'            ; calculate one single glacier only
-
-catchment_selection=''
-;catchment_selection='Alps_g5km2'
+single_glacier='01450'            ; Calculate one single glacier only (specify RGI ID, e.g. 01450 for Aletschgletscher)
+catchment_selection=''            ; Leave empty if running a single glacier or entire region; 
+;catchment_selection='Alps_g5km2' ; Calculate glaciers in a specific catchment (specify name of catchment, e.g. Alps_g5km2 for all glaciers in the Alps larger than 5 km2)
 
 ; --------------------------------------
 ; MAIN SETTINGS / MODES
+; --------------------------------------
 
-tran=[1950,2100]                   ; time period of modelling
-; tran=[2010,2030]                   ; time period of modelling
-
-; calibrate='n'                      ; DO NOT CALIBRATE, JUST RUN FORWARD       => output to files/
-
-calibrate = 'n'                     ; PERFORM MODEL CALIBRATION                => no output, but calibration files to calibration/
-
+tran=[1950,2100]                   ; Time period of modelling
+find_startyear='y'                 ; Automatically determine first year of future modelling (based on date of inventory); 'n' ALSO to drive static output for GloGEMflow
+calibrate = 'y'                    ; Calibrate model? 'y' to calibrate, 'n' to run model with given parameters
 ;calibrate='n' & tran=[1980,2019]  ; DO NOT CALIBRATE, BUT RUN MODEL FOR PAST   => output to PAST/
-
-meltmodel='1'                   ; Select melt model to be used
-                                ; 1: Classic degree-day model
-                                ; 3: Simple energy-balance model (Oerlemans,2001)
-
-find_startyear='y'     ; automatically determine first year of future modelling (based on date of inventory); 'n' ALSO to drive static output for GloGEMflow
+meltmodel='1'                      ; Select melt model to be used - 1: Classic degree-day model -  3: Simple energy-balance model (Oerlemans,2001)
 
 ; ---------------------------------------
 ; climate data
-
+; --------------------------------------
+; 
 ; --- GCM data specifications
 CMIP6='y'             ; CMIP6 GCMs to be used?
 long_GCM=''           ; runs until 2100
 ;long_GCM='long_'     ; runs until 2300
-
 ;GCM_data= 'cmip6'
 ;GCM_data= 'long_cmip6' ;runs until 2300
 GCM_data= 'cmip6'
@@ -128,9 +83,7 @@ rcp_batch=[4,5,4,4,5,5,4,5,4,4,4,5,4]     ; number of SSPs per GCMs
 expe_batch=[1,1,1,1,1,1,1,1,1,1,1,1,1]    ; number of experiments for GCMs
 
 GCM_model=['BCC-CSM2-MR','CAMS-CSM1-0','CESM2','CESM2-WACCM','EC-Earth3','EC-Earth3-Veg','FGOALS-f3-L','GFDL-ESM4','INM-CM4-8','INM-CM5-0','MPI-ESM1-2-HR','MRI-ESM2-0','NorESM2-MM'] 
-
 GCM_rcp=['ssp126','ssp245','ssp370','ssp585','ssp119','ssp534-over']
-
 GCM_experiment=['r1i1p1f1','r2i1p1f1','r3i1p1f1','r4i1p1f1','r5i1p1f1','r6i1p1f1','r7i1p1f1']
 
 ; for runs until 2300 (long_)
@@ -144,21 +97,23 @@ reanalysis='era5land'            ; reanalysis data set, grid step is 0.1
 ;reanalysis='chelsaw5e5'         ; grid step needs to be changed to 0.08333333333333333
 ;reanalysis='ch2018'
 ;reanalysis='gswp3w5e5'
+;reanalysis='era5'
 if time_resolution eq 'monthly' then reanalysis='ERA5'     ; reanalysis data set for monthly resolution
 rea_eval=[1980,2024]            ; time period for evaluating the bias
 grid_step=0.1                           ; grid stepping of reanalysis data set
 
+
+
+
 ; ***********
 ; calibration (main setting given in the beginning)
 
-    valiglaciers_only='n'    ; perform a calibration run for the WGMS validation glaciers only 
-        validation_dataset='seasonal/validate_final2017/validate_WGMS_'  ; to be updated
-
+valiglaciers_only='n'    ; perform a calibration run for the WGMS validation glaciers only 
+validation_dataset='seasonal/validate_final2017/validate_WGMS_'  ; to be updated
 calibrate_individual='y'     ; parameter optimization for individual glaciers
-
 calibrate_glacierspecific='y'  ; glacier-specific calibration based mb_glspec* files
-   calibrate_glacierspecific_period='2000_2020'
-   rhodv_iteration=''          ; default 
+calibrate_glacierspecific_period='2000_2020'
+rhodv_iteration=''          ; default 
    ;rhodv_iteration='_iteration2'     ; iterating for density of volume change (target directory, reference No -1)
 
 ; read calibration periods etc based on file "calibration.dat"
@@ -174,11 +129,10 @@ calperiod_ID=9              ; ID for specifying different calibration periods fo
 caliphase_loop=3             ; 1: default (NO loop); 2; calibration phases 1-2; 3; calibration phases 1-3
 
 calibration_phase='1'        ; 1: calibrate c_prec ; 2: DDF_snow ; 3: adjust temperature bias in ERA-data
-    c1_tolerance=[.8,2.4]    ; c_prec tolerance (irrelevant, as ranges are given in file)
-    c2_tolerance=[1.75,4.5]  ; DDF_snow tolerance - M1  (irrelevant, as ranges are given in file)
-
-    c2m3_tolerance=[7.,15.]     ; C1 tolerance - M3  
-    t_offset=0.              ; default temperature correction of re-analysis data
+c1_tolerance=[.8,2.4]    ; c_prec tolerance (irrelevant, as ranges are given in file)
+c2_tolerance=[1.75,4.5]  ; DDF_snow tolerance - M1  (irrelevant, as ranges are given in file)
+c2m3_tolerance=[7.,15.]     ; C1 tolerance - M3  
+t_offset=0.              ; default temperature correction of re-analysis data
 
 repeat_calibration='y'       ; Repeat calibration iteratively for Toff_grid until all glaciers are calibrated 
 
@@ -186,15 +140,10 @@ repeat_calibration='y'       ; Repeat calibration iteratively for Toff_grid unti
 ; other options
 
 read_parameters='y'         ; read parameters for individual glaciers / regions from file
-
 submonth_variability='y'    ; scheme to bring climate data to a submonthly scale
-
 reanalysis_direct='n'       ; Run model directly with re-analysis data, without downscaling of alternative series
-
 variability_bias='y'                             ; include bias in GCM variability
-
 hindcast_dynamic='n'        ; change glacier area during hindcast period AFTER date of RGI (not relevant in present version)
-
 write_file='y'              ; write results files?
 
 ; ***********
@@ -204,7 +153,6 @@ write_file='y'              ; write results files?
 
 dPdz=1.5                 ; [% per 100 m]   precipitation gradient (regionally specified in file!)
 c_prec=1.5               ; [-]  multiplication factor   correction factor (regionally specified in file!)
-
 snow_multiplier=1.2             ; [-] prescribing higher correction for snow falls
 T_thres=1.5                     ; [deg C]  temperature threshold solid-liquid, including transition period +-1 deg
 no_incprec=[0.75,1000,2,2]      ; precipitation reduction at very high elevation
@@ -245,7 +193,7 @@ debris_supraglacial='n'              ; ACTIVATE MODEL FOR SUPRAGLACIAL DEBRIS
 
 ; ------- refreezing / englacial temperature model
 
-refreezing_full='y'      ; ACTIVATE REFREEZING MODEL
+refreezing_full='n'      ; ACTIVATE REFREEZING MODEL
 
 firnice_temperature='n'      ; ACTIVATE ICE TEMPERATURE MODEL - compute firn/ice temperatures transiently (not just for refreezing)
    firnice_write=['y','y']   ; output of overall (time series, annual) and detailed (profiles, monthly) files

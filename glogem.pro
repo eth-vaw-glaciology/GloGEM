@@ -132,8 +132,8 @@ endif else begin
 endelse
 
 ; Create folders
-folder = GETENV('PWD') + '/r' + RGIversion + '_' + time_resolution + '/' + dir_region + '/' + calibration
-SPAWN, 'mkdir -p "' + folder + '"'
+;folder = GETENV('PWD') + '/' + dir_region + '/calibration'
+;SPAWN, 'mkdir -p "' + folder + '"'
 
 count_glaciers=1
 cali_calflux=0
@@ -146,7 +146,7 @@ if dir_region eq 'SouthernAndes' or dir_region eq 'Antarctic' or dir_region eq '
 ; removing preexisting t_offset file for initial calibration
 if calibrate eq 'y' then begin
    if catchment_selection ne '' then cc='_'+catchment_selection else cc=''
-   if rp_cali eq 0 then spawn, 'rm '+dircali+dir_region+'/calibration/toff_m'+meltmodel+'_cID'+string(calperiod_ID,fo='(i1)')+'_'+sub_region+cc+'.dat'
+   if rp_cali eq 0 then SPAWN, 'rm -f ' + dircali+dir_region+'/calibration/toff_m'+meltmodel+'_cID'+STRING(calperiod_ID,FORMAT='(I1)')+'_'+sub_region+cc+'.dat'
 endif
 
 
@@ -222,49 +222,65 @@ if calibration_phase eq '2' or calibration_phase eq '3' then read_parameters='y'
 ; -------------------------------------
 ; determine calibration periods and target
 if calibrate eq 'y' then begin
-
    if calibrate_glacierspecific eq 'n' then begin
-
       ii=where(calimb_regname eq dir_region and calimb_sregname eq sub_region and calimb_idname eq calperiod_ID,ci)
       if ci eq 0 then print, '!!! No calibration data available for this region / period !!!'
       target=calimb_bn[ii[0]] & target_uc=calimb_uc[ii[0]] & cran=[calimb_p0[ii[0]],calimb_p1[ii[0]]]
-
       ; *** glacier-specific calibration
    endif else begin
       target_spec=calimb_bn & cran=[min(calimb_p0),max(calimb_p1)]
    endelse
-
 endif
+
+; ------------------------------
+; generating folder structure
+if meltmodel eq '1' then mtt='' else mtt='_m3'
+
+; Get the current date and time
+a = systime()
+b = strsplit(a, ' ', /extract)
+date_str = strjoin(b, '_')
+tt = double(b[4]) - 1
+
+; Construct the directory path
+b = '/' + date_str + '/'
+;PRINT, b
+
+if tran[1] le tt then b='/PAST'+version_past+mtt
+
+SPAWN, 'mkdir -p ' + $
+   dirres + dir_region + ' ' + $
+   dirres + dir_region + '/calibration ' + $
+   dirres + dir_region + '/files' + mtt + ' ' + $
+   dirres + dir_region + '/PAST' + mtt + ' ' + $
+   dirres + dir_region + '/files/SINGLE ' + $
+   dirres + dir_region + '/files' + mtt + '/' + GCM_model[gcms] + ' ' + $
+   dirres + dir_region + '/files' + mtt + '/' + GCM_model[gcms] + '/' + GCM_rcp[rcps]
+SPAWN, 'chmod -R a+rx ' + dirres + dir_region
 
 ; --------------------------------------------------
 ; read parameter for individual regions from file
 
 if read_parameters eq 'y' then begin
-
    if calibration_phase eq '2' or calibration_phase eq '3' then a='' else a='_final_'+reanalysis
    if catchment_selection ne '' then cc='_'+catchment_selection else cc=''
-
-fn=dircali+dir_region+'/calibration/calibrate_m'+meltmodel+'_cID'+string(calperiod_ID,fo='(i1)')+'_'+sub_region+a+cc+'.dat'
-a=findfile(fn) & if a[0] eq '' then print,'!!! Parameter-File for '+sub_region+' is not available !!!'
-cnc=12+double(meltmodel)
-anz=file_lines(fn)-1 & da=dblarr(cnc,anz) & tt=strarr(1)
-openr,1,fn & readf,1,tt & readf,1,da & close,1
-
-
-; replace flagged values
-ii=where(da[cnc-1,*] eq 1,ci) & jj=where(da[cnc-1,*] eq 0,cj)
-if ci gt 0 and cj gt 0 and calibration_phase eq '1' then for i=8,9+double(meltmodel) do for j=0,cj-1 do da[i,jj[j]]=mean(da[i,ii])
-
-; attribute variables obtained from file
-cali_id=da[0,*]
-if meltmodel eq '1' then begin
-   cali_ddfice=da[9,*] & cali_ddfsnow=da[8,*] & cali_cprec=da[10,*] & cali_toff=da[11,*]
-endif
-if meltmodel eq '3' then begin
-   cali_c0=da[8,*] & cali_c1=da[9,*] & cali_a_ice=da[10,*] & cali_a_snow=da[11,*]
-   cali_cprec=da[12,*] & cali_toff=da[13,*]
-endif
-
+   fn=dircali+dir_region+'/calibration/calibrate_m'+meltmodel+'_cID'+string(calperiod_ID,fo='(i1)')+'_'+sub_region+a+cc+'.dat'
+   a=findfile(fn) & if a[0] eq '' then print,'!!! Parameter-File for '+sub_region+' is not available !!!'
+   cnc=12+double(meltmodel)
+   anz=file_lines(fn)-1 & da=dblarr(cnc,anz) & tt=strarr(1)
+   openr,1,fn & readf,1,tt & readf,1,da & close,1
+   ; replace flagged values
+   ii=where(da[cnc-1,*] eq 1,ci) & jj=where(da[cnc-1,*] eq 0,cj)
+   if ci gt 0 and cj gt 0 and calibration_phase eq '1' then for i=8,9+double(meltmodel) do for j=0,cj-1 do da[i,jj[j]]=mean(da[i,ii])
+   ; attribute variables obtained from file
+   cali_id=da[0,*]
+   if meltmodel eq '1' then begin
+      cali_ddfice=da[9,*] & cali_ddfsnow=da[8,*] & cali_cprec=da[10,*] & cali_toff=da[11,*]
+   endif
+   if meltmodel eq '3' then begin
+      cali_c0=da[8,*] & cali_c1=da[9,*] & cali_a_ice=da[10,*] & cali_a_snow=da[11,*]
+      cali_cprec=da[12,*] & cali_toff=da[13,*]
+   endif
 endif
 
 ; including gridded T-offsets in calibration
@@ -324,45 +340,6 @@ endif
 if lat0[0] eq 9999 then begin
    lat0=[min(lat_gl)-0.1,max(lat_gl)+0.1]
    lon0=[min(lon_gl)-0.1,max(lon_gl)+0.1]
-endif
-
-; ------------------------------
-; generating folder structure
-if meltmodel eq '1' then mtt='' else mtt='_m3'
-
-; Get the current date and time
-a = systime()
-b = strsplit(a, ' ', /extract)
-date_str = strjoin(b, '_')
-tt = double(b[4]) - 1
-
-; Construct the directory path
-b = '/' + date_str + '/'
-;PRINT, b
-
-if tran[1] le tt then b='/PAST'+version_past+mtt
-
-c=findfile(dirres+dir_region)
-if c[0] eq '' then begin
-   spawn,'mkdir '+dirres+dir_region & spawn,'chmod a+rx '+dirres+dir_region 
-   spawn,'mkdir '+dirres+dir_region+'/calibration' & spawn,'chmod a+rx '+dirres+dir_region+'/calibration' ; calibration folder
-   spawn,'mkdir '+dirres+dir_region+'/files'+mtt & spawn,'chmod a+rx '+dirres+dir_region+'/files'+mtt     ; result files
-   spawn,'mkdir '+dirres+dir_region+'/PAST'+mtt & spawn,'chmod a+rx '+dirres+dir_region+'/PAST'+mtt       ; past files
-endif
-
-c=findfile(dirres+dir_region+'/files/SINGLE') 
-if c[0] eq '' then begin
-   spawn,'mkdir '+dirres+dir_region+'/files/SINGLE' & spawn,'chmod a+rx '+dirres+dir_region+'/files/SINGLE'
-endif
-
-c=findfile(dirres+dir_region+'/files'+mtt+'/'+GCM_model[gcms])
-if c[0] eq '' then begin
-   spawn,'mkdir '+dirres+dir_region+'/files'+mtt+'/'+GCM_model[gcms] & spawn,'chmod a+rx '+dirres+dir_region+'/files'+mtt+'/'+GCM_model[gcms]
-endif
-c=findfile(dirres+dir_region+'/files'+mtt+'/'+GCM_model[gcms]+'/'+GCM_rcp[rcps])
-if c[0] eq '' then begin
-   spawn,'mkdir '+dirres+dir_region+'/files'+mtt+'/'+GCM_model[gcms]+'/'+GCM_rcp[rcps]
-   spawn,'chmod a+rx '+dirres+dir_region+'/files'+mtt+'/'+GCM_model[gcms]+'/'+GCM_rcp[rcps]
 endif
 
 ; ------------------------------
@@ -516,7 +493,6 @@ gys=strcompress(string(rmid[1],fo='(f7.2)'),/remove_all)
 if reanalysis_direct eq 'n' then begin
 
    @procedures/read/read_gcmdata_daily.pro
-
    @procedures/processing/downscale_gcmdata_daily.pro
 
 endif
@@ -528,9 +504,7 @@ endif    ; daily time resolution
 if time_resolution eq 'monthly' then begin
 
    gmid=[mean(latitudes),mean(longitudes)]
-
    @procedures/processing/downscale_gcmdata_monthly.pro
-
    @procedures/processing/gradient_variability_monthly.pro
 
 endif
