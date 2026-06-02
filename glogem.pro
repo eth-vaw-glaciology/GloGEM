@@ -688,7 +688,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
         ; write file for volume below sea level
         if calibrate ne 'y' and write_file eq 'y' then begin
-          @procedures/write/write_volume_below_sealevel.pro
+          @procedures/write/write_volume_below_sea_level.pro
         endif
 
         ; copying time-stamped input.pro into the output folder
@@ -711,7 +711,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
 endfor                          ; RCPs
 
-                                ; GCMs
+endfor                          ; GCMs
 
 toc ; print runtime
 
