@@ -484,24 +484,7 @@ if adv_lookup eq 'y' then adv_lookup_data=dblarr(3,nb,years)
 ; ********************************************
 ; MAIN LOOP over years
 
-if hindcast_dynamic eq 'y' then glacier_retreat='n'   
-if find_startyear eq 'y' then glacier_retreat='n'   
-if find_startyear eq 'n' then glacier_retreat='n'     ; unsure if well solved... static/dynamic runs (=> glogemflow) just separated by find_startyear
-
-ccmon=0l
-
-te_rf=dblarr(nb,rf_layers) & tl_rf=te_rf 
-
-; firn/ice temperature, lowermost layer: bottom of ice if thick > domain
-; initialise with long-term annual mean air temperature to get efficient spin up
-tt=dblarr(nb) & ii=where(cyear lt 2020,ci)
-for i=0,nb-1 do begin
-   if ci gt 0 then a=temp[ii]+(elev[i]-hclim)*mean(dtdz)+t_offset $
-     else a=temp+(elev[i]-hclim)*mean(dtdz)+t_offset
-   tt[i]=mean(a)
-endfor
-te_fit=dblarr(nb,total(fit_layers)+1)
-for i=0,nb-1 do te_fit[i,*]=tt[i] & tl_fit=te_fit 
+@procedures/initialise/initialise_firnicetemp_spinup.pro
 
 
 for ye=0,years-1 do begin
@@ -720,7 +703,7 @@ endfor                          ; CALIBRATION 1 - single glacier mass balance
 ; write calibration file
 if calibrate eq 'y' then begin
    @procedures/write/write_calibration_results.pro
-      
+
 endif
 
 cali_calflux=cali_calflux+mean(flux_calv)/1000.*ar_gl
@@ -853,7 +836,7 @@ endif
 
 endfor                          ; RCPs
 
-endfor                          ; GCMs
+                                ; GCMs
 
 toc
 
