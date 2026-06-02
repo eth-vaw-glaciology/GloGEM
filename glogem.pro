@@ -881,7 +881,7 @@ endif
 ; ------------------------
 ; write firn-ice temperature
 if firnice_temperature eq 'y' then begin
-   @procedures/write/write_firnicetemp_file.pro
+   @procedures/write/write_firnicetemp.pro
 endif
 
 ; *******************************************************
