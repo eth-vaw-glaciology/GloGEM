@@ -1591,14 +1591,7 @@ endfor                          ; experiments
 
 ; zipping and removing files
 if write_hypsometry_files eq 'y' then begin
-   if meltmodel eq '1' then mtt='' else mtt='_m3'
-   b='/files'+mtt+'/'+GCM_model[gcms]+'/'+GCM_rcp[rcps]
-   if reanalysis_direct eq 'y' then b='/PAST'
-   ; zipping automatically,  but not for RGI-regions with subregions
-   if region ne 'lowlatitudes' and region ne 'antarctic' and region ne 'northasia' then begin
-      spawn, 'zip -r '+dirres+dir_region+b+'/hypsometry.zip  '+dirres+dir_region+b+'/hypsometry'
-      spawn, 'rm -r '+dirres+dir_region+b+'/hypsometry'
-   endif
+   @procedures/write/zip_and_clean_hypsometry_files.pro
 endif
 
 endfor                          ; RCPs
