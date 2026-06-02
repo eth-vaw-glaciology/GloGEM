@@ -913,9 +913,7 @@ endif
 ; --------------------------------
 ; write file for volume below sea level
 if calibrate ne 'y' and write_file eq 'y' then begin
-   for i=0,years-1 do printf,7,tran[0]+i,vol_bz[i],fo='(i4,f12.2)'
-   close,7
-   close,33
+   @procedures/write/write_volume_below_sealevel.pro
 endif
 
 ; --------------------------------
