@@ -32,7 +32,7 @@ dir_data_alt = main_dir+'/geometricdata/'+'rgiv'+RGIversion+'/bands/bands_HF2012
 dir_clim     = main_dir+'climatedata/'                                  ; climate data
 
 ; output (same machine as you run on)scratch via the network
-dirres='/scratch_net/vierzack05_fourth/lvantrich/GloGEM/' ; Output folder  (same machine as you run on) scratch via the network
+dirres='/scratch_net/vierzack04_fourth/jabeer/GloGEM/hackathon_test_outputs' ; Output folder  (same machine as you run on) scratch via the network
 
 ; --- region selection
 region_id_loop=[14,14]             ; Specify IDs of regions to be run according to region_batch.dat
@@ -53,14 +53,14 @@ catchment_selection=''             ; Leave empty if running a single glacier or 
 
 tran=[1950,2100]                   ; Time period of modelling. It uses reanalysis data as long as possible
 find_startyear='y'                 ; Automatically determine first year of future modelling (based on date of inventory); 'n' ALSO to drive static output for GloGEMflow
-calibrate = 'n'                    ; Calibrate model? 'y' to calibrate, 'n' to run model with given parameters
+calibrate = 'y'                    ; Calibrate model? 'y' to calibrate, 'n' to run model with given parameters
 ;calibrate='n' & tran=[1980,2019]  ; DO NOT CALIBRATE, BUT RUN MODEL FOR PAST   => output to PAST/
 meltmodel='1'                      ; Select melt model to be used - 1: Classic degree-day model -  3: Simple energy-balance model (Oerlemans,2001)
 
 ; ---------------------------------------
 ; climate data
 ; --------------------------------------
- 
+
 ; --- GCM data specifications
 CMIP6='y'                          ; CMIP6 GCMs to be used?
 long_GCM=''                        ; Runs until 2100

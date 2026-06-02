@@ -13,7 +13,7 @@ compile_opt idl2
 ; defining where procedures are found
 CD, CURRENT=base_dir ; define base directory
 a = !path            ; save current path
-!PATH = a + ':' + base_dir + '/procedures/read/:' + base_dir + '/procedures/write/:' + base_dir + '/procedures/processing/:' ; add path to procedures
+!PATH = a + ':' + base_dir + '/functions/:' + base_dir + '/procedures/read/:' + base_dir + '/procedures/write/:' + base_dir + '/procedures/processing/:' ; add path to procedures and functions
 
 ; ******************************************************************
 ; saving/reading input file settings at the start of the main run
