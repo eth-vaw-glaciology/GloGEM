@@ -725,8 +725,14 @@ tg=temp[jjclim[0]+ccmon]+(elev-hclim)*dtdz[m-1]+t_offset
 ; ***********  refreezing (positive)
 
 if refreezing_full eq 'y' then begin
-   @procedures/processing/refreezing_full.pro
-endif
+@procedures/processing/refreezing_full.pro
+endif else begin
+   if refreezing_parametrised eq 'y' then begin
+      @procedures/processing/refreezing_parametrised.pro
+   endif else begin
+      ; no refreezing
+   endelse
+endelse
 
 ; ***************************************
 ; ***********  firn/ice temperatures

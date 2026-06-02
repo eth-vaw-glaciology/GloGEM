@@ -187,23 +187,24 @@ debris_supraglacial='n'              ; ACTIVATE MODEL FOR SUPRAGLACIAL DEBRIS
    debris_thickening='y'       ; thickening of debris over time
       debris_thick_gradient=1.0  ; [cm a-1 km-1]  thickening linearly increasing from ELA towards glacier terminus
 
-; ------- refreezing / englacial temperature model
+; ------- Refreezing 
 
-refreezing_full='n'      ; ACTIVATE REFREEZING MODEL
+refreezing_full='n'              ; ACTIVATE FULL REFREEZING MODEL (takes very long)
+refreezing_parametrised='y'      ; ACTIVATE REFREEZING MODEL (takes much shorter, but still some time)
 
-firnice_temperature='n'      ; ACTIVATE ICE TEMPERATURE MODEL - compute firn/ice temperatures transiently (not just for refreezing)
-   firnice_write=['y','y']   ; output of overall (time series, annual) and detailed (profiles, monthly) files
-   firnice_batch='y'      ; run batch (all sites contained in icetemperature_batch.dat)
-      ; only relevant if defined manually (firnice_runbatch='n' )
-      firnice_profile=[0.2,0.65,0.95]      ; (max 3.) manually inserting elevations of profiles to be written (<1: ratio of elev. range, >1: masl)
-     ; firnice_profile=[3000,3500,4000]
+; ------- Englacial temperature model
 
-   enable_advection='n'      ; ACTIVATE ADVECTION OF TEMPERATURE IN FIRN/ICE
-   advection_write='n'       ; write out advection of temperature in firn/ice
-
+firnice_temperature='n'          ; ACTIVATE ICE TEMPERATURE MODEL - compute firn/ice temperatures transiently (not just for refreezing)
+firnice_write=['y','y']          ; output of overall (time series, annual) and detailed (profiles, monthly) files
+firnice_batch='y'                ; Run batch (all sites contained in icetemperature_batch.dat)
+; only relevant if defined manually (firnice_runbatch='n' )
+firnice_profile=[0.2,0.65,0.95]      ; (max 3.) manually inserting elevations of profiles to be written (<1: ratio of elev. range, >1: masl)
+; firnice_profile=[3000,3500,4000]
+enable_advection='n'             ; ACTIVATE ADVECTION OF TEMPERATURE IN FIRN/ICE
+advection_write='n'              ; write out advection of temperature in firn/ice
 ; activate/deactivate permeability model
-firn_permeability = 'y' ; 'y' to activate firn permeability model
-ice_permeability  = 'n' ; 'y' to activate ice  permeability model
+firn_permeability = 'y'          ; 'y' to activate firn permeability model
+ice_permeability  = 'n'          ; 'y' to activate ice  permeability model
 
 ; ----- glacier retreat module
 
