@@ -12,6 +12,15 @@ a = !path            ; save current path
 fn='input.pro' & anz=file_lines(fn) & input_file_content=strarr(anz)
 openr,1,fn & readf,1,input_file_content & close,1
 
+; open log file to capture all console output
+spawn, 'mkdir -p ' + base_dir + '/logs'
+a=systime() & b=strsplit(a,' ',/extract)
+log_timestamp=string(b[4],fo='(a4)')+string(b[1],fo='(a3)')+string(b[2],fo='(a2)')+$
+              '_'+strjoin(strsplit(b[3],':',/extract),'h')+'m'
+log_file=base_dir+'/logs/glogem_'+log_timestamp+'.log'
+journal, log_file
+print, 'Log file: '+log_file
+
 ; Some information to show which model we are running
 if time_resolution eq 'daily' then begin
   print, '                    We are running GloGEM daily'
@@ -672,5 +681,7 @@ endfor                          ; GCMs
 toc ; print runtime
 
 if plot eq 'y' or areaplot eq 'y' then device,/close_file
+
+journal  ; close log file
 
 end
