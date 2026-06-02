@@ -625,7 +625,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
                   ; write firn-ice temperature
                   if firnice_temperature eq 'y' then begin
-                    @procedures/write/write_firnicetemp.pro
+                    @procedures/write/write_firnicetemp_file.pro
                   endif
 
                   ; plot of mass balance and profile for individual glacier!!!
