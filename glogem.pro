@@ -460,26 +460,8 @@ flux_calv=areas
 sur=dblarr(nb) & sno=sur & snostor=sur
 firn=sur & ff=where(elev gt hmed[gg[g]],ci) & if ci gt 0 then firn[ff]=1
 baly=dblarr(years,nb)
-if nb gt elev_range_p/step and plot eq 'y' then begin
-   accy=baly & mely=baly & refry=baly
-endif
-if time_resolution eq 'daily' then begin
-   if outf_names[14] ne '' then begin
-      accday=dblarr(years*365.)+snoval & rainday=accday & snowmeltday=accday & refrday=accday & discharge_gl=accday & icemeltday=accday & snowlineday=accday
-   endif
-   discharge=dblarr(years*365.)
-endif else begin
-   if outf_names[14] ne '' then begin
-      balmo=dblarr(years*12)+snoval & melmo=balmo & accmo=balmo & refrmo=balmo & discharge_gl=balmo & precmo=balmo
-   endif
-   discharge=dblarr(years*12.)
-endelse
-mb=dblarr(years)+snoval & wb=mb
-smelt=dblarr(years) & imelt=smelt & accum=smelt & rain=smelt & refre=smelt
-ela=dblarr(years)+snoval & dbdz=ela & btongue=ela & aar=ela & hmin_g=ela
-area_cat=total(area)
-
-if adv_lookup eq 'y' then adv_lookup_data=dblarr(3,nb,years)
+; initialising some output arrays
+@procedures/initialise/initialise_output_arrays.pro
 
 ; ********************************************
 ; MAIN LOOP over years
