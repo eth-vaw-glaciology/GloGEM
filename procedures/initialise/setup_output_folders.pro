@@ -9,6 +9,7 @@
 compile_opt idl2
 
 if meltmodel eq '1' then mtt='' else mtt='_m3'
+if meltmodel eq '1' and calperiod_ID eq 8 then mtt='_debris'
 
 a = systime()
 b = strsplit(a, ' ', /extract)
