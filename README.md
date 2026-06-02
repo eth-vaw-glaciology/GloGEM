@@ -19,6 +19,28 @@ GloGEM is a “glacier centric model”, which means that it runs for each glaci
 it relies on the glacier inventory to properly separate the individual glacier entities by the ice divides, ensuring that all ice in a glacier 
 basin flows towards a single glacier terminus.
 
-## Input settings
+## Setup (personal configuration)
 
-If you want to look up available region IDs, climate subregions, or CMIP6 GCM codes for configuring `input.pro`, see the [Input Settings Reference](INPUT_SETTINGS.md).
+GloGEM separates shared model settings from personal/machine-specific settings:
+
+- **`settings.pro`** — shared model configuration committed to the repository. Do not add personal paths or experiment-specific values here.
+- **`~/.glogem/config.pro`** — your personal overrides (output directory, region selection, run mode, etc.). Lives in your home directory, never touched by git.
+
+**One-time setup per machine:**
+
+```bash
+mkdir -p ~/.glogem
+cp config.pro.example ~/.glogem/config.pro
+```
+
+Then open `~/.glogem/config.pro` and set at minimum your output directory:
+
+```idl
+dirres = '/path/to/your/output/directory'
+```
+
+Any setting from `settings.pro` can be overridden in your personal config. The model will stop with a clear error if `dirres` is not set.
+
+## Input settings reference
+
+If you want to look up available region IDs, climate subregions, or CMIP6 GCM codes for configuring your run, see the [Input Settings Reference](INPUT_SETTINGS.md).

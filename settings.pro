@@ -34,7 +34,7 @@ dir_clim     = main_dir+'climatedata/'                                  ; climat
 ; Output (same machine as you run on)scratch via the network
 ; This is th only folder you need to change to store the results on your machine, 
 ; The rest of the paths are defined relative to this one
-dirres='/scratch_net/vierzack04_fourth/jabeer/GloGEM/hackathon_test_outputs' ; Output folder  (same machine as you run on) scratch via the network
+dirres=''  ; set this in ~/.glogem/config.pro (see config.pro.example)
 
 ; --- region selection
 region_id_loop=[14,14]             ; Specify IDs of regions to be run according to region_batch.dat
@@ -328,6 +328,33 @@ if time_resolution eq 'monthly' then mon_len=[31,28,31,30,31,30,31,31,30,31,30,3
 
 ; only partially implemented for daily version and unsure whether it would actually work out...
 variability_bias_longterm='n'        ; include bias in GCM variability from month to month
+
+; ----------------------
+; User-specific overrides
+; Create ~/.glogem/config.pro to override any of the settings above.
+; See config.pro.example in this repository for a template.
+user_config = getenv('HOME') + '/.glogem/config.pro'
+if file_test(user_config) then begin
+  n = file_lines(user_config)
+  lines = strarr(n)
+  openr, lun, user_config, /get_lun
+  readf, lun, lines
+  free_lun, lun
+  stmt = ''
+  for i = 0, n-1 do begin
+    line = strtrim(lines[i], 2)
+    if line eq '' or strmid(line, 0, 1) eq ';' then continue
+    if strmid(line, strlen(line)-1, 1) eq '$' then begin
+      stmt += strmid(line, 0, strlen(line)-1) + ' '
+    endif else begin
+      stmt += line
+      void = execute(stmt)
+      stmt = ''
+    endelse
+  endfor
+  print, 'Loaded user config: ' + user_config
+endif
+if dirres eq '' then message, 'dirres is not set. Add it to ~/.glogem/config.pro (see config.pro.example).'
 
 ; ----------------------
 ; IF - THEN for options (automatic exclusion - to avoid erroneous runs)

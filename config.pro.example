@@ -1,0 +1,61 @@
+; GloGEM user configuration
+; Copy this file to ~/.glogem/config.pro and uncomment/set the values you want to override.
+; Settings here are applied after settings.pro, so anything set here takes precedence.
+;
+; Setup (run once per machine):
+;   mkdir -p ~/.glogem
+;   cp config.pro.example ~/.glogem/config.pro
+;   (then edit ~/.glogem/config.pro with your values)
+
+; -----------------------------------------------------------------------
+; OUTPUT DIRECTORY  (set this - it is different for every user / server)
+; -----------------------------------------------------------------------
+;dirres = '/scratch_net/yourserver/yourusername/GloGEM/output'
+
+; -----------------------------------------------------------------------
+; RUN SELECTION  (change these per experiment)
+; -----------------------------------------------------------------------
+;region_id_loop = [14, 14]       ; region IDs to run (see region_batch.dat)
+;single_glacier = '01450'        ; single glacier RGI ID ('' to disable)
+;catchment_selection = ''        ; catchment name ('' for single glacier or full region)
+;size_range = [0.002, 100000]    ; [km2] glacier size filter
+
+; -----------------------------------------------------------------------
+; RUN MODE
+; -----------------------------------------------------------------------
+;calibrate = 'n'                 ; 'y' to calibrate, 'n' to run with given parameters
+;time_resolution = 'daily'       ; 'daily' or 'monthly'
+;tran = [1940, 2100]             ; modelling time period
+;long_GCM = ''                   ; '' for runs to 2100, 'long_' for runs to 2300
+
+; -----------------------------------------------------------------------
+; GCM SELECTION
+; -----------------------------------------------------------------------
+;short_gcmchoice = [1, 1, 1]    ; [GCM, SSP, experiment] indices - 0 for full batch
+;first_GCM = 0                  ; starting GCM index for batch processing
+
+; -----------------------------------------------------------------------
+; REANALYSIS
+; -----------------------------------------------------------------------
+;reanalysis = 'era5'             ; 'era5', 'era5land', 'chelsaw5e5', 'gswp3w5e5', 'ch2018'
+;rea_eval = [1980, 2025]         ; time period for evaluating GCM bias
+
+; -----------------------------------------------------------------------
+; OUTPUT
+; -----------------------------------------------------------------------
+;full_output = 'n'               ; 'y' for extended output files
+;write_file = 'y'                ; 'y' to write result files
+;write_mb_elevationbands = 'n'   ; 'y' to write seasonal MB in elevation bands
+;write_hypsometry_files = 'n'    ; 'y' to write annual hypsometry
+
+; -----------------------------------------------------------------------
+; MODEL PHYSICS (rarely changed - only for sensitivity studies)
+; -----------------------------------------------------------------------
+;meltmodel = '1'                 ; '1': degree-day model, '3': simple energy-balance
+;debris_supraglacial = 'n'       ; 'y' to activate supraglacial debris model
+;refreezing_full = 'n'           ; 'y' to activate full refreezing model (slow)
+;refreezing_parametrised = 'y'   ; 'y' to activate parametrised refreezing
+;firnice_temperature = 'n'       ; 'y' to activate ice temperature model
+;glacier_retreat = 'y'           ; 'y' to activate glacier geometry change
+;frontal_ablation = 'y'          ; 'y' to activate frontal ablation model
+;bias_correction = 'y'           ; 'y' to apply GCM bias correction

@@ -9,7 +9,7 @@ a = !path            ; save current path
 !PATH = a + ':' + base_dir + '/functions/:' + base_dir + '/procedures/read/:' + base_dir + '/procedures/write/:' + base_dir + '/procedures/processing/:' ; add path to procedures and functions
 
 ; saving/reading input file settings at the start of the main run
-fn='input.pro' & anz=file_lines(fn) & input_file_content=strarr(anz)
+fn='settings.pro' & anz=file_lines(fn) & input_file_content=strarr(anz)
 openr,1,fn & readf,1,input_file_content & close,1
 
 ; open log file to capture all console output
@@ -648,7 +648,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
           @procedures/write/write_volume_below_sea_level.pro
         endif
 
-        ; copying time-stamped input.pro into the output folder
+        ; copying time-stamped settings.pro into the output folder
         if calibrate ne 'y' then begin
           @procedures/write/copy_input_to_output.pro
         endif

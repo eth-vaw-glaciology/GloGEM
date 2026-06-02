@@ -2,7 +2,7 @@
 ; Meltmodel of the mass balance model
 ; ***************************************
 ; This procedure calculates the surface ablation (melt) of the glacier for each elevation band.
-; Two meltmodels can be used which are selected in the input.pro file (meltmodel = '1' or '3').
+; Two meltmodels can be used which are selected in settings.pro (meltmodel = '1' or '3').
 ; Meltmodel = 1 is a simple degree-day model with different degree-day factors for snow, firn and ice.
 ; Meltmodel = 3 is an simplified degree-day model which includes the effect of shortwave radiation and albedo.
 ; The melt is calculated for each month/day and then converted to m w.e. per year.
