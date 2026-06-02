@@ -494,7 +494,7 @@ gys=strcompress(string(rmid[1],fo='(f7.2)'),/remove_all)
 if reanalysis_direct eq 'n' then begin
 
    @procedures/read/read_gcmdata_daily.pro
-   @procedures/processing/downscale_gcmdata_daily_new.pro
+   @procedures/processing/downscale_gcmdata_daily.pro
 
 endif
 
