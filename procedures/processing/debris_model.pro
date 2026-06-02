@@ -1,5 +1,5 @@
 ; ******************************
-; Debris model of the Mass balance model
+; Debris model
 ; ******************************
 ; This procedure simulates the dynamic evolution of supraglacial debris and melt ponds on a glacier.
 ; It first determines a median elevation based on the Equilibrium Line Altitude (ELA) and the initial glacier area.
