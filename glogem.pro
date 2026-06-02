@@ -232,29 +232,7 @@ endif
 
 ; ------------------------------
 ; generating folder structure
-if meltmodel eq '1' then mtt='' else mtt='_m3'
-
-; Get the current date and time
-a = systime()
-b = strsplit(a, ' ', /extract)
-date_str = strjoin(b, '_')
-tt = double(b[4]) - 1
-
-; Construct the directory path
-b = '/' + date_str + '/'
-;PRINT, b
-
-if tran[1] le tt then b='/PAST'+version_past+mtt
-
-SPAWN, 'mkdir -p ' + $
-   dirres + dir_region + ' ' + $
-   dirres + dir_region + '/calibration ' + $
-   dirres + dir_region + '/files' + mtt + ' ' + $
-   dirres + dir_region + '/PAST' + mtt + ' ' + $
-   dirres + dir_region + '/files/SINGLE ' + $
-   dirres + dir_region + '/files' + mtt + '/' + GCM_model[gcms] + ' ' + $
-   dirres + dir_region + '/files' + mtt + '/' + GCM_model[gcms] + '/' + GCM_rcp[rcps]
-SPAWN, 'chmod -R a+rx ' + dirres + dir_region
+@procedures/initialise/setup_output_folders.pro
 
 ; --------------------------------------------------
 ; read parameter for individual regions from file
