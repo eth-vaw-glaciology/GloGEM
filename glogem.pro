@@ -95,16 +95,8 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
           count_glaciers=1
           cali_calflux=0
 
-          ; Define start of mass balance year
-          if time_resolution eq 'daily' then dd_thresholds=[121,181,274,365] else dd_thresholds=[4,7,10,12]
-          bal_month=dd_thresholds[2]
-          if dir_region eq 'SouthernAndes' or dir_region eq 'Antarctic' or dir_region eq 'LowLatitudes' or dir_region eq 'NewZealand' then bal_month=dd_thresholds[0]
-
-          ; removing preexisting t_offset file for initial calibration
-          if calibrate eq 'y' then begin
-            if catchment_selection ne '' then cc='_'+catchment_selection else cc=''
-            if rp_cali eq 0 then SPAWN, 'rm -f ' + dircali+dir_region+'/calibration/toff_m'+meltmodel+'_cID'+STRING(calperiod_ID,FORMAT='(I1)')+'_'+sub_region+cc+'.dat'
-          endif
+          ; Define start of mass balance year and clean stale t_offset
+          @procedures/initialise/setup_massbalance_year.pro
 
           ; READING MONTHLY CLIMATE DATA (gridded format)
           if time_resolution eq 'monthly' then begin
