@@ -97,7 +97,7 @@ reanalysis='era5land'            ; Reanalysis data set, grid step is 0.1
 rea_eval=[1980,2025]              ; Important setting -> Time period for evaluating the bias of GCMs
 grid_step=0.1                     ; Grid stepping of reanalysis data set
 bias_correction='y'               ; Bias correction of GCM data based on re-analysis data? 'y' to activate, 'n' to use GCM data as they are
-bias_correction_method=1          ; 1: Bias correction based on delta method; 2: Bias correction based on quantile mapping, working only for daily model and temperature for now
+bias_correction_method=2          ; 1: Bias correction based on delta method; 2: Bias correction based on quantile mapping, working only for daily model and temperature for now
 
 ; --------------------------------------
 ; calibration (main setting given in the beginning)

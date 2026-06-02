@@ -1,14 +1,14 @@
 compile_opt idl2
 
 if bias_correction eq 'y' then begin
-   print, 'Performing bias correction of GCM data...'
+   ;print, 'Performing bias correction of GCM data...'
    if bias_correction_method eq 1 then begin
       @procedures/processing/bias_correction_delta.pro
    endif else if bias_correction_method eq 2 then begin
       @procedures/processing/bias_correction_qm.pro
    endif
 endif else begin
-   print, 'No bias correction of GCM data...'
+   ;print, 'No bias correction of GCM data...'
 endelse
   
 ; write Bias-file
