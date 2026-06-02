@@ -1,12 +1,5 @@
-; ****************************************************
-; ****************************************************
-; ****************************************************
 
 ; MAIN GloGEM-Code (modular)
-
-; ****************************************************
-; ****************************************************
-; ****************************************************
 
 compile_opt idl2
 
@@ -15,12 +8,10 @@ CD, CURRENT=base_dir ; define base directory
 a = !path            ; save current path
 !PATH = a + ':' + base_dir + '/functions/:' + base_dir + '/procedures/read/:' + base_dir + '/procedures/write/:' + base_dir + '/procedures/processing/:' ; add path to procedures and functions
 
-; ******************************************************************
 ; saving/reading input file settings at the start of the main run
 fn='input.pro' & anz=file_lines(fn) & input_file_content=strarr(anz)
 openr,1,fn & readf,1,input_file_content & close,1
 
-;*******************************************************************
 ; Some information to show which model we are running
 if time_resolution eq 'daily' then begin
   print, '                    We are running GloGEM daily'
@@ -34,8 +25,6 @@ endif else begin
 endelse
 print, catchment_selection
 print, reanalysis
-;********************************************************************
-; --------------------------------------------
 ; READ batch-file for individual glaciers (icetemperature-batch)
 
 if firnice_temperature eq 'y' then begin
@@ -45,20 +34,11 @@ if firnice_temperature eq 'y' then begin
   endif
 endif
 
-; ***************************************************
-; ***************************************************
-; ***************************************************
-
-; START OF PROGRAM
-
-; ***************************************************
-; ***************************************************
-; ***************************************************
+; === START OF PROGRAM
 
 tic
 
-; *******************************************
-; LOOP OVER DIFFERENT GCMs
+; === LOOP OVER DIFFERENT GCMs
 
 for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
@@ -66,15 +46,13 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
   if reanalysis_direct ne 'y' then tran[1]=2100
   if long_GCM ne '' then tran[1]=2300
 
-  ; -------------------
-  ; LOOP OVER DIFFERENT RCPs/SSPs
+  ; === LOOP OVER DIFFERENT RCPs/SSPs
 
   if rcp_batch[0] ne 0 then ne_GCM_rcp=rcp_batch[gcms] else ne_GCM_rcp=n_elements(GCM_rcp)
 
   for rcps=0,ne_GCM_rcp-1 do begin
 
-    ; -------------------
-    ; LOOP OVER DIFFERENT Experiments
+    ; === LOOP OVER DIFFERENT Experiments
 
     if expe_batch[0] ne 0 then ne_GCM_experiment=expe_batch[gcms] else ne_GCM_experiment=n_elements(GCM_experiment)
 
@@ -84,8 +62,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
       @procedures/read/read_regionbatch.pro
 
-      ; ********************************************************
-      ; LOOP individual glaciers in different regions specified in batch
+      ; === LOOP individual glaciers in different regions specified in batch
       ; file (icetemperature_batch.dat)
 
       if firnice_batch eq 'y' then firnice_batch_loop=nffbl else firnice_batch_loop=1
@@ -104,8 +81,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
           firnice_maxdepth=[firnice_batch_data1[2,ffbl]]
         endif
 
-        ; ********************************************************
-        ; LOOP over different regions
+        ; === LOOP over different regions
 
         for re=0,region_id_loop[1]-region_id_loop[0] do begin
 
@@ -132,7 +108,6 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
             if sub_region eq '' then sub_region=region
           endelse
 
-
           count_glaciers=1
           cali_calflux=0
 
@@ -146,7 +121,6 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
             if catchment_selection ne '' then cc='_'+catchment_selection else cc=''
             if rp_cali eq 0 then SPAWN, 'rm -f ' + dircali+dir_region+'/calibration/toff_m'+meltmodel+'_cID'+STRING(calperiod_ID,FORMAT='(I1)')+'_'+sub_region+cc+'.dat'
           endif
-
 
           ; READING MONTHLY CLIMATE DATA (gridded format)
           if time_resolution eq 'monthly' then begin
@@ -162,7 +136,6 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
           endif
 
-
           ; attribute updated space ranges to be calculated
           lat0=[9999,9999]        ; run for entire region
           lon0=[0,0]        ; or specify sub-regions
@@ -172,7 +145,6 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
             lon0=[min(rvlon)-0.1,max(rvlon)]
           endif
 
-          ; -----------------------------
           ; read regional parameter file
 
           if regparams_readfromfile eq 'y' then begin
@@ -181,16 +153,11 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
           if catchment_selection ne '' then size_range=[0,100000.]
 
-          ; -----------------------------
           ; read calibration data file (REGIONAL MEAN MASS BALANCE)
           if calibrate eq 'y' then begin
             @procedures/calibration/read_calibration_targets.pro
           endif
 
-
-          ; *************************************************************
-
-          ; ------------
           ; Loop over three calibration phases
           caliphase_statistics=dblarr(4)   ; info on top and low values for c_prec
 
@@ -199,17 +166,14 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
             if cphl gt 1 then calibration_phase=string(cphl,fo='(i1)')
             if calibration_phase eq '2' or calibration_phase eq '3' then read_parameters='y'
 
-            ; -------------------------------------
             ; determine calibration periods and target
             if calibrate eq 'y' then begin
               @procedures/calibration/determine_calibration_target.pro
             endif
 
-            ; ------------------------------
             ; generating folder structure
             @procedures/initialise/setup_output_folders.pro
 
-            ; --------------------------------------------------
             ; read parameter for individual regions from file
 
             if read_parameters eq 'y' then begin
@@ -226,7 +190,6 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
             C0=double(C0) & C1=double(C1)
             c_prec=double(c_prec)
 
-            ; --------------------------------------------
             ; read batch file for all glaciers to be considered
             ; (taken from ice thickness data set)
             @procedures/read/read_glacier_inventory_batchfile.pro
@@ -235,7 +198,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
             ii=where(survey_year ne noval,ci) & jj=where(survey_year eq noval,cj)
             if ci gt 0 and cj gt 0 then survey_year[jj]=mean(survey_year[ii])
 
-            ;if find_startyear eq 'y' then tran(0)=max([1980,min(survey_year)])
+            ; if find_startyear eq 'y' then tran(0)=max([1980,min(survey_year)])
             years=tran[1]-tran[0]+1
 
             nout=fix(years/outst)+1
@@ -255,7 +218,6 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
               lon0=[min(lon_gl)-0.1,max(lon_gl)+0.1]
             endif
 
-            ; ------------------------------
             ; open result files
             if calibrate ne 'y' and write_file eq 'y' then begin
               @procedures/initialise/initialise_results_files.pro
@@ -267,9 +229,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
             endif
 
-
-            ; ******************************
-            ; CALIBRATION LOOP - for overall calibration on entire region
+            ; === CALIBRATION LOOP - for overall calibration on entire region
 
             cal0max=0
             if calibrate eq 'y' and calibrate_individual ne 'y' then cal0max=20
@@ -283,7 +243,6 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
               vol_bz=dblarr(years)    ; define array for storing ice volume below sea level
 
-              ; ******************************
               ; LOOPs over grids
 
               ; determine the range of glaciers that are covered in region
@@ -315,8 +274,6 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                     lat=[lat0[0]+gy*grid_step,lat0[0]+gy*grid_step+grid_step]
                   endif
 
-
-                  ; ---------------------------
                   ; select glacier subsample to be calculated
                   if lat[0] ne -99 and size_range[0] ne -99 then gg=where(xy[1,*] gt lat[0] and xy[1,*] lt lat[1] and xy[0,*] gt lon[0] and xy[0,*] lt lon[1] and a_gl gt size_range[0] and a_gl lt size_range[1] and volume_ini gt 0,cg)
                   if lat[0] ne -99 and size_range[0] eq -99 then gg=where(xy[1,*] gt lat[0] and xy[1,*] lt lat[1] and xy[0,*] gt lon[0] and xy[0,*] lt lon[1] and volume_ini gt 0,cg)
@@ -328,7 +285,6 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                   ; storage arrays
                   stor_im=dblarr(nout) & stor_dv=stor_im & stor_ar=stor_im & stor_vo=stor_im
 
-                  ; ******************************************
                   ; climate series - read individual series for every evaluation cell!
 
                   if cg gt 0 then begin
@@ -337,7 +293,6 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                     if total(a_gl[gg]) gt 10. and gx mod 2 eq 0 and gy mod 2 eq 0 then $
                     print, dir_region+' '+clim_subregion+' ('+a+'): '+string(mean(lat),fo='(f5.1)')+'/'+string(mean(lon),fo='(f6.1)')+$
                     ', '+string(total(a_gl[gg]),fo='(i5)')+'km2 ('+string(cg,fo='(i4)')+')'
-
 
                     ; SPLIT between DAILY climate data and MONTHLY climate data
                     ; (not yet in procedures for monthly...)
@@ -348,13 +303,10 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                       gxs=strcompress(string(rmid[0],fo='(f7.2)'),/remove_all)
                       gys=strcompress(string(rmid[1],fo='(f7.2)'),/remove_all)
 
-                      ; ------------------------------
                       ; meteo time series read from re-analysis data (past)
 
                       @procedures/read/read_climatepast_daily.pro
 
-                      ; ---------------------------------
-                      ; ---------------------------------
                       ; meteo time series downscaled from GCMs or whatever (future)
                       if reanalysis_direct eq 'n' then begin
 
@@ -365,7 +317,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
                     endif    ; daily time resolution
 
-                    ; ----- MONTHLY
+                    ; --- MONTHLY
 
                     if time_resolution eq 'monthly' then begin
 
@@ -377,14 +329,11 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
                   endif                               ; is there a glacier in the cell?
 
-
-                  ; *****************************************************
-                  ; MAIN LOOP over all glaciers
+                  ; === MAIN LOOP over all glaciers
 
                   for g=0l,cg-1 do begin
 
-                    ; ******************************
-                    ; CALIBRATION LOOP - for single-glacier calibration
+                    ; === CALIBRATION LOOP - for single-glacier calibration
 
                     cal1max=0
                     if calibrate_individual eq 'y' then begin
@@ -393,8 +342,6 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
                     for cal1=0,cal1max do begin
 
-
-                      ; ---------------------
                       ; read hypsometry-file
                       fn=dir_data+'/'+region+'/'+id[gg[g]]+'.dat' & a=findfile(fn)
 
@@ -411,7 +358,6 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                         ; define variables and process hypsometry
                         @procedures/processing/process_hypsometry_data.pro
 
-                        ; ------------------------------
                         ; prepare output for mass balance in elevation bands
 
                         if meltmodel eq '1' then mtt='' else mtt='_m3'
@@ -423,35 +369,30 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                         @procedures/write/prepare_output_firnicetemp.pro
                       endif
 
-                      ;prepare output for hypsometry-evolution file
+                      ; prepare output for hypsometry-evolution file
                       if write_hypsometry_files eq 'y' then begin
                         @procedures/write/prepare_output_hypsoevo.pro
                       endif
 
-                      ; -----------------------------
                       ; initialise some variables for the advance scheme
                       if advance eq 'y' and nb gt 3 then begin
                         @procedures/initialise/initialise_advance_scheme_vars.pro
                       endif
 
-                      ; -------------------
                       ; potential radiation time series
                       if meltmodel eq '3' then begin
                         @procedures/processing/potential_solarradiation.pro
                       endif
 
-                      ; ---------------------
                       ; read files for supraglacial debris
 
                       if debris_supraglacial eq 'y' then begin
                         @procedures/read/read_supraglacialdebris.pro
                       endif
 
-                      ; ---------------------
                       ; attribute specific parameter values
                       @procedures/calibration/apply_calibration_params.pro
 
-                      ; ---------------------
                       ; define arrays
                       gls=dblarr(nout,nb) & cnp=0
                       areas=dblarr(years) & volumes=areas
@@ -463,11 +404,9 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                       ; initialising some output arrays
                       @procedures/initialise/initialise_output_arrays.pro
 
-                      ; ********************************************
-                      ; MAIN LOOP over years
+                      ; === MAIN LOOP over years
 
                       @procedures/initialise/initialise_firnicetemp_spinup.pro
-
 
                       for ye=0,years-1 do begin
 
@@ -502,7 +441,6 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                           if d eq 0 then st=bal_month else st=1
                           if d eq 0 then en=dd_thresholds[3] else en=bal_month-1
 
-                          ; ****************************
                           ; loop over months
                           for m=st,en do begin
 
@@ -513,26 +451,22 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                             if bal_month eq dd_thresholds[0] then if m eq dd_thresholds[1] then sno=sno-snostor
                             jj=where(sno lt 0,cj) & if cj gt 0 then sno[jj]=0
 
-                            ; *******************************************
                             ; Climate data extrapolation
 
                             if time_resolution eq 'monthly' then cdm=cmon else cdm=cday
                             if ccmon eq 0 then jjclim=where(cyear eq ye-1+tran[0] and cdm eq m)
                             tg=temp[jjclim[0]+ccmon]+(elev-hclim)*dtdz[m-1]+t_offset
 
-                            ; *******************************************
-                            ; Mass balance model
+                            ; === Mass balance model
 
-                            ; *********** accumulation
+                            ; --- accumulation
                             @procedures/processing/accumulation.pro
 
-                            ; ***********  melt (positive)
+                            ; --- melt (positive)
                             ; two melt models are available: 1: temperature-index model, 3: simplified energy balance model (only for monthly time steps)
                             @procedures/processing/meltmodel.pro
 
-
-                            ; ***************************************
-                            ; ***********  refreezing (positive)
+                            ; --- refreezing (positive)
 
                             if refreezing_full eq 'y' then begin
                               @procedures/processing/refreezing_full.pro
@@ -544,16 +478,15 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                               endelse
                             endelse
 
-                            ; ***************************************
-                            ; ***********  firn/ice temperatures
+                            ; --- firn/ice temperatures
                             ; (separate workflow as the target and setup differs)
 
                             if firnice_temperature eq 'y' then begin
                               @procedures/processing/firnice_temperature_model.pro
                             endif    ; firn-ice temperature model
 
-                            ; ---- adapting snow reservoir
-                            ;      correcting for overestimated melt (disapperance of snow during month)
+                            ; --- adapting snow reservoir
+                            ; correcting for overestimated melt (disapperance of snow during month)
                             sno=sno+psg-mel     ;   +refreeze - should refreezing be included here?
                             jj=where(sno gt 0,cj) & if cj gt 0 then sur[jj]=1
                             jj=where(sno lt 0,cj)
@@ -566,14 +499,13 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                               sno[jj]=0
                             endif
 
-                            ; ------- calculate catchment discharge
-                            ;    Melting and refreezing are the same inside and outside the
-                            ;    glacier if snow cover present; if no snow melting and refreezing
-                            ;    only refer to the ice surface => weighted average for specific discharge
+                            ; --- calculate catchment discharge
+                            ; Melting and refreezing are the same inside and outside the
+                            ; glacier if snow cover present; if no snow melting and refreezing
+                            ; only refer to the ice surface => weighted average for specific discharge
                             @procedures/processing/calculate_catchment_discharge.pro
 
-
-                            ; ---- adapting surface type
+                            ; --- adapting surface type
                             jj=where(sno eq 0 and gl ne noval,cj) & if cj gt 0 then sur[jj]=0
                             jj=where(sno eq 0 and gl eq noval,cj) & if cj gt 0 then sur[jj]=noval
                             jj=where(sno eq 0 and firn eq 1,cj) & if cj gt 0 then sur[jj]=2
@@ -588,8 +520,6 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                             if outf_names[14] ne '' then begin
                               @procedures/processing/store_output_variables.pro
                             endif
-
-
 
                             if ar_gl ne 0 then begin
                               @procedures/write/store_elevationband_massbalance.pro
@@ -620,19 +550,14 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                         ; calculate balance - store results
                         @procedures/processing/finalize_annual_massbalance.pro
 
-                        ; *******************************
-                        ; DEBRIS MODEL
+                        ; === DEBRIS MODEL
                         ; annually adapting debris cover extent and thickness
                         if debris_supraglacial eq 'y' and ar_gl gt 0 then begin
 
                           @procedures/processing/debris_model.pro
 
-
                         endif
 
-
-                        ; *******************************************
-                        ; *******************************************
                         ; glacier retreat model
 
                         ii=where(balv ne noval,ci)
@@ -640,14 +565,10 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                         jj=where(balv gt 0,cj) & if cj gt 0 then av=total(balv[jj]) else av=0
                         dens=0.9 & dvol=dvol/dens
 
-                        ; *******************************************
-                        ; CALVING MODEL
-                        ; -----------------------------
+                        ; === CALVING MODEL
                         ; volume loss due to frontal ablation
 
                         @procedures/processing/calving_model.pro
-
-                        ; *******************************************
 
                         if glacier_retreat eq 'y' then begin
 
@@ -655,13 +576,9 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
                         endif                           ; glacier retreat
 
-
                       endfor    ; Loop over years
 
-
-                      ; ----------------------------------------
-                      ; ****************************************
-                      ; Optimization - SINGLE-GLACIER MASS BALANCE
+                      ; === Optimization - SINGLE-GLACIER MASS BALANCE
 
                       if calibrate_individual eq 'y' then begin
                         @procedures/calibration/calibrate_single_glacier.pro
@@ -673,7 +590,6 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                         @procedures/calibration/apply_calibration_constraints.pro
                       endif
 
-                      ; ------------------------
                       ; write hypsometry-evolution file
                       @procedures/write/write_hypsometry_evolution_file.pro
 
@@ -681,7 +597,6 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
                   endfor                          ; CALIBRATION 1 - single glacier mass balance
 
-                  ; ---------------------
                   ; write calibration file
                   if calibrate eq 'y' then begin
                     @procedures/write/write_calibration_results.pro
@@ -690,7 +605,6 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
                   cali_calflux=cali_calflux+mean(flux_calv)/1000.*ar_gl
 
-                  ; ---------------------
                   ; Write results files
                   if write_file eq 'y' then begin
                     ; Output for daily results
@@ -703,20 +617,17 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                     endelse
                   endif
 
-                  ; ------------------------
                   ; write elevation band file
                   fn=dir_data+'/'+region+'/'+id[gg[g]]+'.dat' & a=findfile(fn)
                   if write_mb_elevationbands eq 'y' and a[0] ne '' then begin
                     @procedures/write/write_elevationband_file.pro
                   endif
 
-                  ; ------------------------
                   ; write firn-ice temperature
                   if firnice_temperature eq 'y' then begin
                     @procedures/write/write_firnicetemp.pro
                   endif
 
-                  ; *******************************************************
                   ; plot of mass balance and profile for individual glacier!!!
                   ; only activated for monthly resolution
 
@@ -724,7 +635,6 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                     @procedures/write/plot_mb_and_profiles_per_glacier.pro
                   endif    ; plot
 
-                  ; -----------------------
                   ; write main file and meteo file
                   if volume0 gt 0 then vv=(volume1-volume0)*100/volume0 else vv=-100
                   if write_file eq 'y' then begin
@@ -733,17 +643,13 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
                   count_glaciers=count_glaciers+1
 
-
                 endfor   ; loop over glaciers
 
               endfor    ; grids y
 
             endfor                          ; grids x
 
-
-            ; ----------------------------------------
-            ; ****************************************
-            ; Optimization - OVERALL MASS BALANCE
+            ; === Optimization - OVERALL MASS BALANCE
 
             if calibrate eq 'y' and calibrate_individual ne 'y' then begin
               @procedures/calibration/calibrate_overall_massbalance.pro
@@ -755,7 +661,6 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
             endif
 
           endfor                          ; CALIBRATION 0 - overall mass balance
-
 
           ; close result files
           if write_file eq 'y' then begin
@@ -787,14 +692,11 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
           @procedures/calibration/write_calibration_phase_statistics.pro
         endif
 
-
-        ; --------------------------------
         ; write file for volume below sea level
         if calibrate ne 'y' and write_file eq 'y' then begin
           @procedures/write/write_volume_below_sealevel.pro
         endif
 
-        ; --------------------------------
         ; copying time-stamped input.pro into the output folder
         if calibrate ne 'y' then begin
           @procedures/write/copy_input_to_output.pro
@@ -802,10 +704,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
       endfor                          ; regions
 
-      ; --------------------------------
-
     endfor                                  ; firnice_batch_loop
-
 
     next_GCM:
 
@@ -823,6 +722,5 @@ endfor                          ; GCMs
 toc
 
 if plot eq 'y' or areaplot eq 'y' then device,/close_file
-
 
 end
