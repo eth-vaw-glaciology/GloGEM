@@ -574,12 +574,6 @@ if meltmodel eq '1' then mtt='' else mtt='_m3'
    @procedures/write/prepare_output_mb_in_bins.pro
 endif
 
-;PRINT, b
-; PRINT, dirres
-; PRINT, dirres+dir_region
-; PRINT, dirres+dir_region+b
-; PRINT, dirres+dir_region+b+'firnice_temperature'
-
 ; prepare output of ice temperature model
 if firnice_temperature eq 'y' then begin
    @procedures/write/prepare_output_firnicetemp.pro
@@ -599,18 +593,14 @@ endif
 ; -------------------
 ; potential radiation time series
 if meltmodel eq '3' then begin
-
    @procedures/processing/potential_solarradiation.pro
-
 endif
 
 ; ---------------------
 ; read files for supraglacial debris
 
 if debris_supraglacial eq 'y' then begin
-
-@procedures/read/read_supraglacialdebris.pro
-
+   @procedures/read/read_supraglacialdebris.pro
 endif
 
 ; ---------------------
@@ -757,23 +747,16 @@ tg=temp[jjclim[0]+ccmon]+(elev-hclim)*dtdz[m-1]+t_offset
 ; ***********  refreezing (positive)
 
 if refreezing_full eq 'y' then begin
-
-@procedures/processing/refreezing_full.pro
-
+   @procedures/processing/refreezing_full.pro
 endif
-
 
 ; ***************************************
 ; ***********  firn/ice temperatures
 ; (separate workflow as the target and setup differs)
 
 if firnice_temperature eq 'y' then begin
-
    @procedures/processing/firnice_temperature_model.pro
-
 endif    ; firn-ice temperature model
-
-
 
 ; ---- adapting snow reservoir
 ;      correcting for overestimated melt (disapperance of snow during month)
@@ -817,32 +800,7 @@ refreeze=refreeze+refr
 
 ; storing day variables
 if outf_names[14] ne '' then begin
-   if ar_gl ne 0 then discharge_gl[ccmon-1]=(total(mel*area)+total(plg*area)-total(refr*area))/ar_gl
-   if time_resolution eq 'monthly' then begin
-      balmo[ccmon-1]=total((psg-mel+refr)*area)/ar_gl & melmo[ccmon-1]=total(mel*area)/ar_gl
-      accmo[ccmon-1]=total(psg*area)/ar_gl & refrmo[ccmon-1]=total(refr*area)/ar_gl
-      precmo[ccmon-1]=total((psg+plg)*area)/ar_gl 
-   endif else begin
-; for entire catchment
-      accday[ccmon-1]=total((psg)*area_ini)/total(area_ini) & refrday[ccmon-1]=total(refr*area_ini)/total(area_ini)
-      rainday[ccmon-1]=total((plg)*area_ini)/total(area_ini)
-      snowmeltday[ccmon-1]=total((snowmel)*area_ini)/total(area_ini) & icemeltday[ccmon-1]=total((icemel)*area)/total(area_ini)
-   ; rather write out snowcover-percentage??
-      jj=where(sno eq 0 and gl ne noval,cj) 
-      if cj gt 0 then begin
-        snowlineday[ccmon-1]=gl[jj[cj-1]]
-        ; Select lowest elevation bin of the glacier if fully snow covered
-      endif else begin
-        ; Filter out negative values
-        positive_values = gl[where(gl GE 0)]
-        ; Get the minimum of positive values
-        min_snowline = positive_values[0]
-        snowlineday[ccmon-1]=min_snowline
-      endelse
-
-
-   endelse   
-
+   @procedures/processing/store_output_variables.pro
 endif
 
 
@@ -1331,7 +1289,7 @@ endif
 
 endfor                          ; RCPs
 
-endfor                          ; GCMs
+                                ; GCMs
 
 toc
 
