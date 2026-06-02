@@ -923,7 +923,7 @@ tg=temp[jjclim[0]+ccmon]+(elev-hclim)*dtdz[m-1]+t_offset
 ; Mass balance model
 
 ; *********** accumulation
-
+@procedures/processing/accumulation.pro
 pc=prec[jjclim[0]+ccmon]*c_prec/1000.        ; correct quantity to m w.e.
 pg=pc+pc*((elev-hclim)/10000.)*dpdz    ; extrapolate with elevation
 ; constrain high elevation precipitation
