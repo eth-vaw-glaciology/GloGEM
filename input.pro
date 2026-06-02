@@ -89,11 +89,11 @@ if long_GCM ne '' then begin
 endif
 
 ; Re-analysis
-;reanalysis='era5land'            ; Reanalysis data set, grid step is 0.1 
+reanalysis='era5land'            ; Reanalysis data set, grid step is 0.1 
 ;reanalysis='chelsaw5e5'          ; Grid step needs to be changed to 0.08333333333333333
 ;reanalysis='ch2018'
 ;reanalysis='gswp3w5e5'
-reanalysis='era5'
+;reanalysis='era5'
 rea_eval=[1980,2025]              ; Important setting -> Time period for evaluating the bias of GCMs
 grid_step=0.1                     ; Grid stepping of reanalysis data set
 bias_correction_method=1          ; 1: Bias correction based on delta method; 2: Bias correction based on quantile mapping, working only for daily model and temperature for now
