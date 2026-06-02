@@ -63,10 +63,10 @@ meltmodel='1'                      ; Select melt model to be used - 1: Classic d
  
 ; --- GCM data specifications
 CMIP6='y'                          ; CMIP6 GCMs to be used?
-long_GCM=''                        ; runs until 2100
-;long_GCM='long_'                  ; runs until 2300
+long_GCM=''                        ; Runs until 2100
+;long_GCM='long_'                  ; Runs until 2300
 ;GCM_data= 'cmip6'
-;GCM_data= 'long_cmip6'            ;runs until 2300
+;GCM_data= 'long_cmip6'            ; Runs until 2300
 GCM_data= 'cmip6'
 
 ; Options for running one individual model
@@ -96,10 +96,8 @@ reanalysis='era5land'            ; Reanalysis data set, grid step is 0.1
 ;reanalysis='era5'
 rea_eval=[1980,2025]              ; Important setting -> Time period for evaluating the bias of GCMs
 grid_step=0.1                     ; Grid stepping of reanalysis data set
+bias_correction='y'               ; Bias correction of GCM data based on re-analysis data? 'y' to activate, 'n' to use GCM data as they are
 bias_correction_method=1          ; 1: Bias correction based on delta method; 2: Bias correction based on quantile mapping, working only for daily model and temperature for now
-
-
-
 
 ; --------------------------------------
 ; calibration (main setting given in the beginning)
@@ -174,18 +172,15 @@ alb_snow=0.7     ; Albedo for snow
 ; ------- supraglacial debris model
 
 debris_supraglacial='n'              ; ACTIVATE MODEL FOR SUPRAGLACIAL DEBRIS
-
-   debris_pond_enhancementfactor=2         ; enhancement of bare-ice melt over pond/ice cliff fraction of band (no influence: 0)
-
-   debris_expansion='y'        ; spatial expansion of debris over time
-      debris_exp_gradient=2.0    ; [% a-1 frac-1] gradient of debris extension
-      debris_seed_bands=10       ; factor to scale decadal ELA-change into a number bands per year with new debris seed 
-      debris_initialband=0.01    ; [m] thickness of debris in newly generated formed bands with no initial observations
-      debris_pond_gradient=0.1     ; [% a-1 frac-1] gradient of pond/cliff extension [not used anymore - now automated??]
-      debris_ponddens_max=0.1    ; [-] maximum density of ponds within band [not used anymore - now automated??]
-
-   debris_thickening='y'       ; thickening of debris over time
-      debris_thick_gradient=1.0  ; [cm a-1 km-1]  thickening linearly increasing from ELA towards glacier terminus
+debris_pond_enhancementfactor=2         ; enhancement of bare-ice melt over pond/ice cliff fraction of band (no influence: 0)
+debris_expansion='y'        ; spatial expansion of debris over time
+debris_exp_gradient=2.0    ; [% a-1 frac-1] gradient of debris extension
+debris_seed_bands=10       ; factor to scale decadal ELA-change into a number bands per year with new debris seed 
+debris_initialband=0.01    ; [m] thickness of debris in newly generated formed bands with no initial observations
+debris_pond_gradient=0.1     ; [% a-1 frac-1] gradient of pond/cliff extension [not used anymore - now automated??]
+debris_ponddens_max=0.1    ; [-] maximum density of ponds within band [not used anymore - now automated??]
+debris_thickening='y'       ; thickening of debris over time
+debris_thick_gradient=1.0  ; [cm a-1 km-1]  thickening linearly increasing from ELA towards glacier terminus
 
 ; ------- Refreezing 
 
@@ -209,35 +204,29 @@ ice_permeability  = 'n'          ; 'y' to activate ice  permeability model
 ; ----- glacier retreat module
 
 glacier_retreat='y'  ; ACTIVATE GLACIER GEOMETRY CHANGE MODEL
-
 expon=2.             ; Parameter for valley shape regulating band area loss depending on thickness loss
-
 dh_size=[5,20]       ; km2 Boundary between different empirical dh-parameterizations used (according to Huss et al., 2010)
-
 redistribute_vplus='y'      ; (y/n) Redistribution of very negative/positive elevation changes at tongue over glacier?
-
 advance='y'        ; Glacier advance model (might results in model instabilities...)
-    adv_addband0=10            ; number of added elevation bands in front of glacier
-    adv_calving=-100.          ; [m] default=0 (no calving), terminal elevation of glacier bed
-    adv_fcrit=2.               ; [m/a] Elevation gains above will be distributed
-    adv_terminusfraction=0.2   ; Use this fraction of elevation range to determine potential area in front of glacier
-    adv_lookup='n'             ; if glacier volume during positive years is smaller than initial volume, draw glacier geometry from a look-up table
+adv_addband0=10            ; number of added elevation bands in front of glacier
+adv_calving=-100.          ; [m] default=0 (no calving), terminal elevation of glacier bed
+adv_fcrit=2.               ; [m/a] Elevation gains above will be distributed
+adv_terminusfraction=0.2   ; Use this fraction of elevation range to determine potential area in front of glacier
+adv_lookup='n'             ; if glacier volume during positive years is smaller than initial volume, draw glacier geometry from a look-up table
                                ; (well, the idea was good but I believe it is not working, better do not activate)
 
 ; ----- calving
 frontal_ablation='y'     ; ACTIVATE FRONTAL ABLATION MODEL (only marine-terminating, no lakes at the moment)
                          ; according to Oerlemans&Nick, 2005
 
- alpha_f=0.7      ; parameters of calving model (irrelevant, read from file)
-   calv_sep=1.25    ; [m w.e.] as threshold: separate calving flux into gl geom. change AND direct break off at terminus
- c_calving=2.4
- regparams_readfromfile='y'    ; reading parameters from regional file or use above ones?
-
-        length_corrfact=1.4     ; correction factor for length (according to Oerlemans)
-
-        ccorr_expon=2.5               ; bedrock profile corrected for parabola-shape
-        crit_ccorrdist=3000.          ; bedrock profile corrected for parabola-shape
-        bedrock_parabolacorr=0.2      ; bedrock profile corrected for parabola-shape
+alpha_f=0.7      ; parameters of calving model (irrelevant, read from file)
+calv_sep=1.25    ; [m w.e.] as threshold: separate calving flux into gl geom. change AND direct break off at terminus
+c_calving=2.4
+regparams_readfromfile='y'    ; reading parameters from regional file or use above ones?
+length_corrfact=1.4     ; correction factor for length (according to Oerlemans)
+ccorr_expon=2.5               ; bedrock profile corrected for parabola-shape
+crit_ccorrdist=3000.          ; bedrock profile corrected for parabola-shape
+bedrock_parabolacorr=0.2      ; bedrock profile corrected for parabola-shape
 
 ; --------------------------------------------
 ; OUTPUT
