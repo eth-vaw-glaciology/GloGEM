@@ -599,7 +599,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
                   ; write calibration file
                   if calibrate eq 'y' then begin
-                    @procedures/write/write_calibration_results.pro
+                    @procedures/calibration/write_calibration_results.pro
 
                   endif
 
