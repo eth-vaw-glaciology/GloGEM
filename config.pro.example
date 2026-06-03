@@ -1,19 +1,34 @@
 ; GloGEM user configuration
 ; Copy this file to config.pro and uncomment/set the values you want to override.
 ; Settings here are applied after procedures/initialise/settings.pro, so anything set here takes precedence.
-; config.pro is listed in .gitignore and will never be accidentally committed.
+; config.pro is git-ignored and will never be accidentally committed.
 ;
 ; Setup (run once per machine):
 ;   cp config.pro.example config.pro
 ;   (then edit config.pro with your values)
+;
+; This file lists the most commonly adjusted settings. If you need to override a setting
+; that is not listed here, simply copy the corresponding line from settings.pro into your
+; config.pro and change the value. Every variable defined in settings.pro can be overridden
+; this way — config.pro is always loaded last and takes precedence over settings.pro.
 
 ; -----------------------------------------------------------------------
-; OUTPUT DIRECTORY  (set this - it is different for every user / server)
+; OUTPUT DIRECTORY  (required - different for every user / server)
 ; -----------------------------------------------------------------------
 ;dirres = '/scratch_net/yourserver/yourusername/GloGEM/output'
 
 ; -----------------------------------------------------------------------
-; RUN SELECTION  (change these per experiment)
+; RGI VERSION
+; -----------------------------------------------------------------------
+;RGIversion = '6'                ; version of the RGI to be used
+
+; -----------------------------------------------------------------------
+; TIME RESOLUTION
+; -----------------------------------------------------------------------
+;time_resolution = 'daily'       ; 'daily' or 'monthly'
+
+; -----------------------------------------------------------------------
+; RUN SELECTION
 ; -----------------------------------------------------------------------
 ;region_id_loop = [14, 14]       ; region IDs to run (see region_batch.dat)
 ;single_glacier = '01450'        ; single glacier RGI ID ('' to disable)
@@ -23,39 +38,63 @@
 ; -----------------------------------------------------------------------
 ; RUN MODE
 ; -----------------------------------------------------------------------
-;calibrate = 'n'                 ; 'y' to calibrate, 'n' to run with given parameters
-;time_resolution = 'daily'       ; 'daily' or 'monthly'
 ;tran = [1940, 2100]             ; modelling time period
+;find_startyear = 'y'            ; 'y' to auto-detect first future year from inventory date
+;calibrate = 'n'                 ; 'y' to calibrate, 'n' to run with given parameters
+
+; -----------------------------------------------------------------------
+; CALIBRATION SETTINGS
+; -----------------------------------------------------------------------
+;calperiod_ID = 9                ; ID specifying calibration period (see settings.pro for list)
+;caliphase_loop = 3              ; 1: default (no loop); 2: phases 1-2; 3: phases 1-3
+;calibration_phase = '1'        ; starting calibration phase: 1: c_prec, 2: DDF_snow, 3: T-bias
+
+; -----------------------------------------------------------------------
+; CLIMATE DATA (GCM)
+; -----------------------------------------------------------------------
+;CMIP6 = 'y'                     ; 'y' to use CMIP6 GCMs, 'n' for CMIP5
 ;long_GCM = ''                   ; '' for runs to 2100, 'long_' for runs to 2300
+;GCM_data = 'cmip6'              ; GCM dataset identifier ('cmip6' or 'long_cmip6')
+;short_gcmchoice = [1, 1, 1]    ; [GCM, SSP, experiment] indices; 0 for full batch
+;first_GCM = 0                   ; starting GCM index for batch processing (0-based minus 1)
+
+; Extended GCM batch specification (only needed to override defaults)
+;rcp_batch = [4,5,4,4,5,5,4,5,4,4,4,5,4]
+;expe_batch = [1,1,1,1,1,1,1,1,1,1,1,1,1]
+;GCM_model = ['BCC-CSM2-MR','CAMS-CSM1-0','CESM2','CESM2-WACCM','EC-Earth3','EC-Earth3-Veg', $
+;             'FGOALS-f3-L','GFDL-ESM4','INM-CM4-8','INM-CM5-0','MPI-ESM1-2-HR','MRI-ESM2-0','NorESM2-MM']
+;GCM_rcp = ['ssp126','ssp245','ssp370','ssp585','ssp119','ssp534-over']
+;GCM_experiment = ['r1i1p1f1','r2i1p1f1','r3i1p1f1','r4i1p1f1','r5i1p1f1','r6i1p1f1','r7i1p1f1']
 
 ; -----------------------------------------------------------------------
-; GCM SELECTION
-; -----------------------------------------------------------------------
-;short_gcmchoice = [1, 1, 1]    ; [GCM, SSP, experiment] indices - 0 for full batch
-;first_GCM = 0                  ; starting GCM index for batch processing
-
-; -----------------------------------------------------------------------
-; REANALYSIS
+; REANALYSIS / BIAS CORRECTION
 ; -----------------------------------------------------------------------
 ;reanalysis = 'era5'             ; 'era5', 'era5land', 'chelsaw5e5', 'gswp3w5e5', 'ch2018'
-;rea_eval = [1980, 2025]         ; time period for evaluating GCM bias
+;bias_correction = 'y'           ; 'y' to apply GCM bias correction
+;bias_correction_method = 1      ; 1: delta method; 2: quantile mapping (daily T only)
 
 ; -----------------------------------------------------------------------
-; OUTPUT
+; MELT MODEL
 ; -----------------------------------------------------------------------
-;full_output = 'n'               ; 'y' for extended output files
-;write_file = 'y'                ; 'y' to write result files
-;write_mb_elevationbands = 'n'   ; 'y' to write seasonal MB in elevation bands
-;write_hypsometry_files = 'n'    ; 'y' to write annual hypsometry
+;meltmodel = '1'                 ; '1': degree-day model, '3': simple energy-balance (Oerlemans)
 
 ; -----------------------------------------------------------------------
-; MODEL PHYSICS (rarely changed - only for sensitivity studies)
+; MODEL PHYSICS (enable / disable modules)
 ; -----------------------------------------------------------------------
-;meltmodel = '1'                 ; '1': degree-day model, '3': simple energy-balance
 ;debris_supraglacial = 'n'       ; 'y' to activate supraglacial debris model
 ;refreezing_full = 'n'           ; 'y' to activate full refreezing model (slow)
 ;refreezing_parametrised = 'y'   ; 'y' to activate parametrised refreezing
-;firnice_temperature = 'n'       ; 'y' to activate ice temperature model
-;glacier_retreat = 'y'           ; 'y' to activate glacier geometry change
-;frontal_ablation = 'y'          ; 'y' to activate frontal ablation model
-;bias_correction = 'y'           ; 'y' to apply GCM bias correction
+;firnice_temperature = 'n'       ; 'y' to activate englacial ice/firn temperature model
+;glacier_retreat = 'y'           ; 'y' to activate glacier geometry change model
+;frontal_ablation = 'y'          ; 'y' to activate frontal ablation / calving model
+
+; -----------------------------------------------------------------------
+; OUTPUT OPTIONS
+; -----------------------------------------------------------------------
+;version_past = ''               ; version tag appended to PAST output folder name
+;full_output = 'n'               ; 'y' for extended set of output files (see settings.pro)
+;write_file = 'y'                ; 'y' to write result files to disk
+;write_mb_elevationbands = 'n'   ; 'y' to write seasonal MB per elevation band
+;eval_mbelevsensitivity = 'n'    ; 'y' to evaluate MB sensitivity per elevation band
+;count_mbelevsens_v0 = 5         ; number of elevation steps for MB sensitivity evaluation
+;write_hypsometry_files = 'n'    ; 'y' to write annual hypsometry for all glaciers

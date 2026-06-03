@@ -38,7 +38,9 @@ Then open `config.pro` and set at minimum your output directory:
 dirres = '/path/to/your/output/directory'
 ```
 
-Any setting from `settings.pro` can be overridden in your personal config. The model will stop with a clear error if `dirres` is not set.
+Any setting from `settings.pro` can be overridden in your personal config. `config.pro.example` lists the most commonly adjusted settings, but it is not exhaustive. If you need to change a setting that is not listed there, look it up in `settings.pro`, copy the line to your `config.pro`, and change the value — everything in `settings.pro` can be overridden this way.
+
+The model will stop with a clear error if `dirres` is not set.
 
 ## Input settings reference
 
