@@ -329,9 +329,9 @@ variability_bias_longterm='n'        ; include bias in GCM variability from mont
 
 ; ----------------------
 ; User-specific overrides
-; Create ~/.glogem/config.pro to override any of the settings above.
-; See config.pro.example in this repository for a template.
-user_config = getenv('HOME') + '/.glogem/config.pro'
+; Copy config.pro.example to config.pro and set your values there.
+; config.pro is git-ignored so it will never be accidentally committed.
+user_config = base_dir + '/config.pro'
 if file_test(user_config) then begin
   n = file_lines(user_config)
   lines = strarr(n)
@@ -352,7 +352,7 @@ if file_test(user_config) then begin
   endfor
   print, 'Loaded user config: ' + user_config
 endif
-if dirres eq '' then message, 'dirres is not set. Add it to ~/.glogem/config.pro (see config.pro.example).'
+if dirres eq '' then message, 'dirres is not set. Copy config.pro.example to config.pro and set dirres there.'
 
 ; ----------------------
 ; IF - THEN for options (automatic exclusion - to avoid erroneous runs)

@@ -1,11 +1,11 @@
 ; GloGEM user configuration
-; Copy this file to ~/.glogem/config.pro and uncomment/set the values you want to override.
+; Copy this file to config.pro and uncomment/set the values you want to override.
 ; Settings here are applied after procedures/initialise/settings.pro, so anything set here takes precedence.
+; config.pro is listed in .gitignore and will never be accidentally committed.
 ;
 ; Setup (run once per machine):
-;   mkdir -p ~/.glogem
-;   cp config.pro.example ~/.glogem/config.pro
-;   (then edit ~/.glogem/config.pro with your values)
+;   cp config.pro.example config.pro
+;   (then edit config.pro with your values)
 
 ; -----------------------------------------------------------------------
 ; OUTPUT DIRECTORY  (set this - it is different for every user / server)

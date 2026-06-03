@@ -24,24 +24,15 @@ basin flows towards a single glacier terminus.
 GloGEM separates shared model settings from personal/machine-specific settings:
 
 - **`settings.pro`** — shared model configuration committed to the repository. Do not add personal paths or experiment-specific values here.
-- **`~/.glogem/config.pro`** — your personal overrides (output directory, region selection, run mode, etc.). Lives in your home directory, never touched by git.
+- **`config.pro`** — your personal overrides (output directory, region selection, run mode, etc.). Git-ignored, never committed.
 
 **One-time setup per machine:**
 
 ```bash
-mkdir -p ~/.glogem
-cp /path/to/GloGEM/config.pro.example ~/.glogem/config.pro
+cp config.pro.example config.pro
 ```
 
-Replace `/path/to/GloGEM` with the actual path to your cloned repository, e.g. `~/projects/GloGEM`. Alternatively, run the `cp` from inside the repository directory:
-
-```bash
-cd /path/to/GloGEM
-mkdir -p ~/.glogem
-cp config.pro.example ~/.glogem/config.pro
-```
-
-Then open `~/.glogem/config.pro` and set at minimum your output directory:
+Then open `config.pro` and set at minimum your output directory:
 
 ```idl
 dirres = '/path/to/your/output/directory'
