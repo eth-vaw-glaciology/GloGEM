@@ -289,7 +289,7 @@ areaplot='n'       ; not implemented anymore
 
 version_past=''       ; versioning for output of PAST, including ERA-file
 
-dircali=dirres
+dircali=''  ; set after user config is loaded below
 
 ; ------------------
 ; secondary settings
@@ -353,6 +353,7 @@ if file_test(user_config) then begin
   print, 'Loaded user config: ' + user_config
 endif
 if dirres eq '' then message, 'dirres is not set. Copy config.pro.example to config.pro and set dirres there.'
+dircali=dirres
 
 ; ----------------------
 ; IF - THEN for options (automatic exclusion - to avoid erroneous runs)
