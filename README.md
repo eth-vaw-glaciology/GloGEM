@@ -30,6 +30,14 @@ GloGEM separates shared model settings from personal/machine-specific settings:
 
 ```bash
 mkdir -p ~/.glogem
+cp /path/to/GloGEM/config.pro.example ~/.glogem/config.pro
+```
+
+Replace `/path/to/GloGEM` with the actual path to your cloned repository, e.g. `~/projects/GloGEM`. Alternatively, run the `cp` from inside the repository directory:
+
+```bash
+cd /path/to/GloGEM
+mkdir -p ~/.glogem
 cp config.pro.example ~/.glogem/config.pro
 ```
 
