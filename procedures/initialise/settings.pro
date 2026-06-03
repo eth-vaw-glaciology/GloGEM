@@ -82,27 +82,14 @@ GCM_model = ['BCC-CSM2-MR', 'CAMS-CSM1-0', 'CESM2', 'CESM2-WACCM', 'EC-Earth3', 
 GCM_rcp = ['ssp126', 'ssp245', 'ssp370', 'ssp585', 'ssp119', 'ssp534-over']
 GCM_experiment = ['r1i1p1f1', 'r2i1p1f1', 'r3i1p1f1', 'r4i1p1f1', 'r5i1p1f1', 'r6i1p1f1', 'r7i1p1f1']
 
-; For runs until 2300 (long_)
-if long_GCM ne '' then begin
-  GCM_model = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CESM2-WACCM', 'CanESM5', 'GISS-E2-1-G', 'GISS-E2-1-H', 'GISS-E2-2-G', 'IPSL-CM6A-LR', 'MIROC-ES2L', 'MRI-ESM2-0', 'UKESM1-0-LL']
-  rcp_batch = [6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6]
-endif
-
 ; --------------------------------------
 ; Re-analysis
 ; --------------------------------------
 
-if time_resolution eq 'daily' then begin
-  ; For the daily model:
-  ; reanalysis='era5land'
-  ; reanalysis='chelsaw5e5'
-  ; reanalysis='ch2018'
-  ; reanalysis='gswp3w5e5'
-  reanalysis = 'era5'
-endif else begin
-  ; For the monthly model
-  reanalysis = 'ERA5'
-endelse
+; Default reanalysis dataset. auto-selected based on time_resolution in derived settings below.
+; Daily options: 'era5', 'era5land', 'chelsaw5e5', 'ch2018', 'gswp3w5e5'
+; Monthly: 'ERA5'
+reanalysis = 'era5'
 rea_eval = [1991, 2020] ; Important setting -> Time period for evaluating the bias of GCMs
 grid_step = 0.1 ; Grid stepping of reanalysis data set
 bias_correction = 'y' ; Bias correction of GCM data based on re-analysis data? 'y' to activate, 'n' to use GCM data as they are
@@ -244,16 +231,7 @@ clim_subregion = ''
 full_output = 'n'
 
 ; define which files are written out
-if time_resolution eq 'monthly' then $
-  if full_output eq 'y' then outf_names = ['Area', 'Volume', 'Annual_Balance_sfc', 'Winter_balance_sfc', 'Icemelt_sfc', $
-    'Snowmelt_sfc', 'Accumulation_sfc', 'Rain_sfc', 'ELA', 'AAR', 'Refreezing_sfc', 'Hmin', 'Frontal_ablation', 'Discharge', 'Discharge_gl' $
-    , 'Balance_mon', 'Precipitation_mon', 'Accumulation_mon', 'Melt_mon', 'Refreezing_mon'] $
-  else if full_output eq 'y' then outf_names = ['Area', 'Volume', 'Annual_Balance_sfc', 'Winter_balance_sfc', 'Icemelt_sfc', $
-    'Snowmelt_sfc', 'Accumulation_sfc', 'Rain_sfc', 'ELA', 'AAR', 'Refreezing_sfc', 'Hmin', 'Frontal_ablation', 'Discharge', 'Discharge_gl' $
-    , 'Accumulation_day', 'Rain_day', 'Snowmelt_day', 'Icemelt_day', 'Refreezing_day', 'Snowline_day']
-
-; output file-names equivalent for daily and monthly in case the
-; reduced output option is used
+; default: reduced output (full_output='y' variants are set in derived settings below)
 if full_output eq 'n' then outf_names = ['Area', 'Volume', 'Annual_Balance_sfc', 'Winter_balance_sfc', 'Icemelt_sfc', $
   'Snowmelt_sfc', 'Accumulation_sfc', 'Rain_sfc', 'ELA', 'AAR', 'Refreezing_sfc', 'Hmin', 'Frontal_ablation', $
   'Discharge', 'Discharge_gl', '', '', '', '', ''] ; reduced output - less monthly data
@@ -320,10 +298,6 @@ decl_sun = [-21.26, -13.50, -2.11, 9.85, 19.16, 23.31, 21.18, 13.34, 1.91, -10.0
 asp_class = [0, 45, 90, 135, 180]
 
 rddf_si = DDFice0 / DDFsnow0
-years = tran[1] - tran[0] + 1
-
-; days of month
-if time_resolution eq 'monthly' then mon_len = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31] else mon_len = dblarr(365) + 1
 
 ; only partially implemented for daily version and unsure whether it would actually work out...
 variability_bias_longterm = 'n' ; include bias in GCM variability from month to month
@@ -355,6 +329,36 @@ if file_test(user_config) then begin
 endif
 if dirres eq '' then message, 'dirres is not set. Copy config.pro.example to config.pro and set dirres there.'
 dircali = dirres
+
+; ----------------------
+; DERIVED SETTINGS
+; Everything below depends on variables that may have been overridden in config.pro.
+; Keeping all conditional logic here ensures config.pro overrides are always respected.
+
+; run length
+years = tran[1] - tran[0] + 1
+
+; days of month (depends on time_resolution)
+if time_resolution eq 'monthly' then mon_len = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31] $
+  else mon_len = dblarr(365) + 1
+
+; GCM list for 2300 runs (long_GCM may have been set in config.pro)
+if long_GCM ne '' then begin
+  GCM_model = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CESM2-WACCM', 'CanESM5', 'GISS-E2-1-G', 'GISS-E2-1-H', 'GISS-E2-2-G', 'IPSL-CM6A-LR', 'MIROC-ES2L', 'MRI-ESM2-0', 'UKESM1-0-LL']
+  rcp_batch = [6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6]
+endif
+
+; reanalysis dataset: daily uses 'era5', monthly uses 'ERA5'
+if time_resolution eq 'monthly' and reanalysis eq 'era5' then reanalysis = 'ERA5'
+
+; output file list for full_output='y' (depends on both time_resolution and full_output)
+if time_resolution eq 'monthly' then $
+  if full_output eq 'y' then outf_names = ['Area', 'Volume', 'Annual_Balance_sfc', 'Winter_balance_sfc', 'Icemelt_sfc', $
+    'Snowmelt_sfc', 'Accumulation_sfc', 'Rain_sfc', 'ELA', 'AAR', 'Refreezing_sfc', 'Hmin', 'Frontal_ablation', 'Discharge', 'Discharge_gl' $
+    , 'Balance_mon', 'Precipitation_mon', 'Accumulation_mon', 'Melt_mon', 'Refreezing_mon'] $
+  else if full_output eq 'y' then outf_names = ['Area', 'Volume', 'Annual_Balance_sfc', 'Winter_balance_sfc', 'Icemelt_sfc', $
+    'Snowmelt_sfc', 'Accumulation_sfc', 'Rain_sfc', 'ELA', 'AAR', 'Refreezing_sfc', 'Hmin', 'Frontal_ablation', 'Discharge', 'Discharge_gl' $
+    , 'Accumulation_day', 'Rain_day', 'Snowmelt_day', 'Icemelt_day', 'Refreezing_day', 'Snowline_day']
 
 ; ----------------------
 ; IF - THEN for options (automatic exclusion - to avoid erroneous runs)
