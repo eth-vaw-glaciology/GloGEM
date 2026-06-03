@@ -357,6 +357,7 @@ if long_GCM ne '' then outf_names = ['Area', 'Volume', 'Annual_Balance_sfc', 'Wi
   'Snowmelt_sfc', 'Accumulation_sfc', 'Rain_sfc', 'ELA', 'AAR', 'Refreezing_sfc', 'Hmin', 'Frontal_ablation', $
   '', '', '', '', '', '', '']
 
+<<<<<<< HEAD
 ; === refreezing model initialisation
 rf_layers  = 8
 rf_melcrit = 0.02
@@ -364,6 +365,21 @@ dens_rf    = [300, 300, 400, 450, 500, 550, 600, 650]
 rf_dz      = 1.
 rf_dsc     = 3.
 rf_dt      = 3600. * 24. * 30. / rf_dsc
+=======
+; **********************************
+; -----------------------------------
+; initialize refreezing model
+rf_layers = 8 ; number of layers in refreezing model
+rf_melcrit = 0.02 ; critical amount of melt for initialising refreezing module (0.002 earlier, what is better?) [m.w.e.]
+dens_rf = [300, 300, 400, 450, 500, 550, 600, 650] ; approx. density of layers
+rf_dz = 1. ; layer thickness (m)
+rf_dsc = 3. ; increase in temporal resolution (num. stability of heat conduction)
+if time_resolution eq 'daily' then begin
+  rf_dt = 3600. * 24. / rf_dsc ; compute time step
+endif else begin
+  rf_dt = 3600. * 24. * 30. / rf_dsc ; compute time step
+end
+>>>>>>> 0972341 (climate input creation for a moment)
 
 ; === ice temperature model initialisation
 fit_layers = [10, 10, 10]
