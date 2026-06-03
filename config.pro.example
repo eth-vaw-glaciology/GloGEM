@@ -1,6 +1,6 @@
 ; GloGEM user configuration
 ; Copy this file to ~/.glogem/config.pro and uncomment/set the values you want to override.
-; Settings here are applied after settings.pro, so anything set here takes precedence.
+; Settings here are applied after procedures/initialise/settings.pro, so anything set here takes precedence.
 ;
 ; Setup (run once per machine):
 ;   mkdir -p ~/.glogem

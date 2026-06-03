@@ -8,8 +8,11 @@ CD, CURRENT=base_dir ; define base directory
 a = !path            ; save current path
 !PATH = a + ':' + base_dir + '/functions/:' + base_dir + '/procedures/read/:' + base_dir + '/procedures/write/:' + base_dir + '/procedures/processing/:' ; add path to procedures and functions
 
-; saving/reading input file settings at the start of the main run
-fn='settings.pro' & anz=file_lines(fn) & input_file_content=strarr(anz)
+; load all model settings (and user overrides from ~/.glogem/config.pro)
+@procedures/initialise/settings.pro
+
+; read settings.pro as text for copying into the output folder
+fn='procedures/initialise/settings.pro' & anz=file_lines(fn) & input_file_content=strarr(anz)
 openr,1,fn & readf,1,input_file_content & close,1
 
 ; open log file to capture all console output
