@@ -10,7 +10,7 @@ if bias_correction eq 'y' then begin
 endif else begin
    ;print, 'No bias correction of GCM data...'
 endelse
-  
+
 ; write Bias-file
 if write_file eq 'y' then printf,5,rmid,bias[0,*],bias[1,*],bias[2,*],fo='(2f9.3,36f8.3)'
 

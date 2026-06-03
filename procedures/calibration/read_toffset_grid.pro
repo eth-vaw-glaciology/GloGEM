@@ -1,6 +1,5 @@
 ; *************************************************************
 ; Read gridded T-offset data for calibration phase 1.
-;
 ; Loads the spatially distributed temperature offset file and
 ; averages values per grid cell into toff_data. If the file
 ; does not exist, toff_grid is set to 'n' to disable this feature.

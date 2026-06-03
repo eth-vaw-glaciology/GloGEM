@@ -1,6 +1,4 @@
 compile_opt idl2
-
-noval=-9999
   
 ; find corresponding grid cell of reanalysis-file
 dtt=dblarr(2,nlons[0])

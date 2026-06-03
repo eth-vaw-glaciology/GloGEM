@@ -53,7 +53,7 @@ catchment_selection=''             ; Leave empty if running a single glacier or 
 
 tran=[1940,2100]                   ; Time period of modelling. It uses reanalysis data as long as possible
 find_startyear='y'                 ; Automatically determine first year of future modelling (based on date of inventory); 'n' ALSO to drive static output for GloGEMflow
-calibrate = 'n'                    ; Calibrate model? 'y' to calibrate, 'n' to run model with given parameters
+calibrate = 'y'                    ; Calibrate model? 'y' to calibrate, 'n' to run model with given parameters
 meltmodel='1'                      ; Select melt model to be used - 1: Classic degree-day model -  3: Simple energy-balance model (Oerlemans,2001)
 
 ; ---------------------------------------
@@ -91,17 +91,18 @@ endif
 ; Re-analysis
 ; --------------------------------------
 
-; For the daily model: 
-;reanalysis='era5land'            ; Reanalysis data set, grid step is 0.1 
-;reanalysis='chelsaw5e5'          ; Grid step needs to be changed to 0.08333333333333333
-;reanalysis='ch2018'
-;reanalysis='gswp3w5e5'
-reanalysis='era5'
-
-; For the monthly model
-;reanalysis='ERA5'
-; 
-rea_eval=[1980,2025]              ; Important setting -> Time period for evaluating the bias of GCMs
+if time_resolution eq 'daily' then begin
+   ; For the daily model: 
+   ;reanalysis='era5land'            
+   ;reanalysis='chelsaw5e5'
+   ;reanalysis='ch2018'
+   ;reanalysis='gswp3w5e5'
+   reanalysis='era5'
+endif else begin
+   ; For the monthly model
+   reanalysis='ERA5'
+endelse
+rea_eval=[1991,2020]              ; Important setting -> Time period for evaluating the bias of GCMs
 grid_step=0.1                     ; Grid stepping of reanalysis data set
 bias_correction='y'               ; Bias correction of GCM data based on re-analysis data? 'y' to activate, 'n' to use GCM data as they are
 bias_correction_method=1          ; 1: Bias correction based on delta method; 2: Bias correction based on quantile mapping, working only for daily model and temperature for now
@@ -120,19 +121,19 @@ rhodv_iteration=''          ; default
 ; read calibration periods etc based on file "calibration.dat"
 sub_region=''               ; for subregion - a file defining extent may be provided
 calperiod_ID=9              ; ID for specifying different calibration periods for the same region
-                                ; ID 1: open
-                                ; ID 3: open
-                                ; ID 4: open
-                                ; ID 5: regional calibration, Hugonnet2021
-                                ; ID 8: glacier-specific calibration - DEBRIS-model
-                                ; ID 9: glacier-specific calibration (Hugonnet2021)
+                            ; ID 1: open
+                            ; ID 3: open
+                            ; ID 4: open
+                            ; ID 5: regional calibration, Hugonnet2021
+                            ; ID 8: glacier-specific calibration - DEBRIS-model
+                            ; ID 9: glacier-specific calibration (Hugonnet2021)
 
-caliphase_loop=3             ; 1: default (NO loop); 2; calibration phases 1-2; 3; calibration phases 1-3
-calibration_phase='1'        ; 1: calibrate c_prec ; 2: DDF_snow ; 3: adjust temperature bias in ERA-data
-c1_tolerance=[.8,2.4]    ; c_prec tolerance (irrelevant, as ranges are given in file)
-c2_tolerance=[1.75,4.5]  ; DDF_snow tolerance - M1  (irrelevant, as ranges are given in file)
+caliphase_loop=3            ; 1: default (NO loop); 2; calibration phases 1-2; 3; calibration phases 1-3
+calibration_phase='1'       ; 1: calibrate c_prec ; 2: DDF_snow ; 3: adjust temperature bias in ERA-data
+c1_tolerance=[.8,2.4]       ; c_prec tolerance (irrelevant, as ranges are given in file)
+c2_tolerance=[1.75,4.5]     ; DDF_snow tolerance - M1  (irrelevant, as ranges are given in file)
 c2m3_tolerance=[7.,15.]     ; C1 tolerance - M3  
-t_offset=0.              ; default temperature correction of re-analysis data
+t_offset=0.                 ; default temperature correction of re-analysis data
 
 repeat_calibration='y'       ; Repeat calibration iteratively for Toff_grid until all glaciers are calibrated 
 

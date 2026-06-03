@@ -18,25 +18,32 @@ openr,1,fn & readf,1,input_file_content & close,1
 ; open log file to capture all console output
 spawn, 'mkdir -p ' + base_dir + '/logs'
 a=systime() & b=strsplit(a,' ',/extract)
-log_timestamp=string(b[4],fo='(a4)')+string(b[1],fo='(a3)')+string(b[2],fo='(a2)')+$
-              '_'+strjoin(strsplit(b[3],':',/extract),'h')+'m'
+log_timestamp=string(b[4],fo='(a4)')+'_'+string(b[1],fo='(a3)')+string(b[2],fo='(a2)')+'_'+strjoin(strsplit(b[3],':',/extract),'h')+'m'
 log_file=base_dir+'/logs/glogem_'+log_timestamp+'.log'
 journal, log_file
-print, 'Log file: '+log_file
 
 ; Some information to show which model we are running
+print, '  '
+print, 'Welcome, happy you run GloGEM :)'
+print, 'All the instructions and settings for this run are shown below and saved in a logfile'
+print, 'Log file: '+log_file
+print, '  '
 if time_resolution eq 'daily' then begin
-  print, '                    We are running GloGEM daily'
+  print, 'We are running GloGEM daily'
 endif else begin
-  print, '                    We are running GloGEM monthly'
+  print, 'We are running GloGEM monthly'
 endelse
 if calibrate eq 'y' then begin
-  print, '                    Calibration started ...'
+  print, 'Calibration started ...'
 endif else begin
-  print, '                    Running for the future ...'
+  print, 'Running for the future ...'
 endelse
-print, catchment_selection
-print, reanalysis
+if catchment_selection ne '' then begin
+   print, 'Catchment selection: '+catchment_selection
+end
+print, 'Reanalysis product selected: '+reanalysis
+print, '  '
+
 ; READ batch-file for individual glaciers (icetemperature-batch)
 
 if firnice_temperature eq 'y' then begin
