@@ -1,3 +1,18 @@
+; *************************************************************
+; read_climatepast_monthly
+;
+; Read the gridded monthly reanalysis climate fields for a region
+; into memory for subsequent downscaling and bias correction.
+;
+; Opens the binary .mdi metadata file to obtain grid dimensions and
+; coordinate arrays, then reads gridded temperature and precipitation
+; time series (rtemp, rprec) and, when sub-monthly variability is
+; enabled, the daily within-month anomaly patterns (rvariab). Also
+; reads the monthly vertical temperature gradient field (rtg) and
+; adjusts longitude arrays to the -180 to 180 convention for
+; consistency with the glacier inventory coordinates.
+; *************************************************************
+
 compile_opt idl2
 
    if clim_subregion ne '' then ccl='_'+clim_subregion else ccl=''
@@ -71,7 +86,7 @@ endfor
 close,1
 
 ; turn longitude arrays
-if clim_subregion eq 'East' then begin 
+if clim_subregion eq 'East' then begin
    ii=where(rlon gt 180,ci) & if ci gt 0 then rlon[ii]=rlon[ii]-360
    ii=where(rvlon gt 180,ci) & if ci gt 0 then rvlon[ii]=rvlon[ii]-360
 endif else begin

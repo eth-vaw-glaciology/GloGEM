@@ -1,7 +1,9 @@
-; *****************************************
+; *************************************************************
+; catchment_selection
+;
 ; Catchment selection
-; *****************************************
 ; This procedure selects a specific subset of glaciers from a list (catchment) within one RGI region
+; *************************************************************
 
 if rgiregion lt 10 then a='0'+string(rgiregion,fo='(i1)') else a=string(rgiregion,fo='(i2)')
 fn=dir+'catchments/RGI'+a+'_'+catchment_selection+'.dat' & an=file_lines(fn)-1 & s=strarr(an) & tt=strarr(1)

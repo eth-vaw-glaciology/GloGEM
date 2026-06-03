@@ -1,4 +1,6 @@
 ; *************************************************************
+; initialise_firnicetemp_spinup
+;
 ; Initialise glacier retreat flags and firn/ice temperature arrays.
 ;
 ; Sets glacier_retreat to 'n' for hindcast/startyear runs, resets

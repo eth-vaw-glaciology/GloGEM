@@ -1,4 +1,6 @@
 ; *************************************************************
+; setup_calibration_files
+;
 ; Open calibration output files and write headers.
 ;
 ; Sets model run flags for calibration mode (no writing, no

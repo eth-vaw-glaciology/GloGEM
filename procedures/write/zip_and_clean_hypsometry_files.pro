@@ -1,8 +1,11 @@
-; **********************************************
+; *************************************************************
+; zip_and_clean_hypsometry_files
+;
 ; * Zip and clean up hypsometry files
-; **********************************************
-; This procedure zips the hypsometry files and removes the unzipped directories to save space. 
+; This procedure zips the hypsometry files and removes the unzipped directories to save space.
 ; This is done automatically for all regions except for RGI-regions with subregions, where
+; *************************************************************
+
 compile_opt idl2
 
 if meltmodel eq '1' then mtt='' else mtt='_m3'

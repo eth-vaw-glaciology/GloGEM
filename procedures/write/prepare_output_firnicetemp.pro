@@ -1,8 +1,10 @@
-; ********************************************
+; *************************************************************
+; prepare_output_firnicetemp
+;
 ; Prepare output files for firnice temperature
-; ********************************************
-; This procedure prepares the output files for firnice temperature. It creates the necessary directories and files, 
+; This procedure prepares the output files for firnice temperature. It creates the necessary directories and files,
 ; and writes the headers for the output data. The actual data will be written in a later step.
+; *************************************************************
 
 compile_opt idl2
 

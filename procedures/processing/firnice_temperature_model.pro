@@ -1,3 +1,18 @@
+; *************************************************************
+; firnice_temperature_model
+;
+; Simulate the evolution of englacial firn and ice temperatures
+; through heat conduction, latent heat release, and ice advection.
+;
+; For each glacierized elevation band the procedure solves a
+; one-dimensional heat-conduction equation through a layered firn/ice
+; column, applies latent heat from percolating meltwater based on
+; firn permeability, and optionally adds horizontal and vertical ice
+; advection using a shallow-ice velocity estimate and upwind finite-
+; difference scheme. Temperature profiles are constrained to the
+; pressure melting point and stored for output at selected depths.
+; *************************************************************
+
 compile_opt idl2
 
 noval=-9999 & snoval=-99 ; no value indicators
@@ -9,7 +24,7 @@ IF enable_advection EQ 'y' AND advection_write EQ 'y' THEN BEGIN
    adv_vert_effect = DBLARR(N_ELEMENTS(gl))   ; Vertical advection effect
 ENDIF
 
-;********************* 
+;*********************
 ; copute ice velocity based on shallow ice approximation
 ii_perm=where(gl ne noval,ci)
 
@@ -60,7 +75,7 @@ ii=where(gl ne noval,ci)
 for i=0,ci-1 do begin
 
 ; generate local, and actualized arrays for layer heat capacity, condictivity and density
-dens_fit=dblarr(total(fit_layers))+900  
+dens_fit=dblarr(total(fit_layers))+900
 a=fix(sno[ii[i]]/(fit_dens[1]/1000.)) ; number of snow layers
 if a gt 18 then a=18            ; preventing too many layers for extreme snow depth (??)
 ; replacing top of density profile with snow values
@@ -83,9 +98,9 @@ tt=min([ind+1,total(fit_layers)])  ; either run to bedrock, or to max of layers
          tl_fit[ii[i],0]=min([0,tgs[ii[i]]]) ; temperature of topmost layer corresponding to air temperature or melting point!
          ; temperature of bottommost layer warmed up by geothermal heat flux (cumulative energy over one time step over a )
          ttgeot=tl_fit[ii[i],tt-1]+geothermal_flux*(3600*24*30.5/rf_dsc)/cice       ; /fit_dz(0,tt-1) ; unclear how to attribute a layer thickness for collecting flux (1m at the moment...)
-         
+
          tl_fit[ii[i],tt-1]=min([ttgeot,(fit_dz[1,tt-1]*0.9/10.)*(-0.00742)])    ; cannot be higher than pressure melting point
-         
+
          te_fit[ii[i],j]=tl_fit[ii[i],j]+((rf_dt*cond_fit[j]/(cap_fit[j])*(tl_fit[ii[i],j-1]-tl_fit[ii[i],j])/fit_dz[0,j]^2.)- $
              (rf_dt*cond_fit[j]/(cap_fit[j])*(tl_fit[ii[i],j]-tl_fit[ii[i],j+1])/fit_dz[0,j]^2.))/2. ; division by 2 to be removed?! result becomes unstable without ?!?
          tl_fit[ii[i],j]=te_fit[ii[i],j]
@@ -106,37 +121,37 @@ tt=min([ind+1,total(fit_layers)])  ; either run to bedrock, or to max of layers
             relative_height = 1.0D - (DOUBLE(j) / DOUBLE(tt))  ; 1 at surface, 0 at bed
             vprofile[j] = relative_height^4  ; approximation of velocity profile with n=3
          ENDFOR
-         
+
          ; Get velocity for current elevation band
          current_vel = u[i]
-         
+
          ; Get upglacier index (where ice is flowing from)
          upglacier_idx = i - 1
-         
+
          ; Calculate timestep in seconds
          dt_seconds = rf_dt * 3600.0D * 24.0D * 30.5D / rf_dsc
-         
+
          ; Calculate the actual horizontal distance based on slope
          band_vertical_spacing = 10.0D  ; Vertical spacing between bands in meters - ADJUST THIS VALUE
          min_slope_rad = 0.01D * !DTOR  ; Minimum slope to prevent division by zero
          local_slope_rad = MAX([slope[ii_perm[i]] * !DTOR, min_slope_rad])
          dx = band_vertical_spacing / TAN(local_slope_rad)
          dx = dx < 1000.0D  ; Cap maximum horizontal distance
-         
+
          ; Calculate advection coefficient (Courant number)
          courant = current_vel * dt_seconds / (dx * 365.25D * 24.0D * 3600.0D)
-         
+
          ; Ensure stability by limiting Courant number
          courant = courant < 0.8
-         
+
          ; Apply advection to each layer
          FOR j=1,tt-2 DO BEGIN
             ; Scale advection by the vertical velocity profile
             layer_courant = courant * vprofile[j]
-            
+
             ; Store the temperature before horizontal advection at 10m depth
             temp_before = tl_fit[ii[i],10]  ; Store 10m temperature before horizontal advection
-            
+
             ; First-order upwind scheme for advection
             tl_fit[ii[i],j] = (1.0D - layer_courant) * tl_fit[ii[i],j] + $
                      layer_courant * tl_fit[ii[upglacier_idx],j]
@@ -145,7 +160,7 @@ tt=min([ind+1,total(fit_layers)])  ; either run to bedrock, or to max of layers
             IF advection_write EQ 'y' THEN BEGIN
             IF j EQ 10 THEN adv_horiz_effect[ii[i]] = tl_fit[ii[i],j] - temp_before  ; Effect of horizontal advection at 10m depth
             ENDIF
-            
+
             ; Ensure temperature doesn't exceed pressure melting point
             tl_fit[ii[i],j] = tl_fit[ii[i],j] < (fit_dz[1,j]*0.9D/10.0D)*(-0.00742D)
          ENDFOR
@@ -154,14 +169,14 @@ tt=min([ind+1,total(fit_layers)])  ; either run to bedrock, or to max of layers
          ; Vertical advection
          ; Calculate vertical velocity component
          vertical_vel = DBLARR(tt)
-         
+
          ; In accumulation area: downward movement due to burial by new snow
          ; In ablation area: upward movement due to emergence velocity
          IF sno[ii[i]] GT mel[ii[i]] THEN BEGIN
          ; Accumulation area: downward movement
          ; Surface velocity = net accumulation rate
          surface_vertical_vel = MAX([(sno[ii[i]] - mel[ii[i]]), 0.0]) ; m/year, downward positive
-         
+
 
          ; Linear decrease of vertical velocity with depth (zero at bed)
          FOR j=0,tt-1 DO BEGIN
@@ -175,39 +190,39 @@ tt=min([ind+1,total(fit_layers)])  ; either run to bedrock, or to max of layers
          local_slope_rad = MAX([slope[ii_perm[i]] * !DTOR, min_slope_rad])
          current_vel = u[i] ; Get velocity for current elevation band
          emergence_vel = current_vel * TAN(local_slope_rad) ; m/year, upward positive
-         
+
          ; Convert to our coordinate system (downward positive)
          surface_vertical_vel = -emergence_vel
-         
+
          ; Linear decrease of vertical velocity with depth (zero at bed)
          FOR j=0,tt-1 DO BEGIN
             relative_depth = DOUBLE(j) / DOUBLE(tt-1)
             vertical_vel[j] = surface_vertical_vel * (1.0D - relative_depth)
          ENDFOR
          ENDELSE
-         
+
          ; Apply vertical advection (upwind scheme)
          ; Only if vertical velocity is significant
          IF ABS(MAX(vertical_vel)) GT 0.1D THEN BEGIN
          ; Create temporary array to store updated temperatures
          temp_v = tl_fit[ii[i],*]
          temp_before_v = tl_fit[ii[i],10]  ; Store 10m temperature before vertical advection
-         
+
          ; Convert to proper time units
          dt_years = rf_dt * (30.5D/rf_dsc) / 365.25D
-         
+
          ; Apply vertical advection for each layer (except boundaries)
          FOR j=1,tt-2 DO BEGIN
             ; Calculate vertical grid spacing (might vary with depth in your model)
             dz = fit_dz[0,j]
-            
+
             ; Calculate Courant number for vertical advection
             v_courant = vertical_vel[j] * dt_years / dz
-            
+
             ; Ensure stability
             v_courant = v_courant < 0.8D       ; Limit to 0.8 for stability
             v_courant = MAX([v_courant, -0.8D])
-            
+
             IF v_courant GE 0 THEN BEGIN
             ; Downward advection (from above)
             IF j GT 1 THEN temp_v[j] = temp_v[j] - v_courant * (temp_v[j] - temp_v[j-1])
@@ -216,7 +231,7 @@ tt=min([ind+1,total(fit_layers)])  ; either run to bedrock, or to max of layers
             IF j LT tt-2 THEN temp_v[j] = temp_v[j] - v_courant * (temp_v[j+1] - temp_v[j])
             ENDELSE
          ENDFOR
-         
+
          ; Store vertical advection effect at 10m depth
          IF advection_write EQ 'y' THEN BEGIN
             adv_vert_effect[ii[i]] = temp_v[10] - temp_before_v  ; Effect at 10m depth
@@ -249,8 +264,8 @@ for j=1,tt-2 do begin ; loop through all considered layers from top, and update 
    c=(-1)*(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*cap_fit[j]*fit_dz[0,j]/Lh_rf ; cold content in layer below pressure melting point
    if fit_water gt c then begin   ; temperate layer if cold reservoir used, remaining water being transferred
       tl_fit[ii[i],j]=(fit_dz[1,j]*0.9/10.)*(-0.00742) & fit_water=fit_water-c
-   endif else begin  
-      if c gt 0 and fit_water gt 0 then tl_fit[ii[i],j]=tl_fit[ii[i],j]-(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*(fit_water/c)   
+   endif else begin
+      if c gt 0 and fit_water gt 0 then tl_fit[ii[i],j]=tl_fit[ii[i],j]-(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*(fit_water/c)
       fit_water=fit_water-c
    endelse
  ;  if j eq 10 and ii(i) eq 245 then print, m,c,fit_water,tl_fit(ii(i),10)
@@ -265,8 +280,8 @@ for j=1,ck do begin ; loop through all SNOW layers from top, and update temperat
    c=(-1)*(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*cap_fit[j]*fit_dz[0,j]/Lh_rf ; cold content in layer below pressure melting point
    if fit_water gt c then begin   ; temperate layer if cold reservoir used, remaining water being transferred
       tl_fit[ii[i],j]=(fit_dz[1,j]*0.9/10.)*(-0.00742) & fit_water=fit_water-c
-   endif else begin  
-      if c gt 0 and fit_water gt 0 then tl_fit[ii[i],j]=tl_fit[ii[i],j]-(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*(fit_water/c)   
+   endif else begin
+      if c gt 0 and fit_water gt 0 then tl_fit[ii[i],j]=tl_fit[ii[i],j]-(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*(fit_water/c)
       fit_water=fit_water-c
    endelse
 endfor
@@ -284,8 +299,8 @@ for j=ck+1,tt-2 do begin ; loop through all ICE layers from top, and update temp
    c=(-1)*(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*cap_fit[j]*fit_dz[0,j]/Lh_rf ; cold content in layer below pressure melting point
    if fit_water gt c then begin   ; temperate layer if cold reservoir used, remaining water being transferred
       tl_fit[ii[i],j]=(fit_dz[1,j]*0.9/10.)*(-0.00742) & fit_water=fit_water-c
-   endif else begin  
-      if c gt 0 and fit_water gt 0 then tl_fit[ii[i],j]=tl_fit[ii[i],j]-(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*(fit_water/c)   
+   endif else begin
+      if c gt 0 and fit_water gt 0 then tl_fit[ii[i],j]=tl_fit[ii[i],j]-(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*(fit_water/c)
       fit_water=fit_water-c
    endelse
 ;   if j eq 10 and ii(i) eq 20 then print, m,c,fit_water,tl_fit(ii(i),20),f
@@ -297,8 +312,8 @@ endelse
 if firnice_write[0] eq 'y' then begin
          ; maximum temperature in layer during one year
    elev_firnicetemp[0,ye,ii[i]]=max([elev_firnicetemp[0,ye,ii[i]],tl_fit[ii[i],2]])  ; 2m
-   elev_firnicetemp[1,ye,ii[i]]=max([elev_firnicetemp[1,ye,ii[i]],tl_fit[ii[i],10]]) ; 10m 
-   elev_firnicetemp[2,ye,ii[i]]=max([elev_firnicetemp[2,ye,ii[i]],tl_fit[ii[i],18]]) ; 50m 
+   elev_firnicetemp[1,ye,ii[i]]=max([elev_firnicetemp[1,ye,ii[i]],tl_fit[ii[i],10]]) ; 10m
+   elev_firnicetemp[2,ye,ii[i]]=max([elev_firnicetemp[2,ye,ii[i]],tl_fit[ii[i],18]]) ; 50m
    elev_firnicetemp[3,ye,ii[i]]=max([elev_firnicetemp[3,ye,ii[i]],tl_fit[ii[i],30]]) ; bedrock
 endif
 

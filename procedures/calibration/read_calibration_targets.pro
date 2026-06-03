@@ -1,10 +1,12 @@
-; ************************************************************
+; *************************************************************
+; read_calibration_targets
+;
 ; Read calibration targets (mass balance data).
 ;
 ; For regional calibration: reads calibration.dat with regional
 ; mean mass balance targets. For glacier-specific calibration:
 ; reads geodetic mass balance data via read_geodeticdata.pro.
-; ************************************************************
+; *************************************************************
 
 compile_opt idl2
 

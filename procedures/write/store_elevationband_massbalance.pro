@@ -1,4 +1,6 @@
 ; *************************************************************
+; store_elevationband_massbalance
+;
 ; Store elevation-band mass balance and refreezing at year-end.
 ;
 ; At the end of the mass balance year, stores the winter balance

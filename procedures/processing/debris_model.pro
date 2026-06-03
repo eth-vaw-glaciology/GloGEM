@@ -1,12 +1,14 @@
-; ******************************
+; *************************************************************
+; debris_model
+;
 ; Debris model
-; ******************************
 ; This procedure simulates the dynamic evolution of supraglacial debris and melt ponds on a glacier.
 ; It first determines a median elevation based on the Equilibrium Line Altitude (ELA) and the initial glacier area.
 ; Then, it models the expansion of existing debris and the seeding of new debris from adjacent bands, as well as the expansion of melt ponds, based on local mass balance and predefined gradients.
 ; Finally, it calculates the thickening of the debris layer and prepares the output for debris thickness, fraction, reduction factor, and pond area for each elevation band.
 ;
 ; References: Compagno et al., 2022 (10.5194/tc-16-1697-2022)
+; *************************************************************
 
 compile_opt idl2
 

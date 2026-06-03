@@ -1,4 +1,6 @@
 ; *************************************************************
+; setup_massbalance_year
+;
 ; Define mass balance year thresholds and clean stale t_offset.
 ;
 ; Sets dd_thresholds and bal_month for the current region and

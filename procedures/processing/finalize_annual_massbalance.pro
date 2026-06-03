@@ -1,4 +1,6 @@
 ; *************************************************************
+; finalize_annual_massbalance
+;
 ; Finalize annual mass balance and compute glacier statistics.
 ;
 ; Stores the annual balance, updates firn coverage based on a

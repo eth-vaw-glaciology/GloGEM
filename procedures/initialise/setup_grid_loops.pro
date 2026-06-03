@@ -1,4 +1,6 @@
 ; *************************************************************
+; setup_grid_loops
+;
 ; Determine grid loop bounds and dimensions.
 ;
 ; Calculates the lon/lat bounding box from the glacier inventory,

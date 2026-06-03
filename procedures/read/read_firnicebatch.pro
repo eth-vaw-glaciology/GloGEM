@@ -1,3 +1,17 @@
+; *************************************************************
+; read_firnicebatch
+;
+; Read the batch file listing individual glaciers for englacial
+; temperature model validation runs.
+;
+; Parses the icetemperature_batch.dat file to extract RGI glacier IDs,
+; region names, measurement depths, and maximum profile depths for each
+; entry. Numeric attributes are stored in firnice_batch_data1 and string
+; attributes in firnice_batch_data2, which are used to configure
+; glacier-specific firn/ice temperature simulations in the main model
+; loop.
+; *************************************************************
+
 compile_opt idl2
 
   fn=dir+'icetemperature_batch.dat' & nffbl=file_lines(fn)-1 & s=strarr(nffbl) & tt=strarr(1)

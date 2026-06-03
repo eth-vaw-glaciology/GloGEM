@@ -1,3 +1,18 @@
+; *************************************************************
+; read_climatepast_daily
+;
+; Read the daily reanalysis climate time series for the grid point
+; nearest to the current glacier cluster.
+;
+; Constructs the file path from the reanalysis product name and
+; regional identifiers, then performs a spiral nearest-neighbour
+; search if the exact file is absent, expanding the search radius in
+; 0.01-degree steps up to 1 degree. Reads temperature, precipitation,
+; day-of-year, and lapse-rate columns from the data file and
+; initialises the working climate arrays (temp, prec, cyear, cday)
+; while removing sub-threshold daily precipitation amounts.
+; *************************************************************
+
 compile_opt idl2
 
 
@@ -26,9 +41,9 @@ endif else begin
          if found eq 1 then break
       endfor
       if found eq 1 then break
-      ; Increase search window                                   
+      ; Increase search window
       radius = radius + 1
-      ; Stop if search window gets 100 ... (1°) 
+      ; Stop if search window gets 100 ... (1°)
       if radius eq 20 then begin
             print, 'No suitable reanalysis grid point found within 1° radius. Please check your input coordinates.'
             STOP

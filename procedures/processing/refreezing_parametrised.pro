@@ -1,3 +1,18 @@
+; *************************************************************
+; refreezing_parametrised
+;
+; Estimate meltwater refreezing using a simple parametric cold-
+; content approach driven by cumulative winter air temperature.
+;
+; For each glacierized elevation band the procedure accumulates the
+; cold content (rf_cold) from sub-freezing air temperatures
+; throughout the year. Refreezing is triggered when melt exceeds a
+; lower threshold and the cold reservoir is sufficiently negative,
+; with the refreezing amount capped by a scaling factor derived from
+; the mean annual temperature and the firn indicator. The annual
+; area-weighted refreezing total is added to the refre output array.
+; *************************************************************
+
 compile_opt idl2
 
 ; ----- simple and fast refreezing model

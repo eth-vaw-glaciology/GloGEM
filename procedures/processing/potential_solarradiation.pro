@@ -1,3 +1,18 @@
+; *************************************************************
+; potential_solarradiation
+;
+; Compute potential shortwave radiation on sloped glacier surfaces
+; for each elevation band and calendar month.
+;
+; Using the mid-month solar declination angle and the glacier
+; latitude, the procedure calculates the zenith angle and the
+; corresponding cos-zenith factor phi0, then projects the flat-
+; surface monthly radiation (mrad) onto each band's slope and aspect
+; combination using the standard geometric correction. The resulting
+; sw_rad array (nb x 12) is used in the simplified energy-balance
+; melt model (meltmodel = '3').
+; *************************************************************
+
 compile_opt idl2
 
    sw_rad=dblarr(nb,12) & z=dblarr(12) & phi0=dblarr(12) & aspect=da[8,*]

@@ -1,3 +1,17 @@
+; *************************************************************
+; bias_correction_qm
+;
+; Correct GCM temperature data using quantile mapping against the
+; reanalysis historical distribution.
+;
+; Builds monthly empirical cumulative distribution functions (CDFs)
+; for the reanalysis historical period, the GCM historical overlap,
+; and the GCM future period using 1001 quantile levels. The quantile
+; arrays are stored in Qr_hist, Qg_hist, and Qg_fut for subsequent
+; application of the quantile-mapping transfer function to future GCM
+; temperatures.
+; *************************************************************
+
 compile_opt idl2
 
 ; ----- bias correction of GCM data using quantile mapping

@@ -1,6 +1,8 @@
-; ***************************************
+; *************************************************************
+; write_calibration_phase_statistics
+;
 ; Write and print calibration phase statistics
-; ***************************************
+; *************************************************************
 
 compile_opt idl2
 if catchment_selection ne '' then cc='_'+catchment_selection else cc=''

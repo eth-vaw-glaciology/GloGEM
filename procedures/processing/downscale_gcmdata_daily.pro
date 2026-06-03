@@ -1,3 +1,18 @@
+; *************************************************************
+; downscale_gcmdata_daily
+;
+; Construct a continuous daily climate time series by splicing
+; reanalysis observations with bias-corrected GCM projections.
+;
+; Applies the delta-method or quantile-mapping bias correction to daily
+; GCM temperature and precipitation relative to the reanalysis
+; evaluation period. The procedure then assembles a seamless daily
+; series (arrays temp, prec, cyear, cday, cmon) by using reanalysis
+; values up to the last available year and bias-corrected GCM values
+; thereafter, and optionally rescales GCM temperature variability to
+; match the reanalysis month-to-month variability.
+; *************************************************************
+
 compile_opt idl2
 
 if bias_correction eq 'y' then begin

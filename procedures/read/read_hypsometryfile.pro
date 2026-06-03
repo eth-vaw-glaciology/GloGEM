@@ -1,5 +1,20 @@
+; *************************************************************
+; read_hypsometryfile
+;
+; Read the elevation-band hypsometry file for an individual glacier
+; and optionally extend the geometry for the advance scheme.
+;
+; Reads the 12-column per-band data array (elevation, thickness,
+; slope, area, etc.) and validates the consensus ice thickness
+; dataset by falling back to the Huss & Farinotti (2012) dataset if
+; thickness values are implausible or the area disagrees strongly
+; with the inventory. If glacier advance is enabled and the glacier
+; has more than three bands, additional toe bands are prepended with
+; linearly extrapolated bed elevations.
+; *************************************************************
+
 compile_opt idl2
-  
+
   nb=file_lines(fn)-5
   s=strarr(5) & da=dblarr(12,nb)
   openr,1,fn & readf,1,s & readf,1,da & close,1
@@ -11,7 +26,7 @@ if min(da[1,*]) lt -300 or abs(a_gl[gg[g]]-total(da[3,*]))*100./a_gl[gg[g]] gt 5
    nb=file_lines(fn)-5 & s=strarr(5) & da=dblarr(12,nb)
    openr,1,fn & readf,1,s & readf,1,da & close,1
 endif
-   
+
 ; add bands at glacier tongue
 if advance eq 'y' and nb gt 3 then begin
     adv_addband=adv_addband0

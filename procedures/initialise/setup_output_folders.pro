@@ -1,10 +1,12 @@
-; ***************************************************************
+; *************************************************************
+; setup_output_folders
+;
 ; Set up the output folder structure for the current model run.
 ;
 ; Determines the output subdirectory path (b): a timestamped
 ; folder for future runs, or /PAST... if tran[1] is in the past.
 ; Then creates all required subdirectories under dirres+dir_region.
-; ***************************************************************
+; *************************************************************
 
 compile_opt idl2
 

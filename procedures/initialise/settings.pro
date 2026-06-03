@@ -1,16 +1,17 @@
-; === INPUT SETTINGS
+; *************************************************************
+; settings
 ;
-; GloGEM settings file — shared model defaults for all users.
-; Loaded by glogem.pro via @procedures/initialise/settings.pro before every run.
+; Define all default model parameters and configuration variables
+; for a GloGEM run.
 ;
-; File is split into two zones (see markers below):
-;   Zone 1  — raw defaults only, no conditional logic
-;   Zone 2  — all derived / enforced settings, runs after config.pro is loaded
-;
-; To override any setting personally, copy config.pro.example to config.pro
-; and uncomment the variables you want to change. Any variable defined in
-; this file can be overridden that way — see config.pro.example for the most
-; common ones or simply copy any line from this file directly.
+; Organised into two zones: Zone 1 sets raw scalar defaults (time
+; resolution, GCM lists, calibration tolerances, mass-balance
+; parameters, output options) without any conditional logic; Zone 2,
+; which executes after the user's config.pro overrides have been
+; applied, derives dependent settings such as day-of-month arrays,
+; extended GCM lists for 2300 runs, and enforced consistency
+; constraints that prevent erroneous model configurations.
+; *************************************************************
 
 compile_opt idl2
 

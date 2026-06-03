@@ -1,5 +1,21 @@
+; *************************************************************
+; downscale_gcmdata_monthly
+;
+; Construct a continuous monthly climate time series by splicing
+; reanalysis observations with bias-corrected GCM projections.
+;
+; Identifies the nearest reanalysis and GCM grid points for the
+; current glacier grid cell, computes monthly additive temperature
+; and multiplicative precipitation biases over the rea_eval period,
+; then assembles a seamless monthly series (temp, prec, cyear, cmon)
+; using reanalysis data for the observed past and bias-corrected GCM
+; data for the future. Optionally rescales GCM month-to-month
+; temperature variability to match the reanalysis using a running-mean
+; smoothing approach.
+; *************************************************************
+
 compile_opt idl2
-  
+
 ; find corresponding grid cell of reanalysis-file
 dtt=dblarr(2,nlons[0])
 for i=0,nlons[0]-1 do begin
@@ -38,7 +54,7 @@ endif
 ; meteo time series downscaled from GCMs or whatever (future)
 endif else begin
 
-  
+
 ; find closest GCM-point
 dtt=dblarr(2,n_elements(gcm_lon))
 for i=0,n_elements(gcm_lon)-1 do begin
@@ -61,7 +77,7 @@ for m=1,12 do begin
 
    dd=where(ryear ge rea_eval[0] and ryear le rea_eval[1] and rmon eq m)
 
-   kk=where(gcm_year ge rea_eval[0] and gcm_year le rea_eval[1] and gcm_mon eq m)      
+   kk=where(gcm_year ge rea_eval[0] and gcm_year le rea_eval[1] and gcm_mon eq m)
    bias[0,m-1]=mean(gcm_temp[kk,jj[0],ii[0]])-mean(rtemp[dd,cc[0],bb[0]])
    bias[1,m-1]=mean(gcm_prec[kk,jj[0],ii[0]])/mean(rprec[dd,cc[0],bb[0]])
    if variability_bias eq 'y' then bias[2,m-1]=stdev(rtemp[dd,cc[0],bb[0]])/stdev(gcm_temp[kk,jj[0],ii[0]])
@@ -70,7 +86,7 @@ for m=1,12 do begin
 
 endfor
 
-; optionally restrict temperature bias to a minimum value - if extreme 
+; optionally restrict temperature bias to a minimum value - if extreme
 ; biases occur in Arctic regions air temperatures can suddenly become maximal
 ; during winter time
 if min_tempbias ne noval then begin
@@ -98,36 +114,36 @@ endif
 temp=dblarr((years+1)*12) & prec=temp & rad=temp & cyear=temp & cmon=temp & n=0l
 for i=0,years do begin
 ; use re-analysis data as long as available! After (AND before) use GCM data
-   if i+tran[0] le max(ryear) and i+tran[0] gt min(ryear) then begin   
+   if i+tran[0] le max(ryear) and i+tran[0] gt min(ryear) then begin
       for m=1,12 do begin
          bb=where(rlat eq rmid[0]) & cc=where(rlon eq rmid[1]) & hh=where(ryear eq i+tran[0]-1 and rmon eq m,ci)
          cyear[n]=i+tran[0]-1 & cmon[n]=m
          if ci gt 0 then begin
             temp[n]=rtemp[hh[0],cc[0],bb[0]]
             prec[n]=rprec[hh[0],cc[0],bb[0]]
-         endif else stop        
-         if meltmodel ne '1' then rad[n]=mrad[m-1]         
+         endif else stop
+         if meltmodel ne '1' then rad[n]=mrad[m-1]
          n=n+1
       endfor
    endif else begin
-; use projections only for unmeasured future   
+; use projections only for unmeasured future
       hh=where(gcm_year eq i+tran[0]-1)
       for m=1,12 do begin
          cyear[n]=i+tran[0]-1 & cmon[n]=m
-         
+
          kk=where(gcm_year eq i+tran[0]-1 and gcm_mon eq m,ck)
             ; hack for GCMs only extending to 2099 / 2298
          if ck eq 0 then kk=where(gcm_year eq i+tran[0]-2 and gcm_mon eq m,ck)
          if ck eq 0 then kk=where(gcm_year eq i+tran[0]-3 and gcm_mon eq m,ck)
          temp[n]=gcm_temp[kk[0],jj[0],ii[0]]-bias[0,m-1]
          prec[n]=gcm_prec[kk[0],jj[0],ii[0]]/bias[1,m-1]
-         
+
          if meltmodel ne '1' then rad[n]=mrad[m-1]
-         
+
          n=n+1
       endfor
    endelse
-   
+
 endfor
 
 ; --------------------

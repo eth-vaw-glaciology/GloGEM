@@ -1,7 +1,9 @@
-; ***************************************
-; initializing opening results files 
-; ***************************************
-; This procedure opens the results files for writing, and writes the header lines. 
+; *************************************************************
+; initialise_results_files
+;
+; initializing opening results files
+; This procedure opens the results files for writing, and writes the header lines.
+; *************************************************************
 
 compile_opt idl2
 

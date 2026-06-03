@@ -1,3 +1,19 @@
+; *************************************************************
+; refreezing_full
+;
+; Compute meltwater refreezing using a multi-layer cold-content
+; model for each glacierized elevation band.
+;
+; For bands with melt below the rf_melcrit threshold the procedure
+; advances the firn/ice temperature profile through heat conduction
+; to build up a cold reservoir. When melt exceeds the threshold, it
+; calculates the available cold content from the temperature deficit
+; of each layer, refreezes liquid water up to that limit, and resets
+; the layer temperatures to the pressure melting point once the cold
+; reservoir is exhausted. Separate refreezing pathways are applied
+; for firn-covered and bare-ice surfaces.
+; *************************************************************
+
 compile_opt idl2
 
   noval=-9999 & snoval=-99

@@ -1,4 +1,6 @@
 ; *************************************************************
+; apply_calibration_params
+;
 ; Apply calibration parameters to the current glacier.
 ;
 ; Looks up the closest matching glacier in the calibration array

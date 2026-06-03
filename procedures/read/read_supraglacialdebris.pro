@@ -1,3 +1,18 @@
+; *************************************************************
+; read_supraglacialdebris
+;
+; Read per-band supraglacial debris properties and the Ostrem-curve
+; melt-reduction lookup table for an individual glacier.
+;
+; Reads debris thickness, coverage fraction, melt factor, and pond
+; density from the glacier-specific debris data file, adjusting the
+; band array dimensions if the advance scheme is active. If no debris
+; file exists, all debris arrays are initialised to zero or unity
+; defaults. Also reads the Ostrem-curve factor file to provide the
+; debris-thickness-dependent melt-reduction factors (debris_type_th,
+; debris_type_red) used in the melt calculation.
+; *************************************************************
+
 compile_opt idl2
 
   ; Check if supraglacial debris data should be read

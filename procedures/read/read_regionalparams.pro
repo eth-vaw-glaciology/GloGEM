@@ -1,5 +1,20 @@
+; *************************************************************
+; read_regionalparams
+;
+; Read region-specific model parameters from the calibrated regional
+; parameter file and assign them to the active model run.
+;
+; Parses the regional_parameters file for the active reanalysis
+; product and time resolution, extracts calving coefficient,
+; precipitation correction factor and tolerance bounds, lapse rate,
+; temperature offset, and precipitation threshold for the matching
+; region and sub-region. Handles both single-subregion and multi-
+; subregion lookups and optionally updates the glacier size range if
+; size_range_overwrite is enabled.
+; *************************************************************
+
 compile_opt idl2
-  
+
   fn=dir+'regional_parameters_'+reanalysis+'.dat'
   if time_resolution eq 'monthly' then b=6 else b=10 & anz=file_lines(fn)-b
    ss=strarr(b) & da=strarr(anz) & openr,1,fn & readf,1,ss & readf,1,da & close,1

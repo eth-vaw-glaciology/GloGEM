@@ -1,10 +1,12 @@
-; ***************************************
+; *************************************************************
+; accumulation
+;
 ; Accumulation of the mass balance model
-; ***************************************
 ; This procedure calculates the accumulation of the mass balance model.
 ; It is called by the main procedure for each year and month/day of the simulation.
 ; The precipitation is extrapolated with elevation (dpdz) and constrained at high elevations.
 ; The state of precipitation (snow or rain) is determined based on a temperature threshold T_thres.
+; *************************************************************
 
 compile_opt idl2
 

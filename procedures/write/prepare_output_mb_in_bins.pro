@@ -1,9 +1,11 @@
 ; *************************************************************
+; prepare_output_mb_in_bins
+;
 ; *  Prepare output files for mass balance in elevation bins  *
-; *************************************************************
-; This procedure prepares the output files for mass balance in elevation bins. 
-; It creates the necessary directories and files, and writes the headers for the output data. 
+; This procedure prepares the output files for mass balance in elevation bins.
+; It creates the necessary directories and files, and writes the headers for the output data.
 ; The actual data will be written in a later step.
+; *************************************************************
 
 compile_opt idl2
 

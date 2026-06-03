@@ -1,8 +1,10 @@
-; ***************************************
-; Read glacier inventory batch file 
-; ***************************************
-;read batch file for all glaciers to be considered 
+; *************************************************************
+; read_glacier_inventory_batchfile
+;
+; Read glacier inventory batch file
+;
 ; (taken from ice thickness data set)
+; *************************************************************
 
 compile_opt idl2
 

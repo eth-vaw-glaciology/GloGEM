@@ -1,4 +1,6 @@
 ; *************************************************************
+; process_hypsometry_data
+;
 ; Process hypsometry data for the current glacier.
 ;
 ; Extracts elevation band properties from the hypsometry array,

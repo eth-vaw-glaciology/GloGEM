@@ -1,8 +1,10 @@
-; ********************************************
+; *************************************************************
+; prepare_output_hypsoevo
+;
 ; Prepare output for hypsometry-evolution file
-; ********************************************
-; This procedure prepares the output files for hypsometry-evolution. It creates the necessary directories and files, 
+; This procedure prepares the output files for hypsometry-evolution. It creates the necessary directories and files,
 ; and writes the headers for the output data. The actual data will be written in a later step.
+; *************************************************************
 
 compile_opt idl2
 

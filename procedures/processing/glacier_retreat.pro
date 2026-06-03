@@ -1,11 +1,13 @@
-; ***************************************
+; *************************************************************
+; glacier_retreat
+;
 ; Glacier retreat model
-; ***************************************
 ; This procedure updates the glacier geometry (glacier retreat) based on the dh-parameterization (Huss et al., 2010).
 ; The parametrization distributes thickness changes based on a normalized elevation rang, ensuring that the largest changes occur at the terminus.
 ; The procedure is mass conserving, adjusting the area of elevation band using an area-thickness scaling.
-
+;
 ; The glacier advance scheme is activated when the glacier volume increases and the volume change exceeds a certain threshold.
+; *************************************************************
 
 compile_opt idl2
 

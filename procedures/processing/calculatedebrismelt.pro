@@ -1,3 +1,18 @@
+; *************************************************************
+; calculatedebrismelt
+;
+; Apply the supraglacial debris melt-reduction scheme to ice-melt
+; values in debris-covered elevation bands.
+;
+; For each band where surface type is bare ice, temperature exceeds
+; the melt threshold, and debris thickness and fraction are positive,
+; the procedure looks up the nearest debris-thickness class on the
+; Ostrem curve to obtain a reduction factor. It then partitions melt
+; into debris-covered, clean-ice, and supraglacial-pond fractions,
+; applying the pond enhancement factor to the pond area. Cumulative
+; ice melt is updated accordingly.
+; *************************************************************
+
 compile_opt idl2
 
   ; Check if supraglacial debris influence should be considered

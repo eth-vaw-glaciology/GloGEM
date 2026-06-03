@@ -1,10 +1,12 @@
-; *****************************************************************************
+; *************************************************************
+; plot_mb_and_profiles_per_glacier
+;
 ; *  Plot mass balance and profiles for each glacier *
-; *****************************************************************************
-; This procedure creates multiple plots for each glacier, including the elevation profile, 
-; the mass balance time series, and the elevation distribution. 
-; The plots are saved in the output directory for each glacier. The procedure is called at the end 
+; This procedure creates multiple plots for each glacier, including the elevation profile,
+; the mass balance time series, and the elevation distribution.
+; The plots are saved in the output directory for each glacier. The procedure is called at the end
 ; of the main loop for each glacier, and it uses the results of the calculations to create the plots.
+; *************************************************************
 
 compile_opt idl2
 xscm=20 & yscm=28.

@@ -1,4 +1,6 @@
 ; *************************************************************
+; assign_region_parameters
+;
 ; Assign region name, dir_region, rgiregion and sub_region.
 ;
 ; For simple region loops (region_id_loop[0]=0) the name comes

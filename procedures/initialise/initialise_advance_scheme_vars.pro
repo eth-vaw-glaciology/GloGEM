@@ -1,9 +1,11 @@
-; *****************************************
+; *************************************************************
+; initialise_advance_scheme_vars
+;
 ; *  Initialise advance scheme variables  *
-; *****************************************
-; This procedure defines the variables needed for the advance scheme, which are used to determine the initial areas 
-; in front of the glacier and the amplification of these areas. It also defines some more variables related to the 
+; This procedure defines the variables needed for the advance scheme, which are used to determine the initial areas
+; in front of the glacier and the amplification of these areas. It also defines some more variables related to the
 ; initial conditions of the glacier.
+; *************************************************************
 
 compile_opt idl2
 

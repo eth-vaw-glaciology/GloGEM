@@ -1,12 +1,26 @@
+; *************************************************************
+; read_gcmdata_daily
+;
+; Read daily GCM temperature and precipitation time series for the
+; grid point nearest to the current glacier cluster.
+;
+; Locates the closest GCM longitude and latitude grid points to the
+; reanalysis reference location (rmid), constructs the path to the
+; daily climate file for the active GCM and scenario, and reads the
+; 6-column data array containing year, month, day, and climate
+; variables. The extracted arrays (tempgcm, precgcm, gcm_year,
+; gcm_mon, gcm_day) are used by the downscaling procedure.
+; *************************************************************
+
 compile_opt idl2
 
 ; find closest GCM-point
 fn=dir_clim+'/future/'+time_resolution+'/'+GCM_data+'/'+dir_region+'/'+GCM_model[gcms]+'/longitudes.dat'
-anz=file_lines(fn)-1 & s=strarr(1) & gcm_lon=dblarr(anz) 
+anz=file_lines(fn)-1 & s=strarr(1) & gcm_lon=dblarr(anz)
 openr,1,fn & readf,1,s & readf,1,gcm_lon & close,1
 
 fn=dir_clim+'/future/'+time_resolution+'/'+GCM_data+'/'+dir_region+'/'+GCM_model[gcms]+'/latitudes.dat'
-anz=file_lines(fn)-1 & s=strarr(1) & gcm_lat=dblarr(anz) 
+anz=file_lines(fn)-1 & s=strarr(1) & gcm_lat=dblarr(anz)
 openr,1,fn & readf,1,s & readf,1,gcm_lat & close,1
 
 a=min(abs(gcm_lon-rmid[0]),ind) & a=min(abs(gcm_lat-rmid[1]),ind2)

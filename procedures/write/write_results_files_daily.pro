@@ -1,46 +1,20 @@
-;-----------------------------------------------------------
-; Created by: 
-;   Lander Van Tricht
-; Date of last modification:
-;   24/01/2025
-; Name: 
-;   WRITE_RESULTS_FILES_DAILY
-; Purpose: 
-;   Writes model results for all desired output variables into .dat files.
-; Inputs: 
-;   outf_names      - Array of output filenames
-;   ANNUAL (The values below are stored with annual values)
-;   areas           - Array of glacier areas
-;   volumes         - Array of glacier volumes
-;   mb              - Array of mass balance values
-;   wb              - Array of winter balance values
-;   smelt           - Array of snow melt 
-;   imelt           - Array of ice melt 
-;   accum           - Array of accumulation data
-;   rain            - Array of rain data
-;   ela             - Array of equilibrium line altitude data
-;   aar             - Array of accumulation area ratio data
-;   refre           - Array of refreezing data
-;   hmin_g          - Array of glacier minimum height data
-;   flux_calv       - Array of calving flux data
-;   discharge       - Array of discharge data
-;   discharge_gl    - Array of glacier discharge data
-;   DAILY (The variables below are stored with daily values)
-;   accday          - Array of accumulation
-;   rainday         - Array of rain
-;   snowmeltday     - Array of snowmelt
-;   icemeltday      - Array of ice melt
-;   refrday         - Array of refreezing
-;   snowlineday     - Array of snowline altitude
-;   id              - Identifier for each glacier to be modelled in a region
-;   gg, g           - Glacier group and index
-;   years           - Number of simulation years
-;   y               - Array of year values
-;-----------------------------------------------------------
-
+; *************************************************************
+; write_results_files_daily
+;
+; Write annual and daily glacier mass balance output variables to
+; per-variable .dat result files for the daily time-resolution run.
+;
+; Iterates over all active output variable names in outf_names,
+; mapping each index to the corresponding model array (area, volume,
+; mass balance, melt, accumulation, ELA, AAR, refreezing, discharge,
+; and daily sub-annual series). Annual variables are written as a
+; single row per glacier; daily variables are written year by year
+; with the glacier ID, year, and area prepended to the daily values
+; converted to millimetres.
+; *************************************************************
 
 compile_opt idl2
-    
+
     ; Validate inputs
     IF N_ELEMENTS(outf_names) EQ 0 THEN MESSAGE, 'Error: outf_names is required.'
     IF time_resolution NE 'daily' THEN MESSAGE, 'Error: time_resolution must be "daily".'
@@ -83,7 +57,3 @@ compile_opt idl2
             endelse
         endfor
     endif
-
-
-
-

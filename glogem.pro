@@ -1,3 +1,16 @@
+; *************************************************************
+; glogem
+;
+; Orchestrate the GloGEM glacier mass balance model from model
+; initialisation through to results output.
+;
+; Loads settings and user configuration, then drives nested loops over
+; GCMs, emission scenarios, experiments, regions, and individual
+; glaciers. Within each glacier the code reads climate and hypsometry
+; data, applies bias correction and downscaling, runs the monthly or
+; daily mass balance model (accumulation, melt, refreezing, glacier
+; retreat, calving), and writes all selected output files to disk.
+; *************************************************************
 
 ; MAIN GloGEM-Code (modular)
 
@@ -676,7 +689,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
     @procedures/write/zip_and_clean_hypsometry_files.pro
   endif
 
-endfor                          ; RCPs
+endfor   ; RCPs
 
 endfor                          ; GCMs
 

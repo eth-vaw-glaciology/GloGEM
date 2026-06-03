@@ -1,6 +1,7 @@
-; ******************************
+; *************************************************************
+; calving_model
+;
 ; Calving model of the Mass balance model
-; ******************************
 ; This procedure calculates frontal ablation (calving), employing a modified version of the approach proposed by Oerlemans and Nick (2005).
 ; It first identifies if a glacier is water-terminating by analyzing the bed elevation at the terminus (i.e., if the bed elevation is below zero).
 ; The height of the calving front (Hf) is calculated using the formula Hf = max(af * L^(1/2), δ * d), where af is a constant (0.7 m^(1/2)), L is the glacier length,
@@ -10,6 +11,7 @@
 ; such that k = k0 * βt. k0 is a region-specific parameter.
 ; The procedure also includes a constraint on the maximum frontal ablation based on the total accumulated volume of the glacier to avoid unrealistically high calving rates.
 ; The results are stored in the variable q_calv, representing the frontal ablation in Gt/a, and the specific frontal ablation in m/a.
+; *************************************************************
 
 compile_opt idl2
 

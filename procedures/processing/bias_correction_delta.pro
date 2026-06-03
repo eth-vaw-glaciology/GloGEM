@@ -1,3 +1,18 @@
+; *************************************************************
+; bias_correction_delta
+;
+; Compute monthly temperature and precipitation bias factors between
+; a GCM and the reanalysis reference using the delta method.
+;
+; For each calendar month the procedure calculates the additive
+; temperature bias (GCM minus reanalysis mean) and the multiplicative
+; precipitation bias (GCM divided by reanalysis mean) over the common
+; evaluation period rea_eval. It also derives a temperature-variability
+; scaling factor and optionally clamps extreme biases using the
+; min_tempbias and min_precbias thresholds to prevent unrealistic
+; corrections in high-latitude or data-sparse regions.
+; *************************************************************
+
 compile_opt idl2
 
 ; calculate monthly bias in the past based on delta method
@@ -9,13 +24,13 @@ for m = 1, 12 do begin
    ; for some reason reanalysis temperature appear to be completely wrong
    ; in a few years... filtering here and later
    dd = where(ryear ge rea_eval[0] and ryear le rea_eval[1] and rmon eq m and tempre gt -50)
-   kk = where(gcm_year ge rea_eval[0] and gcm_year le rea_eval[1] and gcm_mon eq m)      
+   kk = where(gcm_year ge rea_eval[0] and gcm_year le rea_eval[1] and gcm_mon eq m)
    bias[0, m-1] = mean(tempgcm[kk]) - mean(tempre[dd])    ; monthly temperature bias
    bias[1, m-1] = mean(precgcm[kk]) / mean(prec_orig[dd])
    bias[2, m-1] = stdev(tempre[dd]) / stdev(tempgcm[kk])
 endfor
 
-; optionally restrict temperature bias to a minimum value - if extreme 
+; optionally restrict temperature bias to a minimum value - if extreme
 ; biases occur in Arctic regions air temperatures can suddenly become maximal
 ; during winter time
 if min_tempbias ne noval then begin

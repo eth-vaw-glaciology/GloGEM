@@ -1,3 +1,17 @@
+; *************************************************************
+; read_geothermal
+;
+; Read the global geothermal heat flux grid for use in the englacial
+; temperature model.
+;
+; Parses the 6-line ASCII grid header to obtain the number of columns
+; and rows, cell size, and corner coordinates, then reads the full
+; data array. Constructs the x and y coordinate vectors (fit_xx,
+; fit_yy) and stores the heat flux field (firnice_geotherm_flux) in
+; W m-2 after rotating the grid to the correct orientation and
+; converting from mW m-2 to W m-2.
+; *************************************************************
+
 compile_opt idl2
 
 ; read grid-file for geothermal heatflux

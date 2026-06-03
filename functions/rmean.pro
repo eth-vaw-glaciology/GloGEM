@@ -1,3 +1,16 @@
+; *************************************************************
+; rmean
+;
+; Compute a running (moving) mean of a 1-D array over a specified
+; window width.
+;
+; Forces the window width to be odd, then for each element collects
+; all indices within the half-width on either side and replaces the
+; element with their mean. Used in GloGEM to smooth temperature
+; variability time series and topographic attributes such as slope
+; and aspect along glacier elevation bands.
+; *************************************************************
+
 function RMEAN, array, width, dim
 compile_opt idl2
 if (N_PARAMS() lt 3) then dim=0
