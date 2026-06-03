@@ -357,15 +357,6 @@ if long_GCM ne '' then outf_names = ['Area', 'Volume', 'Annual_Balance_sfc', 'Wi
   'Snowmelt_sfc', 'Accumulation_sfc', 'Rain_sfc', 'ELA', 'AAR', 'Refreezing_sfc', 'Hmin', 'Frontal_ablation', $
   '', '', '', '', '', '', '']
 
-<<<<<<< HEAD
-; === refreezing model initialisation
-rf_layers  = 8
-rf_melcrit = 0.02
-dens_rf    = [300, 300, 400, 450, 500, 550, 600, 650]
-rf_dz      = 1.
-rf_dsc     = 3.
-rf_dt      = 3600. * 24. * 30. / rf_dsc
-=======
 ; **********************************
 ; -----------------------------------
 ; initialize refreezing model
@@ -379,7 +370,6 @@ if time_resolution eq 'daily' then begin
 endif else begin
   rf_dt = 3600. * 24. * 30. / rf_dsc ; compute time step
 end
->>>>>>> 0972341 (climate input creation for a moment)
 
 ; === ice temperature model initialisation
 fit_layers = [10, 10, 10]

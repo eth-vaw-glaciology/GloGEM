@@ -2,25 +2,30 @@ compile_opt idl2
 
 ; ----- simple and fast refreezing model
 
+; Find valid indices
 ii = where(gl ne noval, ci)
-for i = 0, ci - 1 do begin
-   ; taking a lower threshold for initialising than for full refreezing model
-   ; refreezing occurs only in firn area
-   ; an upper bound for refreezing is defined (how to exactly set?)
-   ; refreezing dependent on cumulative air temperature over winter season
+
+if ci gt 0 then begin
+   ; Update rf_cold for all valid indices
    if time_resolution eq 'monthly' then begin
-      rf_cold[ii[i]] = rf_cold[ii[i]] + tg[ii[i]]
+      rf_cold[ii] = rf_cold[ii] + tg[ii]
+      scaling_annual_temp = abs(mean(rf_cold)) / 30.
    endif else begin
-      rf_cold[ii[i]] = rf_cold[ii[i]] + tg[ii[i]] / 30.
+      rf_cold[ii] = rf_cold[ii] + tg[ii] / 30.
+      scaling_annual_temp = abs(mean(rf_cold)) / 10.
    endelse
-   scaling_annual_temp = abs(mean(rf_cold)) / 30.
-   if mel[ii[i]] gt rf_melcrit / 4. and rf_cold[ii[i]] lt -50 and rf_ind[ii[i]] lt rf_melcrit * scaling_annual_temp * firn[ii[i]] then begin  
-      rf_ind[ii[i]] = rf_ind[ii[i]] + mel[ii[i]]
-      refr[ii[i]] = min([mel[ii[i]], rf_melcrit * scaling_annual_temp * firn[ii[i]]])
+
+   ; Apply conditions as a mask
+   valid = where((mel[ii] gt rf_melcrit / 4.) and (rf_cold[ii] lt -50) and $
+                 (rf_ind[ii] lt rf_melcrit * scaling_annual_temp * firn[ii]), count)
+
+   if count gt 0 then begin
+      ; Update rf_ind and refr for valid indices
+      rf_ind[ii[valid]] = rf_ind[ii[valid]] + mel[ii[valid]]
+      refr[ii[valid]] = min([[mel[ii[valid]], $
+                              rf_melcrit * scaling_annual_temp * firn[ii[valid]]]], dimension=1)
    endif
-   ;if m eq 6 then begin 
-   ;  stop 
-   ;endif 
-endfor
-; if min(rf_cold) lt -10 then stop
+endif
+
+; Update refreezing total
 if ar_gl ne 0 then refre[ye] = refre[ye] + total(refr * area) / ar_gl

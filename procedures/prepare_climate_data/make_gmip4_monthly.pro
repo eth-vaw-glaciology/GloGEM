@@ -1,18 +1,12 @@
 
-; Compilation of ERA temperature, precipitation, global radiation and
-; surface elevation on the Gaussian grid
-
-; to be run on VIERZACK04 with IDL
+; Compilation of GCM temperature, precipitation
 
 allregions='n'   ; y: run all 19 RGI regions
-
 region=['CentralEurope']
-
 tran=[1850,2100]  ; time period of data set
-
 overwrite_all='y'               ; y: overwrite all files, even if they exist
 
-; all GCMs
+; GCMs
 gcm=['bcc-csm2-mr']; 
 ssp=['ssp126']
 
@@ -190,42 +184,45 @@ if a(0) ne '' and b(0) ne '' then begin
    
 ;   if ff lt 365.1 and ff gt 364.5 then ff=365
 
+; Define the range of years
+start_year = 1850
+end_year = 2100
+num_years = end_year - start_year + 1
 
-   month = 251 x 1:12
-   years = 251 x 
-   
+; Create the array of months (1 to 12 repeated for each year)
+month = REPLICATE(INDGEN(12) + 1, num_years)
+; Create the array of years (each year repeated 12 times for each month)
+years = REFORM(REPLICATE(INDGEN(num_years) + start_year, 12), num_years * 12)
+
 ; ************** Loop over glaciers *************
 ; -----------------------------------------------
 
 ; loop over ALL glaciers
 for g=0l,ng-1 do begin
 
-   if g mod 1000 eq 0 then print, region_now+'; '+gcms(gc)+'/'+rcps(rc)+': done '+string(g*100./ng,fo='(f6.2)')+'%'
+   if g mod 1000 eq 0 then print, region_now+'; '+gcm+'/'+ssp+': done '+string(g*100./ng,fo='(f6.2)')+'%'
    
    ; locate closest grid cell
    a=min(abs(xy(0,g)-all_lons),indx) & a=min(abs(xy(1,g)-all_lats),indy)
    gx=strcompress(string(all_lons(indx),fo='(f7.2)'),/remove_all)
    gy=strcompress(string(all_lats(indy),fo='(f7.2)'),/remove_all)
-   a=findfile(path+region_now+'/'+gcms(gc)+'/'+rcps(rc)+'/clim_'+gx+'_'+gy+'.dat')
+   a=findfile(path+region_now+'/'+gcm+'/'+ssp+'/clim_'+gx+'_'+gy+'.dat')
 
    ; start extraction when no file for the respective glacier is available
    if a(0) eq '' or overwrite_all eq 'y' then begin
 
       hh=indgen(ndays)
 
-      openw,4,path+region_now+'/'+gcms(gc)+'/'+rcps(rc)+'/clim_'+gx+'_'+gy+'.dat'
-      printf,4,'Future meteorological forcing for grid cell '+gx+'(lon)_'+gy+'(lat)'
-      printf,4,gcms(gc)+'/'+rcps(rc) 
-      printf,4,'Year  Month  DOY  decimal.time  temp(degC)  prec(mm/day)'
+      openw,4,path+region_now+'/'+gcms+'/'+ssp+'/clim_'+gx+'_'+gy+'.dat'
+      printf,4,'Meteorological forcing for grid cell '+gx+'(lon)_'+gy+'(lat)'
+      printf,4,gcms+'/'+ssp
+      printf,4,'Year  Month  temp(deg)  prec(mm)'
 
 ; write file
       ; past climate (up to 2015)
-      for h=0l,ndaysp-1 do printf,4,yp(h),mop(h),dap(h),typ(h),tempp(indx,indy,h),precp(indx,indy,h),fo='(i4,2i6,f13.4,2f11.3)'
-      ; future climate (up to 2100)
-      for h=0l,n_elements(prec(0,0,*))-1 do printf,4,y(h),mo(h),da(h),ty(h),temp(indx,indy,h),prec(indx,indy,h),fo='(i4,2i6,f13.4,2f11.3)'
+      for h=0l,nday-1 do printf,4,yp(h),mop(h),temp(indx,indy,h),prec(indx,indy,h),fo='(i4,2i6,f13.4,2f11.3)'
       close,4
-
-      if g eq 0 then print,y(h-1),mo(h-1),da(h-1),ty(h-1)
+      if g eq 0 then print,y(h-1),mo(h-1)
 
    endif                        ; climate file does yet not exist
    
@@ -235,9 +232,6 @@ nrc=nrc+1
 
 endif                           ; SSP available
 
-;endfor                          ; ssps
-
-;endfor                          ; gcms
 
 endfor                          ; loop over regions
 
