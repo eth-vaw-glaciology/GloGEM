@@ -22,12 +22,28 @@ b = '/' + date_str + '/'
 
 if tran[1] le tt then b='/PAST'+version_past+mtt
 
+bd = dirres + time_resolution + '/' + dir_region
+
+; Core folder structure
 SPAWN, 'mkdir -p ' + $
-   dirres + time_resolution + '/' + dir_region + ' ' + $
-   dirres + time_resolution + '/' + dir_region + '/calibration ' + $
-   dirres + time_resolution + '/' + dir_region + '/files' + mtt + ' ' + $
-   dirres + time_resolution + '/' + dir_region + '/PAST' + mtt + ' ' + $
-   dirres + time_resolution + '/' + dir_region + '/files/SINGLE ' + $
-   dirres + time_resolution + '/' + dir_region + '/files' + mtt + '/' + GCM_model[gcms] + ' ' + $
-   dirres + time_resolution + '/' + dir_region + '/files' + mtt + '/' + GCM_model[gcms] + '/' + GCM_rcp[rcps]
-SPAWN, 'chmod -R a+rx ' + dirres +'/'+time_resolution+'/'+ dir_region
+   bd + ' ' + $
+   bd + '/calibration ' + $
+   bd + '/PAST' + version_past + mtt + ' ' + $
+   bd + '/PAST' + version_past + mtt + '/PAST_original ' + $
+   bd + '/files' + mtt + ' ' + $
+   bd + '/files' + mtt + '/files_original ' + $
+   bd + '/files' + mtt + '/files_original/SINGLE ' + $
+   bd + '/files' + mtt + '/files_original/' + GCM_model[gcms] + ' ' + $
+   bd + '/files' + mtt + '/files_original/' + GCM_model[gcms] + '/' + GCM_rcp[rcps]
+
+; NetCDF folder structure (only created when write_netcdf is enabled)
+if write_netcdf eq 'y' then begin
+    SPAWN, 'mkdir -p ' + $
+       bd + '/PAST' + version_past + mtt + '/PAST_netcdf ' + $
+       bd + '/files' + mtt + '/files_netcdf ' + $
+       bd + '/files' + mtt + '/files_netcdf/full'
+    if netcdf_split eq 'y' then $
+        SPAWN, 'mkdir -p ' + bd + '/files' + mtt + '/files_netcdf/split'
+endif
+
+SPAWN, 'chmod -R a+rx ' + dirres + '/' + time_resolution + '/' + dir_region

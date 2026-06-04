@@ -54,13 +54,19 @@
 
 compile_opt idl2
 
+; --- melt model suffix (mirrors setup_output_folders logic) ---
+nc_mtt = ''
+if meltmodel ne '1' then nc_mtt = '_m3'
+if meltmodel eq '1' and calperiod_ID eq 8 then nc_mtt = '_debris'
+
 ; --- output paths ---
 nc_base      = dirres + time_resolution + path_sep() + dir_region + path_sep()
-nc_outdir    = nc_base + 'files' + path_sep() + 'files_netcdf' + path_sep() + 'full' + path_sep()
+nc_outdir    = nc_base + 'files' + nc_mtt + path_sep() + 'files_netcdf' + path_sep() + 'full' + path_sep()
 if ~file_test(nc_outdir, /directory) then file_mkdir, nc_outdir
 
 ; --- file name tags ---
-nc_rgi_str = string(gmip4_region, format='(i02)')
+; region_id_loop[0] + re gives the current RGI region integer (e.g. 1 for RGI01)
+nc_rgi_str = string(region_id_loop[0] + re, format='(i02)')
 if catchment_selection eq '' then begin
     nc_base_tag  = 'rgi' + nc_rgi_str
     nc_indiv_tag = 'rgi' + nc_rgi_str + 'indiv'
@@ -202,7 +208,7 @@ ncdf_attput, nc_ann_i, /global, 'rgi_region',    nc_rgi_str & ncdf_attput, nc_an
 ncdf_attput, nc_ann_i, /global, 'forcing',       nc_gcm_tag & ncdf_attput, nc_ann_i, /global, 'gcm', nc_gcm_str
 ncdf_attput, nc_ann_i, /global, 'scenario',      nc_ssp_str & ncdf_attput, nc_ann_i, /global, 'gcm_data', nc_dat_str
 ncdf_attput, nc_ann_i, /global, 'period',        nc_period  & ncdf_attput, nc_ann_i, /global, 'creation_date', systime()
-nc_dim_g   = ncdf_dimdef(nc_ann_i, 'glacier', cg)
+nc_dim_g   = ncdf_dimdef(nc_ann_i, 'glacier', nc_total_g)
 nc_dim_t_i = ncdf_dimdef(nc_ann_i, 'time',    nc_years)
 nc_vid_i_rgid  = ncdf_vardef(nc_ann_i, 'RGIId', [nc_dim_g], /string)
 ncdf_attput, nc_ann_i, nc_vid_i_rgid, 'long_name', 'Randolph Glacier Inventory ID'
@@ -233,7 +239,7 @@ ncdf_attput, nc_sub_i, /global, 'forcing',        nc_gcm_tag & ncdf_attput, nc_s
 ncdf_attput, nc_sub_i, /global, 'scenario',       nc_ssp_str & ncdf_attput, nc_sub_i, /global, 'gcm_data', nc_dat_str
 ncdf_attput, nc_sub_i, /global, 'time_resolution', nc_sub_lbl
 ncdf_attput, nc_sub_i, /global, 'period',         nc_period  & ncdf_attput, nc_sub_i, /global, 'creation_date', systime()
-nc_dim_g_s = ncdf_dimdef(nc_sub_i, 'glacier', cg)
+nc_dim_g_s = ncdf_dimdef(nc_sub_i, 'glacier', nc_total_g)
 nc_dim_s_i = ncdf_dimdef(nc_sub_i, 'time',    nc_n_sub)
 nc_vid_i_rgid_s = ncdf_vardef(nc_sub_i, 'RGIId', [nc_dim_g_s], /string)
 ncdf_attput, nc_sub_i, nc_vid_i_rgid_s, 'long_name', 'Randolph Glacier Inventory ID'
@@ -324,8 +330,8 @@ nc_period_past = strtrim(string(tran[0]),2)             + '-' + strtrim(string(n
 nc_period_fut  = strtrim(string(netcdf_split_year),2)   + '-' + strtrim(string(tran[1]),2)
 
 ; --- split output directories ---
-nc_outdir_sp = nc_base + 'PAST' + path_sep() + 'PAST_netcdf' + path_sep()
-nc_outdir_sf = nc_base + 'files' + path_sep() + 'files_netcdf' + path_sep() + 'split' + path_sep()
+nc_outdir_sp = nc_base + 'PAST' + version_past + nc_mtt + path_sep() + 'PAST_netcdf' + path_sep()
+nc_outdir_sf = nc_base + 'files' + nc_mtt + path_sep() + 'files_netcdf' + path_sep() + 'split' + path_sep()
 if ~file_test(nc_outdir_sp, /directory) then file_mkdir, nc_outdir_sp
 if ~file_test(nc_outdir_sf, /directory) then file_mkdir, nc_outdir_sf
 
@@ -405,7 +411,7 @@ ncdf_attput, nc_sp_ann_i, /global, 'institution', nc_institution
 ncdf_attput, nc_sp_ann_i, /global, 'rgi_region',  nc_rgi_str & ncdf_attput, nc_sp_ann_i, /global, 'catchment', strtrim(catchment_selection,2)
 ncdf_attput, nc_sp_ann_i, /global, 'forcing',     nc_rea & ncdf_attput, nc_sp_ann_i, /global, 'period', nc_period_past
 ncdf_attput, nc_sp_ann_i, /global, 'split', 'past_portion' & ncdf_attput, nc_sp_ann_i, /global, 'creation_date', systime()
-nc_sp_dim_g   = ncdf_dimdef(nc_sp_ann_i, 'glacier', cg)
+nc_sp_dim_g   = ncdf_dimdef(nc_sp_ann_i, 'glacier', nc_total_g)
 nc_sp_dim_t_i = ncdf_dimdef(nc_sp_ann_i, 'time',    nc_years_past)
 nc_vid_sp_i_rgid  = ncdf_vardef(nc_sp_ann_i, 'RGIId', [nc_sp_dim_g], /string)
 ncdf_attput, nc_sp_ann_i, nc_vid_sp_i_rgid, 'long_name', 'Randolph Glacier Inventory ID'
@@ -434,7 +440,7 @@ ncdf_attput, nc_sp_sub_i, /global, 'rgi_region',  nc_rgi_str & ncdf_attput, nc_s
 ncdf_attput, nc_sp_sub_i, /global, 'forcing',     nc_rea & ncdf_attput, nc_sp_sub_i, /global, 'time_resolution', nc_sub_lbl
 ncdf_attput, nc_sp_sub_i, /global, 'period',      nc_period_past & ncdf_attput, nc_sp_sub_i, /global, 'split', 'past_portion'
 ncdf_attput, nc_sp_sub_i, /global, 'creation_date', systime()
-nc_sp_dim_g_s = ncdf_dimdef(nc_sp_sub_i, 'glacier', cg)
+nc_sp_dim_g_s = ncdf_dimdef(nc_sp_sub_i, 'glacier', nc_total_g)
 nc_sp_dim_s_i = ncdf_dimdef(nc_sp_sub_i, 'time',    nc_n_sub_past)
 nc_vid_sp_i_rgid_s = ncdf_vardef(nc_sp_sub_i, 'RGIId', [nc_sp_dim_g_s], /string)
 ncdf_attput, nc_sp_sub_i, nc_vid_sp_i_rgid_s, 'long_name', 'Randolph Glacier Inventory ID'
@@ -517,7 +523,7 @@ ncdf_attput, nc_sf_ann_i, /global, 'forcing',     nc_gcm_tag & ncdf_attput, nc_s
 ncdf_attput, nc_sf_ann_i, /global, 'scenario',    nc_ssp_str & ncdf_attput, nc_sf_ann_i, /global, 'gcm_data', nc_dat_str
 ncdf_attput, nc_sf_ann_i, /global, 'period',      nc_period_fut & ncdf_attput, nc_sf_ann_i, /global, 'split', 'future_portion'
 ncdf_attput, nc_sf_ann_i, /global, 'creation_date', systime()
-nc_sf_dim_g   = ncdf_dimdef(nc_sf_ann_i, 'glacier', cg)
+nc_sf_dim_g   = ncdf_dimdef(nc_sf_ann_i, 'glacier', nc_total_g)
 nc_sf_dim_t_i = ncdf_dimdef(nc_sf_ann_i, 'time',    nc_years_fut)
 nc_vid_sf_i_rgid  = ncdf_vardef(nc_sf_ann_i, 'RGIId', [nc_sf_dim_g], /string)
 ncdf_attput, nc_sf_ann_i, nc_vid_sf_i_rgid, 'long_name', 'Randolph Glacier Inventory ID'
@@ -548,7 +554,7 @@ ncdf_attput, nc_sf_sub_i, /global, 'scenario',    nc_ssp_str & ncdf_attput, nc_s
 ncdf_attput, nc_sf_sub_i, /global, 'time_resolution', nc_sub_lbl
 ncdf_attput, nc_sf_sub_i, /global, 'period',      nc_period_fut & ncdf_attput, nc_sf_sub_i, /global, 'split', 'future_portion'
 ncdf_attput, nc_sf_sub_i, /global, 'creation_date', systime()
-nc_sf_dim_g_s = ncdf_dimdef(nc_sf_sub_i, 'glacier', cg)
+nc_sf_dim_g_s = ncdf_dimdef(nc_sf_sub_i, 'glacier', nc_total_g)
 nc_sf_dim_s_i = ncdf_dimdef(nc_sf_sub_i, 'time',    nc_n_sub_fut)
 nc_vid_sf_i_rgid_s = ncdf_vardef(nc_sf_sub_i, 'RGIId', [nc_sf_dim_g_s], /string)
 ncdf_attput, nc_sf_sub_i, nc_vid_sf_i_rgid_s, 'long_name', 'Randolph Glacier Inventory ID'

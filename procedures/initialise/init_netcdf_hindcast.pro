@@ -37,13 +37,19 @@
 
 compile_opt idl2
 
+; --- melt model suffix (mirrors setup_output_folders logic) ---
+nc_mtt = ''
+if meltmodel ne '1' then nc_mtt = '_m3'
+if meltmodel eq '1' and calperiod_ID eq 8 then nc_mtt = '_debris'
+
 ; --- output path ---
 nc_base   = dirres + time_resolution + path_sep() + dir_region + path_sep()
-nc_outdir = nc_base + 'PAST' + path_sep() + 'PAST_netcdf' + path_sep()
+nc_outdir = nc_base + 'PAST' + version_past + nc_mtt + path_sep() + 'PAST_netcdf' + path_sep()
 if ~file_test(nc_outdir, /directory) then file_mkdir, nc_outdir
 
 ; --- file name tags ---
-nc_rgi_str = string(gmip4_region, format='(i02)')
+; region_id_loop[0] + re gives the current RGI region integer (e.g. 1 for RGI01)
+nc_rgi_str = string(region_id_loop[0] + re, format='(i02)')
 if catchment_selection eq '' then begin
     nc_base_tag  = 'rgi' + nc_rgi_str
     nc_indiv_tag = 'rgi' + nc_rgi_str + 'indiv'
@@ -199,7 +205,7 @@ ncdf_attput, nc_ann_i, /global, 'forcing',       nc_rea
 ncdf_attput, nc_ann_i, /global, 'period',        nc_period
 ncdf_attput, nc_ann_i, /global, 'creation_date', systime()
 
-nc_dim_g   = ncdf_dimdef(nc_ann_i, 'glacier', cg)
+nc_dim_g   = ncdf_dimdef(nc_ann_i, 'glacier', nc_total_g)
 nc_dim_t_i = ncdf_dimdef(nc_ann_i, 'time',    nc_years)
 nc_vid_i_rgid = ncdf_vardef(nc_ann_i, 'RGIId', [nc_dim_g], /string)
 ncdf_attput, nc_ann_i, nc_vid_i_rgid, 'long_name', 'Randolph Glacier Inventory ID'
@@ -245,7 +251,7 @@ ncdf_attput, nc_sub_i, /global, 'time_resolution', nc_sub_lbl
 ncdf_attput, nc_sub_i, /global, 'period',         nc_period
 ncdf_attput, nc_sub_i, /global, 'creation_date',  systime()
 
-nc_dim_g_s   = ncdf_dimdef(nc_sub_i, 'glacier', cg)
+nc_dim_g_s   = ncdf_dimdef(nc_sub_i, 'glacier', nc_total_g)
 nc_dim_s_i   = ncdf_dimdef(nc_sub_i, 'time',    nc_n_sub)
 nc_vid_i_rgid_s = ncdf_vardef(nc_sub_i, 'RGIId', [nc_dim_g_s], /string)
 ncdf_attput, nc_sub_i, nc_vid_i_rgid_s, 'long_name', 'Randolph Glacier Inventory ID'
