@@ -150,7 +150,7 @@ refreezing_parametrised = 'y'
 ; --- englacial temperature model
 firnice_temperature = 'n'
 firnice_write = ['y', 'y'] ; [overall time series, detailed profiles]
-firnice_batch = 'y'
+firnice_batch = 'n'
 firnice_profile = [0.2, 0.65, 0.95] ; elevation ratios (or masl if >1) for profile output
 enable_advection = 'n'
 advection_write = 'n'
@@ -487,3 +487,9 @@ if GCM_rcp_idx[0] ne 0 then $
 n_rcp_avail = n_elements(GCM_rcp)
 ii_over = where(rcp_batch gt n_rcp_avail, ci_over)
 if ci_over gt 0 then rcp_batch[ii_over] = n_rcp_avail
+
+; Default firnice profile IDs (used as filename labels in prepare_output_firnicetemp.pro).
+; setup_firnice_batch.pro overrides this for batch runs; here we fall back to '1','2','3',...
+; so the profile files are named temp_ID1_<glacier>.dat etc. when firnice_batch='n'.
+if n_elements(firnice_profile_ID) ne n_elements(firnice_profile) then $
+  firnice_profile_ID = string(indgen(n_elements(firnice_profile)) + 1, fo='(i0)')

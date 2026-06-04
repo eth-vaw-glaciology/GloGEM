@@ -11,7 +11,7 @@ compile_opt idl2
 if firnice_write[0] eq 'y' then begin
     c=findfile(dirres+dir_region+b+'/firnice_temperature')
     if c[0] eq '' then begin
-        spawn,'mkdir '+dirres+'/'+time_resolution+'/'+dir_region+b+'/firnice_temperature' & spawn,'chmod a+rx '+dirres+dir_region+b+'/firnice_temperature'
+        spawn,'mkdir '+dirres+'/'+time_resolution+'/'+dir_region+b+'/firnice_temperature' & spawn,'chmod a+rx '+dirres+'/'+time_resolution+'/'+dir_region+b+'/firnice_temperature'
     endif
     openw,45,dirres+'/'+time_resolution+'/'+dir_region+b+'/firnice_temperature/temp_1m_'+id[gg[g]]+'.dat'
     a='' & for i=0,years-1 do a=a+string(i+tran[0],fo='(i4)')+'  '
@@ -47,7 +47,7 @@ endif
 if firnice_write[1] eq 'y' then begin
     c=findfile(dirres+'/'+time_resolution+'/'+dir_region+b+'/firnice_temperature')
     if c[0] eq '' then begin
-        spawn,'mkdir '+dirres+'/'+time_resolution+'/'+dir_region+b+'/firnice_temperature' & spawn,'chmod a+rx '+dirres+dir_region+b+'/firnice_temperature'
+        spawn,'mkdir '+dirres+'/'+time_resolution+'/'+dir_region+b+'/firnice_temperature' & spawn,'chmod a+rx '+dirres+'/'+time_resolution+'/'+dir_region+b+'/firnice_temperature'
     endif
 
     ; determining elevations to be outputted
