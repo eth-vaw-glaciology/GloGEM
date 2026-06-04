@@ -684,7 +684,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
         endif
 
         ; copying time-stamped settings.pro into the output folder
-        if calibrate ne 'y' then begin
+        if calibrate ne 'y' and write_file eq 'y' then begin
           @procedures/write/copy_input_to_output.pro
         endif
 
