@@ -15,10 +15,10 @@
 
 compile_opt idl2
 
-
 ; ----------------------------------------
 ; determine local monthly gradients from reanalysis-data using a regression
-dtdz=dblarr(12) & mtt=indgen(12)+1
+dtdz=dblarr(12)
+mtt=indgen(12)+1
 for m=1,12 do begin
    hh=where(mtt eq m)
    dtdz[m-1]=rtg[hh[0],cc[0],bb[0]]

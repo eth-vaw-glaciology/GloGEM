@@ -73,7 +73,7 @@
 ; -----------------------------------------------------------------------
 ; REANALYSIS / BIAS CORRECTION
 ; -----------------------------------------------------------------------
-;reanalysis = 'era5'             ; 'era5', 'era5land', 'chelsaw5e5', 'gswp3w5e5', 'ch2018'
+;reanalysis = 'era5'             ; 'era5', 'era5land', 'chelsaw5e5', 'gswp3w5e5', 'ch2018', 'ERA5'
 ;bias_correction = 'y'           ; 'y' to apply GCM bias correction
 ;bias_correction_method = 1      ; 1: delta method; 2: quantile mapping (daily T only)
 

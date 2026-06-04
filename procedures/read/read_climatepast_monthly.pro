@@ -21,25 +21,39 @@ compile_opt idl2
 fn=dir_clim+'reanalysis/'+ time_resolution +'/'+reanalysis+'/'+dir_region+'/clim_'+dir_region+ccl+'.mdi'
 tt=strarr(1) & ntime=dblarr(1) & nlons=ntime & nlats=ntime & nvar=dblarr(2)
 openr,1,fn & readf,1,tt & readf,1,ntime & readf,1,nlons & readf,1,nlats & readf,1,nvar
-ntime=ntime[0] & nlats=nlats[0] & nlons=nlons[0] & nvar=nvar[0]
-rtime=dblarr(ntime) & rlat=dblarr(nlats) & rlon=dblarr(nlons)
-readf,1,rtime & readf,1,rlon & readf,1,rlat
-relev=dblarr(nlons,nlats) & rtemp=dblarr(ntime,nlons,nlats) & rprec=rtemp
+ntime=ntime[0]
+nlats=nlats[0]
+nlons=nlons[0]
+nvar=nvar[0]
+rtime=dblarr(ntime)
+rlat=dblarr(nlats)
+rlon=dblarr(nlons)
+readf,1,rtime
+readf,1,rlon
+readf,1,rlat
+relev=dblarr(nlons,nlats)
+rtemp=dblarr(ntime,nlons,nlats)
+rprec=rtemp
 for h=0,nlons[0]-1 do begin
-   a=dblarr(nlats) & readf,1,a & relev[h,*]=a
+   a=dblarr(nlats)
+   readf,1,a
+   relev[h,*]=a
 endfor
 for i=0,ntime[0]-1 do begin
    for h=0,nlons[0]-1 do begin
-      a=dblarr(nlats) & readf,1,a & rtemp[i,h,*]=a
+      a=dblarr(nlats)
+      readf,1,a
+      rtemp[i,h,*]=a
    endfor
 endfor
 for i=0,ntime[0]-1 do begin
    for h=0,nlons[0]-1 do begin
-      a=dblarr(nlats) & readf,1,a & rprec[i,h,*]=a
+      a=dblarr(nlats)
+      readf,1,a
+      rprec[i,h,*]=a
    endfor
 endfor
 close,1
-
 ; patch for missing reanalysis precipitation data for Antarctic_Atlantic...
 if reanalysis eq 'ERA-interim' then begin
    if dir_region eq 'Antarctic' and clim_subregion eq 'Atlantic' then begin
@@ -47,7 +61,8 @@ if reanalysis eq 'ERA-interim' then begin
    endif
 endif
 
-ryear=fix(rtime) & rmon=round((rtime-ryear)*12+0.5-(ryear-ryear[0])/1400.*12)  ; hack accounting for leap years...
+ryear=fix(rtime)
+rmon=round((rtime-ryear)*12+0.5-(ryear-ryear[0])/1400.*12)  ; hack accounting for leap years...
 
 if submonth_variability eq 'y' then begin
 

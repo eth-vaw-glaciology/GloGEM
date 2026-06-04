@@ -317,11 +317,10 @@ case MIP of
     ; Glacier Model Intercomparison Project 4 — fixed model/scenario specifications.
     ; Not all model/SSP combinations are available (see GMIP4 protocol).
     ; ssp370 is used as the primary batch scenario.
-    GCM_model      = ['ACCESS-ESM1-5', 'BCC-CSM2-MR', 'CESM2-WACCM', 'IPSL-CM6A-LR', $
-                      'MRI-ESM2-0', 'MPI-ESM1-2-HR', 'MIROC6', 'NorESM2-MM']
-    GCM_rcp        = ['ssp126', 'ssp370', 'ssp585', 'ssp534-over']
+    GCM_model      = ['BCC-CSM2-MR'];, 'ACCESS-ESM1-5', 'CESM2-WACCM', 'IPSL-CM6A-LR', 'MRI-ESM2-0', 'MPI-ESM1-2-HR', 'MIROC6', 'NorESM2-MM']
+    GCM_rcp        = ['ssp126'];, 'ssp370', 'ssp585', 'ssp534-over']
     GCM_experiment = 'r1i1p1f1'
-    rcp_batch      = intarr(8) + 2   ; ssp370 as default batch scenario
+    rcp_batch      = intarr(8) + 1   ; ssp370 as default batch scenario
     GCM_data       = 'gmip4'
     CMIP6          = 'n'
     GMIP4          = 'y'
@@ -345,9 +344,6 @@ if long_GCM ne '' then begin
   GCM_model = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CESM2-WACCM', 'CanESM5', 'GISS-E2-1-G', 'GISS-E2-1-H', 'GISS-E2-2-G', 'IPSL-CM6A-LR', 'MIROC-ES2L', 'MRI-ESM2-0', 'UKESM1-0-LL']
   rcp_batch = [6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6]
 endif
-
-; reanalysis dataset: daily uses 'era5', monthly uses 'ERA5'
-if time_resolution eq 'monthly' and reanalysis eq 'era5' then reanalysis = 'ERA5'
 
 ; output file list for full_output='y' (depends on both time_resolution and full_output)
 if time_resolution eq 'monthly' then $

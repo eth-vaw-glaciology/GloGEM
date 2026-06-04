@@ -44,7 +44,7 @@ endif else begin
       ; Increase search window
       radius = radius + 1
       ; Stop if search window gets 100 ... (1°)
-      if radius eq 20 then begin
+      if radius eq 100 then begin
             print, 'No suitable reanalysis grid point found within 1° radius. Please check your input coordinates.'
             STOP
       endif

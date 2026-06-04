@@ -52,24 +52,53 @@ if GMIP4 eq 'n' then begin
 endif else begin
 
 ; New system for the monthly model, but so far only available for GCMs of GMIP4
-   rmid = [mean(lon) + STRING(double(q) / 100, FORMAT='(F5.2)'), mean(lat) + STRING(double(r) / 100, FORMAT='(F5.2)')]                                                                                           
-   gxg = STRTRIM(STRING(rmid[0], FORMAT='(F0.2)'), 2)                                                                                                                                                            
-   gyg = STRTRIM(STRING(rmid[1], FORMAT='(F0.2)'), 2)                                                                                                                                                                                                                                                                                                                                                          
-   fn=dir_clim+'/future/'+time_resolution+'/'+long_GCM+'/'+GCM_data+'/'+dir_region+'/'+GCM_model[gcms]+ $
-     '/'+GCM_rcp[rcps]+'/clim_' + gxg + '_' + gyg + '.dat'
    
+   mid=[mean(lon),mean(lat)]
+   gxs=strcompress(string(mid[0],fo='(f7.2)'),/remove_all)
+   gys=strcompress(string(mid[1],fo='(f7.2)'),/remove_all)
+   fn=dir_clim+'/future/'+time_resolution+'/'+GCM_data+'/'+dir_region+'/'+GCM_model[gcms]+ '/'+GCM_rcp[rcps]+'/clim_' + gxs + '_' + gys + '.dat'
+   if FILE_TEST(fn) eq 1 then begin 
+      ; All good and we continue
+   endif else begin
+      found = 0
+      radius = 0
+      while found eq 0 do begin
+         for q = -radius, radius do begin
+         for r = -radius, radius do begin
+               ; Only coordinates on this radius
+               if abs(q) eq radius or abs(r) eq radius then begin
+                  ; Bereken nieuwe coördinaten
+                  mid = [mean(lon) + STRING(double(q) / 100, FORMAT='(F5.2)'), mean(lat) + STRING(double(r) / 100, FORMAT='(F5.2)')]
+                  gxs=strcompress(string(mid[0],fo='(f7.2)'),/remove_all)
+                  gys=strcompress(string(mid[1],fo='(f7.2)'),/remove_all)
+                  fn=dir_clim+'/future/'+time_resolution+'/'+GCM_data+'/'+dir_region+'/'+GCM_model[gcms]+ '/'+GCM_rcp[rcps]+'/clim_' + gxs + '_' + gys + '.dat'
+                  if FILE_TEST(fn) eq 1 then begin
+                     found = 1
+                     break
+                  endif
+               endif
+            endfor
+            if found eq 1 then break
+         endfor
+         if found eq 1 then break
+         ; Increase search window
+         radius = radius + 1
+         ; Stop if search window gets 100 ... (1°)
+         if radius eq 100 then begin
+               print, 'No suitable GCM grid point found within 1° radius. Please check your input coordinates.'
+               STOP
+         endif
+      endwhile
+   endelse
 
-   stop
-     
-   print, fn
    anz=file_lines(fn)-3 & da=dblarr(4,anz) & tt=strarr(3)
    openr,1,fn & readf,1,tt & readf,1,da & close,1
    gcm_temp=da[2,*]
-   gcm_prc=da[3,*]
+   gcm_prec=da[3,*]
    gcm_year=da[0,*]
    gcm_mon=da[1,*]
-   gcm_lon = gxg
-   gcm_lat = gyg
+   gcm_lon = gxs
+   gcm_lat = gys
    
 endelse
 
