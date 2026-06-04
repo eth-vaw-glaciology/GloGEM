@@ -6,16 +6,19 @@ region=['CentralEurope']
 tran=[1850,2100]  ; time period of data set
 overwrite_all='y'               ; y: overwrite all files, even if they exist
 
-; GCMs
-gcm=['bcc-csm2-mr']; 
-ssp=['ssp126']
-
-; ----------------------
-
 path='/scratch_net/vierzack04_third/lvantrich/gmip4/'
 path_in='/scratch_net/vierzack04_third/lvantrich/gmip4/files/'
 batch_gl='/scratch_net/iceberg_second/mhuss/global_thickness/rgi60/'
 batch_data='/home/mhuss/projects/global_retreat/data/'
+
+; ----------------------
+; GCMs
+gcm=['bcc-csm2-mr']; 
+ssp=['ssp126']
+; Input files
+fnt=path_in+'/'+gcm+'/BCC-CSM2-MR_'+ssp+'_'+'r1i1p1f1_tas_era5corrected.nc'
+fnp=path_in+'/'+gcm+'/BCC-CSM2-MR_'+ssp+'_'+'r1i1p1f1_pr_era5corrected.nc'
+; ----------------------
 
 len=(tran(1)-tran(0)+1)
 n_gcms=n_elements(gcms) & n_rcps=n_elements(rcps) 
@@ -95,18 +98,17 @@ NCDF_CLOSE,id
 
 all_lons0=all_lons
 all_lats0=all_lats
+; Fix for the way we have stord the data
 ii=where(all_lons gt 180)
 all_lons(ii)=all_lons(ii)-360.
 
 nrc=0
 
+; Make folder for results
 a=findfile(path+region_now+'/'+gcm+'/'+ssp)
 if a(0) eq '' then begin
    spawn,'mkdir '+path+region_now+'/'+gcm+'/'+ssp & spawn,'chmod a+rx '+path+region_now+'/'+gcm+'/'+ssp
 endif
-
-fnt=path_in+'/'+gcm+'/BCC-CSM2-MR_'+ssp+'_'+'r1i1p1f1_tas_era5corrected.nc'
-fnp=path_in+'/'+gcm+'/BCC-CSM2-MR_'+ssp+'_'+'r1i1p1f1_pr_era5corrected.nc'  
 
 a=findfile(fnt)
 b=findfile(fnp)
@@ -128,35 +130,35 @@ if a(0) ne '' and b(0) ne '' then begin
 ; temperature
    id=NCDF_OPEN(fnt)
    NCDF_VARGET,id,titi(0),time
-   nday=n_elements(time)
-   hh1=indgen(nday)
-   if kk(0) eq -1 then NCDF_VARGET,id,tata(0),temp,offset=[jj(0),ii(0),hh1(0)],count=[cj,ci,nday] $
+   nmon=n_elements(time)
+   hh1=indgen(nmon)
+   if kk(0) eq -1 then NCDF_VARGET,id,tata(0),temp,offset=[hh1(0),jj(0),ii(0)],count=[nmon,cj,ci] $
     else begin
-	NCDF_VARGET,id,tata(0),tt1,offset=[jj(0),ii(0),hh1(0)],count=[cj,ci,nday]
-	NCDF_VARGET,id,tata(0),tt2,offset=[kk(0),ii(0),hh1(0)],count=[ck,ci,nday]
-        temp=dblarr(cj+ck,ci,nday)
-        for h=0l,nday-1 do begin
+	NCDF_VARGET,id,tata(0),tt1,offset=[hh1(0),jj(0),ii(0)],count=[nmon,cj,ci]
+	NCDF_VARGET,id,tata(0),tt2,offset=[hh1(0),kk(0),ii(0)],count=[nmon,ck,ci]
+        temp=dblarr(nmon,cj+ck,ci)
+        for h=0l,nmon-1 do begin
            for i=0,ci-1 do begin
-              temp(0:ck-1,i,h)=tt2(*,i,h)
-              temp(ck:ck+cj-1,i,h)=tt1(*,i,h)
+              temp(h,0:ck-1,i)=tt2(h,*,i)
+              temp(h,ck:ck+cj-1,i)=tt1(h,*,i)
            endfor
         endfor
      endelse      
    NCDF_CLOSE,id
 ; calculate REAL values
-   temp=temp-273.15             ; deg C
+   temp=double(temp)-273.15             ; deg C
    
 ; precipitation
    id=NCDF_OPEN(fnp)
-   if kk(0) eq -1 then NCDF_VARGET,id,tata(0),prec,offset=[jj(0),ii(0),hh1(0)],count=[cj,ci,nday] $
+   if kk(0) eq -1 then NCDF_VARGET,id,tata(0),prec,offset=[hh1(0),jj(0),ii(0)],count=[nmon,cj,ci] $
        else begin                            
-      NCDF_VARGET,id,tata(0),tt1,offset=[jj(0),ii(0),hh1(0)],count=[cj,ci,nday]
-      NCDF_VARGET,id,tata(0),tt2,offset=[kk(0),ii(0),hh1(0)],count=[ck,ci,nday]
-      prec=dblarr(cj+ck,ci,nday)
-      for h=0l,nday-1 do begin
+      NCDF_VARGET,id,tata(0),tt1,offset=[hh1(0),jj(0),ii(0)],count=[nmon,cj,ci]
+      NCDF_VARGET,id,tata(0),tt2,offset=[hh1(0),kk(0),ii(0)],count=[nmon,ck,ci]
+      prec=dblarr(nmon,cj+ck,ci)
+      for h=0l,nmon-1 do begin
          for i=0,ci-1 do begin
-            prec(0:ck-1,i,h)=tt2(*,i,h)
-            prec(ck:ck+cj-1,i,h)=tt1(*,i,h)
+            prec(h,0:ck-1,i)=tt2(h,*,i)
+            prec(h,ck:ck+cj-1,i)=tt1(h,*,i)
          endfor
       endfor
    endelse
@@ -165,19 +167,19 @@ if a(0) ne '' and b(0) ne '' then begin
    prec=prec*3600.*24.*30       ; mm/mon
    
 ; only write latitude/longitude files and resample array in first SSP
-   if nrc eq 0 then begin
-      all_lats=all_lats(ii)
-      if kk(0) eq -1 then all_lons=all_lons(jj) else begin
-         tt=dblarr(ck+cj) & tt(0:ck-1)=all_lons(kk) & tt(ck:ck+cj-1)=all_lons(jj) & all_lons=tt
-      endelse
+;   if nrc eq 0 then begin
+;      all_lats=all_lats(ii)
+;      if kk(0) eq -1 then all_lons=all_lons(jj) else begin
+;         tt=dblarr(ck+cj) & tt(0:ck-1)=all_lons(kk) & tt(ck:ck+cj-1)=all_lons(jj) & all_lons=tt
+;      endelse
 ; write out a simple GCM coordinate grid for each region
-      openw,4,path+region_now+'/'+gcm+'/longitudes.dat'
-      printf,4,'All GCM grid longitudes contained in region'
-      for i=0,n_elements(all_lons)-1 do printf,4,all_lons(i),fo='(f12.3)'  & close,4
-      openw,4,path+region_now+'/'+gcm+'/latitudes.dat'
-      printf,4,'All GCM grid latitudes contained in region'
-      for i=0,n_elements(all_lats)-1 do printf,4,all_lats(i),fo='(f12.3)'  & close,4
-   endif
+;      openw,4,path+region_now+'/'+gcm+'/longitudes.dat'
+;      printf,4,'All GCM grid longitudes contained in region'
+;      for i=0,n_elements(all_lons)-1 do printf,4,all_lons(i),fo='(f12.3)'  & close,4
+;      openw,4,path+region_now+'/'+gcm+'/latitudes.dat'
+;      printf,4,'All GCM grid latitudes contained in region'
+;      for i=0,n_elements(all_lats)-1 do printf,4,all_lats(i),fo='(f12.3)'  & close,4
+;   endif
 
    ; generate time variables
    ff=n_elements(time)/251.  ; factor detecting GCMs with leap years
@@ -187,12 +189,13 @@ if a(0) ne '' and b(0) ne '' then begin
 ; Define the range of years
 start_year = 1850
 end_year = 2100
-num_years = end_year - start_year + 1
-
+len = end_year - start_year + 1  ; Number of years
 ; Create the array of months (1 to 12 repeated for each year)
-month = REPLICATE(INDGEN(12) + 1, num_years)
+month = REFORM(REBIN(INDGEN(12) + 1, 12, len), len * 12)
 ; Create the array of years (each year repeated 12 times for each month)
-years = REFORM(REPLICATE(INDGEN(num_years) + start_year, 12), num_years * 12)
+years = FLTARR(len * 12)
+FOR i = 0, len - 1 DO years[i * 12:(i + 1) * 12 - 1] = start_year + i
+
 
 ; ************** Loop over glaciers *************
 ; -----------------------------------------------
@@ -211,18 +214,20 @@ for g=0l,ng-1 do begin
    ; start extraction when no file for the respective glacier is available
    if a(0) eq '' or overwrite_all eq 'y' then begin
 
-      hh=indgen(ndays)
+      hh=indgen(nmon)
 
-      openw,4,path+region_now+'/'+gcms+'/'+ssp+'/clim_'+gx+'_'+gy+'.dat'
+      openw,4,path+region_now+'/'+gcm+'/'+ssp+'/clim_'+gx+'_'+gy+'.dat'
       printf,4,'Meteorological forcing for grid cell '+gx+'(lon)_'+gy+'(lat)'
-      printf,4,gcms+'/'+ssp
+      printf,4,gcm+'/'+ssp
       printf,4,'Year  Month  temp(deg)  prec(mm)'
 
 ; write file
-      ; past climate (up to 2015)
-      for h=0l,nday-1 do printf,4,yp(h),mop(h),temp(indx,indy,h),prec(indx,indy,h),fo='(i4,2i6,f13.4,2f11.3)'
+      for h=0l,nmon-1 do begin
+         ;print, h
+         printf, 4, FIX(years(h)), month(h), temp(h, indx, indy), prec(h, indx, indy), fo='(i4,i6,f13.2,f11.3)'
+      endfor
       close,4
-      if g eq 0 then print,y(h-1),mo(h-1)
+      ;if g eq 0 then print,y(h-1),mo(h-1)
 
    endif                        ; climate file does yet not exist
    

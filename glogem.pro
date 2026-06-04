@@ -145,7 +145,6 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
           endif
 
           ; read regional parameter file
-
           if regparams_readfromfile eq 'y' then begin
             @procedures/read/read_regionalparams.pro
           endif

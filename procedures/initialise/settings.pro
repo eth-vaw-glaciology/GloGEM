@@ -63,17 +63,28 @@ meltmodel      = '1'    ; 1: degree-day model, 3: simple energy-balance (Oerlema
 ; --- GCM specifications
 CMIP6    = 'y'
 long_GCM = ''        ; '' for runs to 2100, 'long_' for runs to 2300
-GCM_data = 'cmip6'
-
-short_gcmchoice = [1, 1, 1]   ; [GCM, SSP, experiment] indices — 0 for full batch
-first_GCM       = 0            ; starting GCM in batch (0-based, minus 1)
-
-rcp_batch   = [4, 5, 4, 4, 5, 5, 4, 5, 4, 4, 4, 5, 4]
-expe_batch  = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-
-GCM_model      = ['BCC-CSM2-MR', 'CAMS-CSM1-0', 'CESM2', 'CESM2-WACCM', 'EC-Earth3', 'EC-Earth3-Veg', 'FGOALS-f3-L', 'GFDL-ESM4', 'INM-CM4-8', 'INM-CM5-0', 'MPI-ESM1-2-HR', 'MRI-ESM2-0', 'NorESM2-MM']
-GCM_rcp        = ['ssp126', 'ssp245', 'ssp370', 'ssp585', 'ssp119', 'ssp534-over']
-GCM_experiment = ['r1i1p1f1', 'r2i1p1f1', 'r3i1p1f1', 'r4i1p1f1', 'r5i1p1f1', 'r6i1p1f1', 'r7i1p1f1']
+GMIP4    = 'n'
+if CMIP6 eq 'y' then begin
+  short_gcmchoice = [1, 1, 1]   ; [GCM, SSP, experiment] indices — 0 for full batch
+  first_GCM       = 0            ; starting GCM in batch (0-based, minus 1)
+  rcp_batch   = [4, 5, 4, 4, 5, 5, 4, 5, 4, 4, 4, 5, 4]
+  expe_batch  = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+  GCM_model      = ['BCC-CSM2-MR', 'CAMS-CSM1-0', 'CESM2', 'CESM2-WACCM', 'EC-Earth3', 'EC-Earth3-Veg', 'FGOALS-f3-L', 'GFDL-ESM4', 'INM-CM4-8', 'INM-CM5-0', 'MPI-ESM1-2-HR', 'MRI-ESM2-0', 'NorESM2-MM']
+  GCM_rcp        = ['ssp126', 'ssp245', 'ssp370', 'ssp585', 'ssp119', 'ssp534-over']
+  GCM_experiment = ['r1i1p1f1', 'r2i1p1f1', 'r3i1p1f1', 'r4i1p1f1', 'r5i1p1f1', 'r6i1p1f1', 'r7i1p1f1']
+  GCM_data = 'cmip6'
+endif else begin
+  if GMIP4 eq 'y' then begin
+    short_gcmchoice = [1, 1, 1]   ; [GCM, RCP, experiment] indices — 0 for full batch
+    first_GCM       = 0            ; starting GCM in batch (0-based, minus 1)
+    rcp_batch   = [1, 2, 3]
+    expe_batch  = [1, 1, 1]
+    GCM_model      = ['bcc-csm2-mr']
+    GCM_rcp        = ['ssp126']
+    GCM_experiment = ['r1i1p1']
+    GCM_data = 'gmip4'
+  endif
+endelse
 
 ; --- reanalysis
 ; default is 'era5' (daily model); 'ERA5' (all caps) is auto-selected for monthly in Zone 2
@@ -426,26 +437,41 @@ for i = 1, total(fit_layers) - 1 do begin
 endfor
 
 ; --- single GCM selection (only active when short_gcmchoice ne 0)
-if short_gcmchoice[0] ne 0 then begin
-  if CMIP6 eq 'n' then begin
-    tt = ['BCC-CSM1-1', 'CanESM2', 'CCSM4', 'CNRM-CM5', 'CSIRO-Mk3-6-0', 'GFDL-CM3', 'GISS-E2-R', 'HadGEM2-ES', 'INMCM4', 'IPSL-CM5A-LR', 'MIROC-ESM', 'MPI-ESM-LR', 'MRI-CGCM3', 'NorESM1-M']
-    GCM_model = [tt[short_gcmchoice[0] - 1]]
-    tt = ['rcp45', 'rcp85', 'rcp26']
-    GCM_rcp = [tt[short_gcmchoice[1] - 1]]
-    tt = ['r1i1p1', 'r2i1p1', 'r3i1p1', 'r4i1p1', 'r5i1p1']
-    GCM_experiment = [tt[short_gcmchoice[2] - 1]]
+if CMIP6 eq 'y' then begin
+  if short_gcmchoice[0] ne 0 then begin
+    if CMIP6 eq 'n' then begin
+      tt = ['BCC-CSM1-1', 'CanESM2', 'CCSM4', 'CNRM-CM5', 'CSIRO-Mk3-6-0', 'GFDL-CM3', 'GISS-E2-R', 'HadGEM2-ES', 'INMCM4', 'IPSL-CM5A-LR', 'MIROC-ESM', 'MPI-ESM-LR', 'MRI-CGCM3', 'NorESM1-M']
+      GCM_model = [tt[short_gcmchoice[0] - 1]]
+      tt = ['rcp45', 'rcp85', 'rcp26']
+      GCM_rcp = [tt[short_gcmchoice[1] - 1]]
+      tt = ['r1i1p1', 'r2i1p1', 'r3i1p1', 'r4i1p1', 'r5i1p1']
+      GCM_experiment = [tt[short_gcmchoice[2] - 1]]
+      rcp_batch[0] = 0
+      expe_batch[0] = 0
+      first_GCM = 0
+    endif else begin
+      tt = ['BCC-CSM2-MR', 'CAMS-CSM1-0', 'CESM2', 'CESM2-WACCM', 'EC-Earth3', 'EC-Earth3-Veg', 'FGOALS-f3-L', 'GFDL-ESM4', 'INM-CM4-8', 'INM-CM5-0', 'MPI-ESM1-2-HR', 'MRI-ESM2-0', 'NorESM2-MM', 'CanESM5']
+      GCM_model = [tt[short_gcmchoice[0] - 1]]
+      tt = ['ssp126', 'ssp245', 'ssp370', 'ssp585', 'ssp119']
+      GCM_rcp = [tt[short_gcmchoice[1] - 1]]
+      tt = ['r1i1p1f1', 'r2i1p1f1', 'r3i1p1f1', 'r4i1p1f1', 'r5i1p1f1', 'r6i1p1f1', 'r7i1p1f1']
+      GCM_experiment = [tt[short_gcmchoice[2] - 1]]
+      rcp_batch[0] = 0
+      expe_batch[0] = 0
+      first_GCM = 0
+    endelse
+  endif
+endif else begin
+  if GMIP4 eq 'y' then begin
+    tt = ['bcc-csm2-mr']
+    GCM_model = [tt[0]]
+    tt = ['ssp126']
+    GCM_rcp = [tt[0]]
+    tt = ['r1i1p1f1']
+    GCM_experiment = [tt[0]]
     rcp_batch[0] = 0
+    expe_batch  = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
     expe_batch[0] = 0
     first_GCM = 0
-  endif else begin
-    tt = ['BCC-CSM2-MR', 'CAMS-CSM1-0', 'CESM2', 'CESM2-WACCM', 'EC-Earth3', 'EC-Earth3-Veg', 'FGOALS-f3-L', 'GFDL-ESM4', 'INM-CM4-8', 'INM-CM5-0', 'MPI-ESM1-2-HR', 'MRI-ESM2-0', 'NorESM2-MM', 'CanESM5']
-    GCM_model = [tt[short_gcmchoice[0] - 1]]
-    tt = ['ssp126', 'ssp245', 'ssp370', 'ssp585', 'ssp119']
-    GCM_rcp = [tt[short_gcmchoice[1] - 1]]
-    tt = ['r1i1p1f1', 'r2i1p1f1', 'r3i1p1f1', 'r4i1p1f1', 'r5i1p1f1', 'r6i1p1f1', 'r7i1p1f1']
-    GCM_experiment = [tt[short_gcmchoice[2] - 1]]
-    rcp_batch[0] = 0
-    expe_batch[0] = 0
-    first_GCM = 0
-  endelse
-endif
+  endif
+endelse

@@ -9,8 +9,32 @@
 
 compile_opt idl2
 
-if catchment_selection ne '' then cc='_'+catchment_selection else cc=''
+if catchment_selection ne '' then begin
+   cc='_'+catchment_selection
+endif else begin
+   cc=''
+endelse
+
+; Check if calibration is enabled
+if calibrate eq 'y' then begin
+   ; Check if a catchment selection is specified
+   if catchment_selection ne '' then begin
+      cc = '_' + catchment_selection
+   endif else begin
+      cc = ''
+   endelse
+   ; Check if rp_cali is 0
+   if rp_cali eq 0 then begin
+      ; Construct the file path
+      file = dircali + time_resolution + '/' + dir_region + '/calibration/toff_m' + meltmodel + '_cID' + string(calperiod_ID, fo='(i1)') + '_' + sub_region + cc + '.dat'
+      ; Delete the file using the `rm` command
+      spawn, 'rm ' + file
+   endif
+endif
+
+; Filename
 fn=dircali+'/'+time_resolution+'/'+dir_region+'/calibration/toff_m'+meltmodel+'_cID'+string(calperiod_ID,fo='(i1)')+'_'+sub_region+cc+'.dat'
+
 a=findfile(fn)
 if a[0] ne '' then begin
    anz=file_lines(fn) & da=dblarr(5,anz) & openr,1,fn & readf,1,da & close,1
