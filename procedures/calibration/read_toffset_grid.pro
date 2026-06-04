@@ -27,8 +27,10 @@ if calibrate eq 'y' then begin
    if rp_cali eq 0 then begin
       ; Construct the file path
       file = dircali + time_resolution + '/' + dir_region + '/calibration/toff_m' + meltmodel + '_cID' + string(calperiod_ID, fo='(i1)') + '_' + sub_region + cc + '.dat'
-      ; Delete the file using the `rm` command
-      spawn, 'rm ' + file
+      ; Check if the file exists before attempting to delete it
+      if file_test(file) then begin
+         spawn, 'rm ' + file
+      endif
    endif
 endif
 

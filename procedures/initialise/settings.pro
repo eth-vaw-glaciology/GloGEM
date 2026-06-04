@@ -39,7 +39,7 @@ size_range_overwrite = 'n'
 size_range = [0.002, 100000]   ; [km2]
 
 ; --- glacier / catchment selection
-single_glacier     = '01450'   ; RGI ID (e.g. 01450 = Aletschgletscher); '' to disable
+single_glacier     = ''   ; RGI ID (e.g. 01450 = Aletschgletscher); '' to disable
 catchment_selection = ''        ; catchment name; '' for single glacier or full region
 
 ; === main settings / modes
