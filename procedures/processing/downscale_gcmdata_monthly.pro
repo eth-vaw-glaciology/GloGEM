@@ -119,7 +119,9 @@ endif else begin
                   temp[n]=rtemp[hh[0],cc[0],bb[0]]
                   prec[n]=rprec[hh[0],cc[0],bb[0]]
                endif else stop
-               if meltmodel ne '1' then rad[n]=mrad[m-1]
+               if meltmodel ne '1' then begin 
+                  rad[n]=mrad[m-1]
+               endif
                n=n+1
             endfor
          endif else begin
@@ -134,7 +136,9 @@ endif else begin
                if ck eq 0 then kk=where(gcm_year eq i+tran[0]-3 and gcm_mon eq m,ck)
                temp[n]=gcm_temp[kk[0],jj[0],ii[0]]-bias[0,m-1]
                prec[n]=gcm_prec[kk[0],jj[0],ii[0]]/bias[1,m-1]
-               if meltmodel ne '1' then rad[n]=mrad[m-1]
+               if meltmodel ne '1' then begin 
+                  rad[n]=mrad[m-1]
+               endif
                n=n+1
             endfor
          endelse
@@ -161,6 +165,20 @@ endif else begin
       endfor
       a=min(dtt[0,*],ind2)
       gcm_mid=[gcm_lat[ind],gcm_lon[ind2]]
+      temp=dblarr((years+1)*12)
+      prec=temp
+      rad=temp
+      cyear=temp
+      cmon=temp
+      n=0l
+   
+      ; find closest GCM-point
+      dtt=dblarr(2,n_elements(gcm_lon))
+      for i=0,n_elements(gcm_lon)-1 do begin
+         a=min(sqrt((gcm_lat-rmid[0])^2+(gcm_lon[i]-rmid[1])^2),ind) & dtt[0,i]=a & dtt[1,i]=ind
+      endfor
+      a=min(dtt[0,*],ind2)
+      gcm_mid=[gcm_lat[ind],gcm_lon[ind2]]
       ; calculate monthly bias in the past
       bias=dblarr(3,12)    ; (0) temp, (1) prec, (2) tvar
       ii=where(gcm_lat eq gcm_mid[0])
@@ -171,51 +189,50 @@ endif else begin
       for m=1,12 do begin
          dd=where(ryear ge rea_eval[0] and ryear le rea_eval[1] and rmon eq m)
          kk=where(gcm_year ge rea_eval[0] and gcm_year le rea_eval[1] and gcm_mon eq m)
-         bias[0,m-1]=mean(gcm_temp[kk,jj[0],ii[0]])-mean(rtemp[dd,cc[0],bb[0]])
-         bias[1,m-1]=mean(gcm_prec[kk,jj[0],ii[0]])/mean(rprec[dd,cc[0],bb[0]])
-         if variability_bias eq 'y' then bias[2,m-1]=stdev(rtemp[dd,cc[0],bb[0]])/stdev(gcm_temp[kk,jj[0],ii[0]])
          hclim=relev[cc[0],bb[0]]
       endfor
-      stop
-      if meltmodel ne '1' then begin
-         mrad=dblarr(12) & mtt=indgen(12)+1
-         for i=1,12 do begin
-            hh=where(mtt eq i) & mrad[i-1]=rrad[hh[0],cc[0],bb[0]]
-         endfor
-      endif
-   
-      ; time series with Bias-corrected GCM-data
-      temp=dblarr((years+1)*12)
-      prec=temp
-      rad=temp
-      cyear=temp
-      cmon=temp
-      n=0l
-   
-      for i=0,years do begin
-      ; use re-analysis data as long as available! After (AND before) use GCM data
-         if i+tran[0] le max(ryear) and i+tran[0] gt min(ryear) then begin
-            for m=1,12 do begin
-               bb=where(rlat eq rmid[0]) & cc=where(rlon eq rmid[1]) & hh=where(ryear eq i+tran[0]-1 and rmon eq m,ci)
-               cyear[n]=i+tran[0]-1 & cmon[n]=m
+
+      ; Precompute constants
+      tran_offset = tran[0]
+      max_ryear = max(ryear)
+      min_ryear = min(ryear)
+      max_gcm_year = max(gcm_year) ; Get the maximum year from GCM data
+      n = 0
+
+      ; Precompute indices for re-analysis and GCM data
+      for i = 0, years do begin
+         current_year = i + tran_offset
+         ; Stop processing if the current year exceeds the maximum GCM year
+         if current_year gt max_gcm_year then break
+
+         ; Use re-analysis data if available
+         if current_year le max_ryear and current_year gt min_ryear then begin
+            for m = 0, 11 do begin
+               ; Precompute indices for the current year and month
+               hh = where(ryear eq current_year and rmon eq m, ci)
                if ci gt 0 then begin
-                  temp[n]=rtemp[hh[0],cc[0],bb[0]]
-                  prec[n]=rprec[hh[0],cc[0],bb[0]]
-               endif else stop
-               if meltmodel ne '1' then rad[n]=mrad[m-1]
-               n=n+1
+                  bb = where(rlat eq rmid[0])
+                  cc = where(rlon eq rmid[1])
+                  cyear[n] = current_year
+                  cmon[n] = m
+                  temp[n] = rtemp[hh[0], cc[0], bb[0]]
+                  prec[n] = rprec[hh[0], cc[0], bb[0]]
+                  if meltmodel ne '1' then rad[n] = mrad[m - 1]
+                  n = n + 1
+               endif
             endfor
          endif else begin
-         ; use projections only for unmeasured future
-            hh=where(gcm_year eq i+tran[0])
-            for m=1,12 do begin
-               cyear[n]=i+tran[0]
-               cmon[n]=m
-               kk=where(gcm_year eq i+tran[0] and gcm_mon eq m,ck)
-               temp[n]=gcm_temp[kk[0]]
-               prec[n]=gcm_prec[kk[0]]
-               if meltmodel ne '1' then rad[n]=mrad[m-1]
-               n=n+1
+            ; Use projections for future years
+            for m = 1, 12 do begin
+               kk = where(gcm_year eq current_year and gcm_mon eq m, ck)
+               if ck gt 0 then begin
+                  cyear[n] = current_year
+                  cmon[n] = m
+                  temp[n] = gcm_temp[kk[0]]
+                  prec[n] = gcm_prec[kk[0]]
+                  if meltmodel ne '1' then rad[n] = mrad[m - 1]
+                  n = n + 1
+               endif
             endfor
          endelse
       endfor
