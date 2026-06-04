@@ -58,6 +58,9 @@ endif else begin
    fn=dir_clim+'/future/'+time_resolution+'/'+long_GCM+'/'+GCM_data+'/'+dir_region+'/'+GCM_model[gcms]+ $
      '/'+GCM_rcp[rcps]+'/clim_' + gxg + '_' + gyg + '.dat'
    
+
+   stop
+     
    print, fn
    anz=file_lines(fn)-3 & da=dblarr(4,anz) & tt=strarr(3)
    openr,1,fn & readf,1,tt & readf,1,da & close,1
