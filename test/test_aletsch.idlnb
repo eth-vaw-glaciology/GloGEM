@@ -67,7 +67,7 @@
     "  DATA_DIR   + '/region_batch.dat', $",
     "  GEOM_DIR   + '/rgiv7/bands/centraleurope/bands_02596.dat', $",
     "  CLIM_DIR   + '/reanalysis/daily/era5/CentralEurope/clim_8.00_46.50.dat', $",
-    "  CLIM_DIR   + '/reanalysis/monthly/ERA5/CentralEurope/clim_CentralEurope.mdi' $",
+    "  CLIM_DIR   + '/reanalysis/monthly/era5/CentralEurope/clim_CentralEurope.mdi' $",
     "]",
     "foreach f, files_to_check do begin",
     "  if ~file_test(f) then begin",
