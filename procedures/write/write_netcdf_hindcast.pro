@@ -1,100 +1,138 @@
 ; *************************************************************
-; write_glaciermip4_hindcast
+; write_netcdf_hindcast
 ;
 ; Write GlacierMIP4-compliant NetCDF output files for the hindcast
-; period forced with ERA5. CF-1.8 metadata conventions are followed
-; throughout, including standard_name equivalents where applicable.
+; period. The reanalysis product is read from the 'reanalysis' variable
+; set in config.pro (e.g. 'ERA5', 'era5land', 'chelsaw5e5') and used
+; in both file names and global attributes. CF-1.8 metadata conventions
+; are followed throughout. Activated when write_netcdf eq 'y'.
 ;
-; Four NetCDF4 files are created per RGI region:
+; Works with both monthly and daily model configurations and with
+; both full-region and catchment_selection runs. Handles RGI6 and
+; RGI7 glacier IDs transparently (uses whatever IDs the model has
+; loaded).
 ;
-;   GloGEM_rgi[XX]_ERA5_annual.nc
-;       Regional annual variables (state at start of year).
+; Four NetCDF4 files are created per run:
 ;
-;   GloGEM_rgi[XX]_ERA5_monthly.nc
-;       Regional monthly variables (sums or means over each month).
+;   Full region run (catchment_selection eq ''):
+;     GloGEM_rgi[XX]_[reanalysis]_annual.nc
+;     GloGEM_rgi[XX]_[reanalysis]_monthly.nc  (or _daily.nc)
+;     GloGEM_rgi[XX]indiv_[reanalysis]_annual.nc
+;     GloGEM_rgi[XX]indiv_[reanalysis]_monthly.nc  (or _daily.nc)
 ;
-;   GloGEM_rgi[XX]indiv_ERA5_annual.nc
-;       Per-glacier annual variables with RGIId dimension.
+;   Catchment selection run (catchment_selection ne ''):
+;     GloGEM_rgi[XX]_[catchment]_[reanalysis]_annual.nc
+;     GloGEM_rgi[XX]_[catchment]_[reanalysis]_monthly.nc  (or _daily.nc)
+;     GloGEM_rgi[XX]_[catchment]indiv_[reanalysis]_annual.nc
+;     GloGEM_rgi[XX]_[catchment]indiv_[reanalysis]_monthly.nc  (or _daily.nc)
 ;
-;   GloGEM_rgi[XX]indiv_ERA5_monthly.nc
-;       Per-glacier monthly runoff only, with RGIId dimension.
-;
-; Annual variables and their units (all positive by GlacierMIP4 convention):
-;   area         [m2]   - glacier area (state at start of year)
-;   mass         [kg]   - total glacier mass (state at start of year)
+; Annual variables (state at start of year, all positive per GlacierMIP4
+; sign convention):
+;   area         [m2]   - glacier area
+;   mass         [kg]   - total glacier mass
 ;   mass_bsl     [kg]   - glacier mass below sea level
 ;   frontal_abl  [kg]   - total frontal ablation over preceding year
 ;
-; Monthly variables and their units:
+; Sub-annual variables (sums or means per time step):
 ;   acc          [kg]   - total accumulation
-;   melt         [kg]   - total melt (snow, ice, firn)
+;   melt         [kg]   - total melt (snow + ice + firn)
 ;   refreeze     [kg]   - total refreezing
 ;   runoff_glac  [kg]   - glacier runoff from glacierized area
 ;   precip       [kg]   - precipitation over initial area (regional only)
 ;   temp         [K]    - air temperature over initial area (regional only)
 ;
-; Time axis: integer days since 1850-01-01 (start of year or month).
+; Time axis: integer days since 1850-01-01 (start of year, month or day).
 ;
 ; Note on unit conversions applied before calling this procedure
 ; (to be performed in glogem.pro when building the gmip4 arrays):
-;   areas[ye]    [km2]   x 1e6           -> m2
-;   volumes[ye]  [km3]   x 917e9         -> kg  (rho_ice = 917 kg/m3)
-;   vol_bz[ye]   [km3]   x 917e9         -> kg
-;   flux_calv[ye][m w.e.]x ar_gl x 1e9  -> kg  (verify units in calving_model.pro)
-;   accmo etc.   [m w.e.]x ar_gl x 1e9  -> kg
-;   precmo_ini   [m w.e. x km2] x 1e9   -> kg
-;   tempmo_ini   already in K
+;   areas[ye]    [km2]        x 1e6       -> m2
+;   volumes[ye]  [km3]        x 917e9     -> kg  (rho_ice = 917 kg/m3)
+;   vol_bz[ye]   [km3]        x 917e9     -> kg
+;   flux_calv[ye][m w.e.]     x ar_gl x 1e9 -> kg
+;   accmo/accday [m w.e.]     x ar_gl x 1e9 -> kg
+;   melmo        [m w.e.]     x ar_gl x 1e9 -> kg
+;   melt (daily) snowmeltday + icemeltday, each x respective area x 1e9 -> kg
+;   refrmo/refrday [m w.e.]   x ar_gl x 1e9 -> kg
+;   discharge_gl [m w.e.]     x ar_gl x 1e9 -> kg
+;   precmo_ini/precday_ini [m w.e. x km2] x 1e9 -> kg
+;   tempmo_ini/tempday_ini   already in K
 ;
 ; Expected variables in scope (set up by glogem.pro before calling):
-;   gmip4_ng                  - number of glaciers in the region (long)
-;   gmip4_rgiids[ng]          - RGI IDs as string array
-;   gmip4_area[ng, years]     - glacier area per glacier per year [m2]
-;   gmip4_mass[ng, years]     - glacier mass per glacier per year [kg]
-;   gmip4_mass_bsl[ng, years] - mass below sea level per glacier [kg]
+;   gmip4_ng                   - number of glaciers [long]
+;   gmip4_rgiids[ng]           - RGI IDs as string array
+;   gmip4_area[ng, years]      - glacier area per glacier per year [m2]
+;   gmip4_mass[ng, years]      - glacier mass per glacier per year [kg]
+;   gmip4_mass_bsl[ng, years]  - mass below sea level per glacier [kg]
 ;   gmip4_frontal_abl[ng,years]- frontal ablation per glacier [kg]
-;   gmip4_acc[ng, years*12]   - monthly accumulation per glacier [kg]
-;   gmip4_melt[ng, years*12]  - monthly melt per glacier [kg]
-;   gmip4_refreeze[ng,years*12]- monthly refreezing per glacier [kg]
-;   gmip4_runoff[ng, years*12]- monthly runoff per glacier [kg]
-;   gmip4_precip[years*12]    - monthly precip over initial area [kg]
-;                               (aggregated across all glaciers)
-;   gmip4_temp[years*12]      - monthly temp over initial area [K]
-;                               (area-weighted mean across all glaciers)
-;   gmip4_region   - RGI region number as integer (e.g. 1 for RGI01)
-;   tran[2]        - modeling period [start_year, end_year]
-;   years          - total number of years in the run
-;   dirres         - base output directory path
+;   gmip4_acc[ng, years*12 or years*365]   - accumulation per glacier [kg]
+;   gmip4_melt[ng, years*12 or years*365]  - melt per glacier [kg]
+;   gmip4_refreeze[ng, years*12 or years*365] - refreezing per glacier [kg]
+;   gmip4_runoff[ng, years*12 or years*365]   - runoff per glacier [kg]
+;   gmip4_precip[years*12 or years*365]    - precip over initial area [kg]
+;                                            (aggregated across all glaciers)
+;   gmip4_temp[years*12 or years*365]      - temp over initial area [K]
+;                                            (area-weighted across all glaciers)
+;   gmip4_region        - RGI region number as integer (e.g. 1 for RGI01)
+;   catchment_selection - catchment name string or '' for full region
+;   reanalysis          - reanalysis product string from config.pro
+;                         (e.g. 'ERA5', 'era5land', 'chelsaw5e5')
+;                         used in file names and 'forcing' global attribute
+;   tran[2]             - modeling period [start_year, end_year]
+;   years               - total number of years in the run
+;   time_resolution     - 'monthly' or 'daily'
+;   dirres              - base output directory path
 ; *************************************************************
 
 compile_opt idl2
 
-; --- Output directory and file names ---
+; --- File naming: handles full region and catchment selection ---
 rgi_str = string(gmip4_region, format='(i02)')
-outdir  = dirres + 'GlacierMIP4' + path_sep()
+if catchment_selection eq '' then begin
+    base_tag  = 'rgi' + rgi_str
+    indiv_tag = 'rgi' + rgi_str + 'indiv'
+endif else begin
+    catch_str = strtrim(catchment_selection, 2)
+    base_tag  = 'rgi' + rgi_str + '_' + catch_str
+    indiv_tag = 'rgi' + rgi_str + '_' + catch_str + 'indiv'
+endelse
+
+outdir = dirres + 'GlacierMIP4' + path_sep()
 if ~file_test(outdir, /directory) then file_mkdir, outdir
 
-fn_ann   = outdir + 'GloGEM_rgi' + rgi_str + '_ERA5_annual.nc'
-fn_mon   = outdir + 'GloGEM_rgi' + rgi_str + '_ERA5_monthly.nc'
-fn_ann_i = outdir + 'GloGEM_rgi' + rgi_str + 'indiv_ERA5_annual.nc'
-fn_mon_i = outdir + 'GloGEM_rgi' + rgi_str + 'indiv_ERA5_monthly.nc'
+fn_ann   = outdir + 'GloGEM_' + base_tag  + '_' + strtrim(reanalysis,2) + '_annual.nc'
+fn_ann_i = outdir + 'GloGEM_' + indiv_tag + '_' + strtrim(reanalysis,2) + '_annual.nc'
 
+; --- Sub-annual time axis: monthly or daily ---
 period_str = strtrim(string(tran[0]),2) + '-' + strtrim(string(tran[1]),2)
+ref_jd     = julday(1, 1, 1850)
 fv         = !VALUES.F_NAN
 
-; --- Time axes: integer days since 1850-01-01 ---
-ref_jd   = julday(1, 1, 1850)
+if time_resolution eq 'monthly' then begin
+    n_sub     = years * 12
+    sub_label = 'monthly'
+    time_sub  = lonarr(n_sub)
+    idx = 0L
+    for yr = 0L, years-1L do $
+        for mo = 1, 12 do begin
+            time_sub[idx] = long(julday(mo, 1, tran[0]+yr) - ref_jd)
+            idx++
+        endfor
+endif else begin
+    n_sub     = years * 365
+    sub_label = 'daily'
+    time_sub  = lonarr(n_sub)
+    for yr = 0L, years-1L do $
+        for doy = 0, 364 do $
+            time_sub[yr*365+doy] = long(julday(1, 1, tran[0]+yr) - ref_jd + doy)
+endelse
 
+fn_sub   = outdir + 'GloGEM_' + base_tag  + '_' + strtrim(reanalysis,2) + '_' + sub_label + '.nc'
+fn_sub_i = outdir + 'GloGEM_' + indiv_tag + '_' + strtrim(reanalysis,2) + '_' + sub_label + '.nc'
+
+; --- Annual time axis ---
 time_ann = lonarr(years)
 for yr = 0L, years-1L do $
-    time_ann[yr] = long(julday(1, 1, tran[0] + yr) - ref_jd)
-
-time_mon = lonarr(years * 12)
-idx = 0L
-for yr = 0L, years-1L do $
-    for mo = 1, 12 do begin
-        time_mon[idx] = long(julday(mo, 1, tran[0] + yr) - ref_jd)
-        idx++
-    endfor
+    time_ann[yr] = long(julday(1, 1, tran[0]+yr) - ref_jd)
 
 ; --- Regional totals (sum over all glaciers) ---
 reg_area        = float(total(gmip4_area,        1))
@@ -115,9 +153,10 @@ ncid = ncdf_create(fn_ann, /clobber, /netcdf4)
 
 ncdf_attput, ncid, /global, 'Conventions',   'CF-1.8'
 ncdf_attput, ncid, /global, 'model',         'GloGEM'
-ncdf_attput, ncid, /global, 'institution',   'University of Fribourg'
+ncdf_attput, ncid, /global, 'institution',   'ETH, VAW'
 ncdf_attput, ncid, /global, 'rgi_region',    rgi_str
-ncdf_attput, ncid, /global, 'forcing',       'ERA5'
+ncdf_attput, ncid, /global, 'catchment',     strtrim(catchment_selection, 2)
+ncdf_attput, ncid, /global, 'forcing',       strtrim(reanalysis, 2)
 ncdf_attput, ncid, /global, 'period',        period_str
 ncdf_attput, ncid, /global, 'creation_date', systime()
 
@@ -164,19 +203,21 @@ ncdf_varput, ncid, v_fabl,  reg_frontal_abl
 ncdf_close, ncid
 
 ; ================================================================
-; 2. REGIONAL MONTHLY FILE
+; 2. REGIONAL SUB-ANNUAL FILE (monthly or daily)
 ; ================================================================
-ncid = ncdf_create(fn_mon, /clobber, /netcdf4)
+ncid = ncdf_create(fn_sub, /clobber, /netcdf4)
 
 ncdf_attput, ncid, /global, 'Conventions',   'CF-1.8'
 ncdf_attput, ncid, /global, 'model',         'GloGEM'
-ncdf_attput, ncid, /global, 'institution',   'University of Fribourg'
+ncdf_attput, ncid, /global, 'institution',   'ETH, VAW'
 ncdf_attput, ncid, /global, 'rgi_region',    rgi_str
-ncdf_attput, ncid, /global, 'forcing',       'ERA5'
+ncdf_attput, ncid, /global, 'catchment',     strtrim(catchment_selection, 2)
+ncdf_attput, ncid, /global, 'forcing',       strtrim(reanalysis, 2)
+ncdf_attput, ncid, /global, 'time_resolution', sub_label
 ncdf_attput, ncid, /global, 'period',        period_str
 ncdf_attput, ncid, /global, 'creation_date', systime()
 
-t_dimid = ncdf_dimdef(ncid, 'time', years*12)
+t_dimid = ncdf_dimdef(ncid, 'time', n_sub)
 
 t_varid = ncdf_vardef(ncid, 'time', [t_dimid], /long)
 ncdf_attput, ncid, t_varid, 'long_name',    'time'
@@ -222,7 +263,7 @@ ncdf_attput, ncid, v_temp, '_FillValue',   fv
 
 ncdf_control, ncid, /endef
 
-ncdf_varput, ncid, t_varid, time_mon
+ncdf_varput, ncid, t_varid, time_sub
 ncdf_varput, ncid, v_acc,   reg_acc
 ncdf_varput, ncid, v_melt,  reg_melt
 ncdf_varput, ncid, v_refr,  reg_refreeze
@@ -239,9 +280,10 @@ ncid = ncdf_create(fn_ann_i, /clobber, /netcdf4)
 
 ncdf_attput, ncid, /global, 'Conventions',   'CF-1.8'
 ncdf_attput, ncid, /global, 'model',         'GloGEM'
-ncdf_attput, ncid, /global, 'institution',   'University of Fribourg'
+ncdf_attput, ncid, /global, 'institution',   'ETH, VAW'
 ncdf_attput, ncid, /global, 'rgi_region',    rgi_str
-ncdf_attput, ncid, /global, 'forcing',       'ERA5'
+ncdf_attput, ncid, /global, 'catchment',     strtrim(catchment_selection, 2)
+ncdf_attput, ncid, /global, 'forcing',       strtrim(reanalysis, 2)
 ncdf_attput, ncid, /global, 'period',        period_str
 ncdf_attput, ncid, /global, 'creation_date', systime()
 
@@ -293,19 +335,21 @@ ncdf_varput, ncid, v_fabl,  float(gmip4_frontal_abl)
 ncdf_close, ncid
 
 ; ================================================================
-; 4. INDIVIDUAL MONTHLY FILE (runoff_glac only)
+; 4. INDIVIDUAL SUB-ANNUAL FILE (runoff_glac only, monthly or daily)
 ; ================================================================
-ncid = ncdf_create(fn_mon_i, /clobber, /netcdf4)
+ncid = ncdf_create(fn_sub_i, /clobber, /netcdf4)
 
 ncdf_attput, ncid, /global, 'Conventions',   'CF-1.8'
 ncdf_attput, ncid, /global, 'model',         'GloGEM'
-ncdf_attput, ncid, /global, 'institution',   'University of Fribourg'
+ncdf_attput, ncid, /global, 'institution',   'ETH, VAW'
 ncdf_attput, ncid, /global, 'rgi_region',    rgi_str
-ncdf_attput, ncid, /global, 'forcing',       'ERA5'
+ncdf_attput, ncid, /global, 'catchment',     strtrim(catchment_selection, 2)
+ncdf_attput, ncid, /global, 'forcing',       strtrim(reanalysis, 2)
+ncdf_attput, ncid, /global, 'time_resolution', sub_label
 ncdf_attput, ncid, /global, 'period',        period_str
 ncdf_attput, ncid, /global, 'creation_date', systime()
 
-t_dimid = ncdf_dimdef(ncid, 'time',    years*12)
+t_dimid = ncdf_dimdef(ncid, 'time',    n_sub)
 g_dimid = ncdf_dimdef(ncid, 'glacier', gmip4_ng)
 
 v_rgid = ncdf_vardef(ncid, 'RGIId', [g_dimid], /string)
@@ -326,7 +370,7 @@ ncdf_attput, ncid, v_run, '_FillValue',   fv
 ncdf_control, ncid, /endef
 
 ncdf_varput, ncid, v_rgid,  gmip4_rgiids
-ncdf_varput, ncid, t_varid, time_mon
+ncdf_varput, ncid, t_varid, time_sub
 ncdf_varput, ncid, v_run,   float(gmip4_runoff)
 
 ncdf_close, ncid
