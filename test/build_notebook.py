@@ -137,18 +137,10 @@ print, 'Config written: ' + cfg_file
 """),
 
 (CD, """\
-; ---- Run daily calibration ----
-; The model is launched in a subprocess so this kernel keeps GLOGEM_DIR etc.
-; Output appears at the end of the run (typically 1-2 minutes).
-print, 'Starting daily calibration run...'
-SPAWN, 'bash -c "cd ' + GLOGEM_DIR + ' && idl -e \\".run glogem.pro\\""', $
-       out_lines, err_lines, EXIT_STATUS=run_status
-foreach ln, out_lines do print, ln
-if run_status eq 0 then print, '' + STRING(10B) + 'Daily calibration finished.' $
-else begin
-  foreach ln, err_lines do print, 'STDERR: ', ln
-  MESSAGE, 'Daily calibration run exited with status ' + string(run_status, fo='(i0)')
-endelse
+; ---- Run daily calibration (~1 min) ----
+; Variables defined above (GLOGEM_DIR etc.) persist across cells in the IDL extension.
+CD, GLOGEM_DIR
+.run glogem.pro
 """),
 
 # ======================================================================
@@ -237,12 +229,9 @@ print, 'Config updated for daily hindcast'
 """),
 
 (CD, """\
-print, 'Starting daily hindcast run...'
-SPAWN, 'bash -c "cd ' + GLOGEM_DIR + ' && idl -e \\".run glogem.pro\\""', $
-       out_lines, err_lines, EXIT_STATUS=run_status
-foreach ln, out_lines do print, ln
-if run_status eq 0 then print, '' + STRING(10B) + 'Daily hindcast finished.' $
-else MESSAGE, 'Daily hindcast exited with status ' + string(run_status, fo='(i0)')
+; ---- Run daily hindcast (~6 s) ----
+CD, GLOGEM_DIR
+.run glogem.pro
 """),
 
 # ======================================================================
@@ -377,12 +366,9 @@ print, 'Config written for monthly calibration'
 """),
 
 (CD, """\
-print, 'Starting monthly calibration run...'
-SPAWN, 'bash -c "cd ' + GLOGEM_DIR + ' && idl -e \\".run glogem.pro\\""', $
-       out_lines, err_lines, EXIT_STATUS=run_status
-foreach ln, out_lines do print, ln
-if run_status eq 0 then print, '' + STRING(10B) + 'Monthly calibration finished.' $
-else MESSAGE, 'Monthly calibration exited with status ' + string(run_status, fo='(i0)')
+; ---- Run monthly calibration (~5 s) ----
+CD, GLOGEM_DIR
+.run glogem.pro
 """),
 
 (CD, """\
@@ -446,12 +432,9 @@ print, 'Config updated for monthly hindcast'
 """),
 
 (CD, """\
-print, 'Starting monthly hindcast run...'
-SPAWN, 'bash -c "cd ' + GLOGEM_DIR + ' && idl -e \\".run glogem.pro\\""', $
-       out_lines, err_lines, EXIT_STATUS=run_status
-foreach ln, out_lines do print, ln
-if run_status eq 0 then print, '' + STRING(10B) + 'Monthly hindcast finished.' $
-else MESSAGE, 'Monthly hindcast exited with status ' + string(run_status, fo='(i0)')
+; ---- Run monthly hindcast (~1 s) ----
+CD, GLOGEM_DIR
+.run glogem.pro
 """),
 
 # ======================================================================
@@ -663,21 +646,33 @@ else $
 
 
 # -----------------------------------------------------------------------
-# Build .idlnb (IDL native notebook, works directly with the IDL VS Code
-# extension — no Jupyter/ipykernel install required)
+# Build .idlnb  (IDL VS Code extension native format)
+#
+# Schema (from idl.idl-for-vscode example notebooks):
+#   { "version": "2.0.0",
+#     "cells": [
+#       { "type": "markdown"|"code",
+#         "content": ["line1", "line2", ...],   ← array, no \n
+#         "metadata": {},
+#         "outputs": [] }
+#     ] }
 # -----------------------------------------------------------------------
 
 def make_cell(cell_type, source):
     """Return one cell in the .idlnb JSON schema."""
     t = "markdown" if cell_type == "markdown" else "code"
-    cell = {"type": t, "content": source}
-    if t == "code":
-        cell["outputs"] = []
-    return cell
+    # content is an array of lines, no trailing newlines
+    lines = source.splitlines()
+    return {
+        "type": t,
+        "content": lines,
+        "metadata": {},
+        "outputs": [],
+    }
 
 
 nb = {
-    "version": 2,
+    "version": "2.0.0",
     "cells": [make_cell(ct, src) for ct, src in CELLS],
 }
 
