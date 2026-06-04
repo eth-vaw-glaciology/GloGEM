@@ -256,7 +256,7 @@ else MESSAGE, 'Daily hindcast exited with status ' + string(run_status, fo='(i0)
 ; ---- Read annual mass balance ----
 ; Note: catchment_selection adds a suffix to all output filenames.
 CC = '_Aletsch_Morteratsch'   ; catchment suffix used in filenames
-mb_file_daily = OUT_DIR + '/daily/CentralEurope/PAST/centraleurope_Annual_Balance_sfc_r1' + CC + '.dat'
+mb_file_daily = OUT_DIR + '/daily/CentralEurope/PAST/PAST_original/centraleurope_Annual_Balance_sfc_r1' + CC + '.dat'
 if ~file_test(mb_file_daily) then begin
   print, 'Output not found: ' + mb_file_daily & stop
 endif
@@ -305,8 +305,8 @@ leg1 = LEGEND(TARGET=[p_al, p_mo, ref_al, ref_mo], $
 
 (CD, """\
 ; ---- Read ELA and AAR ----
-ela_file_d = OUT_DIR + '/daily/CentralEurope/PAST/centraleurope_ELA_r1' + CC + '.dat'
-aar_file_d = OUT_DIR + '/daily/CentralEurope/PAST/centraleurope_AAR_r1' + CC + '.dat'
+ela_file_d = OUT_DIR + '/daily/CentralEurope/PAST/PAST_original/centraleurope_ELA_r1' + CC + '.dat'
+aar_file_d = OUT_DIR + '/daily/CentralEurope/PAST/PAST_original/centraleurope_AAR_r1' + CC + '.dat'
 
 n_gl_d = file_lines(ela_file_d) - 1
 hdr = strarr(1) & dat = strarr(n_gl_d)
@@ -466,7 +466,7 @@ Compare annual mass balance time series from both model resolutions.
 (CD, """\
 ; ---- Read monthly hindcast output ----
 CC = '_Aletsch_Morteratsch'   ; catchment suffix (re-defined in case this cell runs first)
-mb_file_monthly = OUT_DIR + '/monthly/CentralEurope/PAST/centraleurope_Annual_Balance_sfc_r1' + CC + '.dat'
+mb_file_monthly = OUT_DIR + '/monthly/CentralEurope/PAST/PAST_original/centraleurope_Annual_Balance_sfc_r1' + CC + '.dat'
 if ~file_test(mb_file_monthly) then begin
   print, 'Monthly output not found: ' + mb_file_monthly & stop
 endif
