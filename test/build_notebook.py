@@ -663,38 +663,25 @@ else $
 
 
 # -----------------------------------------------------------------------
-# Build notebook JSON
+# Build .idlnb (IDL native notebook, works directly with the IDL VS Code
+# extension — no Jupyter/ipykernel install required)
 # -----------------------------------------------------------------------
 
 def make_cell(cell_type, source):
-    cell = {
-        "cell_type": cell_type,
-        "metadata": {},
-        "source": source.splitlines(keepends=True),
-    }
-    if cell_type == "code":
-        cell["execution_count"] = None
+    """Return one cell in the .idlnb JSON schema."""
+    t = "markdown" if cell_type == "markdown" else "code"
+    cell = {"type": t, "content": source}
+    if t == "code":
         cell["outputs"] = []
     return cell
 
 
 nb = {
-    "nbformat": 4,
-    "nbformat_minor": 5,
-    "metadata": {
-        "kernelspec": {
-            "display_name": "IDL",
-            "language": "IDL",
-            "name": "idl"
-        },
-        "language_info": {
-            "name": "IDL"
-        }
-    },
+    "version": 2,
     "cells": [make_cell(ct, src) for ct, src in CELLS],
 }
 
-out_path = os.path.join(os.path.dirname(__file__), "test_aletsch.ipynb")
+out_path = os.path.join(os.path.dirname(__file__), "test_aletsch.idlnb")
 with open(out_path, "w") as f:
     json.dump(nb, f, indent=1, ensure_ascii=False)
 print(f"Written: {out_path}")

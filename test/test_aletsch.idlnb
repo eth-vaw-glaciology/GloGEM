@@ -1,0 +1,139 @@
+{
+ "version": 2,
+ "cells": [
+  {
+   "type": "markdown",
+   "content": "# GloGEM test run: Aletsch & Morteratsch\n## Daily and monthly calibration walk-through\n\nThis notebook walks you through a minimal GloGEM run on two well-known\nSwiss glaciers — **Aletschgletscher** (RGI70-11.02596, 82 km²) and\n**Morteratschgletscher** (RGI70-11.02216, 16 km²).\n\nYou will:\n1. Run the **daily** model in calibration mode, then hindcast mode.\n2. Run the **monthly** model in calibration mode, then hindcast mode.\n3. Visualise and sanity-check the outputs.\n\n### Prerequisites\n- IDL 8.6 or later\n- The `idl_kernel` for Jupyter\n  (`pip install idl_kernel && python -m idl_kernel install`)\n- The test dataset bundled in `test/` (already in the repository)\n- `idl` in your `PATH` (checked in the setup cell)\n\n### How the notebook runs the model\nThe model is launched via `SPAWN` so the IDL kernel keeps its variables\nbetween cells.  Each model run writes its output to `test/outputs/` and\nall subsequent cells read from there.\n\n### Estimated run time\n~3–5 minutes for all four model runs (2 glaciers × 2 resolutions ×\n2 modes) on a modern workstation.\n"
+  },
+  {
+   "type": "markdown",
+   "content": "## 1. Configuration\n\nSet `GLOGEM_DIR` to the absolute path of your local GloGEM checkout\n(the directory that contains `glogem.pro`).\nAll other paths are derived automatically.\n"
+  },
+  {
+   "type": "code",
+   "content": "; ---- USER: set this to your GloGEM root directory ----\nGLOGEM_DIR = '/home/jabeer/projects/hackathon-sion-2026/GloGEM'\n; -------------------------------------------------------\n\nTEST_DIR    = GLOGEM_DIR + '/test'\nDATA_DIR    = TEST_DIR   + '/data'\nCLIM_DIR    = TEST_DIR   + '/climatedata'\nGEOM_DIR    = TEST_DIR   + '/geometricdata'\nOUT_DIR     = TEST_DIR   + '/outputs'\n\n; Verify key paths exist\nok = 1\nfiles_to_check = [ $\n  GLOGEM_DIR + '/glogem.pro', $\n  DATA_DIR   + '/region_batch.dat', $\n  GEOM_DIR   + '/rgiv7/bands/centraleurope/bands_02596.dat', $\n  CLIM_DIR   + '/reanalysis/daily/era5/CentralEurope/clim_8.00_46.50.dat', $\n  CLIM_DIR   + '/reanalysis/monthly/ERA5/CentralEurope/clim_CentralEurope.mdi' $\n]\nforeach f, files_to_check do begin\n  if ~file_test(f) then begin\n    print, 'MISSING: ' + f\n    ok = 0\n  endif\nendforeach\nif ok then print, 'All paths verified OK.' $\nelse print, 'ERROR: one or more required files are missing.'\n",
+   "outputs": []
+  },
+  {
+   "type": "markdown",
+   "content": "## 2. Daily model — calibration\n\nThe daily model uses ERA5 daily temperature and precipitation grids\n(0.25° resolution) downscaled to each elevation band.\nCalibration adjusts three parameters per glacier\n(`DDFsnow`, `DDFice`, `c_prec`) against geodetic mass balance\n(Hugonnet et al., 2021) for 2000–2020.\n\n### Config\n- `time_resolution = 'daily'`\n- `calibrate = 'y'`\n- `tran = [1991, 2020]` (calibration loop uses 2000–2020 subset)\n"
+  },
+  {
+   "type": "code",
+   "content": "; ---- Write config.pro for the daily calibration run ----\nSPAWN, 'mkdir -p ' + OUT_DIR\n\ncfg_file = GLOGEM_DIR + '/config.pro'\nopenw, lun, cfg_file, /get_lun\nprintf, lun, 'compile_opt idl2'\nprintf, lun, ''\nprintf, lun, \"; ---- test run: daily calibration ----\"\nprintf, lun, \"dirres   = '\" + OUT_DIR   + \"/'\"\nprintf, lun, \"main_dir = '\" + TEST_DIR  + \"/'\"\nprintf, lun, \"dir      = '\" + DATA_DIR  + \"/'\"\nprintf, lun, \"dir_clim = '\" + CLIM_DIR  + \"/'\"\nprintf, lun, \"\"\nprintf, lun, \"RGIversion           = '7'\"\nprintf, lun, \"time_resolution      = 'daily'\"\nprintf, lun, \"region_id_loop       = [14, 14]\"\nprintf, lun, \"catchment_selection  = 'Aletsch_Morteratsch'\"\nprintf, lun, \"tran                 = [1991, 2020]\"\nprintf, lun, \"calibrate            = 'y'\"\nprintf, lun, \"refreezing_full      = 'n'\"\nprintf, lun, \"refreezing_parametrised = 'y'\"\nprintf, lun, \"glacier_retreat      = 'n'\"\nprintf, lun, \"frontal_ablation     = 'n'\"\nfree_lun, lun\nprint, 'Config written: ' + cfg_file\n",
+   "outputs": []
+  },
+  {
+   "type": "code",
+   "content": "; ---- Run daily calibration ----\n; The model is launched in a subprocess so this kernel keeps GLOGEM_DIR etc.\n; Output appears at the end of the run (typically 1-2 minutes).\nprint, 'Starting daily calibration run...'\nSPAWN, 'bash -c \"cd ' + GLOGEM_DIR + ' && idl -e \\\".run glogem.pro\\\"\"', $\n       out_lines, err_lines, EXIT_STATUS=run_status\nforeach ln, out_lines do print, ln\nif run_status eq 0 then print, '' + STRING(10B) + 'Daily calibration finished.' $\nelse begin\n  foreach ln, err_lines do print, 'STDERR: ', ln\n  MESSAGE, 'Daily calibration run exited with status ' + string(run_status, fo='(i0)')\nendelse\n",
+   "outputs": []
+  },
+  {
+   "type": "markdown",
+   "content": "### Calibration results\nRead the per-glacier calibration file and display the fitted parameters.\n"
+  },
+  {
+   "type": "code",
+   "content": "; ---- Read daily calibration output ----\ncal_file = OUT_DIR + '/daily/CentralEurope/calibration/' + $\n           'calibrate_m1_cID9_centraleurope_final_era5_Aletsch_Morteratsch.dat'\n\nif ~file_test(cal_file) then begin\n  print, 'Calibration output not found: ' + cal_file\n  print, 'Check that the daily calibration run completed without errors.'\n  stop\nendif\n\nn = file_lines(cal_file) - 1\nhdr = strarr(1) & dat = strarr(n)\nopenr, 1, cal_file & readf, 1, hdr & readf, 1, dat & close, 1\nprint, hdr[0]\nprint, ''\nfor i = 0, n-1 do print, dat[i]\n\n; Parse for further use\ncal_id = strarr(n) & cal_ba = dblarr(n) & cal_ela = dblarr(n)\ncal_aar = dblarr(n) & cal_ddfs = dblarr(n) & cal_ddfi = dblarr(n)\ncal_cprec = dblarr(n) & cal_toff = dblarr(n)\nfor i = 0, n-1 do begin\n  p = strsplit(dat[i], ' ', /extract)\n  cal_id[i] = p[0]\n  cal_ba[i]    = double(p[1])\n  cal_ela[i]   = double(p[4])\n  cal_aar[i]   = double(p[5])\n  cal_ddfs[i]  = double(p[8])\n  cal_ddfi[i]  = double(p[9])\n  cal_cprec[i] = double(p[10])\n  cal_toff[i]  = double(p[11])\nendfor\nprint, ''\nprint, 'Summary:'\nprint, string('Glacier', 'Ba (m w.e./yr)', 'ELA (m)', 'AAR (%)', fo='(a10,3a16)')\nfor i = 0, n-1 do $\n  print, string(cal_id[i], cal_ba[i], cal_ela[i], cal_aar[i], $\n                fo='(a10,2f16.3,f16.1)')\n",
+   "outputs": []
+  },
+  {
+   "type": "markdown",
+   "content": "## 3. Daily model — hindcast\n\nNow run without calibration, using the parameters just estimated,\nto generate annual time-series output over the full 1991–2020 period.\n"
+  },
+  {
+   "type": "code",
+   "content": "; ---- Update config for daily hindcast ----\nopenw, lun, GLOGEM_DIR + '/config.pro', /get_lun\nprintf, lun, 'compile_opt idl2'\nprintf, lun, ''\nprintf, lun, \"; ---- test run: daily hindcast ----\"\nprintf, lun, \"dirres   = '\" + OUT_DIR   + \"/'\"\nprintf, lun, \"main_dir = '\" + TEST_DIR  + \"/'\"\nprintf, lun, \"dir      = '\" + DATA_DIR  + \"/'\"\nprintf, lun, \"dir_clim = '\" + CLIM_DIR  + \"/'\"\nprintf, lun, \"\"\nprintf, lun, \"RGIversion           = '7'\"\nprintf, lun, \"time_resolution      = 'daily'\"\nprintf, lun, \"region_id_loop       = [14, 14]\"\nprintf, lun, \"catchment_selection  = 'Aletsch_Morteratsch'\"\nprintf, lun, \"tran                 = [1991, 2020]\"\nprintf, lun, \"calibrate            = 'n'\"\nprintf, lun, \"read_parameters      = 'y'\"\nprintf, lun, \"refreezing_full      = 'n'\"\nprintf, lun, \"refreezing_parametrised = 'y'\"\nprintf, lun, \"glacier_retreat      = 'n'\"\nprintf, lun, \"frontal_ablation     = 'n'\"\nfree_lun, lun\nprint, 'Config updated for daily hindcast'\n",
+   "outputs": []
+  },
+  {
+   "type": "code",
+   "content": "print, 'Starting daily hindcast run...'\nSPAWN, 'bash -c \"cd ' + GLOGEM_DIR + ' && idl -e \\\".run glogem.pro\\\"\"', $\n       out_lines, err_lines, EXIT_STATUS=run_status\nforeach ln, out_lines do print, ln\nif run_status eq 0 then print, '' + STRING(10B) + 'Daily hindcast finished.' $\nelse MESSAGE, 'Daily hindcast exited with status ' + string(run_status, fo='(i0)')\n",
+   "outputs": []
+  },
+  {
+   "type": "markdown",
+   "content": "### Plot daily hindcast outputs\n"
+  },
+  {
+   "type": "code",
+   "content": "; ---- Read annual mass balance ----\n; Note: catchment_selection adds a suffix to all output filenames.\nCC = '_Aletsch_Morteratsch'   ; catchment suffix used in filenames\nmb_file_daily = OUT_DIR + '/daily/CentralEurope/PAST/PAST_original/centraleurope_Annual_Balance_sfc_r1' + CC + '.dat'\nif ~file_test(mb_file_daily) then begin\n  print, 'Output not found: ' + mb_file_daily & stop\nendif\n\nn_gl_d = file_lines(mb_file_daily) - 1\nhdr = strarr(1) & dat = strarr(n_gl_d)\nopenr, 1, mb_file_daily & readf, 1, hdr & readf, 1, dat & close, 1\n\nparts = strsplit(hdr[0], ' ', /extract)\nyrs_d = double(parts[1:*])\n\ngl_ids_d = strarr(n_gl_d) & mb_d = dblarr(n_gl_d, n_elements(yrs_d))\nfor i = 0, n_gl_d-1 do begin\n  p = strsplit(dat[i], ' ', /extract)\n  gl_ids_d[i] = p[0]\n  mb_d[i, *]  = double(p[1:*])\nendfor\n\n; Identify glaciers\nidx_al = (where(gl_ids_d eq '02596'))[0]  ; Aletsch\nidx_mo = (where(gl_ids_d eq '02216'))[0]  ; Morteratsch\n\nprint, 'Daily — mean annual MB 1991-2020:'\nprint, '  Aletsch:     ' + string(mean(mb_d[idx_al,*]), fo='(f7.3)') + ' m w.e./yr'\nprint, '  Morteratsch: ' + string(mean(mb_d[idx_mo,*]), fo='(f7.3)') + ' m w.e./yr'\n",
+   "outputs": []
+  },
+  {
+   "type": "code",
+   "content": "; ---- Plot 1: Annual mass balance time series (daily) ----\nw1 = WINDOW(DIMENSIONS=[900, 420], $\n            TITLE='Daily model — Annual mass balance (1991-2020)')\np_al = PLOT(yrs_d, mb_d[idx_al,*], 'b-2', $\n            TITLE='Annual specific mass balance', $\n            XTITLE='Year', YTITLE='Mass balance (m w.e.)', $\n            NAME='Aletsch (daily)', YRANGE=[-5, 3], $\n            LAYOUT=[1,1,1], /CURRENT)\np_mo = PLOT(yrs_d, mb_d[idx_mo,*], 'r--2', $\n            NAME='Morteratsch (daily)', /OVERPLOT)\nref_al = PLOT([1991, 2020], [-1.216, -1.216], 'b:', THICK=1.5, $\n              NAME='Aletsch geodetic mean', /OVERPLOT)\nref_mo = PLOT([1991, 2020], [-1.022, -1.022], 'r:', THICK=1.5, $\n              NAME='Morteratsch geodetic mean', /OVERPLOT)\nleg1 = LEGEND(TARGET=[p_al, p_mo, ref_al, ref_mo], $\n              POSITION=[0.88, 0.92], /NORMAL)\n",
+   "outputs": []
+  },
+  {
+   "type": "code",
+   "content": "; ---- Read ELA and AAR ----\nela_file_d = OUT_DIR + '/daily/CentralEurope/PAST/PAST_original/centraleurope_ELA_r1' + CC + '.dat'\naar_file_d = OUT_DIR + '/daily/CentralEurope/PAST/PAST_original/centraleurope_AAR_r1' + CC + '.dat'\n\nn_gl_d = file_lines(ela_file_d) - 1\nhdr = strarr(1) & dat = strarr(n_gl_d)\nopenr, 1, ela_file_d & readf, 1, hdr & readf, 1, dat & close, 1\nela_d = dblarr(n_gl_d, n_elements(yrs_d))\nfor i = 0, n_gl_d-1 do begin\n  p = strsplit(dat[i], ' ', /extract)\n  ela_d[i, *] = double(p[1:*])\nendfor\n\nhdr = strarr(1) & dat = strarr(n_gl_d)\nopenr, 1, aar_file_d & readf, 1, hdr & readf, 1, dat & close, 1\naar_d = dblarr(n_gl_d, n_elements(yrs_d))\nfor i = 0, n_gl_d-1 do begin\n  p = strsplit(dat[i], ' ', /extract)\n  aar_d[i, *] = double(p[1:*])\nendfor\n\nprint, 'Daily — mean ELA 1991-2020:'\nprint, '  Aletsch:     ' + string(mean(ela_d[idx_al,*]), fo='(f7.0)') + ' m'\nprint, '  Morteratsch: ' + string(mean(ela_d[idx_mo,*]), fo='(f7.0)') + ' m'\n\nw2 = WINDOW(DIMENSIONS=[900, 420], TITLE='Daily model — ELA and AAR')\np_ela = PLOT(yrs_d, ela_d[idx_al,*], 'b-2', $\n             TITLE='Aletsch — equilibrium line altitude', $\n             XTITLE='Year', YTITLE='ELA (m a.s.l.)', $\n             LAYOUT=[2,1,1], /CURRENT)\np_aar = PLOT(yrs_d, aar_d[idx_al,*]*100., 'g-2', $\n             TITLE='Aletsch — accumulation area ratio', $\n             XTITLE='Year', YTITLE='AAR (%)', $\n             LAYOUT=[2,1,2], /CURRENT)\n",
+   "outputs": []
+  },
+  {
+   "type": "markdown",
+   "content": "## 4. Monthly model — calibration\n\nThe monthly model uses gridded ERA5 monthly climate fields stored in\nregional `.mdi` binary archives. Sub-monthly temperature variability is\nderived from stored within-month anomaly patterns.\n"
+  },
+  {
+   "type": "code",
+   "content": "; ---- Update config for monthly calibration ----\nopenw, lun, GLOGEM_DIR + '/config.pro', /get_lun\nprintf, lun, 'compile_opt idl2'\nprintf, lun, ''\nprintf, lun, \"; ---- test run: monthly calibration ----\"\nprintf, lun, \"dirres   = '\" + OUT_DIR   + \"/'\"\nprintf, lun, \"main_dir = '\" + TEST_DIR  + \"/'\"\nprintf, lun, \"dir      = '\" + DATA_DIR  + \"/'\"\nprintf, lun, \"dir_clim = '\" + CLIM_DIR  + \"/'\"\nprintf, lun, \"\"\nprintf, lun, \"RGIversion           = '7'\"\nprintf, lun, \"time_resolution      = 'monthly'\"\nprintf, lun, \"region_id_loop       = [14, 14]\"\nprintf, lun, \"catchment_selection  = 'Aletsch_Morteratsch'\"\nprintf, lun, \"tran                 = [1991, 2020]\"\nprintf, lun, \"calibrate            = 'y'\"\nprintf, lun, \"refreezing_full      = 'n'\"\nprintf, lun, \"refreezing_parametrised = 'y'\"\nprintf, lun, \"glacier_retreat      = 'n'\"\nprintf, lun, \"frontal_ablation     = 'n'\"\nfree_lun, lun\nprint, 'Config written for monthly calibration'\n",
+   "outputs": []
+  },
+  {
+   "type": "code",
+   "content": "print, 'Starting monthly calibration run...'\nSPAWN, 'bash -c \"cd ' + GLOGEM_DIR + ' && idl -e \\\".run glogem.pro\\\"\"', $\n       out_lines, err_lines, EXIT_STATUS=run_status\nforeach ln, out_lines do print, ln\nif run_status eq 0 then print, '' + STRING(10B) + 'Monthly calibration finished.' $\nelse MESSAGE, 'Monthly calibration exited with status ' + string(run_status, fo='(i0)')\n",
+   "outputs": []
+  },
+  {
+   "type": "code",
+   "content": "; ---- Read monthly calibration output ----\ncal_file_m = OUT_DIR + '/monthly/CentralEurope/calibration/' + $\n             'calibrate_m1_cID9_centraleurope_final_ERA5_Aletsch_Morteratsch.dat'\n\nif ~file_test(cal_file_m) then begin\n  print, 'Monthly calibration output not found: ' + cal_file_m & stop\nendif\n\nn = file_lines(cal_file_m) - 1\nhdr = strarr(1) & dat = strarr(n)\nopenr, 1, cal_file_m & readf, 1, hdr & readf, 1, dat & close, 1\nprint, 'Monthly calibration results:'\nprint, hdr[0]\nfor i = 0, n-1 do print, dat[i]\n\ncal_m_id = strarr(n) & cal_m_ba = dblarr(n)\ncal_m_ddfs = dblarr(n) & cal_m_ddfi = dblarr(n) & cal_m_cprec = dblarr(n)\nfor i = 0, n-1 do begin\n  p = strsplit(dat[i], ' ', /extract)\n  cal_m_id[i]    = p[0]\n  cal_m_ba[i]    = double(p[1])\n  cal_m_ddfs[i]  = double(p[8])\n  cal_m_ddfi[i]  = double(p[9])\n  cal_m_cprec[i] = double(p[10])\nendfor\n",
+   "outputs": []
+  },
+  {
+   "type": "markdown",
+   "content": "## 5. Monthly model — hindcast\n"
+  },
+  {
+   "type": "code",
+   "content": "openw, lun, GLOGEM_DIR + '/config.pro', /get_lun\nprintf, lun, 'compile_opt idl2'\nprintf, lun, ''\nprintf, lun, \"; ---- test run: monthly hindcast ----\"\nprintf, lun, \"dirres   = '\" + OUT_DIR   + \"/'\"\nprintf, lun, \"main_dir = '\" + TEST_DIR  + \"/'\"\nprintf, lun, \"dir      = '\" + DATA_DIR  + \"/'\"\nprintf, lun, \"dir_clim = '\" + CLIM_DIR  + \"/'\"\nprintf, lun, \"\"\nprintf, lun, \"RGIversion           = '7'\"\nprintf, lun, \"time_resolution      = 'monthly'\"\nprintf, lun, \"region_id_loop       = [14, 14]\"\nprintf, lun, \"catchment_selection  = 'Aletsch_Morteratsch'\"\nprintf, lun, \"tran                 = [1991, 2020]\"\nprintf, lun, \"calibrate            = 'n'\"\nprintf, lun, \"read_parameters      = 'y'\"\nprintf, lun, \"refreezing_full      = 'n'\"\nprintf, lun, \"refreezing_parametrised = 'y'\"\nprintf, lun, \"glacier_retreat      = 'n'\"\nprintf, lun, \"frontal_ablation     = 'n'\"\nfree_lun, lun\nprint, 'Config updated for monthly hindcast'\n",
+   "outputs": []
+  },
+  {
+   "type": "code",
+   "content": "print, 'Starting monthly hindcast run...'\nSPAWN, 'bash -c \"cd ' + GLOGEM_DIR + ' && idl -e \\\".run glogem.pro\\\"\"', $\n       out_lines, err_lines, EXIT_STATUS=run_status\nforeach ln, out_lines do print, ln\nif run_status eq 0 then print, '' + STRING(10B) + 'Monthly hindcast finished.' $\nelse MESSAGE, 'Monthly hindcast exited with status ' + string(run_status, fo='(i0)')\n",
+   "outputs": []
+  },
+  {
+   "type": "markdown",
+   "content": "## 6. Comparison: daily vs monthly\n\nCompare annual mass balance time series from both model resolutions.\n"
+  },
+  {
+   "type": "code",
+   "content": "; ---- Read monthly hindcast output ----\nCC = '_Aletsch_Morteratsch'   ; catchment suffix (re-defined in case this cell runs first)\nmb_file_monthly = OUT_DIR + '/monthly/CentralEurope/PAST/PAST_original/centraleurope_Annual_Balance_sfc_r1' + CC + '.dat'\nif ~file_test(mb_file_monthly) then begin\n  print, 'Monthly output not found: ' + mb_file_monthly & stop\nendif\n\nn_gl_m = file_lines(mb_file_monthly) - 1\nhdr = strarr(1) & dat = strarr(n_gl_m)\nopenr, 1, mb_file_monthly & readf, 1, hdr & readf, 1, dat & close, 1\n\nparts = strsplit(hdr[0], ' ', /extract)\nyrs_m = double(parts[1:*])\n\ngl_ids_m = strarr(n_gl_m) & mb_m = dblarr(n_gl_m, n_elements(yrs_m))\nfor i = 0, n_gl_m-1 do begin\n  p = strsplit(dat[i], ' ', /extract)\n  gl_ids_m[i] = p[0]\n  mb_m[i, *]  = double(p[1:*])\nendfor\nidx_al_m = (where(gl_ids_m eq '02596'))[0]\nidx_mo_m = (where(gl_ids_m eq '02216'))[0]\n",
+   "outputs": []
+  },
+  {
+   "type": "code",
+   "content": "; ---- Plot: daily vs monthly annual mass balance ----\nw3 = WINDOW(DIMENSIONS=[1000, 480], $\n            TITLE='Mass balance: daily vs monthly model (1991-2020)')\n\n; Aletsch\np1 = PLOT(yrs_d, mb_d[idx_al,*], 'b-2', $\n          TITLE='Aletschgletscher', $\n          XTITLE='Year', YTITLE='MB (m w.e.)', $\n          NAME='Daily', YRANGE=[-5, 3], $\n          LAYOUT=[2,1,1], /CURRENT)\np2 = PLOT(yrs_m, mb_m[idx_al_m,*], 'r--2', $\n          NAME='Monthly', /OVERPLOT)\nref = PLOT([1991, 2020], [-1.216, -1.216], 'k:', $\n           NAME='Geodetic (2000-2020)', /OVERPLOT)\nleg3 = LEGEND(TARGET=[p1, p2, ref], POSITION=[0.45, 0.92], /NORMAL)\n\n; Morteratsch\np3 = PLOT(yrs_d, mb_d[idx_mo,*], 'b-2', $\n          TITLE='Morteratschgletscher', $\n          XTITLE='Year', YTITLE='MB (m w.e.)', $\n          NAME='Daily', YRANGE=[-5, 3], $\n          LAYOUT=[2,1,2], /CURRENT)\np4 = PLOT(yrs_m, mb_m[idx_mo_m,*], 'r--2', $\n          NAME='Monthly', /OVERPLOT)\nref2 = PLOT([1991, 2020], [-1.022, -1.022], 'k:', $\n            NAME='Geodetic (2000-2020)', /OVERPLOT)\nleg4 = LEGEND(TARGET=[p3, p4, ref2], POSITION=[0.92, 0.92], /NORMAL)\n",
+   "outputs": []
+  },
+  {
+   "type": "code",
+   "content": "; ---- Plot: calibration parameter comparison (daily vs monthly) ----\n; Bar chart of DDFsnow, DDFice, Cprec for each glacier and each resolution\nnames = ['Aletsch (d)', 'Aletsch (m)', 'Morteratsch (d)', 'Morteratsch (m)']\n\nidx_al_c  = (where(cal_id    eq '02596'))[0]\nidx_mo_c  = (where(cal_id    eq '02216'))[0]\nidx_al_cm = (where(cal_m_id  eq '02596'))[0]\nidx_mo_cm = (where(cal_m_id  eq '02216'))[0]\n\nddfs  = [cal_ddfs[idx_al_c],  cal_m_ddfs[idx_al_cm], $\n         cal_ddfs[idx_mo_c],  cal_m_ddfs[idx_mo_cm]]\nddfi  = [cal_ddfi[idx_al_c],  cal_m_ddfi[idx_al_cm], $\n         cal_ddfi[idx_mo_c],  cal_m_ddfi[idx_mo_cm]]\ncprec = [cal_cprec[idx_al_c], cal_m_cprec[idx_al_cm], $\n         cal_cprec[idx_mo_c], cal_m_cprec[idx_mo_cm]]\n\nx = indgen(4) + 1\nw4 = WINDOW(DIMENSIONS=[960, 400], $\n            TITLE='Calibrated parameters: daily vs monthly')\nb1 = BARPLOT(x, ddfs, FILL_COLOR='SteelBlue', TITLE='DDFsnow (mm/d/°C)', $\n             XTICKNAME=names, XTICKV=x, $\n             XTICKLEN=0, LAYOUT=[3,1,1], /CURRENT)\nb2 = BARPLOT(x, ddfi, FILL_COLOR='OrangeRed', TITLE='DDFice (mm/d/°C)', $\n             XTICKNAME=names, XTICKV=x, $\n             XTICKLEN=0, LAYOUT=[3,1,2], /CURRENT)\nb3 = BARPLOT(x, cprec, FILL_COLOR='SeaGreen', TITLE='c_prec (-)', $\n             XTICKNAME=names, XTICKV=x, $\n             XTICKLEN=0, LAYOUT=[3,1,3], /CURRENT)\n",
+   "outputs": []
+  },
+  {
+   "type": "markdown",
+   "content": "## 7. Sanity checks\n\nVerify that key model outputs fall within expected ranges for these glaciers.\n"
+  },
+  {
+   "type": "code",
+   "content": "; ---- Automated sanity checks ----\n; Each check prints PASS or FAIL with the value and expected range.\n\nprint, ''\nprint, '====== Sanity checks ======'\nn_pass = 0 & n_total = 0\n\n; Each check block repeats the same pattern:\n\n; 1. Calibrated Ba close to geodetic target\nchk_labels = ['Aletsch daily Ba',      'Morteratsch daily Ba', $\n              'Aletsch monthly Ba',    'Morteratsch monthly Ba']\nchk_vals   = [cal_ba[idx_al_c],       cal_ba[idx_mo_c], $\n              cal_m_ba[idx_al_cm],    cal_m_ba[idx_mo_cm]]\nchk_lo     = [-1.5, -1.4, -1.5, -1.4]\nchk_hi     = [-0.8, -0.5, -0.8, -0.5]\n\nfor k = 0, n_elements(chk_labels)-1 do begin\n  n_total++\n  if chk_vals[k] ge chk_lo[k] and chk_vals[k] le chk_hi[k] then begin\n    print, '  PASS  ' + chk_labels[k] + ': ' + string(chk_vals[k], fo='(f8.3)')\n    n_pass++\n  endif else $\n    print, '  FAIL  ' + chk_labels[k] + ': ' + string(chk_vals[k], fo='(f8.3)') + $\n           '  [expected ' + string(chk_lo[k], fo='(f6.2)') + ' to ' + $\n           string(chk_hi[k], fo='(f6.2)') + ']'\nendfor\n\n; 2. DDFsnow and DDFice in realistic ranges (mm/d/°C)\nddf_labels = ['Aletsch daily DDFsnow (mm/d/C)', 'Aletsch daily DDFice (mm/d/C)']\nddf_vals   = [cal_ddfs[idx_al_c], cal_ddfi[idx_al_c]]\nddf_lo     = [1.5, 3.0]\nddf_hi     = [7.5, 15.0]\nfor k = 0, 1 do begin\n  n_total++\n  if ddf_vals[k] ge ddf_lo[k] and ddf_vals[k] le ddf_hi[k] then begin\n    print, '  PASS  ' + ddf_labels[k] + ': ' + string(ddf_vals[k], fo='(f8.3)')\n    n_pass++\n  endif else $\n    print, '  FAIL  ' + ddf_labels[k] + ': ' + string(ddf_vals[k], fo='(f8.3)') + $\n           '  [expected ' + string(ddf_lo[k], fo='(f6.2)') + ' to ' + $\n           string(ddf_hi[k], fo='(f6.2)') + ']'\nendfor\n\n; 3. Hindcast mean MB over 2000-2020 close to geodetic\nii_d = where(yrs_d ge 2000 and yrs_d le 2020)\nii_m = where(yrs_m ge 2000 and yrs_m le 2020)\nhind_labels = ['Aletsch daily mean MB 2000-2020', $\n               'Morteratsch daily mean MB 2000-2020', $\n               'Aletsch monthly mean MB 2000-2020', $\n               'Morteratsch monthly mean MB 2000-2020']\nhind_vals = [mean(mb_d[idx_al, ii_d]),  mean(mb_d[idx_mo, ii_d]), $\n             mean(mb_m[idx_al_m, ii_m]), mean(mb_m[idx_mo_m, ii_m])]\nhind_lo   = [-1.5, -1.4, -1.5, -1.4]\nhind_hi   = [-0.8, -0.5, -0.8, -0.5]\nfor k = 0, n_elements(hind_labels)-1 do begin\n  n_total++\n  if hind_vals[k] ge hind_lo[k] and hind_vals[k] le hind_hi[k] then begin\n    print, '  PASS  ' + hind_labels[k] + ': ' + string(hind_vals[k], fo='(f8.3)')\n    n_pass++\n  endif else $\n    print, '  FAIL  ' + hind_labels[k] + ': ' + string(hind_vals[k], fo='(f8.3)') + $\n           '  [expected ' + string(hind_lo[k], fo='(f6.2)') + ' to ' + $\n           string(hind_hi[k], fo='(f6.2)') + ']'\nendfor\n\n; 4. ELA in plausible range for Swiss Alps\nn_total++\nela_mean = mean(ela_d[idx_al,*])\nif ela_mean ge 2600 and ela_mean le 3300 then begin\n  print, '  PASS  Aletsch daily mean ELA 1991-2020: ' + string(ela_mean, fo='(f8.0)') + ' m'\n  n_pass++\nendif else $\n  print, '  FAIL  Aletsch daily mean ELA 1991-2020: ' + string(ela_mean, fo='(f8.0)') + $\n         ' m  [expected 2600 to 3300 m]'\n\nprint, ''\nprint, string(n_pass, fo='(i0)') + ' / ' + string(n_total, fo='(i0)') + ' checks passed'\nif n_pass eq n_total then $\n  print, 'All checks passed — the model is working correctly!' $\nelse $\n  print, 'Some checks failed — inspect the output files for details.'\n",
+   "outputs": []
+  },
+  {
+   "type": "markdown",
+   "content": "## 8. Next steps\n\n- The calibration parameters written to `test/outputs/*/CentralEurope/calibration/`\n  can be inspected or copied to your working calibration directory.\n- To run on the full Central Europe region, change `catchment_selection = ''`\n  and point `dirres`, `dir`, `dir_clim`, and `dir_data` back to the production\n  data paths in `config.pro`.\n- To run future projections, set `calibrate = 'n'`, `read_parameters = 'y'`,\n  and extend `tran` to include future years (e.g., `tran = [1991, 2100]`).\n  This requires GCM climate data under `dir_clim/future/`.\n"
+  }
+ ]
+}
