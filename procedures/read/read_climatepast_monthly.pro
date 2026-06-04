@@ -64,6 +64,11 @@ endif
 ryear=fix(rtime)
 rmon=round((rtime-ryear)*12+0.5-(ryear-ryear[0])/1400.*12)  ; hack accounting for leap years...
 
+; Hack to account for leap years in era5 (lower case ...)
+if reanalysis eq 'era5' then begin
+   rmon=round(((rtime+0.04)-ryear)*12+0.6-(ryear-ryear[0])/2800.*12)  ; hack accounting for leap years...
+endif
+
 if submonth_variability eq 'y' then begin
 
 ; RE_ANALYSIS - variability file

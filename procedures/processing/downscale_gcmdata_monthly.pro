@@ -204,10 +204,9 @@ endif else begin
          current_year = i + tran_offset
          ; Stop processing if the current year exceeds the maximum GCM year
          if current_year gt max_gcm_year then break
-
          ; Use re-analysis data if available
          if current_year le max_ryear and current_year gt min_ryear then begin
-            for m = 0, 11 do begin
+            for m = 1, 12 do begin
                ; Precompute indices for the current year and month
                hh = where(ryear eq current_year and rmon eq m, ci)
                if ci gt 0 then begin
