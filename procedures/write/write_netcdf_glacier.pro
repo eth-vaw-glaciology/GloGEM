@@ -9,8 +9,9 @@
 ;
 ; Unit conversions applied here:
 ;   areas[ye]     [km2]         x 1e6         -> m2
-;   volumes[ye]   [km3]         x 917e9       -> kg  (rho_ice=917)
-;   vol_bz[ye]    [km3]         x 917e9       -> kg
+;   volumes[ye]   [km3]         x 900e9       -> kg  (ice density 900, matches
+;                                                     GloGEM's internal dens=0.9)
+;   vol_bz[ye]    [km3]         x 900e9       -> kg
 ;   flux_calv[ye] [m w.e.]      x areas[ye]   x 1e9 -> kg
 ;   Monthly acc/melt/refr/run   x areas[ye]   x 1e9 -> kg
 ;     (variables divided by evolving ar_gl; areas[ye] used as proxy)
@@ -52,8 +53,9 @@ nc_ini_area = total(area_ini)   ; total initial area for this glacier [km2]
 
 ; Annual [m2] and [kg]
 gl_area = float(areas   * 1e6)
-gl_mass = float(volumes * 917d9)
-gl_mbsl = float(vol_bz  * 917d9)
+; ice density 900 kg/m3 for volume->mass (matches GloGEM's internal dens=0.9)
+gl_mass = float(volumes * 900d9)
+gl_mbsl = float(vol_bz  * 900d9)
 gl_fabl = float(flux_calv * areas * 1e9)   ; m w.e. x area -> kg (verify flux_calv units)
 
 ; Sub-annual [kg]
