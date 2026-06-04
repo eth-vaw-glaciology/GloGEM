@@ -127,6 +127,11 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
             if clim_subregion eq 'Atlantic' then lat0[0]=-60.5
             lon0=[min(rvlon)-0.1,max(rvlon)]
           endif
+          ; We keep for the moment reading in .mdi files for the CMIP6 models before looping over the grid
+          if time_resolution eq 'monthly' then begin
+            @procedures/read/read_climatepast_monthly.pro
+            @procedures/read/read_gcmdata_monthly.pro
+          endif
 
           ; read regional parameter file
           if regparams_readfromfile eq 'y' then begin

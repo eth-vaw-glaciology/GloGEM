@@ -39,7 +39,8 @@ if cg gt 0 then begin
 
   ; --- MONTHLY
   if time_resolution eq 'monthly' then begin
-    ; READING MONTHLY CLIMATE DATA
+    ; READING MONTHLY CLIMATE DATA, so far only implemented like this for GMIP4
+    if GMIP4 eq 'y' then begin
       if clim_subregion ne '' then begin
         ccl='_'+clim_subregion 
       endif else begin
@@ -50,9 +51,9 @@ if cg gt 0 then begin
       if reanalysis_direct ne 'y' then begin
         @procedures/read/read_gcmdata_monthly.pro
       endif
-      gmid=[mean(latitudes),mean(longitudes)]
-      @procedures/processing/downscale_gcmdata_monthly.pro
-      @procedures/processing/gradient_variability_monthly.pro
+    endif
+    gmid=[mean(latitudes),mean(longitudes)]
+    @procedures/processing/downscale_gcmdata_monthly.pro
+    @procedures/processing/gradient_variability_monthly.pro
   endif
-
 endif                               ; is there a glacier in the cell?
