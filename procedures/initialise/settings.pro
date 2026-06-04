@@ -474,3 +474,9 @@ if GCM_model_idx[0] ne 0 then begin
 endif
 if GCM_rcp_idx[0] ne 0 then $
   GCM_rcp = GCM_rcp[GCM_rcp_idx - 1]
+
+; Cap rcp_batch to the actual number of available RCPs to prevent out-of-range
+; access in the rcps loop when GCM_rcp has been reduced by GCM_rcp_idx.
+n_rcp_avail = n_elements(GCM_rcp)
+ii_over = where(rcp_batch gt n_rcp_avail, ci_over)
+if ci_over gt 0 then rcp_batch[ii_over] = n_rcp_avail
