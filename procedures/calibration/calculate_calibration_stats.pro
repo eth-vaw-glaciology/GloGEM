@@ -10,6 +10,8 @@
 
 compile_opt idl2
 
+if calibrate ne 'y' then goto, skip_calibration_stats
+
 if catchment_selection ne '' then cc='_'+catchment_selection else cc=''
 fn=dircali+'/'+time_resolution+'/'+dir_region+'/calibration/calibrate_m'+meltmodel+'_cID'+string(calperiod_ID,fo='(i1)')+'_'+sub_region+cc+'.dat'
 anz=file_lines(fn)-1 & if meltmodel eq '3' then a=2 else a=0
@@ -33,3 +35,5 @@ if cphl eq 1 then begin
 endif
 if cphl eq 2 then caliphase_statistics[cphl-1]=ci*100/anz-caliphase_statistics[cphl-2]
 if cphl eq 3 then caliphase_statistics[cphl-1]=ci*100/anz-caliphase_statistics[cphl-2]-caliphase_statistics[cphl-3]
+
+skip_calibration_stats:
