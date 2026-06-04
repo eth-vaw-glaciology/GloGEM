@@ -30,7 +30,7 @@
 ; -----------------------------------------------------------------------
 ; RUN SELECTION
 ; -----------------------------------------------------------------------
-;region_id_loop = [14, 14]       ; region IDs to run (see region_batch.dat)
+;region_id_loop = [14, 14]       ; region IDs to run (see region lookup at end of file)
 ;single_glacier = '01450'        ; single glacier RGI ID ('' to disable)
 ;catchment_selection = ''        ; catchment name ('' for single glacier or full region)
 ;size_range = [0.002, 100000]    ; [km2] glacier size filter
@@ -56,28 +56,7 @@
 ; variables to select which GCMs, SSPs, and experiments to run.
 ; Index syntax (1-based): [0] = full batch; [1,2] = first two; indgen(n)+k
 ; selects n consecutive entries starting at k (e.g. indgen(5)+1 for 1-5).
-;
-; CMIP6 (default):
-;   GCM_model (14):
-;     1: BCC-CSM2-MR    2: CAMS-CSM1-0    3: CESM2          4: CESM2-WACCM
-;     5: EC-Earth3      6: EC-Earth3-Veg  7: FGOALS-f3-L    8: GFDL-ESM4
-;     9: INM-CM4-8     10: INM-CM5-0     11: MPI-ESM1-2-HR 12: MRI-ESM2-0
-;    13: NorESM2-MM    14: CanESM5
-;   GCM_rcp (6):  1:ssp126  2:ssp245  3:ssp370  4:ssp585  5:ssp119  6:ssp534-over
-;
-; CMIP5:
-;   GCM_model (14):
-;     1: BCC-CSM1-1   2: CanESM2   3: CCSM4        4: CNRM-CM5
-;     5: CSIRO-Mk3-6-0 6: GFDL-CM3  7: GISS-E2-R   8: HadGEM2-ES
-;     9: INMCM4       10: IPSL-CM5A-LR  11: MIROC-ESM  12: MPI-ESM-LR
-;    13: MRI-CGCM3    14: NorESM1-M
-;   GCM_rcp (3):  1:rcp26  2:rcp45  3:rcp85
-;
-; GMIP4 (Glacier MIP 4 — fixed protocol; not all model/SSP combos available):
-;   GCM_model (8):
-;     1: ACCESS-ESM1-5  2: BCC-CSM2-MR   3: CESM2-WACCM   4: IPSL-CM6A-LR
-;     5: MRI-ESM2-0     6: MPI-ESM1-2-HR 7: MIROC6         8: NorESM2-MM
-;   GCM_rcp (4):  1:ssp126  2:ssp370  3:ssp585  4:ssp534-over
+; GCM and SSP/RCP codes: see GCM/SSP lookup at end of file.
 ; -----------------------------------------------------------------------
 ;MIP = 'CMIP6'                   ; 'CMIP6' (default), 'CMIP5', or 'GMIP4'
 ;long_GCM = ''                   ; '' for runs to 2100, 'long_' for runs to 2300
@@ -123,6 +102,46 @@
 ;eval_mbelevsensitivity = 'n'    ; 'y' to evaluate MB sensitivity per elevation band
 ;count_mbelevsens_v0 = 5         ; number of elevation steps for MB sensitivity evaluation
 ;write_hypsometry_files = 'n'    ; 'y' to write annual hypsometry for all glaciers
+
+; -----------------------------------------------------------------------
+; LOOKUP TABLES
+; -----------------------------------------------------------------------
+;
+; GCM / SSP codes  (GCM_model_idx, GCM_rcp_idx):
+;
+;   CMIP6 (default):
+;     GCM_model (14):
+;       1: BCC-CSM2-MR    2: CAMS-CSM1-0    3: CESM2          4: CESM2-WACCM
+;       5: EC-Earth3      6: EC-Earth3-Veg  7: FGOALS-f3-L    8: GFDL-ESM4
+;       9: INM-CM4-8     10: INM-CM5-0     11: MPI-ESM1-2-HR 12: MRI-ESM2-0
+;      13: NorESM2-MM    14: CanESM5
+;     GCM_rcp (6):  1:ssp126  2:ssp245  3:ssp370  4:ssp585  5:ssp119  6:ssp534-over
+;
+;   CMIP5:
+;     GCM_model (14):
+;       1: BCC-CSM1-1    2: CanESM2        3: CCSM4          4: CNRM-CM5
+;       5: CSIRO-Mk3-6-0 6: GFDL-CM3       7: GISS-E2-R      8: HadGEM2-ES
+;       9: INMCM4       10: IPSL-CM5A-LR  11: MIROC-ESM     12: MPI-ESM-LR
+;      13: MRI-CGCM3    14: NorESM1-M
+;     GCM_rcp (3):  1:rcp26  2:rcp45  3:rcp85
+;
+;   GMIP4 (Glacier MIP 4 — fixed protocol; not all model/SSP combos available):
+;     GCM_model (8):
+;       1: ACCESS-ESM1-5  2: BCC-CSM2-MR   3: CESM2-WACCM   4: IPSL-CM6A-LR
+;       5: MRI-ESM2-0     6: MPI-ESM1-2-HR 7: MIROC6         8: NorESM2-MM
+;     GCM_rcp (4):  1:ssp126  2:ssp370  3:ssp585  4:ssp534-over
+;
+; Regions  (region_id_loop):
+;   region (31):
+;     1: Alaska              2: WesternCanada      3: ArcticCanadaN      4: ArcticCanadaS
+;     5: Greenland           6: Iceland            7: Svalbard           8: Scandinavia
+;     9: RussianArctic      10: NorthAsia/Altay   11: NorthAsia/Chukotka 12: NorthAsia/East
+;    13: NorthAsia/North    14: CentralEurope     15: Caucasus          16: CentralAsia
+;    17: SouthAsiaWest      18: SouthAsiaEast     19: LowLat/Andes      20: LowLat/Africa
+;    21: LowLat/Mexico      22: LowLat/Newguinea  23: SouthernAndes     24: NewZealand
+;    25: Antarctic/Atlantic 26: Antarctic/Indian  27: Antarctic/Pacific 28: Antarctic/MaudWilkes
+;    29: Antarctic/Victoria 30: Antarctic/Peninsula 31: Antarctic/MarieByrd
+; -----------------------------------------------------------------------
 
 ; -----------------------------------------------------------------------
 ; NETCDF OUTPUT  (GlacierMIP4-compliant)
