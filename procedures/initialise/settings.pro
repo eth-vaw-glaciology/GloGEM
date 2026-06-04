@@ -22,12 +22,11 @@ RGIversion = '6'
 time_resolution = 'daily'   ; 'daily' or 'monthly'
 
 ; --- input directories (constructed from system username automatically)
-username     = getenv('USER')
-main_dir     = '/itet-stor/' + username + '/glogem/'
-dir          = main_dir + 'data/'
-dir_data     = main_dir + '/geometricdata/' + 'rgiv' + RGIversion + '/bands/bands_consensus2019/'
-dir_data_alt = main_dir + '/geometricdata/' + 'rgiv' + RGIversion + '/bands/bands_HF2012/'
-dir_clim     = main_dir + 'climatedata/'
+; dir_data / dir_data_alt depend on RGIversion and are therefore set in Zone 2
+username = getenv('USER')
+main_dir = '/itet-stor/' + username + '/glogem/'
+dir      = main_dir + 'data/'
+dir_clim = main_dir + 'climatedata/'
 
 ; output directory — set in config.pro
 dirres = ''
@@ -283,6 +282,10 @@ dircali = dirres
 ; that config.pro values are correctly respected.
 ; Never move conditional logic back above the Zone 1 / Zone 2 boundary.
 ; =============================================================================
+
+; input data directories (depend on RGIversion, which config.pro may override)
+dir_data     = main_dir + '/geometricdata/' + 'rgiv' + RGIversion + '/bands/bands_consensus2019/'
+dir_data_alt = main_dir + '/geometricdata/' + 'rgiv' + RGIversion + '/bands/bands_HF2012/'
 
 ; run length
 years = tran[1] - tran[0] + 1
