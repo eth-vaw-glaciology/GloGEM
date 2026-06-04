@@ -49,7 +49,7 @@ if advance eq 'y' and nb gt 3 then begin
    if adv_calving lt 0 then adv_hmin=adv_calving else adv_hmin=10.
    if hmin[gg[g]]-adv_addband*10. lt adv_hmin then adv_addband=fix((hmin[gg[g]]-adv_hmin)/10)
    adv_addband=max([0,adv_addband])
-   nb0=nb & nb=nb+adv_addband & tt=da & da=dblarr(11,nb) & da[*,nb-nb0:nb-1]=tt[*,0:nb0-1]
+   nb0=nb & nb=nb+adv_addband & tt=da & da=dblarr((size(tt))[1],nb) & da[*,nb-nb0:nb-1]=tt[*,0:nb0-1]
    for i=nb-nb0-1,0,-1 do da[1,i]=da[1,i+1]-10.
 endif
 
