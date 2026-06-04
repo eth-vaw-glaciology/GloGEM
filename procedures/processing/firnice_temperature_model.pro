@@ -28,7 +28,7 @@ ENDIF
 ; copute ice velocity based on shallow ice approximation
 ii_perm=where(gl ne noval,ci)
 
-g = 9.81      ; acceleration due to gravity [m/s^2]
+grav = 9.81   ; acceleration due to gravity [m/s^2]  (not 'g' — that is the glacier loop index)
 rho_ice = 917 ; density of ice [kg/m^3]
 A = 2.4e-24   ; ice flow law parameter [Pa^-3 s^-1]
 n = 3         ; Glen's flow law exponent
@@ -39,7 +39,7 @@ u     = FLTARR(N_ELEMENTS(gl))  ; Initialize the velocity array with the same nu
 tau_d = FLTARR(N_ELEMENTS(gl))  ; Initialize the driving stress array with the same number of elements as gl
 for i = 0, ci-1 do begin
    ; Calculate driving stress
-   tau_d = rho_ice * g * thick[ii_perm[i]] * SIN(slope[ii_perm[i]] * !DTOR)  ; driving stress in Pa
+   tau_d = rho_ice * grav * thick[ii_perm[i]] * SIN(slope[ii_perm[i]] * !DTOR)  ; driving stress in Pa
    ; Calculate depth-averaged velocity
    u[i] = (2 * A / (n + 2)) * tau_d^n * thick[ii_perm[i]] * 365.25 * 24 * 3600  ; ice velocity in m/year
 endfor
