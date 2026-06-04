@@ -123,3 +123,14 @@
 ;eval_mbelevsensitivity = 'n'    ; 'y' to evaluate MB sensitivity per elevation band
 ;count_mbelevsens_v0 = 5         ; number of elevation steps for MB sensitivity evaluation
 ;write_hypsometry_files = 'n'    ; 'y' to write annual hypsometry for all glaciers
+
+; -----------------------------------------------------------------------
+; NETCDF OUTPUT  (GlacierMIP4-compliant)
+; -----------------------------------------------------------------------
+;write_netcdf = 'n'              ; 'y' to write NetCDF output following GlacierMIP4 conventions
+;                                ;   - hindcast runs  -> PAST/PAST_netcdf/
+;                                ;   - projection runs -> files/files_netcdf/full/
+;netcdf_split = 'n'              ; 'y' to additionally split projection runs into:
+;                                ;   past portion  -> PAST/PAST_netcdf/   (reanalysis naming)
+;                                ;   future portion -> files/files_netcdf/split/ (GCM naming)
+;netcdf_split_year = 2025        ; first year of the projection period (split boundary)
