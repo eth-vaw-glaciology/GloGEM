@@ -251,7 +251,13 @@ variability_bias_longterm = 'n' ; bias in month-to-month GCM variability (only p
 ; --- user-specific overrides
 ; copy config.pro.example to config.pro and set your values there
 ; config.pro is git-ignored and will never be accidentally committed
-user_config = base_dir + '/config.pro'
+;
+; The environment variable GLOGEM_CONFIG can point to an alternative config
+; file (e.g. a test config kept outside the repo root), in which case the
+; default base_dir/config.pro is not loaded.
+env_cfg = getenv('GLOGEM_CONFIG')
+if env_cfg ne '' then user_config = env_cfg $
+else user_config = base_dir + '/config.pro'
 if file_test(user_config) then begin
   n = file_lines(user_config)
   lines = strarr(n)

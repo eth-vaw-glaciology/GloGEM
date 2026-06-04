@@ -2,3 +2,4 @@ logs/
 .DS_Store
 config.pro
 test/outputs/
+test/config_active.pro

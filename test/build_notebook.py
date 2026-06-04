@@ -109,19 +109,18 @@ Calibration adjusts three parameters per glacier
 """),
 
 (CD, """\
-; ---- Write config.pro for the daily calibration run ----
+; ---- Set up daily calibration run ----
+; Config is written to test/ and pointed to via GLOGEM_CONFIG.
+; The root config.pro is never read or modified.
 SPAWN, 'mkdir -p ' + OUT_DIR
 
-cfg_file = GLOGEM_DIR + '/config.pro'
+cfg_file = TEST_DIR + '/config_active.pro'
 openw, lun, cfg_file, /get_lun
 printf, lun, 'compile_opt idl2'
-printf, lun, ''
-printf, lun, "; ---- test run: daily calibration ----"
-printf, lun, "dirres   = '" + OUT_DIR   + "/'"
-printf, lun, "main_dir = '" + TEST_DIR  + "/'"
-printf, lun, "dir      = '" + DATA_DIR  + "/'"
-printf, lun, "dir_clim = '" + CLIM_DIR  + "/'"
-printf, lun, ""
+printf, lun, "dirres   = '" + OUT_DIR  + "/'"
+printf, lun, "main_dir = '" + TEST_DIR + "/'"
+printf, lun, "dir      = '" + DATA_DIR + "/'"
+printf, lun, "dir_clim = '" + CLIM_DIR + "/'"
 printf, lun, "RGIversion           = '7'"
 printf, lun, "time_resolution      = 'daily'"
 printf, lun, "region_id_loop       = [14, 14]"
@@ -133,7 +132,8 @@ printf, lun, "refreezing_parametrised = 'y'"
 printf, lun, "glacier_retreat      = 'n'"
 printf, lun, "frontal_ablation     = 'n'"
 free_lun, lun
-print, 'Config written: ' + cfg_file
+SETENV, 'GLOGEM_CONFIG=' + cfg_file
+print, 'GLOGEM_CONFIG -> ' + cfg_file
 """),
 
 (CD, """\
@@ -203,16 +203,14 @@ to generate annual time-series output over the full 1991–2020 period.
 """),
 
 (CD, """\
-; ---- Update config for daily hindcast ----
-openw, lun, GLOGEM_DIR + '/config.pro', /get_lun
+; ---- Set up daily hindcast ----
+cfg_file = TEST_DIR + '/config_active.pro'
+openw, lun, cfg_file, /get_lun
 printf, lun, 'compile_opt idl2'
-printf, lun, ''
-printf, lun, "; ---- test run: daily hindcast ----"
-printf, lun, "dirres   = '" + OUT_DIR   + "/'"
-printf, lun, "main_dir = '" + TEST_DIR  + "/'"
-printf, lun, "dir      = '" + DATA_DIR  + "/'"
-printf, lun, "dir_clim = '" + CLIM_DIR  + "/'"
-printf, lun, ""
+printf, lun, "dirres   = '" + OUT_DIR  + "/'"
+printf, lun, "main_dir = '" + TEST_DIR + "/'"
+printf, lun, "dir      = '" + DATA_DIR + "/'"
+printf, lun, "dir_clim = '" + CLIM_DIR + "/'"
 printf, lun, "RGIversion           = '7'"
 printf, lun, "time_resolution      = 'daily'"
 printf, lun, "region_id_loop       = [14, 14]"
@@ -225,7 +223,8 @@ printf, lun, "refreezing_parametrised = 'y'"
 printf, lun, "glacier_retreat      = 'n'"
 printf, lun, "frontal_ablation     = 'n'"
 free_lun, lun
-print, 'Config updated for daily hindcast'
+SETENV, 'GLOGEM_CONFIG=' + cfg_file
+print, 'GLOGEM_CONFIG -> ' + cfg_file
 """),
 
 (CD, """\
@@ -341,16 +340,14 @@ derived from stored within-month anomaly patterns.
 """),
 
 (CD, """\
-; ---- Update config for monthly calibration ----
-openw, lun, GLOGEM_DIR + '/config.pro', /get_lun
+; ---- Set up monthly calibration ----
+cfg_file = TEST_DIR + '/config_active.pro'
+openw, lun, cfg_file, /get_lun
 printf, lun, 'compile_opt idl2'
-printf, lun, ''
-printf, lun, "; ---- test run: monthly calibration ----"
-printf, lun, "dirres   = '" + OUT_DIR   + "/'"
-printf, lun, "main_dir = '" + TEST_DIR  + "/'"
-printf, lun, "dir      = '" + DATA_DIR  + "/'"
-printf, lun, "dir_clim = '" + CLIM_DIR  + "/'"
-printf, lun, ""
+printf, lun, "dirres   = '" + OUT_DIR  + "/'"
+printf, lun, "main_dir = '" + TEST_DIR + "/'"
+printf, lun, "dir      = '" + DATA_DIR + "/'"
+printf, lun, "dir_clim = '" + CLIM_DIR + "/'"
 printf, lun, "RGIversion           = '7'"
 printf, lun, "time_resolution      = 'monthly'"
 printf, lun, "region_id_loop       = [14, 14]"
@@ -362,7 +359,8 @@ printf, lun, "refreezing_parametrised = 'y'"
 printf, lun, "glacier_retreat      = 'n'"
 printf, lun, "frontal_ablation     = 'n'"
 free_lun, lun
-print, 'Config written for monthly calibration'
+SETENV, 'GLOGEM_CONFIG=' + cfg_file
+print, 'GLOGEM_CONFIG -> ' + cfg_file
 """),
 
 (CD, """\
@@ -407,15 +405,14 @@ endfor
 """),
 
 (CD, """\
-openw, lun, GLOGEM_DIR + '/config.pro', /get_lun
+; ---- Set up monthly hindcast ----
+cfg_file = TEST_DIR + '/config_active.pro'
+openw, lun, cfg_file, /get_lun
 printf, lun, 'compile_opt idl2'
-printf, lun, ''
-printf, lun, "; ---- test run: monthly hindcast ----"
-printf, lun, "dirres   = '" + OUT_DIR   + "/'"
-printf, lun, "main_dir = '" + TEST_DIR  + "/'"
-printf, lun, "dir      = '" + DATA_DIR  + "/'"
-printf, lun, "dir_clim = '" + CLIM_DIR  + "/'"
-printf, lun, ""
+printf, lun, "dirres   = '" + OUT_DIR  + "/'"
+printf, lun, "main_dir = '" + TEST_DIR + "/'"
+printf, lun, "dir      = '" + DATA_DIR + "/'"
+printf, lun, "dir_clim = '" + CLIM_DIR + "/'"
 printf, lun, "RGIversion           = '7'"
 printf, lun, "time_resolution      = 'monthly'"
 printf, lun, "region_id_loop       = [14, 14]"
@@ -428,7 +425,8 @@ printf, lun, "refreezing_parametrised = 'y'"
 printf, lun, "glacier_retreat      = 'n'"
 printf, lun, "frontal_ablation     = 'n'"
 free_lun, lun
-print, 'Config updated for monthly hindcast'
+SETENV, 'GLOGEM_CONFIG=' + cfg_file
+print, 'GLOGEM_CONFIG -> ' + cfg_file
 """),
 
 (CD, """\
@@ -640,6 +638,17 @@ else $
 - To run future projections, set `calibrate = 'n'`, `read_parameters = 'y'`,
   and extend `tran` to include future years (e.g., `tran = [1991, 2100]`).
   This requires GCM climate data under `dir_clim/future/`.
+"""),
+
+# ======================================================================
+# 11. Cleanup
+# ======================================================================
+(CD, """\
+; ---- Clear GLOGEM_CONFIG and remove the temporary active config ----
+SETENV, 'GLOGEM_CONFIG='
+tmp = TEST_DIR + '/config_active.pro'
+if file_test(tmp) then file_delete, tmp
+print, 'GLOGEM_CONFIG cleared. Your root config.pro was not modified.'
 """),
 
 ]  # end CELLS
