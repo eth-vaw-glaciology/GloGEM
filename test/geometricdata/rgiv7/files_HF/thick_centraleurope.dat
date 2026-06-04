@@ -1,0 +1,3 @@
+ID  Location(x, y) area(km2) volume(km3) THICK_mean _max(m) ELEV_min _max _med(masl) LENGTH(km) SLOPE_avg _band(deg) TAU_avg _min _max(bar) SF_avg _min(-) R_V  Survey_year Name
+02216;       9.965585     46.397594     15.79050     1.044037    66   182  2004  3960  2997  0  0  0  0  0  0  0  0  0;  2003
+02596;       7.972368     46.480362     81.82000    13.412352   163   435  1578  4091  3152  0  0  0  0  0  0  0  0  0;  2003

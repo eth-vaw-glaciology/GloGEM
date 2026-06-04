@@ -1,0 +1,32 @@
+ID RGIreg  Region            Sub-region    region_n
+ 1  01     Alaska            xxx          alaska 
+ 2  02     WesternCanada     xxx          westerncanada 
+ 3  03     ArcticCanadaN     xxx          arcticcanadaN
+ 4  04     ArcticCanadaS     xxx          arcticcanadaS
+ 5  05     Greenland         xxx          greenland
+ 6  06     Iceland           xxx          iceland
+ 7  07     Svalbard          xxx          svalbard
+ 8  08     Scandinavia       xxx          scandinavia
+ 9  09     RussianArctic     xxx          russianarctic
+10  10     NorthAsia         Altay        northasia
+11  10     NorthAsia         Chukotka     northasia
+12  10     NorthAsia         East         northasia
+13  10     NorthAsia         North        northasia
+14  11     CentralEurope     xxx          centraleurope
+15  12     Caucasus          xxx          caucasus
+16  13     CentralAsia       xxx          centralasiaN
+17  14     SouthAsiaWest     xxx          centralasiaW
+18  15     SouthAsiaEast     xxx          centralasiaS
+19  16     LowLatitudes      Andes        lowlatitudes
+20  16     LowLatitudes      Africa       lowlatitudes
+21  16     LowLatitudes      Mexico       lowlatitudes
+22  16     LowLatitudes      Newguinea    lowlatitudes
+23  17     SouthernAndes     xxx          southernandes
+24  18     NewZealand        xxx          newzealand
+25  19     Antarctic         Atlantic     antarctic
+26  19     Antarctic         Indian       antarctic
+27  19     Antarctic         Pacific      antarctic
+28  19     Antarctic         MaudWilkes   antarctic
+29  19     Antarctic         Victoria     antarctic
+30  19     Antarctic         Peninsula    antarctic
+31  19     Antarctic         MarieByrd    antarctic
