@@ -102,6 +102,9 @@ reanalysis_direct     = 'n'
 variability_bias      = 'y'
 hindcast_dynamic      = 'n'
 write_file            = 'y'
+write_netcdf          = 'n'   ; 'y' to write GlacierMIP4-compliant NetCDF output
+netcdf_split          = 'n'   ; 'y' to also split projection runs into past/future NetCDF files
+netcdf_split_year     = 2025  ; first year of the projection period (split boundary)
 
 ; === parameters
 
