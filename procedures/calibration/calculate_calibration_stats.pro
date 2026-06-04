@@ -10,7 +10,7 @@
 
 compile_opt idl2
 
-if calibrate ne 'y' then begin
+if calibrate eq 'y' then begin
 
    if catchment_selection ne '' then begin 
       cc='_'+catchment_selection 
