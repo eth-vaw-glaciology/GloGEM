@@ -189,7 +189,7 @@ full_output = 'n'
 if full_output eq 'n' then outf_names = ['Area', 'Volume', 'Annual_Balance_sfc', 'Winter_balance_sfc', 'Icemelt_sfc', $
   'Snowmelt_sfc', 'Accumulation_sfc', 'Rain_sfc', 'ELA', 'AAR', 'Refreezing_sfc', 'Hmin', 'Frontal_ablation', $
   'Discharge', 'Discharge_gl', '', '', '', '', '']
-format_of = ['f10.3', 'f10.4', 'f8.3', 'f8.3', 'f8.3', 'f8.3', 'f8.3', 'f8.3', 'i6', 'f7.1', 'f8.3', 'i6', 'f10.5', 'f8.3', 'f9.4', 'f9.4', 'f9.4', 'f9.4', 'f9.4', 'f10.5']
+format_of = ['f10.3', 'f10.4', 'f8.3', 'f8.3', 'f8.3', 'f8.3', 'f8.3', 'f8.3', 'i6', 'f7.1', 'f8.3', 'i6', 'f10.5', 'f8.3', 'f9.4', 'f9.4', 'f9.4', 'f9.4', 'f9.4', 'f10.5', 'i6']
 
 write_mb_elevationbands = 'n'
 eval_mbelevsensitivity = 'n'
@@ -346,13 +346,14 @@ if long_GCM ne '' then begin
 endif
 
 ; output file list for full_output='y' (depends on both time_resolution and full_output)
-if time_resolution eq 'monthly' then $
-  if full_output eq 'y' then outf_names = ['Area', 'Volume', 'Annual_Balance_sfc', 'Winter_balance_sfc', 'Icemelt_sfc', $
+if full_output eq 'y' then begin
+  if time_resolution eq 'monthly' then outf_names = ['Area', 'Volume', 'Annual_Balance_sfc', 'Winter_balance_sfc', 'Icemelt_sfc', $
     'Snowmelt_sfc', 'Accumulation_sfc', 'Rain_sfc', 'ELA', 'AAR', 'Refreezing_sfc', 'Hmin', 'Frontal_ablation', 'Discharge', 'Discharge_gl' $
     , 'Balance_mon', 'Precipitation_mon', 'Accumulation_mon', 'Melt_mon', 'Refreezing_mon'] $
-  else if full_output eq 'y' then outf_names = ['Area', 'Volume', 'Annual_Balance_sfc', 'Winter_balance_sfc', 'Icemelt_sfc', $
+  else outf_names = ['Area', 'Volume', 'Annual_Balance_sfc', 'Winter_balance_sfc', 'Icemelt_sfc', $
     'Snowmelt_sfc', 'Accumulation_sfc', 'Rain_sfc', 'ELA', 'AAR', 'Refreezing_sfc', 'Hmin', 'Frontal_ablation', 'Discharge', 'Discharge_gl' $
     , 'Accumulation_day', 'Rain_day', 'Snowmelt_day', 'Icemelt_day', 'Refreezing_day', 'Snowline_day']
+endif
 
 ; --- consistency enforcement (automatic exclusion to avoid erroneous runs)
 
