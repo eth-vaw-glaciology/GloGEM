@@ -22,35 +22,37 @@ if cg gt 0 then begin
   ', '+string(total(a_gl[gg]),fo='(i5)')+'km2 ('+string(cg,fo='(i4)')+')'
 
   ; SPLIT between DAILY climate data and MONTHLY climate data
+  ; --- DAILY
   if time_resolution eq 'daily' then begin
-
     ; select reanalysis series from closest grid point
     rmid=[mean(lon),mean(lat)]
     gxs=strcompress(string(rmid[0],fo='(f7.2)'),/remove_all)
     gys=strcompress(string(rmid[1],fo='(f7.2)'),/remove_all)
-
     ; meteo time series read from re-analysis data (past)
-
     @procedures/read/read_climatepast_daily.pro
-
     ; meteo time series downscaled from GCMs or whatever (future)
     if reanalysis_direct eq 'n' then begin
-
       @procedures/read/read_gcmdata_daily.pro
       @procedures/processing/downscale_gcmdata_daily.pro
-
     endif
-
   endif    ; daily time resolution
 
   ; --- MONTHLY
-
   if time_resolution eq 'monthly' then begin
-
-    gmid=[mean(latitudes),mean(longitudes)]
-    @procedures/processing/downscale_gcmdata_monthly.pro
-    @procedures/processing/gradient_variability_monthly.pro
-
+    ; READING MONTHLY CLIMATE DATA
+      if clim_subregion ne '' then begin
+        ccl='_'+clim_subregion 
+      endif else begin
+        ccl=''
+      endelse
+      ; GCM --- CLIMATE FILE
+      @procedures/read/read_climatepast_monthly.pro
+      if reanalysis_direct ne 'y' then begin
+        @procedures/read/read_gcmdata_monthly.pro
+      endif
+      gmid=[mean(latitudes),mean(longitudes)]
+      @procedures/processing/downscale_gcmdata_monthly.pro
+      @procedures/processing/gradient_variability_monthly.pro
   endif
 
 endif                               ; is there a glacier in the cell?
