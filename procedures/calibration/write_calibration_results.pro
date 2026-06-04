@@ -17,4 +17,4 @@ if calibrate_glacierspecific eq 'y' then printf,50,id[gg[g]],calimb_p0[ccj[0]],c
     target_spec[ccj[0]],mean(mb[pp]),mean(wb[pp]),area1,mean(ela[pp]),mean(aar[pp]),DDFsnow,DDFice,c_prec,$
     t_offset,flag,fo='(a,2i7,3f9.3,f11.3,i6,f6.1,2f7.3,f9.3,f7.2,i3)'
 
-printf,4,id[gg[g]],t_offset,flag,gx,gy,fo='(a,f9.3,3i4)'
+printf,4,id[gg[g]],t_offset,flag,gx,gy,fo='(a,f9.3,3i7)'
