@@ -13,7 +13,7 @@ compile_opt idl2
 
 ii=where(dir_region eq region_loop_data[2,*])
 if RGIversion eq '6' then ff='RGIv6.0' else ff='RGIv7.0'
-fn=dir+'geodetic/'+ff+'/aggregated_'+calibrate_glacierspecific_period+'/'+strcompress(region_loop_data[1,ii],/remove_all)+'_mb_glspec.dat'
+fn=dir+'geodetic/'+ff+'/aggregated_'+calibrate_glacierspecific_period+'/'+strcompress(region_loop_data[1,ii[0]],/remove_all)+'_mb_glspec.dat'
 anz=file_lines(fn)-3 & anz=anz[0] & calimb_gid=strarr(anz) & tt=strarr(anz) & calimb_idname=dblarr(anz)+9
 a=strsplit(calibrate_glacierspecific_period,'_',/extract)
 calimb_p0=dblarr(anz)+double(a[0]) &  calimb_p1=dblarr(anz)+double(a[1])-1 & tt2=dblarr(6,anz) & b=strarr(anz) & s=strarr(3)
