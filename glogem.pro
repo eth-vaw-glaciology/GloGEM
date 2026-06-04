@@ -120,6 +120,9 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
           lat0=[9999,9999]        ; run for entire region
           lon0=[0,0]        ; or specify sub-regions
           if clim_subregion ne '' then begin
+            ccl='_'+clim_subregion 
+            @procedures/read/read_climatepast_monthly.pro
+            @procedures/read/read_gcmdata_monthly.pro
             lat0=[min(rvlat)-0.1,max(rvlat)]
             if clim_subregion eq 'Atlantic' then lat0[0]=-60.5
             lon0=[min(rvlon)-0.1,max(rvlon)]
