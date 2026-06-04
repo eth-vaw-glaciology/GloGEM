@@ -37,9 +37,11 @@ endif else begin   ; checks relevant to RGIv7.0
    if a_gl[gg[g]] lt 0.25 then begin   ; very small glaciers only for now
       if RGIversion eq '6' then a='' else a='bands_'
       fn=dir_data_alt+'/'+region+'/'+a+id[gg[g]]+'.dat' & a=findfile(fn)
-      nb=file_lines(fn)-5 & s=strarr(5) & da=dblarr(11,nb)
-      openr,1,fn & readf,1,s & readf,1,da & close,1
-      volume_ini[gg[g]]=total(da[3,*]*da[4,*])/1000. ; make sure initial volume is consistent
+      if a[0] ne '' then begin
+         nb=file_lines(fn)-5 & s=strarr(5) & da=dblarr(11,nb)
+         openr,1,fn & readf,1,s & readf,1,da & close,1
+         volume_ini[gg[g]]=total(da[3,*]*da[4,*])/1000. ; make sure initial volume is consistent
+      endif
    endif
 endelse
    
@@ -49,7 +51,7 @@ if advance eq 'y' and nb gt 3 then begin
    if adv_calving lt 0 then adv_hmin=adv_calving else adv_hmin=10.
    if hmin[gg[g]]-adv_addband*10. lt adv_hmin then adv_addband=fix((hmin[gg[g]]-adv_hmin)/10)
    adv_addband=max([0,adv_addband])
-   nb0=nb & nb=nb+adv_addband & tt=da & da=dblarr((size(tt))[1],nb) & da[*,nb-nb0:nb-1]=tt[*,0:nb0-1]
+   nb0=nb & nb=nb+adv_addband & tt=da & da=dblarr(11,nb) & da[*,nb-nb0:nb-1]=tt[*,0:nb0-1]
    for i=nb-nb0-1,0,-1 do da[1,i]=da[1,i+1]-10.
 endif
 
