@@ -5,7 +5,7 @@
 ; initialisation through to results output.
 ;
 ; Loads settings and user configuration, then drives nested loops over
-; GCMs, emission scenarios, experiments, regions, and individual
+; GCMs, emission scenarios, regions, and individual
 ; glaciers. Within each glacier the code reads climate and hypsometry
 ; data, applies bias correction and downscaling, runs the monthly or
 ; daily mass balance model (accumulation, melt, refreezing, glacier
