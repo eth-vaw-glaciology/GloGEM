@@ -225,6 +225,36 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
               ; LOOPs over grids
               @procedures/initialise/setup_grid_loops.pro
 
+              ; === NETCDF OUTPUT: initialise files and regional accumulators
+              ; Must be called AFTER setup_grid_loops (which sets lat0/lon0 to the
+              ; actual glacier bounds) but BEFORE the grid/glacier loops begin.
+              ; When grid_run='y' the region is split across many grid cells each
+              ; with their own cg, so we pre-count the TOTAL glaciers here using
+              ; the full-region lat0/lon0 bounds. This total is needed to define
+              ; the 'glacier' dimension in the individual-glacier NetCDF files.
+              if write_netcdf eq 'y' and calibrate ne 'y' then begin
+                if single_glacier ne '' then begin
+                  nc_total_g = 1
+                endif else if size_range[0] ne -99 then begin
+                  void = where(xy[1,*] gt lat0[0] and xy[1,*] lt lat0[1] and $
+                               xy[0,*] gt lon0[0] and xy[0,*] lt lon0[1] and $
+                               a_gl gt size_range[0] and a_gl lt size_range[1] and $
+                               volume_ini gt 0, nc_total_g)
+                endif else begin
+                  void = where(xy[1,*] gt lat0[0] and xy[1,*] lt lat0[1] and $
+                               xy[0,*] gt lon0[0] and xy[0,*] lt lon0[1] and $
+                               volume_ini gt 0, nc_total_g)
+                endelse
+                ; Call the appropriate init procedure. It creates the NetCDF file
+                ; structure, writes time axes, and initialises regional accumulators
+                ; and the glacier counter (nc_g = 0).
+                if reanalysis_direct eq 'y' then begin
+                  @procedures/initialise/init_netcdf_hindcast.pro
+                endif else begin
+                  @procedures/initialise/init_netcdf_projections.pro
+                endelse
+              endif
+
               for gx=0,ngx-1 do begin
 
                 for gy=0,ngy-1 do begin
@@ -446,6 +476,16 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                               @procedures/processing/store_output_variables.pro
                             endif
 
+                            ; === NETCDF OUTPUT: accumulate temperature and precipitation
+                            ; over the initial (constant) glacierized area each time step.
+                            ; These two variables are not in the standard GloGEM output but
+                            ; are required by the GlacierMIP4 NetCDF convention. The procedure
+                            ; self-initialises its arrays on the first time step (ccmon eq 1)
+                            ; of each glacier and fills them on every subsequent call.
+                            if write_netcdf eq 'y' then begin
+                              @procedures/initialise/initialise_netcdf_vars.pro
+                            endif
+
                             if ar_gl ne 0 then begin
                               @procedures/write/store_elevationband_massbalance.pro
                             endif
@@ -539,6 +579,17 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                     endelse
                   endif
 
+                  ; === NETCDF OUTPUT: write this glacier's data slice into the
+                  ; open NetCDF files and accumulate it into the regional sum arrays.
+                  ; Called once per glacier after its year loop completes. Uses the
+                  ; existing per-glacier result arrays (areas, volumes, flux_calv,
+                  ; accmo/accday etc.) directly — no separate storage arrays are needed.
+                  ; nc_g is incremented inside the procedure so that each glacier is
+                  ; written at the correct offset in the individual-glacier files.
+                  if write_netcdf eq 'y' and calibrate ne 'y' then begin
+                    @procedures/write/write_netcdf_glacier.pro
+                  endif
+
                   ; write elevation band file
                   fn=dir_data+'/'+region+'/'+id[gg[g]]+'.dat' & a=findfile(fn)
                   if write_mb_elevationbands eq 'y' and a[0] ne '' then begin
@@ -615,6 +666,21 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
         ; write file for volume below sea level
         if calibrate ne 'y' and write_file eq 'y' then begin
           @procedures/write/write_volume_below_sea_level.pro
+        endif
+
+        ; === NETCDF OUTPUT: finalise regional files and close all handles.
+        ; Called once per region (hindcast) or once per region/GCM/SSP combination
+        ; (projections) after all glaciers have been processed. Computes the
+        ; area-weighted regional temperature mean from the accumulated numerator
+        ; and denominator arrays, writes all regional sum arrays to the regional
+        ; NetCDF files, and closes all open file handles (including split past/future
+        ; files when netcdf_split='y').
+        if write_netcdf eq 'y' and calibrate ne 'y' then begin
+          if reanalysis_direct eq 'y' then begin
+            @procedures/write/write_netcdf_hindcast.pro
+          endif else begin
+            @procedures/write/write_netcdf_projections.pro
+          endelse
         endif
 
         ; copying time-stamped settings.pro into the output folder
