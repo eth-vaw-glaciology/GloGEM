@@ -15,7 +15,7 @@
 ; -----------------------------------------------------------------------
 ; OUTPUT DIRECTORY  (required - different for every user / server)
 ; -----------------------------------------------------------------------
-;dirres = '/scratch_net/yourserver/yourusername/GloGEM/output'
+;dirres = '/scratch_net/yourserver/yourusername/GloGEM/output/' ; needs a "/" at the end
 
 ; -----------------------------------------------------------------------
 ; RGI VERSION
