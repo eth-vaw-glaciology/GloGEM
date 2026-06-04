@@ -39,7 +39,7 @@ size_range_overwrite = 'n'
 size_range = [0.002, 100000]   ; [km2]
 
 ; --- glacier / catchment selection
-single_glacier     = '01450'   ; RGI ID (e.g. 01450 = Aletschgletscher); '' to disable
+single_glacier     = ''   ; RGI ID (e.g. 01450 = Aletschgletscher); '' to disable
 catchment_selection = ''        ; catchment name; '' for single glacier or full region
 
 ; === main settings / modes
@@ -51,31 +51,18 @@ meltmodel      = '1'    ; 1: degree-day model, 3: simple energy-balance (Oerlema
 
 ; === climate data
 
-; --- GCM specifications
-CMIP6    = 'y'
+; --- GCM / MIP specifications
+; Set MIP to choose the model intercomparison project (lookup table in config.pro).
+; Use the *_idx variables to select a subset by 1-based index: [0] runs the full
+; batch, [1,2] selects the first two, and indgen(n)+k selects n consecutive entries
+; starting at index k (e.g. indgen(5)+1 for models 1-5).
+MIP      = 'CMIP6'   ; 'CMIP6', 'CMIP5', or 'GMIP4' — see lookup table in config.pro
 long_GCM = ''        ; '' for runs to 2100, 'long_' for runs to 2300
-GMIP4    = 'n'
-if CMIP6 eq 'y' then begin
-  short_gcmchoice = [1, 1, 1]   ; [GCM, SSP, experiment] indices — 0 for full batch
-  first_GCM       = 0            ; starting GCM in batch (0-based, minus 1)
-  rcp_batch   = [4, 5, 4, 4, 5, 5, 4, 5, 4, 4, 4, 5, 4]
-  expe_batch  = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-  GCM_model      = ['BCC-CSM2-MR', 'CAMS-CSM1-0', 'CESM2', 'CESM2-WACCM', 'EC-Earth3', 'EC-Earth3-Veg', 'FGOALS-f3-L', 'GFDL-ESM4', 'INM-CM4-8', 'INM-CM5-0', 'MPI-ESM1-2-HR', 'MRI-ESM2-0', 'NorESM2-MM']
-  GCM_rcp        = ['ssp126', 'ssp245', 'ssp370', 'ssp585', 'ssp119', 'ssp534-over']
-  GCM_experiment = ['r1i1p1f1', 'r2i1p1f1', 'r3i1p1f1', 'r4i1p1f1', 'r5i1p1f1', 'r6i1p1f1', 'r7i1p1f1']
-  GCM_data = 'cmip6'
-endif else begin
-  if GMIP4 eq 'y' then begin
-    short_gcmchoice = [1, 1, 1]   ; [GCM, RCP, experiment] indices — 0 for full batch
-    first_GCM       = 0            ; starting GCM in batch (0-based, minus 1)
-    rcp_batch   = [1, 2, 3]
-    expe_batch  = [1, 1, 1]
-    GCM_model      = ['bcc-csm2-mr']
-    GCM_rcp        = ['ssp126']
-    GCM_experiment = ['r1i1p1']
-    GCM_data = 'gmip4'
-  endif
-endelse
+GCM_model_idx    = [0]      ; model indices (1-based) — [0]: all; [1,2]: first two
+GCM_rcp_idx      = [0]      ; SSP/RCP indices         — [0]: all
+GCM_model_range  = [0, 0]   ; [first, last] range shorthand — [0,0]: not used
+GCM_rcp_range    = [0, 0]   ; [first, last] range shorthand — [0,0]: not used
+first_GCM        = 0        ; first GCM in batch (0-based, minus 1)
 
 ; --- reanalysis
 ; default is 'era5' (daily model); 'ERA5' (all caps) is auto-selected for monthly in Zone 2
@@ -294,6 +281,51 @@ dircali = dirres
 ; Never move conditional logic back above the Zone 1 / Zone 2 boundary.
 ; =============================================================================
 
+; --- MIP full-batch lookup tables (derived from MIP set in Zone 1 / config.pro)
+; These arrays define the complete set for the chosen project; index selection in
+; the final Zone 2 block below narrows them to the user's GCM_*_idx choices.
+case MIP of
+  'CMIP6': begin
+    GCM_model      = ['BCC-CSM2-MR', 'CAMS-CSM1-0', 'CESM2', 'CESM2-WACCM', 'EC-Earth3', $
+                      'EC-Earth3-Veg', 'FGOALS-f3-L', 'GFDL-ESM4', 'INM-CM4-8', 'INM-CM5-0', $
+                      'MPI-ESM1-2-HR', 'MRI-ESM2-0', 'NorESM2-MM', 'CanESM5']
+    GCM_rcp        = ['ssp126', 'ssp245', 'ssp370', 'ssp585', 'ssp119', 'ssp534-over']
+    GCM_experiment = 'r1i1p1f1'
+    ; rcp_batch: number of leading SSPs (from GCM_rcp) to run for each model in batch.
+    ; EC-Earth3 ssp119 lacks r1i1p1f1 → 4. MRI-ESM2-0 ssp534-over has r1i1p1f1 → 6.
+    ; CESM2-WACCM has ssp534-over but not ssp119; use GCM_rcp_idx=[1,2,3,4,6] to run it.
+    rcp_batch      = [4, 5, 4, 4, 4, 5, 4, 5, 4, 4, 4, 6, 4, 4]
+    GCM_data       = 'cmip6'
+    CMIP6          = 'y'
+    GMIP4          = 'n'
+  end
+  'CMIP5': begin
+    GCM_model      = ['BCC-CSM1-1', 'CanESM2', 'CCSM4', 'CNRM-CM5', 'CSIRO-Mk3-6-0', 'GFDL-CM3', $
+                      'GISS-E2-R', 'HadGEM2-ES', 'INMCM4', 'IPSL-CM5A-LR', 'MIROC-ESM', $
+                      'MPI-ESM-LR', 'MRI-CGCM3', 'NorESM1-M']
+    GCM_rcp        = ['rcp26', 'rcp45', 'rcp85']
+    GCM_experiment = 'r1i1p1'
+    rcp_batch      = intarr(14) + 2   ; rcp45 as default batch scenario
+    GCM_data       = 'cmip5'
+    CMIP6          = 'n'
+    GMIP4          = 'n'
+  end
+  'GMIP4': begin
+    ; Glacier Model Intercomparison Project 4 — fixed model/scenario specifications.
+    ; Not all model/SSP combinations are available (see GMIP4 protocol).
+    ; ssp370 is used as the primary batch scenario.
+    GCM_model      = ['ACCESS-ESM1-5', 'BCC-CSM2-MR', 'CESM2-WACCM', 'IPSL-CM6A-LR', $
+                      'MRI-ESM2-0', 'MPI-ESM1-2-HR', 'MIROC6', 'NorESM2-MM']
+    GCM_rcp        = ['ssp126', 'ssp370', 'ssp585', 'ssp534-over']
+    GCM_experiment = 'r1i1p1f1'
+    rcp_batch      = intarr(8) + 2   ; ssp370 as default batch scenario
+    GCM_data       = 'gmip4'
+    CMIP6          = 'n'
+    GMIP4          = 'y'
+  end
+  else: message, 'Unknown MIP: "' + MIP + '". Valid options: CMIP6, CMIP5, GMIP4'
+endcase
+
 ; input data directories (depend on RGIversion, which config.pro may override)
 dir_data     = main_dir + '/geometricdata/' + 'rgiv' + RGIversion + '/bands/'
 dir_data_alt = main_dir + '/geometricdata/' + 'rgiv' + RGIversion + '/bands_HF/'
@@ -330,19 +362,20 @@ if calibrate eq 'y' then begin
   read_parameters         = 'n'
   write_mb_elevationbands = 'n'
   rcp_batch[0]            = 0
-  expe_batch[0]           = 0
   first_GCM               = 0
   find_startyear          = 'n'
   debris_expansion        = 'n'
   debris_thickening       = 'n'
   firnice_temperature     = 'n'
   if calibrate_glacierspecific eq 'y' and calperiod_ID ne 8 then calperiod_ID = 9
-  short_gcmchoice = [1, 1, 1]
+  GCM_model_idx = [1]
+  GCM_rcp_idx   = [1]
 endif
 
 if calibrate eq 'n' and tran[1] lt 2021 then begin
   reanalysis_direct = 'y'
-  short_gcmchoice   = [1, 1, 1]
+  GCM_model_idx     = [1]
+  GCM_rcp_idx       = [1]
   glacier_retreat   = 'n'
   if hindcast_dynamic eq 'n' then find_startyear = 'n'
 endif
@@ -421,42 +454,17 @@ for i = 1, total(fit_layers) - 1 do begin
   fit_dz[1, i] = fit_dz[1, i - 1] + fit_dz[0, i]
 endfor
 
-; --- single GCM selection (only active when short_gcmchoice ne 0)
-if CMIP6 eq 'y' then begin
-  if short_gcmchoice[0] ne 0 then begin
-    if CMIP6 eq 'n' then begin
-      tt = ['BCC-CSM1-1', 'CanESM2', 'CCSM4', 'CNRM-CM5', 'CSIRO-Mk3-6-0', 'GFDL-CM3', 'GISS-E2-R', 'HadGEM2-ES', 'INMCM4', 'IPSL-CM5A-LR', 'MIROC-ESM', 'MPI-ESM-LR', 'MRI-CGCM3', 'NorESM1-M']
-      GCM_model = [tt[short_gcmchoice[0] - 1]]
-      tt = ['rcp45', 'rcp85', 'rcp26']
-      GCM_rcp = [tt[short_gcmchoice[1] - 1]]
-      tt = ['r1i1p1', 'r2i1p1', 'r3i1p1', 'r4i1p1', 'r5i1p1']
-      GCM_experiment = [tt[short_gcmchoice[2] - 1]]
-      rcp_batch[0] = 0
-      expe_batch[0] = 0
-      first_GCM = 0
-    endif else begin
-      tt = ['BCC-CSM2-MR', 'CAMS-CSM1-0', 'CESM2', 'CESM2-WACCM', 'EC-Earth3', 'EC-Earth3-Veg', 'FGOALS-f3-L', 'GFDL-ESM4', 'INM-CM4-8', 'INM-CM5-0', 'MPI-ESM1-2-HR', 'MRI-ESM2-0', 'NorESM2-MM', 'CanESM5']
-      GCM_model = [tt[short_gcmchoice[0] - 1]]
-      tt = ['ssp126', 'ssp245', 'ssp370', 'ssp585', 'ssp119']
-      GCM_rcp = [tt[short_gcmchoice[1] - 1]]
-      tt = ['r1i1p1f1', 'r2i1p1f1', 'r3i1p1f1', 'r4i1p1f1', 'r5i1p1f1', 'r6i1p1f1', 'r7i1p1f1']
-      GCM_experiment = [tt[short_gcmchoice[2] - 1]]
-      rcp_batch[0] = 0
-      expe_batch[0] = 0
-      first_GCM = 0
-    endelse
-  endif
-endif else begin
-  if GMIP4 eq 'y' then begin
-    tt = ['bcc-csm2-mr']
-    GCM_model = [tt[0]]
-    tt = ['ssp126']
-    GCM_rcp = [tt[0]]
-    tt = ['r1i1p1f1']
-    GCM_experiment = [tt[0]]
-    rcp_batch[0] = 0
-    expe_batch  = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-    expe_batch[0] = 0
-    first_GCM = 0
-  endif
-endelse
+; Expand range shorthand into index arrays ([0,0] means not used; range takes precedence)
+if GCM_model_range[0] ne 0 then $
+  GCM_model_idx = indgen(GCM_model_range[1] - GCM_model_range[0] + 1) + GCM_model_range[0]
+if GCM_rcp_range[0] ne 0 then $
+  GCM_rcp_idx = indgen(GCM_rcp_range[1] - GCM_rcp_range[0] + 1) + GCM_rcp_range[0]
+
+; --- Apply GCM selection indices (1-based; [0] leaves the full-batch array unchanged)
+if GCM_model_idx[0] ne 0 then begin
+  GCM_model = GCM_model[GCM_model_idx - 1]
+  rcp_batch = rcp_batch[GCM_model_idx - 1]
+  first_GCM = 0
+endif
+if GCM_rcp_idx[0] ne 0 then $
+  GCM_rcp = GCM_rcp[GCM_rcp_idx - 1]

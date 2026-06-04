@@ -50,21 +50,46 @@
 ;calibration_phase = '1'        ; starting calibration phase: 1: c_prec, 2: DDF_snow, 3: T-bias
 
 ; -----------------------------------------------------------------------
-; CLIMATE DATA (GCM)
+; CLIMATE DATA — MODEL INTERCOMPARISON PROJECT
 ; -----------------------------------------------------------------------
-;CMIP6 = 'y'                     ; 'y' to use CMIP6 GCMs, 'n' for CMIP5
+; Set MIP to choose the model intercomparison project, then use the *_idx
+; variables to select which GCMs, SSPs, and experiments to run.
+; Index syntax (1-based): [0] = full batch; [1,2] = first two; indgen(n)+k
+; selects n consecutive entries starting at k (e.g. indgen(5)+1 for 1-5).
+;
+; CMIP6 (default):
+;   GCM_model (14):
+;     1: BCC-CSM2-MR    2: CAMS-CSM1-0    3: CESM2          4: CESM2-WACCM
+;     5: EC-Earth3      6: EC-Earth3-Veg  7: FGOALS-f3-L    8: GFDL-ESM4
+;     9: INM-CM4-8     10: INM-CM5-0     11: MPI-ESM1-2-HR 12: MRI-ESM2-0
+;    13: NorESM2-MM    14: CanESM5
+;   GCM_rcp (6):  1:ssp126  2:ssp245  3:ssp370  4:ssp585  5:ssp119  6:ssp534-over
+;
+; CMIP5:
+;   GCM_model (14):
+;     1: BCC-CSM1-1   2: CanESM2   3: CCSM4        4: CNRM-CM5
+;     5: CSIRO-Mk3-6-0 6: GFDL-CM3  7: GISS-E2-R   8: HadGEM2-ES
+;     9: INMCM4       10: IPSL-CM5A-LR  11: MIROC-ESM  12: MPI-ESM-LR
+;    13: MRI-CGCM3    14: NorESM1-M
+;   GCM_rcp (3):  1:rcp26  2:rcp45  3:rcp85
+;
+; GMIP4 (Glacier MIP 4 — fixed protocol; not all model/SSP combos available):
+;   GCM_model (8):
+;     1: ACCESS-ESM1-5  2: BCC-CSM2-MR   3: CESM2-WACCM   4: IPSL-CM6A-LR
+;     5: MRI-ESM2-0     6: MPI-ESM1-2-HR 7: MIROC6         8: NorESM2-MM
+;   GCM_rcp (4):  1:ssp126  2:ssp370  3:ssp585  4:ssp534-over
+; -----------------------------------------------------------------------
+;MIP = 'CMIP6'                   ; 'CMIP6' (default), 'CMIP5', or 'GMIP4'
 ;long_GCM = ''                   ; '' for runs to 2100, 'long_' for runs to 2300
-;GCM_data = 'cmip6'              ; GCM dataset identifier ('cmip6' or 'long_cmip6')
-;short_gcmchoice = [1, 1, 1]    ; [GCM, SSP, experiment] indices; 0 for full batch
-;first_GCM = 0                   ; starting GCM index for batch processing (0-based minus 1)
+;GCM_model_idx    = [0]          ; model indices (1-based); [0] = all; e.g. [1,2,5]
+;GCM_rcp_idx      = [0]          ; SSP/RCP indices;          [0] = all; e.g. [4]
+;GCM_model_range  = [1, 4]       ; consecutive range shorthand: [first, last]; overrides GCM_model_idx
+;GCM_rcp_range    = [0, 0]       ; consecutive range shorthand for SSPs
+;first_GCM = 0                   ; starting GCM for batch (0-based, minus 1)
 
-; Extended GCM batch specification (only needed to override defaults)
-;rcp_batch = [4,5,4,4,5,5,4,5,4,4,4,5,4]
-;expe_batch = [1,1,1,1,1,1,1,1,1,1,1,1,1]
-;GCM_model = ['BCC-CSM2-MR','CAMS-CSM1-0','CESM2','CESM2-WACCM','EC-Earth3','EC-Earth3-Veg', $
-;             'FGOALS-f3-L','GFDL-ESM4','INM-CM4-8','INM-CM5-0','MPI-ESM1-2-HR','MRI-ESM2-0','NorESM2-MM']
-;GCM_rcp = ['ssp126','ssp245','ssp370','ssp585','ssp119','ssp534-over']
-;GCM_experiment = ['r1i1p1f1','r2i1p1f1','r3i1p1f1','r4i1p1f1','r5i1p1f1','r6i1p1f1','r7i1p1f1']
+; Manual override — only needed to bypass the lookup table entirely
+;GCM_model = ['BCC-CSM2-MR', 'CESM2']
+;GCM_rcp = ['ssp126', 'ssp585']
 
 ; -----------------------------------------------------------------------
 ; REANALYSIS / BIAS CORRECTION

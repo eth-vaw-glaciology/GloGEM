@@ -1,4 +1,10 @@
-<p align="center"><img src="https://github.com/eth-vaw-glaciology/GloGEM/blob/main/figs/GloGEM_logo_v3_dark.png" width="66.6%"></p>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/eth-vaw-glaciology/GloGEM/blob/main/figs/GloGEM_logo_v3_dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="https://github.com/eth-vaw-glaciology/GloGEM/blob/main/figs/GloGEM_logo_v2_light.png">
+    <img alt="GloGEM Logo" src="https://github.com/eth-vaw-glaciology/GloGEM/blob/main/figs/GloGEM_logo_v2_light.png" width="66.6%">
+  </picture>
+</p>
 
 # The Global Glacier Evolution Model (GloGEM)
 

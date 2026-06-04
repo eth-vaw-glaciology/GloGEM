@@ -84,13 +84,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
   for rcps=0,ne_GCM_rcp-1 do begin
 
-    ; === LOOP OVER DIFFERENT Experiments
-
-    if expe_batch[0] ne 0 then ne_GCM_experiment=expe_batch[gcms] else ne_GCM_experiment=n_elements(GCM_experiment)
-
-    for experis=0,ne_GCM_experiment-1 do begin
-
-      experi_short=strmid(GCM_experiment[experis],0,2)
+      experi_short=strmid(GCM_experiment,0,2)
 
       @procedures/read/read_regionbatch.pro
 
@@ -650,7 +644,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
         endfor                          ; calibration phases
 
         print, 'FINISHED region !!! '+region+' !!! '+clim_subregion
-        if reanalysis_direct ne 'y' then print, '    calculated with GCM: '+GCM_model[gcms]+' / '+GCM_rcp[rcps]+' / '+GCM_experiment[experis]
+        if reanalysis_direct ne 'y' then print, '    calculated with GCM: '+GCM_model[gcms]+' / '+GCM_rcp[rcps]
         print, '    calculated with Re-analysis data set '+reanalysis
 
         print, '**********'
@@ -679,10 +673,6 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
       endfor   ; regions
 
     endfor   ; firnice_batch_loop
-
-    next_GCM:
-
-  endfor   ; experiments
 
   ; zipping and removing files
   if write_hypsometry_files eq 'y' then begin

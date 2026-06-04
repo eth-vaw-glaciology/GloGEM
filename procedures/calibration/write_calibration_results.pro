@@ -5,6 +5,7 @@
 ; *************************************************************
 
 compile_opt idl2
+
 ;if mean(flux_calv) gt 0 then print, '   CALI - Calving flux (m/a):'+string(mean(flux_calv),fo='(f8.2)')+'('+string(ar_gl,fo='(i6)')+')'
 if calibrate_individual eq 'n' then flag=1
 if meltmodel eq '1' then printf,3,id[gg[g]],mean(mb),mean(wb),area1,mean(ela),mean(aar),$
