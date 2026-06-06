@@ -306,8 +306,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                     for cal1=0,cal1max do begin
 
                       ; read hypsometry-file
-                       if RGIversion eq '6' then a='' else a='bands_'
-                      fn=dir_data+'/'+region+'/'+a+id[gg[g]]+'.dat' & a=findfile(fn)
+                      fn=dir_data+'/'+region+'/'+id[gg[g]]+'.dat' & a=findfile(fn)
 
                       if a[0] ne '' then begin
 
