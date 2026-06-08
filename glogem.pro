@@ -130,7 +130,9 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
           ; We keep for the moment reading in .mdi files for the CMIP6 models before looping over the grid
           if time_resolution eq 'monthly' then begin
             @procedures/read/read_climatepast_monthly.pro
-            @procedures/read/read_gcmdata_monthly.pro
+            if reanalysis_direct ne 'y' then begin
+              @procedures/read/read_gcmdata_monthly.pro
+            endif
           endif
 
           ; read regional parameter file
