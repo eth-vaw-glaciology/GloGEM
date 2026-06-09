@@ -19,7 +19,7 @@ compile_opt idl2
 ; defining where procedures are found
 CD, CURRENT=base_dir ; define base directory
 a = !path            ; save current path
-!PATH = a + ':' + base_dir + '/functions/:' + base_dir + '/procedures/read/:' + base_dir + '/procedures/write/:' + base_dir + '/procedures/processing/:' ; add path to procedures and functions
+!PATH = a + ':' + base_dir + '/functions/:' + base_dir + '/procedures/read/:' + base_dir + '/procedures/write/:' + base_dir + '/procedures/processing/:' + base_dir + '/procedures/flow/:' ; add path to procedures and functions
 
 ; load all model settings (and user overrides from ~/.glogem/config.pro)
 @procedures/initialise/settings.pro
@@ -298,6 +298,15 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
                   for g=0l,cg-1 do begin
 
+                    ; Reset per-glacier flow model state so every glacier gets a fresh spin-up
+                    ; and fresh flowline mass balance initialisation.
+                    undefine, flow_initialised
+                    undefine, sno_dx
+                    undefine, snostor_dx
+                    undefine, sur_type_dx
+                    undefine, firn_dx
+                    undefine, bal_yr_dx
+
                     ; === CALIBRATION LOOP - for single-glacier calibration
 
                     cal1max=0
@@ -312,7 +321,11 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
                       if a[0] ne '' then begin
 
+                        ; Always include advance bands so that flow and dhdt runs have the same nb
+                        advance_save = advance
+                        if use_flow_model eq 'y' then advance = 'y'
                         @procedures/read/read_hypsometryfile.pro
+                        advance = advance_save
 
                         ; find geothermal heat flux for glacier
                         if firnice_temperature eq 'y' then begin
@@ -544,9 +557,20 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
                         @procedures/processing/calving_model.pro
 
-                        if glacier_retreat eq 'y' then begin
-                          @procedures/processing/glacier_retreat.pro
-                        endif                           ; glacier retreat
+                        ; === GEOMETRY EVOLUTION MODEL
+                        ; option 1 — GloGEMflow (use_flow_model='y'): coupled flowline model
+                        ; option 2 — dhdt parameterisation (use_flow_model='n'): Huss et al. (2010)
+                        if use_flow_model eq 'y' then begin
+                          @procedures/flow/glogemflow_coupled
+                        endif else begin
+                          if glacier_retreat eq 'y' then begin
+                            @procedures/processing/glacier_retreat.pro
+                          endif                         ; glacier retreat
+                        endelse
+
+                        if write_geometry_output eq 'y' then begin
+                          @procedures/write/save_geometry_output.pro
+                        endif
 
                       endfor    ; Loop over years
 
