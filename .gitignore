@@ -10,6 +10,8 @@ output/
 *.agr
 *.log
 .DS_Store
+config.pro
+logs/
 __pycache__/
 *.pyc
 .vscode/
@@ -18,3 +20,5 @@ results_dhdt/
 products/
 supplement_Zekollari_et_al_TC2019_hz02APR2019/
 results_dhdt_vs_flow/
+test/outputs/
+test/config_active.pro
