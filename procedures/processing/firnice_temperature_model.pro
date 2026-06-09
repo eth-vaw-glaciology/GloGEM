@@ -1,8 +1,18 @@
-PRO FIRNICE_TEMPERATURE_MODEL,gl,fit_layers,fit_dens,fit_dz, rf_dsc,rf_dt,Lh_rf, $
-   tgs,tl_fit,te_fit,geothermal_flux, cair,cice,kair,kice, sno,mel,plg,thick,slope,firn, $
-   firnice_batch,firnice_write,firnice_maxdepth, fit_water,elev_firnicetemp,firnice_profile, $
-   firnice_profile_ind,ye,tran,m, firn_permeability,ice_permeability, enable_advection=enable_advection, $
-   diff_coef=diff_coef, elev_adv_horiz=elev_adv_horiz, elev_adv_vert=elev_adv_vert, advection_write=advection_write
+; *************************************************************
+; firnice_temperature_model
+;
+; Simulate the evolution of englacial firn and ice temperatures
+; through heat conduction, latent heat release, and ice advection.
+;
+; For each glacierized elevation band the procedure solves a
+; one-dimensional heat-conduction equation through a layered firn/ice
+; column, applies latent heat from percolating meltwater based on
+; firn permeability, and optionally adds horizontal and vertical ice
+; advection using a shallow-ice velocity estimate and upwind finite-
+; difference scheme. Temperature profiles are constrained to the
+; pressure melting point and stored for output at selected depths.
+; *************************************************************
+
 compile_opt idl2
 
 noval=-9999 & snoval=-99 ; no value indicators
@@ -29,7 +39,7 @@ u     = FLTARR(N_ELEMENTS(gl))  ; Initialize the velocity array with the same nu
 tau_d = FLTARR(N_ELEMENTS(gl))  ; Initialize the driving stress array with the same number of elements as gl
 for i = 0, ci-1 do begin
    ; Calculate driving stress
-   tau_d = rho_ice * g * thick[ii_perm[i]] * SIN(slope[ii_perm[i]] * !DTOR)  ; driving stress in Pa
+   tau_d = rho_ice * grav * thick[ii_perm[i]] * SIN(slope[ii_perm[i]] * !DTOR)  ; driving stress in Pa
    ; Calculate depth-averaged velocity
    u[i] = (2 * A / (n + 2)) * tau_d^n * thick[ii_perm[i]] * 365.25 * 24 * 3600  ; ice velocity in m/year
 endfor
@@ -65,7 +75,7 @@ ii=where(gl ne noval,ci)
 for i=0,ci-1 do begin
 
 ; generate local, and actualized arrays for layer heat capacity, condictivity and density
-dens_fit=dblarr(total(fit_layers))+900  
+dens_fit=dblarr(total(fit_layers))+900
 a=fix(sno[ii[i]]/(fit_dens[1]/1000.)) ; number of snow layers
 if a gt 18 then a=18            ; preventing too many layers for extreme snow depth (??)
 ; replacing top of density profile with snow values
