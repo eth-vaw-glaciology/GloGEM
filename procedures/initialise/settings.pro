@@ -157,7 +157,12 @@ advection_write = 'n'
 firn_permeability = 'y'
 ice_permeability = 'n'
 
-; --- glacier retreat module
+; --- geometry evolution model
+; two options: (1) dhdt-parameterisation (Huss et al., 2010) via glacier_retreat='y',
+;              (2) coupled flowline model GloGEMflow (Zekollari et al., 2019) via use_flow_model='y'
+use_flow_model = 'n' ; 'y' activates GloGEMflow and disables the dhdt retreat below
+
+; --- glacier retreat module (dhdt option)
 glacier_retreat = 'y'
 expon = 2. ; valley shape parameter: band area loss vs. thickness loss
 dh_size = [5, 20] ; [km2] boundaries between dh-parameterisations (Huss et al., 2010)
@@ -198,6 +203,7 @@ count_mbelevsens_v0 = 5
 past_out = 'y'
 
 write_hypsometry_files = 'n'
+write_geometry_output = 'n' ; 'y' to save per-glacier geometry and flowline grid history (.sav)
 
 ; --- spatial extent
 lat0 = [-9999, -9999] ; specify sub-region [degrees]; or use [9999,9999] for full region
@@ -392,7 +398,8 @@ if calibrate eq 'n' then begin
   calibration_phase = '1'
 endif
 
-if glacier_retreat eq 'n' and hindcast_dynamic ne 'y' then advance = 'n'
+if use_flow_model eq 'y' then advance = 'y' ; flow model requires advance bands
+if glacier_retreat eq 'n' and hindcast_dynamic ne 'y' and use_flow_model eq 'n' then advance = 'n'
 
 if read_parameters eq 'y' then calibrate = 'n'
 

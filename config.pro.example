@@ -89,8 +89,16 @@
 ;refreezing_full = 'n'           ; 'y' to activate full refreezing model (slow)
 ;refreezing_parametrised = 'y'   ; 'y' to activate parametrised refreezing
 ;firnice_temperature = 'n'       ; 'y' to activate englacial ice/firn temperature model
-;glacier_retreat = 'y'           ; 'y' to activate glacier geometry change model
 ;frontal_ablation = 'y'          ; 'y' to activate frontal ablation / calving model
+
+; -----------------------------------------------------------------------
+; GEOMETRY EVOLUTION MODEL
+; Two mutually exclusive options:
+;   option 1 — dhdt parameterisation (Huss et al., 2010): glacier_retreat='y', use_flow_model='n'
+;   option 2 — coupled flowline model GloGEMflow (Zekollari et al., 2019): use_flow_model='y'
+; -----------------------------------------------------------------------
+;glacier_retreat = 'y'           ; 'y' to activate dhdt geometry change (option 1)
+;use_flow_model = 'n'            ; 'y' to activate GloGEMflow instead of dhdt (option 2)
 
 ; -----------------------------------------------------------------------
 ; OUTPUT OPTIONS
@@ -102,6 +110,7 @@
 ;eval_mbelevsensitivity = 'n'    ; 'y' to evaluate MB sensitivity per elevation band
 ;count_mbelevsens_v0 = 5         ; number of elevation steps for MB sensitivity evaluation
 ;write_hypsometry_files = 'n'    ; 'y' to write annual hypsometry for all glaciers
+;write_geometry_output = 'n'    ; 'y' to save per-glacier geometry and flowline grid history (.sav)
 
 ; -----------------------------------------------------------------------
 ; LOOKUP TABLES
