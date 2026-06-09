@@ -20,7 +20,8 @@
 ; ----------------------------------------------------------------------- ;
 compile_opt idl2
 
-; ---- Skip flow model before the survey year ----
+; ---- Skip during MB calibration and before the survey year ----
+if calibrate eq 'y' then goto, skip_flow
 if glacier_retreat ne 'y' then goto, skip_flow
 
 ; ========== STEP 1: ONE-TIME INITIALISATION ========== ;
