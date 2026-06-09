@@ -10,6 +10,8 @@ output/
 *.agr
 *.log
 .DS_Store
+__pycache__/
+*.pyc
 .vscode/
 results_glogemflow/
 results_dhdt/
