@@ -20,10 +20,6 @@
 ; ----------------------------------------------------------------------- ;
 compile_opt idl2
 
-; ---- Skip during MB calibration and before the survey year ----
-if calibrate eq 'y' then goto, skip_flow
-if glacier_retreat ne 'y' then goto, skip_flow
-
 ; ========== STEP 1: ONE-TIME INITIALISATION ========== ;
 if n_elements(flow_initialised) eq 0 then begin
   ; ---- Convert vertical bands to horizontal equidistant grid ----
@@ -223,5 +219,3 @@ print, 'Flow: vol=' + strtrim(string(volumes[ye], fo = '(f8.3)'), 2) + ' km3' + 
 t = t + 1l
 time = double(ye + 1)
 next_time_mb = double(ye + 1)
-
-skip_flow:

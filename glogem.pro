@@ -560,7 +560,9 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                         ; === GEOMETRY EVOLUTION MODEL
                         ; option 1 — GloGEMflow (use_flow_model='y'): coupled flowline model
                         ; option 2 — dhdt parameterisation (use_flow_model='n'): Huss et al. (2010)
-                        if use_flow_model eq 'y' then begin
+                        ; Guard here (not via goto inside glogemflow_coupled) because IDL goto
+                        ; does not reliably skip @-inlined code nested inside begin...end blocks.
+                        if use_flow_model eq 'y' and calibrate ne 'y' and glacier_retreat eq 'y' then begin
                           @procedures/flow/glogemflow_coupled
                         endif else begin
                           if glacier_retreat eq 'y' then begin
