@@ -14,11 +14,11 @@ IF enable_advection EQ 'y' AND advection_write EQ 'y' THEN BEGIN
    adv_vert_effect = DBLARR(N_ELEMENTS(gl))   ; Vertical advection effect
 ENDIF
 
-;********************* 
+;*********************
 ; copute ice velocity based on shallow ice approximation
 ii_perm=where(gl ne noval,ci)
 
-g = 9.81      ; acceleration due to gravity [m/s^2]
+grav = 9.81   ; acceleration due to gravity [m/s^2]  (not 'g' — that is the glacier loop index)
 rho_ice = 917 ; density of ice [kg/m^3]
 A = 2.4e-24   ; ice flow law parameter [Pa^-3 s^-1]
 n = 3         ; Glen's flow law exponent
@@ -323,5 +323,3 @@ IF enable_advection EQ 'y' AND advection_write EQ 'y' THEN BEGIN
    elev_adv_horiz = adv_horiz_effect
    elev_adv_vert = adv_vert_effect
 ENDIF
-
-end
