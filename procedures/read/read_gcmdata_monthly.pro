@@ -15,7 +15,8 @@
 compile_opt idl2
 
 if GMIP4 eq 'n' then begin
-  fn=dir_clim+'/future/'+time_resolution+'/'+long_GCM+'/'+GCM_data+'/'+dir_region+'/'+GCM_model[gcms]+ $
+   if long_GCM ne '' then a='long' else a=''
+  fn=dir_clim+'/future/'+time_resolution+'/'+a+GCM_data+'/'+dir_region+'/'+GCM_model[gcms]+ $
      '/'+GCM_model[gcms]+'_'+GCM_rcp[rcps]+'_'+GCM_experiment+'_'+dir_region+ccl+'.mdi'
 
    a=findfile(fn) ;& if a(0) eq '' then goto,next_GCM
