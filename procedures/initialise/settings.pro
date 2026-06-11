@@ -378,7 +378,7 @@ if calibrate eq 'y' then begin
   GCM_rcp_idx = [1]
 endif
 
-if calibrate eq 'n' and tran[1] lt 2021 then begin
+if calibrate eq 'n' and tran[1] lt 2026 then begin
   reanalysis_direct = 'y'
   GCM_model_idx = [1]
   GCM_rcp_idx = [1]
