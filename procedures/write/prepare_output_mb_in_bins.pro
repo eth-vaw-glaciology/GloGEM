@@ -30,9 +30,9 @@ if write_mb_elevationbands eq 'y' then begin
 
    openw,8,dirres+'/'+time_resolution+'/'+dir_region+subpath+'/mb_elevation/belev_'+id[gg[g]]+'.dat'
    a='' & for i=0,years-1 do a=a+string(i+tran[0],fo='(i4)')+'  '
-   printf,8,'Elev  '+a+a
-   elev_bmb=dblarr(years,nb)+snoval & elev_bwb=elev_bmb 
-
+   printf,8,'Elev  '+a
+   elev_bmb=dblarr(years,nb)+snoval
+   elev_bwb=elev_bmb 
    ; elevation-specified refreezing files 
    c=findfile(dirres+'/'+time_resolution+'/'+dir_region+subpath+'/refr_elevation')
    if c[0] eq '' then begin
