@@ -11,8 +11,8 @@ if ci gt 0 then elev_bmb[*, ii] = snoval
 if ci gt 0 then elev_bwb[*, ii] = snoval
 if ci gt 0 then elev_refr[*, ii] = snoval
 for i = 0, n_elements(elev_bmb[0, *]) - 1 do begin
-  fmt = '(i6,' + strtrim(string(2 * years, format = '(i4)'), 2) + 'f7.2)'
-  printf, 8, elev0[i], elev_bmb[*, i], elev_bwb[*, i], format = fmt
+  fmt = '(i6,' + strtrim(string(years, format = '(i4)'), 2) + 'f7.1)'
+  printf, 8, elev0[i], elev_bmb[*, i], format = fmt
 endfor
 close, 8
 
