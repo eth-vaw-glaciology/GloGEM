@@ -172,33 +172,12 @@ endwhile
 if iter_flow ge max_iter_flow then $
   print, 'WARNING: GloGEMflow hit max iterations for year ' + strtrim(ye + tran[0], 2)
 
-; ========== STEP 4: UPDATE GEOMETRY + TERMINUS CLEANUP ========== ;
-; Remove thin ice at the glacier terminus.
-; The SIA can leave residual ice layers (< 1 grid cell thick) at the
-; front because the finite-difference scheme doesn't enforce a sharp
-; terminus. We clean this up by removing isolated thin-ice cells
-; and ensuring the terminus touches the bed.
-;
-; Find the terminus: the lowest-index ice cell (closest to tongue)
-ii_ice_cleanup = where(thick_dx gt 0, c_cleanup)
-if c_cleanup gt 0 then begin
-  i_terminus = min(ii_ice_cleanup)  ; lowest ice cell (tongue end)
-  i_head = max(ii_ice_cleanup)      ; highest ice cell (head end)
-  ; Remove truly residual ice at the terminus and head (< 1 m threshold).
-  ; A low threshold means cells only zero out when almost gone, so the
-  ; fractional area correction handles the continuous thinning phase.
-  ; Using 10 m caused multiple cells to be removed at once in late stages,
-  ; producing large discrete steps in area.
-  for i_clean = i_terminus, i_head do begin
-    if thick_dx[i_clean] lt 1d0 then thick_dx[i_clean] = 0d0 $
-    else break
-  endfor
-  for i_clean = i_head, i_terminus, -1 do begin
-    if thick_dx[i_clean] lt 1d0 then thick_dx[i_clean] = 0d0 $
-    else break
-  endfor
-endif
-
+; ========== STEP 4: UPDATE GEOMETRY ========== ;
+; No explicit terminus cleanup here — ice_thickness.pro already zeroes
+; any negative thickness after each sub-step (matching the MATLAB reference
+; model exactly: `i=find(th<0); th(i)=0`).  Thin but positive cells thin
+; naturally to zero through ablation; imposing a minimum thickness threshold
+; creates discrete area steps (the zigzag) rather than preventing them.
 sur_dx = bed_dx + thick_dx
 width_surface_dx = width_base_dx + lambda_dx * thick_dx
 width_mid_dx = (width_base_dx + width_surface_dx) / 2.0
