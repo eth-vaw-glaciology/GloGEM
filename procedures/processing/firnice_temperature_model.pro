@@ -25,7 +25,7 @@ IF enable_advection EQ 'y' AND advection_write EQ 'y' THEN BEGIN
 ENDIF
 
 ;*********************
-; copute ice velocity based on shallow ice approximation
+; compute ice velocity for advection
 ii_perm=where(gl ne noval,ci)
 
 grav = 9.81   ; acceleration due to gravity [m/s^2]  (not 'g' — that is the glacier loop index)
@@ -34,15 +34,20 @@ A = 2.4e-24   ; ice flow law parameter [Pa^-3 s^-1]
 n = 3         ; Glen's flow law exponent
 THRESHOLD_ICE_VELOCITY_GRADIENT = 1e-4  ; Threshold for ice velocity gradient [year^-1]
 
-; Compute the driving stress (tau_d) and ice velocity (u) for each element in one loop
-u     = FLTARR(N_ELEMENTS(gl))  ; Initialize the velocity array with the same number of elements as gl
-tau_d = FLTARR(N_ELEMENTS(gl))  ; Initialize the driving stress array with the same number of elements as gl
-for i = 0, ci-1 do begin
-   ; Calculate driving stress
-   tau_d = rho_ice * grav * thick[ii_perm[i]] * SIN(slope[ii_perm[i]] * !DTOR)  ; driving stress in Pa
-   ; Calculate depth-averaged velocity
-   u[i] = (2 * A / (n + 2)) * tau_d^n * thick[ii_perm[i]] * 365.25 * 24 * 3600  ; ice velocity in m/year
-endfor
+; u[i] = depth-averaged speed of the i-th glacierized band (compact indexing, m/year)
+u     = FLTARR(N_ELEMENTS(gl))
+tau_d = FLTARR(N_ELEMENTS(gl))
+
+IF use_flow_model EQ 'y' AND N_ELEMENTS(u_flowmodel) EQ nb THEN BEGIN
+   ; Use calibrated velocity from GloGEMflow (mapped to elevation bands at end of previous SIA year)
+   FOR i = 0, ci-1 DO u[i] = u_flowmodel[ii_perm[i]]
+ENDIF ELSE BEGIN
+   ; Standalone SIA estimate: used when flow model is off or before the first SIA step (year 0)
+   FOR i = 0, ci-1 DO BEGIN
+      tau_d = rho_ice * grav * thick[ii_perm[i]] * SIN(slope[ii_perm[i]] * !DTOR)
+      u[i] = (2 * A / (n + 2)) * tau_d^n * thick[ii_perm[i]] * 365.25 * 24 * 3600
+   ENDFOR
+ENDELSE
 
 ;*********************
 ; alternative permeability model based on velocity gradient
@@ -113,8 +118,8 @@ tt=min([ind+1,total(fit_layers)])  ; either run to bedrock, or to max of layers
       ; advection (horizontal and vertical) in the firn/ice layers
       IF enable_advection EQ 'y' THEN BEGIN
          ; Horizontal advection
-         ; Skip first elevation band (highest) since there's no upglacier source
-         IF i GT 0 THEN BEGIN
+         ; Bands are ascending (i=0 = terminus, i=ci-1 = top). Skip topmost band: no upglacier source above it.
+         IF i LT ci-1 THEN BEGIN
          ; Calculate vertical profile of horizontal velocity (Nye's approximation)
          vprofile = FLTARR(tt)
          FOR j=0,tt-1 DO BEGIN
@@ -125,18 +130,19 @@ tt=min([ind+1,total(fit_layers)])  ; either run to bedrock, or to max of layers
          ; Get velocity for current elevation band
          current_vel = u[i]
 
-         ; Get upglacier index (where ice is flowing from)
-         upglacier_idx = i - 1
+         ; Upglacier source is the next higher-elevation band (i+1)
+         upglacier_idx = i + 1
 
          ; Calculate timestep in seconds
          dt_seconds = rf_dt * 3600.0D * 24.0D * 30.5D / rf_dsc
 
-         ; Calculate the actual horizontal distance based on slope
-         band_vertical_spacing = 10.0D  ; Vertical spacing between bands in meters - ADJUST THIS VALUE
-         min_slope_rad = 0.01D * !DTOR  ; Minimum slope to prevent division by zero
+         ; Horizontal distance to upglacier band, derived from actual elevation spacing and slope
+         delta_elev = ABS(elev[ii[i+1]] - elev[ii[i]])  ; vertical elevation step [m]
+         delta_elev = MAX([delta_elev, 5.0D])            ; guard against identical elevations
+         min_slope_rad = 0.01D * !DTOR  ; minimum slope to avoid division by zero
          local_slope_rad = MAX([slope[ii_perm[i]] * !DTOR, min_slope_rad])
-         dx = band_vertical_spacing / TAN(local_slope_rad)
-         dx = dx < 1000.0D  ; Cap maximum horizontal distance
+         dx = delta_elev / TAN(local_slope_rad)
+         dx = dx < 5000.0D  ; cap at 5 km
 
          ; Calculate advection coefficient (Courant number)
          courant = current_vel * dt_seconds / (dx * 365.25D * 24.0D * 3600.0D)
@@ -328,8 +334,8 @@ endif
 
 endfor
 
-; Return advection effects in the output variables if requested
+; Store advection effects in the annual output arrays (indexed by year)
 IF enable_advection EQ 'y' AND advection_write EQ 'y' THEN BEGIN
-   elev_adv_horiz = adv_horiz_effect
-   elev_adv_vert = adv_vert_effect
+   elev_adv_horiz[ye, *] = adv_horiz_effect
+   elev_adv_vert[ye, *]  = adv_vert_effect
 ENDIF

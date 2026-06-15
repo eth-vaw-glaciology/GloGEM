@@ -238,3 +238,28 @@ print, 'Flow: vol=' + strtrim(string(volumes[ye], fo = '(f8.3)'), 2) + ' km3' + 
 t = t + 1l
 time = double(ye + 1)
 next_time_mb = double(ye + 1)
+
+; ========== STEP 7: MAP FLOWLINE VELOCITY TO ELEVATION BANDS ========== ;
+; Compute depth-averaged ice speed from the post-SIA state and average onto
+; the elevation-band grid. Stored in u_flowmodel[nb] for use by
+; firnice_temperature_model.pro in the following year (enable_advection='y').
+;
+; Speed: u = D * |ds/dx| / h  (m/year), where D = df_dx is the SIA diffusivity.
+; df_dx uses aflow in Pa^-3 a^-1, so u is directly in m/year.
+grad_vel_dx = dblarr(xnum)
+for i_vel = 1, xnum-2 do $
+  grad_vel_dx[i_vel] = (sur_dx[i_vel+1] - sur_dx[i_vel-1]) / (2.0d0 * dx)
+
+u_flowmodel = dblarr(nb)
+count_u_flowmodel = lonarr(nb)
+for i_vel = 1, xnum-2 do begin
+  if thick_dx[i_vel] gt 0d0 and abs(grad_vel_dx[i_vel]) gt 0d0 then begin
+    u_this = df_dx[i_vel] * abs(grad_vel_dx[i_vel]) / thick_dx[i_vel]
+    j_band = round((sur_dx[i_vel] - elev[0]) / step)
+    j_band = (j_band > 0l) < (nb - 1l)
+    u_flowmodel[j_band] += u_this
+    count_u_flowmodel[j_band] += 1l
+  endif
+endfor
+jj_vel = where(count_u_flowmodel gt 0, cjj_vel)
+if cjj_vel gt 0 then u_flowmodel[jj_vel] = u_flowmodel[jj_vel] / count_u_flowmodel[jj_vel]
