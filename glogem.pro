@@ -19,7 +19,7 @@ compile_opt idl2
 ; defining where procedures are found
 CD, CURRENT=base_dir ; define base directory
 a = !path            ; save current path
-!PATH = a + ':' + base_dir + '/functions/:' + base_dir + '/procedures/read/:' + base_dir + '/procedures/write/:' + base_dir + '/procedures/processing/:' ; add path to procedures and functions
+!PATH = a + ':' + base_dir + '/functions/:' + base_dir + '/procedures/read/:' + base_dir + '/procedures/write/:' + base_dir + '/procedures/processing/:' + base_dir + '/procedures/flow/' ; add path to procedures and functions
 
 ; load all model settings (and user overrides from ~/.glogem/config.pro)
 @procedures/initialise/settings.pro
@@ -305,6 +305,8 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                       cal1max=15
                     endif
 
+                    if use_flow_model eq 'y' then flow_initialised = !NULL
+
                     for cal1=0,cal1max do begin
 
                       ; read hypsometry-file
@@ -545,7 +547,12 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                         @procedures/processing/calving_model.pro
 
                         if glacier_retreat eq 'y' then begin
-                          @procedures/processing/glacier_retreat.pro
+                          if use_flow_model eq 'y' then begin
+                            @procedures/flow/glogemflow_coupled
+                            @procedures/flow/update_elevation_bands
+                          endif else begin
+                            @procedures/processing/glacier_retreat.pro
+                          endelse
                         endif                           ; glacier retreat
 
                       endfor    ; Loop over years

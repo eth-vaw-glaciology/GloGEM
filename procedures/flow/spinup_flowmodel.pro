@@ -40,7 +40,7 @@ compile_opt idl2
 spinup_t0 = systime(1)   ; wall-clock start time (seconds)
 
 ; ====================================================================
-; STEP 1: Compute 1961–1990 mean SMB polynomial
+; STEP 1: Compute 1961-1990 mean SMB polynomial
 ; ====================================================================
 print, '=== GloGEMflow spin-up: computing 1961-1990 mean SMB ==='
 
@@ -102,15 +102,22 @@ print, 'Coefficients (centred): a=', smb_a, '  b=', smb_b, '  c=', smb_c
 ; ====================================================================
 ; STEP 2: Precompute year-by-year SMB polynomials for historical run
 ; ====================================================================
-; For each year from tran[0] to the survey year, fit a 2nd-order
-; polynomial to baly[yy, *] vs elev[*].  These are used in Phase B
-; (historical transient run) — mirrors MATLAB mb_type_flag==6.
-; Falls back to the mean polynomial if a year has too few data.
-hist_n = ye   ; number of historical years: tran[0] to tran[0]+ye-1
-hist_smb_a = dblarr(hist_n)
-hist_smb_b = dblarr(hist_n)
-hist_smb_c = dblarr(hist_n)
-for yy = 0, hist_n - 1 do begin
+; Phase B starts from the END of the reference climate period (1990)
+; and runs to the survey year — matching Zekollari (2019), who uses a
+; 1990 steady state.  This means Phase B is ~13 years (1990→2003) not
+; 63 years (1940→2003).  The short Phase B limits the overshoot that
+; Phase A must provide, allowing convergence within ±500 m ELA bias.
+;
+; We still compute polynomials for the full window tran[0]→survey year
+; (needed if ref_end_yr is before tran[0]), but Phase B only uses the
+; sub-window from hist_b0 to ye-1.
+hist_b0 = long((ref_end_yr > tran[0]) - tran[0])  ; first Phase B year (index into baly)
+hist_n  = ye - hist_b0                             ; number of Phase B years
+
+hist_smb_a = dblarr(ye)
+hist_smb_b = dblarr(ye)
+hist_smb_c = dblarr(ye)
+for yy = 0, ye - 1 do begin
   elev_h = []
   bal_h  = []
   for i = 0, nb - 1 do begin
@@ -130,8 +137,10 @@ for yy = 0, hist_n - 1 do begin
     hist_smb_a[yy] = smb_a
   endelse
 endfor
-print, 'Historical SMB polynomials computed: ', hist_n, ' years (' + $
-  strtrim(tran[0],2) + '–' + strtrim(tran[0]+ye-1,2) + ')'
+print, 'Historical SMB polynomials computed: ', ye, ' years (' + $
+  strtrim(tran[0],2) + '-' + strtrim(tran[0]+ye-1,2) + ')'
+print, 'Phase B window: ', hist_n, ' years (' + $
+  strtrim(tran[0]+hist_b0,2) + '-' + strtrim(tran[0]+ye-1,2) + ')'
 
 ; ====================================================================
 ; STEP 3: Reference geometry
@@ -148,15 +157,11 @@ print, 'Observed length: ', obs_len_m / 1000d0, ' km  (', c_obs_l, ' ice cells)'
 vol_target  = volumes[ye - 1] * 1d9   ; m3
 print, 'Volume target (', tran[0]+ye-1, '): ', vol_target / 1d9, ' km3'
 
-ela_bias_max = 500d0   ; m — hard bound on ELA bias (also used in STEP 4)
+ela_bias_max = 500d0   ; m — Zekollari (2019) original limit; physically unrealistic beyond this
 
 ; ====================================================================
 ; STEP 3b: Initial ELA bias — zero-balance over observed glacier
 ; ====================================================================
-; Compute the area-weighted mean SMB over the observed glacier geometry
-; at ela_bias=0, then use the first-order gradient to estimate ela_bias
-; that gives zero net MB. This seeds the length calibration much closer
-; to the solution, reducing the number of outer iterations.
 ii_obs_ice = where(obs_thick_dx gt 0, c_obs_ice)
 ela_bias_init = 0d0
 if c_obs_ice gt 0 then begin
@@ -165,7 +170,6 @@ if c_obs_ice gt 0 then begin
   mb_obs    = smb_a * (z_obs - z_center)^2 + smb_b * (z_obs - z_center) + smb_c
   mb_mean   = total(mb_obs * w_obs) / total(w_obs)
   z_mean    = total(z_obs * w_obs) / total(w_obs)
-  ; d(SMB(z-ela)) / d(ela) = -(2*smb_a*z + smb_b) at ela=0
   dsmb_dz   = 2d0 * smb_a * z_mean + smb_b
   if abs(dsmb_dz) gt 1d-12 then $
     ela_bias_init = (mb_mean / dsmb_dz) < ela_bias_max > (-ela_bias_max)
@@ -179,14 +183,14 @@ endif
 spinup_nyears  = 5000l
 spinup_ss_crit = 0.01d0   ; SS criterion: dV/V < 0.01 %/yr
 vol_prec       = 0.01d0   ; volume tolerance: 1 %
-len_prec       = 0.01d0   ; length tolerance: 1 %
+len_prec       = 0.01d0   ; length tolerance: 1 % (floor; adapted below to grid spacing)
 max_vol_iter   = 6
-max_len_iter   = 6
-; ela_bias_max already defined in STEP 3b
+max_len_iter   = 15
 
 ; Initial guesses
-aflow_guess     = aflow          ; from set_flow_model_parameters.pro (1e-16)
-ela_bias        = ela_bias_init  ; analytical zero-balance estimate (faster convergence)
+aflow_init      = aflow          ; save default (from set_flow_model_parameters.pro)
+aflow_guess     = aflow
+ela_bias        = ela_bias_init
 
 ; Storage for calibration history
 spinup_len_tbl  = dblarr(max_len_iter, 3)   ; [ela_bias, length_m, aflow]
@@ -274,23 +278,20 @@ for len_iter = 0, max_len_iter - 1 do begin
     endfor
 
     if phase_a_failed then begin
-      print, '    Phase A blow-up — halving A_flow'
+      print, '    Phase A blow-up --- halving A_flow'
       aflow_guess = (aflow_guess * 0.5d0) > 1d-20
       continue
     endif
     if ~ss_reached then print, '    WARNING: SS not reached after ', spinup_nyears, ' yr'
 
     ; -------- Phase B: historical transient run --------
-    ; Runs from tran[0] to survey year with year-by-year SMB polynomials.
-    ; No ELA bias — mirrors MATLAB mb_bias_flag=0 + mb_type_flag=6.
-    print, '    Historical run: ', tran[0], ' → ', tran[0]+hist_n-1
+    print, '    Historical run: ', tran[0]+hist_b0, ' -> ', tran[0]+ye-1
     phase_b_failed = 0
 
     for yy = 0, hist_n - 1 do begin
-      ha = hist_smb_a[yy]
-      hb = hist_smb_b[yy]
-      hc = hist_smb_c[yy]
-      ; Historical SMB polynomial (vectorized, centred coordinates)
+      ha = hist_smb_a[hist_b0 + yy]
+      hb = hist_smb_b[hist_b0 + yy]
+      hc = hist_smb_c[hist_b0 + yy]
       z_h = sur_dx - z_center
       ii_hcap = where(z_h gt (obs_sur_dx - z_center) and obs_thick_dx gt 0, c_hcap)
       if c_hcap gt 0 then z_h[ii_hcap] = obs_sur_dx[ii_hcap] - z_center
@@ -324,7 +325,7 @@ for len_iter = 0, max_len_iter - 1 do begin
     endfor
 
     if phase_b_failed then begin
-      print, '    Phase B blow-up — halving A_flow'
+      print, '    Phase B blow-up --- halving A_flow'
       aflow_guess = (aflow_guess * 0.5d0) > 1d-20
       continue
     endif
@@ -367,7 +368,7 @@ for len_iter = 0, max_len_iter - 1 do begin
   endfor ; volume calibration loop
 
   if ~vol_converged then begin
-    print, '  Volume did not converge — using best result'
+    print, '  Volume did not converge --- using best result'
     best_err = 1d30
     best_idx = 0
     for i = 0, n_vol_done - 1 do begin
@@ -377,10 +378,8 @@ for len_iter = 0, max_len_iter - 1 do begin
         best_idx = i
       endif
     endfor
-    ; The last vol_iter run left thick_dx/sur_dx from Phase B.
-    ; If best_idx != last iter, we accept the current state as-is
-    ; (full re-run would be expensive; error is typically small).
     print, '  Best A_flow=', spinup_vol_tbl[best_idx, 0], '  vol=', spinup_vol_tbl[best_idx, 1]/1d9, ' km3'
+    aflow_guess = spinup_vol_tbl[best_idx, 0]
   endif
 
   spinup_aflow = aflow_guess
@@ -397,8 +396,12 @@ for len_iter = 0, max_len_iter - 1 do begin
 
   print, '  Length: mod=', mod_len_m/1000d0, ' km  obs=', obs_len_m/1000d0, ' km  ratio=', len_ratio
 
-  if abs(len_ratio - 1d0) le len_prec then begin
-    print, '  Length calibration converged!'
+  ; Adaptive precision: must be at least 1.5 grid cells wide so the
+  ; discrete length can actually satisfy the criterion.
+  len_prec_eff = len_prec > (1.5d0 * dx / (obs_len_m > 1d0))
+
+  if abs(len_ratio - 1d0) le len_prec_eff then begin
+    print, '  Length calibration converged (prec=', len_prec_eff*100d0, '%)'
     len_converged = 1
     break
   endif
@@ -416,23 +419,20 @@ for len_iter = 0, max_len_iter - 1 do begin
     endfor
     ela_bias    = spinup_len_tbl[best_idx, 0]
     aflow_guess = spinup_len_tbl[best_idx, 2]
-    print, '  Length max iters — best ELA_bias=', ela_bias, '  A_flow=', aflow_guess
-    ; No re-run here; accept current state (last iteration)
+    print, '  Length max iters --- best ELA_bias=', ela_bias, '  A_flow=', aflow_guess
     break
   endif
 
   ; Estimate next ela_bias
   if len_iter eq 0 then begin
-    ; First adjustment: ±10 m
     if len_ratio lt 1d0 then begin
-      ela_bias    = ela_bias - 10d0   ; lower ELA → more accumulation → longer
+      ela_bias    = ela_bias - 10d0
       aflow_guess = spinup_aflow + 0.2d-16
     endif else begin
-      ela_bias    = ela_bias + 10d0   ; raise ELA → less accumulation → shorter
+      ela_bias    = ela_bias + 10d0
       aflow_guess = (spinup_aflow - 0.2d-16) > 1d-17
     endelse
   endif else begin
-    ; Linear interpolation/extrapolation from previous two ela_bias vs length
     e1 = spinup_len_tbl[len_iter-1, 0]
     l1 = spinup_len_tbl[len_iter-1, 1]
     e2 = spinup_len_tbl[len_iter, 0]
@@ -441,18 +441,16 @@ for len_iter = 0, max_len_iter - 1 do begin
       ela_bias = e1 + (obs_len_m - l1) * (e2 - e1) / (l2 - l1) $
     else $
       ela_bias = ela_bias + (len_ratio gt 1d0 ? 10d0 : -10d0)
-    ; Interpolate matching A_flow estimate
     if abs(l2 - l1) gt 1d0 then $
       aflow_guess = spinup_len_tbl[len_iter-1, 2] + $
         (obs_len_m - l1) / (l2 - l1) * (spinup_len_tbl[len_iter, 2] - spinup_len_tbl[len_iter-1, 2]) $
     else $
-      aflow_guess = spinup_aflow   ; no useful slope — keep last calibrated value
+      aflow_guess = spinup_aflow
     aflow_guess = (aflow_guess > 1d-20) < 1d-12
   endelse
 
-  ; Hard bound on ELA bias
   if abs(ela_bias) gt ela_bias_max then begin
-    print, '  WARNING: ELA bias hit limit (', ela_bias, ' m) — stopping length calibration'
+    print, '  WARNING: ELA bias hit limit (', ela_bias, ' m) --- stopping length calibration'
     break
   endif
 
@@ -464,12 +462,10 @@ endfor ; length calibration loop
 aflow = spinup_aflow
 spinup_ela_bias = ela_bias
 
-; Update geometry fields consistently
 sur_dx = bed_dx + thick_dx
 width_surface_dx = width_base_dx + lambda_dx * thick_dx
 width_mid_dx = (width_base_dx + width_surface_dx) / 2.0
 
-; Final diagnostics
 ii_fin = where(thick_dx gt 0, c_fin)
 final_vol  = c_fin gt 0 ? total(thick_dx[ii_fin] * width_dx[ii_fin] * dx) : 0d0
 final_area = c_fin gt 0 ? total(width_surface_dx[ii_fin] * dx) / 1d6 : 0d0
@@ -486,5 +482,6 @@ print, 'Final length        : ', double(c_fin) * dx / 1000d0, ' km  (obs=', obs_
 print, 'Max thickness       : ', max(thick_dx), ' m'
 if hist_n lt 13 then $
   print, 'Note: historical run only covers ', hist_n, ' yr (' + $
-    strtrim(tran[0],2) + '–' + strtrim(tran[0]+hist_n-1,2) + '). ' + $
-    'Set tran[0]=1990 for full 13-yr run as in Zekollari et al.'
+    strtrim(tran[0],2) + '-' + strtrim(tran[0]+hist_n-1,2) + ').'
+
+@procedures/flow/write_spinup_stats

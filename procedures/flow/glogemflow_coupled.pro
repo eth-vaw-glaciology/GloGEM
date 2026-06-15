@@ -91,10 +91,49 @@ if n_elements(flow_initialised) eq 0 then begin
     ' (xnum=' + strtrim(xnum, 2) + ', dx=' + strtrim(dx, 2) + ' m)'
 endif
 
-; ========== STEP 2: COMPUTE MASS BALANCE ON FLOWLINE GRID ========== ;
-; This computes bal_dx (m ice/yr) directly on the horizontal grid
-; using sur_dx for elevation — same T-index model as GloGEM.
-@procedures/flow/flowline_massbal
+; ========== STEP 2: MAP GloGEM'S MB ONTO FLOWLINE GRID ========== ;
+; Interpolate GloGEM's elevation-band MB (bal, m w.e./yr) at each
+; flowline cell's current surface elevation (sur_dx), then convert
+; to m ice. Replaces the duplicate T-index recalculation in
+; flowline_massbal.pro — GloGEM's calibrated MB is the single source.
+bal_dx = dblarr(xnum)
+ii_gl_bands = where(gl ne noval, n_gl_bands)
+if n_gl_bands ge 2 then begin
+  bal_we_interp = interpol(bal[ii_gl_bands], elev[ii_gl_bands], sur_dx)
+endif else begin
+  bal_we_interp = interpol(bal, elev, sur_dx)
+endelse
+ii_ice_mb = where(thick_dx gt 0, c_ice_mb)
+if c_ice_mb gt 0 then bal_dx[ii_ice_mb] = bal_we_interp[ii_ice_mb] / 0.917d0
+
+; ========== STEP 2b: STORE BEGINNING-OF-YEAR STATE (matching dhdt timing) ========== ;
+; finalize_annual_massbalance.pro stores volumes[ye] BEFORE retreat.
+; We match this: store the flowline state before the SIA advance.
+ii_boy = where(thick_dx gt 0, c_boy)
+if c_boy gt 0 then begin
+  volumes[ye] = total(thick_dx[ii_boy] * width_dx[ii_boy] * dx) / 1d9
+  ; Area with fractional terminus/head correction for smooth evolution
+  i_t_boy = min(ii_boy)
+  i_h_boy = max(ii_boy)
+  area_sum_boy = total(width_surface_dx[ii_boy] * dx)
+  if i_t_boy lt i_h_boy then begin
+    if thick_dx[i_t_boy + 1] gt 0 then begin
+      frac_t = (thick_dx[i_t_boy] / thick_dx[i_t_boy + 1]) < 1d0
+      area_sum_boy = area_sum_boy + (frac_t - 1d0) * width_surface_dx[i_t_boy] * dx
+    endif
+    if thick_dx[i_h_boy - 1] gt 0 then begin
+      frac_h = (thick_dx[i_h_boy] / thick_dx[i_h_boy - 1]) < 1d0
+      area_sum_boy = area_sum_boy + (frac_h - 1d0) * width_surface_dx[i_h_boy] * dx
+    endif
+  endif
+  areas[ye] = (area_sum_boy > 0d0) / 1d6
+  mb[ye]    = total(bal_dx[ii_boy] * width_surface_dx[ii_boy] * dx * 0.917d0) / $
+              total(width_surface_dx[ii_boy] * dx)
+endif else begin
+  volumes[ye] = 0d0
+  areas[ye]   = 0d0
+  mb[ye]      = 0d0
+endelse
 
 ; ========== STEP 3: ADVANCE FLOW MODEL BY 1 YEAR ========== ;
 time_flow = 0d0
@@ -199,10 +238,11 @@ endif else begin
   flow_mb = 0d0
 endelse
 
-; Store in GloGEM's output arrays (same definition as initialisation)
-volumes[ye] = flow_vol / 1d9 ; m3 -> km3
-areas[ye] = flow_area ; km2
-mb[ye] = flow_mb
+; Volume/area/mb are now stored BEFORE the SIA advance (STEP 2b above).
+; Post-SIA values retained here for internal diagnostics only.
+; volumes[ye] = flow_vol / 1d9
+; areas[ye] = flow_area
+; mb[ye] = flow_mb
 
 ; ========== STEP 6: STORE ANNUAL FLOWLINE HISTORY ========== ;
 flow_thick_hist[*, ye] = thick_dx
@@ -213,7 +253,7 @@ flow_width_hist[*, ye] = width_surface_dx
 ; Print diagnostic (show scaled values for consistency with GloGEM)
 print, 'Flow: vol=' + strtrim(string(volumes[ye], fo = '(f8.3)'), 2) + ' km3' + $
   ' area=' + strtrim(string(areas[ye], fo = '(f7.1)'), 2) + ' km2' + $
-  ' mb=' + strtrim(string(flow_mb, fo = '(f7.3)'), 2) + ' m w.e.'
+  ' mb=' + strtrim(string(mb[ye], fo = '(f7.3)'), 2) + ' m w.e.'
 
 ; Increment persistent time counter
 t = t + 1l

@@ -114,5 +114,17 @@ difference_volume = volume_Huss_1d_fixeddistance - volume_Huss_1d
 ; print, 'difference_volume = ', difference_volume
 ; print, 'difference_in_percentage = ', (difference_volume / volume_Huss_1d) * 100, '%'
 
+; Normalize flowline widths to match the elevation-band (RGI) area.
+; Corrects for interpolation error when converting from non-uniform
+; elevation-band grid to equidistant flowline grid.
+if area_Huss_1d_fixeddistance gt 0 then begin
+  area_scale_grid = area_Huss_1d / area_Huss_1d_fixeddistance
+  width_dx_init   = width_dx_init * area_scale_grid
+  print, 'Grid area correction: ' + $
+    strtrim(string(area_Huss_1d_fixeddistance/1d6, fo='(f7.3)'),2) + $
+    ' -> ' + strtrim(string(area_Huss_1d/1d6, fo='(f7.3)'),2) + $
+    ' km2 (scale=' + strtrim(string(area_scale_grid, fo='(f6.4)'),2) + ')'
+endif
+
 horizontal_grid_inputs = {dist_dx: dist_dx_init, sur_dx: sur_dx_init, width_dx: width_dx_init, thick_dx: thick_dx_init, bed_dx: bed_dx_init}
 save, horizontal_grid_inputs, file = 'horizontal_grid_inputs.sav'
