@@ -228,6 +228,13 @@ ncdf_attput, nc_ann_i, nc_vid_i_mbsl, 'cell_methods', 'time: point' & ncdf_attpu
 nc_vid_i_fabl = ncdf_vardef(nc_ann_i, 'frontal_abl', [nc_dim_g, nc_dim_t_i], /float)
 ncdf_attput, nc_ann_i, nc_vid_i_fabl, 'long_name', 'Total annual frontal ablation' & ncdf_attput, nc_ann_i, nc_vid_i_fabl, 'units', 'kg'
 ncdf_attput, nc_ann_i, nc_vid_i_fabl, 'cell_methods', 'time: sum' & ncdf_attput, nc_ann_i, nc_vid_i_fabl, '_FillValue', nc_fv
+; --- GlacierMIP4 Table 5 optional individual-glacier variables ---
+nc_vid_i_ela = ncdf_vardef(nc_ann_i, 'ELA', [nc_dim_g, nc_dim_t_i], /float)
+ncdf_attput, nc_ann_i, nc_vid_i_ela, 'long_name', 'Altitude of the annual equilibrium line' & ncdf_attput, nc_ann_i, nc_vid_i_ela, 'units', 'm'
+ncdf_attput, nc_ann_i, nc_vid_i_ela, 'cell_methods', 'time: maximum' & ncdf_attput, nc_ann_i, nc_vid_i_ela, '_FillValue', nc_fv
+nc_vid_i_aar = ncdf_vardef(nc_ann_i, 'AAR', [nc_dim_g, nc_dim_t_i], /float)
+ncdf_attput, nc_ann_i, nc_vid_i_aar, 'long_name', 'Annual Accumulation Area Ratio' & ncdf_attput, nc_ann_i, nc_vid_i_aar, 'units', '%'
+ncdf_attput, nc_ann_i, nc_vid_i_aar, 'cell_methods', 'time: maximum' & ncdf_attput, nc_ann_i, nc_vid_i_aar, '_FillValue', nc_fv
 ncdf_control, nc_ann_i, /endef
 ncdf_varput, nc_ann_i, nc_vid_i_t_ann, nc_time_ann
 
@@ -250,6 +257,10 @@ ncdf_attput, nc_sub_i, nc_vid_i_t_sub, 'calendar', 'standard' & ncdf_attput, nc_
 nc_vid_i_run = ncdf_vardef(nc_sub_i, 'runoff_glac', [nc_dim_g_s, nc_dim_s_i], /float)
 ncdf_attput, nc_sub_i, nc_vid_i_run, 'long_name', 'Glacier runoff from glacierized area'
 ncdf_attput, nc_sub_i, nc_vid_i_run, 'units', 'kg' & ncdf_attput, nc_sub_i, nc_vid_i_run, 'cell_methods', 'time: sum' & ncdf_attput, nc_sub_i, nc_vid_i_run, '_FillValue', nc_fv
+; --- GlacierMIP4 Table 5 optional individual-glacier variable ---
+nc_vid_i_rbas = ncdf_vardef(nc_sub_i, 'runoff_basin', [nc_dim_g_s, nc_dim_s_i], /float)
+ncdf_attput, nc_sub_i, nc_vid_i_rbas, 'long_name', 'Runoff from the initial glacierized area' & ncdf_attput, nc_sub_i, nc_vid_i_rbas, 'units', 'kg'
+ncdf_attput, nc_sub_i, nc_vid_i_rbas, 'cell_methods', 'time: sum' & ncdf_attput, nc_sub_i, nc_vid_i_rbas, '_FillValue', nc_fv
 ncdf_control, nc_sub_i, /endef
 ncdf_varput, nc_sub_i, nc_vid_i_t_sub, nc_time_sub
 
@@ -431,6 +442,13 @@ ncdf_attput, nc_sp_ann_i, nc_vid_sp_i_mbsl, 'cell_methods', 'time: point' & ncdf
 nc_vid_sp_i_fabl = ncdf_vardef(nc_sp_ann_i, 'frontal_abl', [nc_sp_dim_g, nc_sp_dim_t_i], /float)
 ncdf_attput, nc_sp_ann_i, nc_vid_sp_i_fabl, 'long_name', 'Total annual frontal ablation' & ncdf_attput, nc_sp_ann_i, nc_vid_sp_i_fabl, 'units', 'kg'
 ncdf_attput, nc_sp_ann_i, nc_vid_sp_i_fabl, 'cell_methods', 'time: sum' & ncdf_attput, nc_sp_ann_i, nc_vid_sp_i_fabl, '_FillValue', nc_fv
+; --- GlacierMIP4 Table 5 optional individual-glacier variables ---
+nc_vid_sp_i_ela = ncdf_vardef(nc_sp_ann_i, 'ELA', [nc_sp_dim_g, nc_sp_dim_t_i], /float)
+ncdf_attput, nc_sp_ann_i, nc_vid_sp_i_ela, 'long_name', 'Altitude of the annual equilibrium line' & ncdf_attput, nc_sp_ann_i, nc_vid_sp_i_ela, 'units', 'm'
+ncdf_attput, nc_sp_ann_i, nc_vid_sp_i_ela, 'cell_methods', 'time: maximum' & ncdf_attput, nc_sp_ann_i, nc_vid_sp_i_ela, '_FillValue', nc_fv
+nc_vid_sp_i_aar = ncdf_vardef(nc_sp_ann_i, 'AAR', [nc_sp_dim_g, nc_sp_dim_t_i], /float)
+ncdf_attput, nc_sp_ann_i, nc_vid_sp_i_aar, 'long_name', 'Annual Accumulation Area Ratio' & ncdf_attput, nc_sp_ann_i, nc_vid_sp_i_aar, 'units', '%'
+ncdf_attput, nc_sp_ann_i, nc_vid_sp_i_aar, 'cell_methods', 'time: maximum' & ncdf_attput, nc_sp_ann_i, nc_vid_sp_i_aar, '_FillValue', nc_fv
 ncdf_control, nc_sp_ann_i, /endef
 ncdf_varput, nc_sp_ann_i, nc_vid_sp_i_t_ann, nc_time_ann_past
 
@@ -451,6 +469,10 @@ ncdf_attput, nc_sp_sub_i, nc_vid_sp_i_t_sub, 'calendar', 'standard' & ncdf_attpu
 nc_vid_sp_i_run = ncdf_vardef(nc_sp_sub_i, 'runoff_glac', [nc_sp_dim_g_s, nc_sp_dim_s_i], /float)
 ncdf_attput, nc_sp_sub_i, nc_vid_sp_i_run, 'long_name', 'Glacier runoff from glacierized area'
 ncdf_attput, nc_sp_sub_i, nc_vid_sp_i_run, 'units', 'kg' & ncdf_attput, nc_sp_sub_i, nc_vid_sp_i_run, 'cell_methods', 'time: sum' & ncdf_attput, nc_sp_sub_i, nc_vid_sp_i_run, '_FillValue', nc_fv
+; --- GlacierMIP4 Table 5 optional individual-glacier variable ---
+nc_vid_sp_i_rbas = ncdf_vardef(nc_sp_sub_i, 'runoff_basin', [nc_sp_dim_g_s, nc_sp_dim_s_i], /float)
+ncdf_attput, nc_sp_sub_i, nc_vid_sp_i_rbas, 'long_name', 'Runoff from the initial glacierized area' & ncdf_attput, nc_sp_sub_i, nc_vid_sp_i_rbas, 'units', 'kg'
+ncdf_attput, nc_sp_sub_i, nc_vid_sp_i_rbas, 'cell_methods', 'time: sum' & ncdf_attput, nc_sp_sub_i, nc_vid_sp_i_rbas, '_FillValue', nc_fv
 ncdf_control, nc_sp_sub_i, /endef
 ncdf_varput, nc_sp_sub_i, nc_vid_sp_i_t_sub, nc_time_sub_past
 
@@ -543,6 +565,13 @@ ncdf_attput, nc_sf_ann_i, nc_vid_sf_i_mbsl, 'cell_methods', 'time: point' & ncdf
 nc_vid_sf_i_fabl = ncdf_vardef(nc_sf_ann_i, 'frontal_abl', [nc_sf_dim_g, nc_sf_dim_t_i], /float)
 ncdf_attput, nc_sf_ann_i, nc_vid_sf_i_fabl, 'long_name', 'Total annual frontal ablation' & ncdf_attput, nc_sf_ann_i, nc_vid_sf_i_fabl, 'units', 'kg'
 ncdf_attput, nc_sf_ann_i, nc_vid_sf_i_fabl, 'cell_methods', 'time: sum' & ncdf_attput, nc_sf_ann_i, nc_vid_sf_i_fabl, '_FillValue', nc_fv
+; --- GlacierMIP4 Table 5 optional individual-glacier variables ---
+nc_vid_sf_i_ela = ncdf_vardef(nc_sf_ann_i, 'ELA', [nc_sf_dim_g, nc_sf_dim_t_i], /float)
+ncdf_attput, nc_sf_ann_i, nc_vid_sf_i_ela, 'long_name', 'Altitude of the annual equilibrium line' & ncdf_attput, nc_sf_ann_i, nc_vid_sf_i_ela, 'units', 'm'
+ncdf_attput, nc_sf_ann_i, nc_vid_sf_i_ela, 'cell_methods', 'time: maximum' & ncdf_attput, nc_sf_ann_i, nc_vid_sf_i_ela, '_FillValue', nc_fv
+nc_vid_sf_i_aar = ncdf_vardef(nc_sf_ann_i, 'AAR', [nc_sf_dim_g, nc_sf_dim_t_i], /float)
+ncdf_attput, nc_sf_ann_i, nc_vid_sf_i_aar, 'long_name', 'Annual Accumulation Area Ratio' & ncdf_attput, nc_sf_ann_i, nc_vid_sf_i_aar, 'units', '%'
+ncdf_attput, nc_sf_ann_i, nc_vid_sf_i_aar, 'cell_methods', 'time: maximum' & ncdf_attput, nc_sf_ann_i, nc_vid_sf_i_aar, '_FillValue', nc_fv
 ncdf_control, nc_sf_ann_i, /endef
 ncdf_varput, nc_sf_ann_i, nc_vid_sf_i_t_ann, nc_time_ann_fut
 
@@ -565,6 +594,10 @@ ncdf_attput, nc_sf_sub_i, nc_vid_sf_i_t_sub, 'calendar', 'standard' & ncdf_attpu
 nc_vid_sf_i_run = ncdf_vardef(nc_sf_sub_i, 'runoff_glac', [nc_sf_dim_g_s, nc_sf_dim_s_i], /float)
 ncdf_attput, nc_sf_sub_i, nc_vid_sf_i_run, 'long_name', 'Glacier runoff from glacierized area'
 ncdf_attput, nc_sf_sub_i, nc_vid_sf_i_run, 'units', 'kg' & ncdf_attput, nc_sf_sub_i, nc_vid_sf_i_run, 'cell_methods', 'time: sum' & ncdf_attput, nc_sf_sub_i, nc_vid_sf_i_run, '_FillValue', nc_fv
+; --- GlacierMIP4 Table 5 optional individual-glacier variable ---
+nc_vid_sf_i_rbas = ncdf_vardef(nc_sf_sub_i, 'runoff_basin', [nc_sf_dim_g_s, nc_sf_dim_s_i], /float)
+ncdf_attput, nc_sf_sub_i, nc_vid_sf_i_rbas, 'long_name', 'Runoff from the initial glacierized area' & ncdf_attput, nc_sf_sub_i, nc_vid_sf_i_rbas, 'units', 'kg'
+ncdf_attput, nc_sf_sub_i, nc_vid_sf_i_rbas, 'cell_methods', 'time: sum' & ncdf_attput, nc_sf_sub_i, nc_vid_sf_i_rbas, '_FillValue', nc_fv
 ncdf_control, nc_sf_sub_i, /endef
 ncdf_varput, nc_sf_sub_i, nc_vid_sf_i_t_sub, nc_time_sub_fut
 
