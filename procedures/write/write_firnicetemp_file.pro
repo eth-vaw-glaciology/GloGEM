@@ -17,3 +17,8 @@ endif
 if firnice_write[1] eq 'y' then begin
    for i=0,n_elements(firnice_profile)-1 do close,51+i
 endif
+
+if enable_advection eq 'y' and advection_write eq 'y' then begin
+   for i=0,n_elements(elev_adv_horiz[0,*])-1 do printf,70,elev0[i],elev_adv_horiz[*,i],fo='(i6,'+strcompress(string(years,fo='(i3)'),/remove_all)+'f8.3)' &  close,70
+   for i=0,n_elements(elev_adv_vert[0,*])-1  do printf,71,elev0[i],elev_adv_vert[*,i], fo='(i6,'+strcompress(string(years,fo='(i3)'),/remove_all)+'f8.3)' &  close,71
+endif

@@ -32,7 +32,6 @@ grav = 9.81   ; acceleration due to gravity [m/s^2]  (not 'g' — that is the gl
 rho_ice = 917 ; density of ice [kg/m^3]
 A = 2.4e-24   ; ice flow law parameter [Pa^-3 s^-1]
 n = 3         ; Glen's flow law exponent
-THRESHOLD_ICE_VELOCITY_GRADIENT = 1e-4  ; Threshold for ice velocity gradient [year^-1]
 
 ; u[i] = depth-averaged speed of the i-th glacierized band (compact indexing, m/year)
 u     = FLTARR(N_ELEMENTS(gl))
@@ -48,33 +47,6 @@ ENDIF ELSE BEGIN
       u[i] = (2 * A / (n + 2)) * tau_d^n * thick[ii_perm[i]] * 365.25 * 24 * 3600
    ENDFOR
 ENDELSE
-
-;*********************
-; alternative permeability model based on velocity gradient
-du = FLTARR(N_ELEMENTS(u))  ; Initialize the gradient array with the same number of elements as u
-
-; Compute the gradient of the velocity array using finite differences
-du[0] = (u[1] - u[0])  ; Forward difference for the first element
-FOR i = 1, N_ELEMENTS(u) - 2 DO BEGIN
-    du[i] = (u[i+1] - u[i-1]) / 2.0  ; Central difference for the middle elements
-ENDFOR
-du[N_ELEMENTS(u) - 1] = (u[N_ELEMENTS(u) - 1] - u[N_ELEMENTS(u) - 2])  ; Backward difference for the last element
-; PRINT, 'Ice velocity gradient (du) in m/year/m: ', du
-
-; Normalize the velocity gradient to a range of 0 to 1
-min_du = MIN(du)
-max_du = MAX(du)
-normalized_du = (du - min_du) / (max_du - min_du)
-
-; Apply the threshold for ice velocity gradient
-permeability = normalized_du
-indices = WHERE(normalized_du lt THRESHOLD_ICE_VELOCITY_GRADIENT, count)
-
-; Divide by 2 to allow only 50% permeability
-permeability = permeability / 2
-
-;*********************
-
 
 ii=where(gl ne noval,ci)
 for i=0,ci-1 do begin
@@ -141,11 +113,11 @@ tt=min([ind+1,total(fit_layers)])  ; either run to bedrock, or to max of layers
          delta_elev = MAX([delta_elev, 5.0D])            ; guard against identical elevations
          min_slope_rad = 0.01D * !DTOR  ; minimum slope to avoid division by zero
          local_slope_rad = MAX([slope[ii_perm[i]] * !DTOR, min_slope_rad])
-         dx = delta_elev / TAN(local_slope_rad)
-         dx = dx < 5000.0D  ; cap at 5 km
+         dx_horiz = delta_elev / TAN(local_slope_rad)
+         dx_horiz = dx_horiz < 5000.0D  ; cap at 5 km
 
          ; Calculate advection coefficient (Courant number)
-         courant = current_vel * dt_seconds / (dx * 365.25D * 24.0D * 3600.0D)
+         courant = current_vel * dt_seconds / (dx_horiz * 365.25D * 24.0D * 3600.0D)
 
          ; Ensure stability by limiting Courant number
          courant = courant < 0.8
@@ -292,14 +264,8 @@ for j=1,ck do begin ; loop through all SNOW layers from top, and update temperat
    endelse
 endfor
 
-; reduce liquid water input through glacier ice using different permeability models
-if ice_permeability eq 'y' then begin
-   f = permeability[ii[i]] ; velocity gradient based permeability (Janosch model)
-   fit_water=fit_water*f   ; reducing amount of water entering glacier ice
-   ; f=(slope(ii(i))^2*fact_permeability(0))*(thick(ii(i))*fact_permeability(1)) ; slope based permeability (Matthias model)
-endif else begin
-   fit_water=fit_water*0 ; no water entering glacier ice
-endelse
+; ice is assumed impermeable: no liquid water enters glacier ice
+fit_water=fit_water*0
 
 for j=ck+1,tt-2 do begin ; loop through all ICE layers from top, and update temperatures
    c=(-1)*(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*cap_fit[j]*fit_dz[0,j]/Lh_rf ; cold content in layer below pressure melting point

@@ -105,6 +105,16 @@ endif else begin
 endelse
 ii_ice_mb = where(thick_dx gt 0, c_ice_mb)
 if c_ice_mb gt 0 then bal_dx[ii_ice_mb] = bal_we_interp[ii_ice_mb] / 0.917d0
+; Apply NEGATIVE MB to ice-free cells as well — matches MATLAB (massbal.m zeroes
+; only positive MB in ice-free cells, not negative).  Without this, SIA-advanced
+; terminus cells see zero ablation for a full year and survive; with it they are
+; immediately counter-acted by the local (strongly negative) MB and cannot persist.
+ii_free_mb = where(thick_dx le 0, c_free_mb)
+if c_free_mb gt 0 then begin
+  ii_neg_in_free = where(bal_we_interp[ii_free_mb] lt 0, c_neg)
+  if c_neg gt 0 then $
+    bal_dx[ii_free_mb[ii_neg_in_free]] = bal_we_interp[ii_free_mb[ii_neg_in_free]] / 0.917d0
+endif
 
 ; ========== STEP 2b: STORE BEGINNING-OF-YEAR STATE (matching dhdt timing) ========== ;
 ; finalize_annual_massbalance.pro stores volumes[ye] BEFORE retreat.

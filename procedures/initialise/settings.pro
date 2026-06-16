@@ -155,7 +155,6 @@ firnice_profile = [0.2, 0.65, 0.95] ; elevation ratios (or masl if >1) for profi
 enable_advection = 'n'
 advection_write = 'n'
 firn_permeability = 'y'
-ice_permeability = 'n'
 
 ; --- geometry evolution model
 ; two options: (1) dhdt-parameterisation (Huss et al., 2010) via glacier_retreat='y',
