@@ -3,5 +3,4 @@ logs/
 config.pro
 test/outputs/
 test/config_active.pro
-# track the output-check notebooks, but not the sample run data dropped in for testing
-output_checks/CentralEurope/
+output_checks/
