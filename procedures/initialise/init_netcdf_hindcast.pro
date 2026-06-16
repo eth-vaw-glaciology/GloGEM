@@ -58,7 +58,7 @@ endif else begin
     nc_base_tag  = 'rgi' + nc_rgi_str + '_' + nc_catch
     nc_indiv_tag = 'rgi' + nc_rgi_str + '_' + nc_catch + 'indiv'
 endelse
-nc_rea = strtrim(reanalysis, 2)
+nc_rea = strupcase(strtrim(reanalysis, 2))   ; uppercase for GlacierMIP4 naming (e.g. ERA5)
 
 ; --- time setup ---
 nc_years  = years

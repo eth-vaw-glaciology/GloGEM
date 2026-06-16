@@ -75,8 +75,9 @@ endif else begin
     nc_base_tag  = 'rgi' + nc_rgi_str + '_' + nc_catch
     nc_indiv_tag = 'rgi' + nc_rgi_str + '_' + nc_catch + 'indiv'
 endelse
-nc_rea     = strtrim(reanalysis, 2)
-nc_gcm_tag = strtrim(GCM_model[gcms], 2) + '_' + strtrim(GCM_rcp[rcps], 2)
+nc_rea     = strupcase(strtrim(reanalysis, 2))   ; uppercase for GlacierMIP4 naming (e.g. ERA5)
+; GCM model uppercase, SSP/RCP left lowercase (matches GlacierMIP4 example: MRI-ESM_ssp126)
+nc_gcm_tag = strupcase(strtrim(GCM_model[gcms], 2)) + '_' + strtrim(GCM_rcp[rcps], 2)
 
 ; --- full-period time setup ---
 nc_years  = years
@@ -117,8 +118,8 @@ nc_fn_sub_i = nc_outdir + 'GloGEM_' + nc_indiv_tag + '_' + nc_gcm_tag + '_' + nc
 
 ; --- global attributes helper values ---
 nc_institution = 'ETH, VAW'
-nc_gcm_str = strtrim(GCM_model[gcms], 2)
-nc_ssp_str = strtrim(GCM_rcp[rcps],   2)
+nc_gcm_str = strupcase(strtrim(GCM_model[gcms], 2))   ; uppercase GCM in global attributes
+nc_ssp_str = strtrim(GCM_rcp[rcps],   2)              ; SSP/RCP left lowercase
 nc_dat_str = strtrim(GCM_data,         2)
 
 ; ================================================================
