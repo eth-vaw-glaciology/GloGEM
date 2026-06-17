@@ -37,6 +37,11 @@
 compile_opt idl2
 
 ; ================================================================
+; RGI ID STRING  (GlacierMIP4 format, e.g. RGI70-11.02596)
+; ================================================================
+nc_rgiid = 'RGI' + strtrim(RGIversion, 2) + '0-' + nc_rgi_str + '.' + strtrim(id[gg[g]], 2)
+
+; ================================================================
 ; UNIT CONVERSIONS
 ; ================================================================
 
@@ -79,7 +84,7 @@ endelse
 
 ; GlacierMIP4 Table 5 optional individual-glacier variables
 gl_ela  = float(ela)                          ; annual ELA [m a.s.l.]
-gl_aar  = float(aar)                          ; annual AAR [%] (percent scale)
+gl_aar  = float(aar) / 100.                   ; annual AAR [fraction 0-1] (aar stored as percent)
 gl_rbas = float(discharge * area_cat * 1e9)   ; basin runoff over initial area -> kg
 
 ; Replace snoval with NaN
@@ -95,12 +100,12 @@ ii = where(gl_run  lt nc_sv, ci) & if ci gt 0 then gl_run[ii]  = nc_fv
 ii = where(gl_prec lt nc_sv, ci) & if ci gt 0 then gl_prec[ii] = nc_fv
 ii = where(gl_temp lt nc_sv, ci) & if ci gt 0 then gl_temp[ii] = nc_fv
 ii = where(gl_ela  lt nc_sv, ci) & if ci gt 0 then gl_ela[ii]  = nc_fv
-ii = where(gl_aar  lt nc_sv, ci) & if ci gt 0 then gl_aar[ii]  = nc_fv
+ii = where(gl_aar  lt nc_sv/100., ci) & if ci gt 0 then gl_aar[ii]  = nc_fv   ; threshold scaled (AAR now fraction)
 
 ; ================================================================
 ; WRITE INDIVIDUAL FILES (full period)
 ; ================================================================
-ncdf_varput, nc_ann_i, nc_vid_i_rgid,  id[gg[g]],  offset=[nc_g]
+ncdf_varput, nc_ann_i, nc_vid_i_rgid,  nc_rgiid,   offset=[nc_g]
 ncdf_varput, nc_ann_i, nc_vid_i_area,  gl_area,    offset=[nc_g, 0], count=[1, nc_years]
 ncdf_varput, nc_ann_i, nc_vid_i_mass,  gl_mass,    offset=[nc_g, 0], count=[1, nc_years]
 ncdf_varput, nc_ann_i, nc_vid_i_mbsl,  gl_mbsl,    offset=[nc_g, 0], count=[1, nc_years]
@@ -108,7 +113,7 @@ ncdf_varput, nc_ann_i, nc_vid_i_fabl,  gl_fabl,    offset=[nc_g, 0], count=[1, n
 ncdf_varput, nc_ann_i, nc_vid_i_ela,   gl_ela,     offset=[nc_g, 0], count=[1, nc_years]
 ncdf_varput, nc_ann_i, nc_vid_i_aar,   gl_aar,     offset=[nc_g, 0], count=[1, nc_years]
 
-ncdf_varput, nc_sub_i, nc_vid_i_rgid_s, id[gg[g]], offset=[nc_g]
+ncdf_varput, nc_sub_i, nc_vid_i_rgid_s, nc_rgiid,  offset=[nc_g]
 ncdf_varput, nc_sub_i, nc_vid_i_run,    gl_run,    offset=[nc_g, 0], count=[1, nc_n_sub]
 ncdf_varput, nc_sub_i, nc_vid_i_rbas,   gl_rbas,   offset=[nc_g, 0], count=[1, nc_n_sub]
 
@@ -161,14 +166,14 @@ gl_ela_p  = gl_ela[0:nc_split_idx-1]
 gl_aar_p  = gl_aar[0:nc_split_idx-1]
 gl_rbas_p = gl_rbas[0:nc_split_idx_sub-1]
 
-ncdf_varput, nc_sp_ann_i, nc_vid_sp_i_rgid,  id[gg[g]], offset=[nc_g]
+ncdf_varput, nc_sp_ann_i, nc_vid_sp_i_rgid,  nc_rgiid,  offset=[nc_g]
 ncdf_varput, nc_sp_ann_i, nc_vid_sp_i_area,  gl_area_p, offset=[nc_g, 0], count=[1, nc_years_past]
 ncdf_varput, nc_sp_ann_i, nc_vid_sp_i_mass,  gl_mass_p, offset=[nc_g, 0], count=[1, nc_years_past]
 ncdf_varput, nc_sp_ann_i, nc_vid_sp_i_mbsl,  gl_mbsl_p, offset=[nc_g, 0], count=[1, nc_years_past]
 ncdf_varput, nc_sp_ann_i, nc_vid_sp_i_fabl,  gl_fabl_p, offset=[nc_g, 0], count=[1, nc_years_past]
 ncdf_varput, nc_sp_ann_i, nc_vid_sp_i_ela,   gl_ela_p,  offset=[nc_g, 0], count=[1, nc_years_past]
 ncdf_varput, nc_sp_ann_i, nc_vid_sp_i_aar,   gl_aar_p,  offset=[nc_g, 0], count=[1, nc_years_past]
-ncdf_varput, nc_sp_sub_i, nc_vid_sp_i_rgid_s, id[gg[g]], offset=[nc_g]
+ncdf_varput, nc_sp_sub_i, nc_vid_sp_i_rgid_s, nc_rgiid,  offset=[nc_g]
 ncdf_varput, nc_sp_sub_i, nc_vid_sp_i_run,    gl_run_p,  offset=[nc_g, 0], count=[1, nc_n_sub_past]
 ncdf_varput, nc_sp_sub_i, nc_vid_sp_i_rbas,   gl_rbas_p, offset=[nc_g, 0], count=[1, nc_n_sub_past]
 
@@ -208,14 +213,14 @@ gl_ela_f  = gl_ela[nc_split_idx:*]
 gl_aar_f  = gl_aar[nc_split_idx:*]
 gl_rbas_f = gl_rbas[nc_split_idx_sub:*]
 
-ncdf_varput, nc_sf_ann_i, nc_vid_sf_i_rgid,  id[gg[g]], offset=[nc_g]
+ncdf_varput, nc_sf_ann_i, nc_vid_sf_i_rgid,  nc_rgiid,  offset=[nc_g]
 ncdf_varput, nc_sf_ann_i, nc_vid_sf_i_area,  gl_area_f, offset=[nc_g, 0], count=[1, nc_years_fut]
 ncdf_varput, nc_sf_ann_i, nc_vid_sf_i_mass,  gl_mass_f, offset=[nc_g, 0], count=[1, nc_years_fut]
 ncdf_varput, nc_sf_ann_i, nc_vid_sf_i_mbsl,  gl_mbsl_f, offset=[nc_g, 0], count=[1, nc_years_fut]
 ncdf_varput, nc_sf_ann_i, nc_vid_sf_i_fabl,  gl_fabl_f, offset=[nc_g, 0], count=[1, nc_years_fut]
 ncdf_varput, nc_sf_ann_i, nc_vid_sf_i_ela,   gl_ela_f,  offset=[nc_g, 0], count=[1, nc_years_fut]
 ncdf_varput, nc_sf_ann_i, nc_vid_sf_i_aar,   gl_aar_f,  offset=[nc_g, 0], count=[1, nc_years_fut]
-ncdf_varput, nc_sf_sub_i, nc_vid_sf_i_rgid_s, id[gg[g]], offset=[nc_g]
+ncdf_varput, nc_sf_sub_i, nc_vid_sf_i_rgid_s, nc_rgiid,  offset=[nc_g]
 ncdf_varput, nc_sf_sub_i, nc_vid_sf_i_run,    gl_run_f,  offset=[nc_g, 0], count=[1, nc_n_sub_fut]
 ncdf_varput, nc_sf_sub_i, nc_vid_sf_i_rbas,   gl_rbas_f, offset=[nc_g, 0], count=[1, nc_n_sub_fut]
 

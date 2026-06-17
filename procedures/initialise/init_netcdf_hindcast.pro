@@ -242,7 +242,7 @@ ncdf_attput, nc_ann_i, nc_vid_i_ela, 'cell_methods', 'time: maximum'
 ncdf_attput, nc_ann_i, nc_vid_i_ela, '_FillValue', nc_fv
 nc_vid_i_aar = ncdf_vardef(nc_ann_i, 'AAR', [nc_dim_g, nc_dim_t_i], /float)
 ncdf_attput, nc_ann_i, nc_vid_i_aar, 'long_name', 'Annual Accumulation Area Ratio'
-ncdf_attput, nc_ann_i, nc_vid_i_aar, 'units', '%'
+ncdf_attput, nc_ann_i, nc_vid_i_aar, 'units', '1'
 ncdf_attput, nc_ann_i, nc_vid_i_aar, 'cell_methods', 'time: maximum'
 ncdf_attput, nc_ann_i, nc_vid_i_aar, '_FillValue', nc_fv
 ncdf_control, nc_ann_i, /endef

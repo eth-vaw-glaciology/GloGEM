@@ -233,7 +233,7 @@ nc_vid_i_ela = ncdf_vardef(nc_ann_i, 'ELA', [nc_dim_g, nc_dim_t_i], /float)
 ncdf_attput, nc_ann_i, nc_vid_i_ela, 'long_name', 'Altitude of the annual equilibrium line' & ncdf_attput, nc_ann_i, nc_vid_i_ela, 'units', 'm'
 ncdf_attput, nc_ann_i, nc_vid_i_ela, 'cell_methods', 'time: maximum' & ncdf_attput, nc_ann_i, nc_vid_i_ela, '_FillValue', nc_fv
 nc_vid_i_aar = ncdf_vardef(nc_ann_i, 'AAR', [nc_dim_g, nc_dim_t_i], /float)
-ncdf_attput, nc_ann_i, nc_vid_i_aar, 'long_name', 'Annual Accumulation Area Ratio' & ncdf_attput, nc_ann_i, nc_vid_i_aar, 'units', '%'
+ncdf_attput, nc_ann_i, nc_vid_i_aar, 'long_name', 'Annual Accumulation Area Ratio' & ncdf_attput, nc_ann_i, nc_vid_i_aar, 'units', '1'
 ncdf_attput, nc_ann_i, nc_vid_i_aar, 'cell_methods', 'time: maximum' & ncdf_attput, nc_ann_i, nc_vid_i_aar, '_FillValue', nc_fv
 ncdf_control, nc_ann_i, /endef
 ncdf_varput, nc_ann_i, nc_vid_i_t_ann, nc_time_ann
@@ -447,7 +447,7 @@ nc_vid_sp_i_ela = ncdf_vardef(nc_sp_ann_i, 'ELA', [nc_sp_dim_g, nc_sp_dim_t_i], 
 ncdf_attput, nc_sp_ann_i, nc_vid_sp_i_ela, 'long_name', 'Altitude of the annual equilibrium line' & ncdf_attput, nc_sp_ann_i, nc_vid_sp_i_ela, 'units', 'm'
 ncdf_attput, nc_sp_ann_i, nc_vid_sp_i_ela, 'cell_methods', 'time: maximum' & ncdf_attput, nc_sp_ann_i, nc_vid_sp_i_ela, '_FillValue', nc_fv
 nc_vid_sp_i_aar = ncdf_vardef(nc_sp_ann_i, 'AAR', [nc_sp_dim_g, nc_sp_dim_t_i], /float)
-ncdf_attput, nc_sp_ann_i, nc_vid_sp_i_aar, 'long_name', 'Annual Accumulation Area Ratio' & ncdf_attput, nc_sp_ann_i, nc_vid_sp_i_aar, 'units', '%'
+ncdf_attput, nc_sp_ann_i, nc_vid_sp_i_aar, 'long_name', 'Annual Accumulation Area Ratio' & ncdf_attput, nc_sp_ann_i, nc_vid_sp_i_aar, 'units', '1'
 ncdf_attput, nc_sp_ann_i, nc_vid_sp_i_aar, 'cell_methods', 'time: maximum' & ncdf_attput, nc_sp_ann_i, nc_vid_sp_i_aar, '_FillValue', nc_fv
 ncdf_control, nc_sp_ann_i, /endef
 ncdf_varput, nc_sp_ann_i, nc_vid_sp_i_t_ann, nc_time_ann_past
@@ -570,7 +570,7 @@ nc_vid_sf_i_ela = ncdf_vardef(nc_sf_ann_i, 'ELA', [nc_sf_dim_g, nc_sf_dim_t_i], 
 ncdf_attput, nc_sf_ann_i, nc_vid_sf_i_ela, 'long_name', 'Altitude of the annual equilibrium line' & ncdf_attput, nc_sf_ann_i, nc_vid_sf_i_ela, 'units', 'm'
 ncdf_attput, nc_sf_ann_i, nc_vid_sf_i_ela, 'cell_methods', 'time: maximum' & ncdf_attput, nc_sf_ann_i, nc_vid_sf_i_ela, '_FillValue', nc_fv
 nc_vid_sf_i_aar = ncdf_vardef(nc_sf_ann_i, 'AAR', [nc_sf_dim_g, nc_sf_dim_t_i], /float)
-ncdf_attput, nc_sf_ann_i, nc_vid_sf_i_aar, 'long_name', 'Annual Accumulation Area Ratio' & ncdf_attput, nc_sf_ann_i, nc_vid_sf_i_aar, 'units', '%'
+ncdf_attput, nc_sf_ann_i, nc_vid_sf_i_aar, 'long_name', 'Annual Accumulation Area Ratio' & ncdf_attput, nc_sf_ann_i, nc_vid_sf_i_aar, 'units', '1'
 ncdf_attput, nc_sf_ann_i, nc_vid_sf_i_aar, 'cell_methods', 'time: maximum' & ncdf_attput, nc_sf_ann_i, nc_vid_sf_i_aar, '_FillValue', nc_fv
 ncdf_control, nc_sf_ann_i, /endef
 ncdf_varput, nc_sf_ann_i, nc_vid_sf_i_t_ann, nc_time_ann_fut
