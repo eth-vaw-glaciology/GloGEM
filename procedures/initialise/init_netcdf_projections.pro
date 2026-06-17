@@ -108,6 +108,10 @@ endif else begin
             nc_time_sub[yr*365+doy] = long(julday(1,1,nc_tran[0]+yr) - nc_ref_jd + doy)
 endelse
 
+; Label for the time_resolution global attribute (filenames still use nc_sub_lbl)
+nc_tres_lbl = nc_sub_lbl
+if nc_aggregate then nc_tres_lbl = 'daily agg. to monthly'
+
 nc_time_ann = lonarr(nc_years)
 for yr = 0L, nc_years-1L do $
     nc_time_ann[yr] = long(julday(1, 1, nc_tran[0]+yr) - nc_ref_jd)
@@ -177,7 +181,7 @@ ncdf_attput, nc_sub, /global, 'forcing',        nc_gcm_tag
 ncdf_attput, nc_sub, /global, 'gcm',            nc_gcm_str
 ncdf_attput, nc_sub, /global, 'scenario',       nc_ssp_str
 ncdf_attput, nc_sub, /global, 'gcm_data',       nc_dat_str
-ncdf_attput, nc_sub, /global, 'time_resolution', nc_sub_lbl
+ncdf_attput, nc_sub, /global, 'time_resolution', nc_tres_lbl
 ncdf_attput, nc_sub, /global, 'period',         nc_period
 ncdf_attput, nc_sub, /global, 'creation_date',  systime()
 nc_dim_s  = ncdf_dimdef(nc_sub, 'time', nc_n_sub)
@@ -249,7 +253,7 @@ ncdf_attput, nc_sub_i, /global, 'institution',    nc_institution
 ncdf_attput, nc_sub_i, /global, 'rgi_region',     nc_rgi_str & ncdf_attput, nc_sub_i, /global, 'catchment', strtrim(catchment_selection,2)
 ncdf_attput, nc_sub_i, /global, 'forcing',        nc_gcm_tag & ncdf_attput, nc_sub_i, /global, 'gcm', nc_gcm_str
 ncdf_attput, nc_sub_i, /global, 'scenario',       nc_ssp_str & ncdf_attput, nc_sub_i, /global, 'gcm_data', nc_dat_str
-ncdf_attput, nc_sub_i, /global, 'time_resolution', nc_sub_lbl
+ncdf_attput, nc_sub_i, /global, 'time_resolution', nc_tres_lbl
 ncdf_attput, nc_sub_i, /global, 'period',         nc_period  & ncdf_attput, nc_sub_i, /global, 'creation_date', systime()
 nc_dim_g_s = ncdf_dimdef(nc_sub_i, 'glacier', nc_total_g)
 nc_dim_s_i = ncdf_dimdef(nc_sub_i, 'time',    nc_n_sub)
@@ -409,7 +413,7 @@ nc_sp_sub = ncdf_create(nc_sp_fn_sub, /clobber, /netcdf4)
 ncdf_attput, nc_sp_sub, /global, 'Conventions', 'CF-1.8' & ncdf_attput, nc_sp_sub, /global, 'model', 'GloGEM'
 ncdf_attput, nc_sp_sub, /global, 'institution', nc_institution
 ncdf_attput, nc_sp_sub, /global, 'rgi_region',  nc_rgi_str & ncdf_attput, nc_sp_sub, /global, 'catchment', strtrim(catchment_selection,2)
-ncdf_attput, nc_sp_sub, /global, 'forcing',     nc_rea     & ncdf_attput, nc_sp_sub, /global, 'time_resolution', nc_sub_lbl
+ncdf_attput, nc_sp_sub, /global, 'forcing',     nc_rea     & ncdf_attput, nc_sp_sub, /global, 'time_resolution', nc_tres_lbl
 ncdf_attput, nc_sp_sub, /global, 'period',      nc_period_past & ncdf_attput, nc_sp_sub, /global, 'split', 'past_portion'
 ncdf_attput, nc_sp_sub, /global, 'creation_date', systime()
 nc_sp_dim_s   = ncdf_dimdef(nc_sp_sub, 'time', nc_n_sub_past)
@@ -476,7 +480,7 @@ nc_sp_sub_i = ncdf_create(nc_sp_fn_sub_i, /clobber, /netcdf4)
 ncdf_attput, nc_sp_sub_i, /global, 'Conventions', 'CF-1.8' & ncdf_attput, nc_sp_sub_i, /global, 'model', 'GloGEM'
 ncdf_attput, nc_sp_sub_i, /global, 'institution', nc_institution
 ncdf_attput, nc_sp_sub_i, /global, 'rgi_region',  nc_rgi_str & ncdf_attput, nc_sp_sub_i, /global, 'catchment', strtrim(catchment_selection,2)
-ncdf_attput, nc_sp_sub_i, /global, 'forcing',     nc_rea & ncdf_attput, nc_sp_sub_i, /global, 'time_resolution', nc_sub_lbl
+ncdf_attput, nc_sp_sub_i, /global, 'forcing',     nc_rea & ncdf_attput, nc_sp_sub_i, /global, 'time_resolution', nc_tres_lbl
 ncdf_attput, nc_sp_sub_i, /global, 'period',      nc_period_past & ncdf_attput, nc_sp_sub_i, /global, 'split', 'past_portion'
 ncdf_attput, nc_sp_sub_i, /global, 'creation_date', systime()
 nc_sp_dim_g_s = ncdf_dimdef(nc_sp_sub_i, 'glacier', nc_total_g)
@@ -546,7 +550,7 @@ ncdf_attput, nc_sf_sub, /global, 'institution', nc_institution
 ncdf_attput, nc_sf_sub, /global, 'rgi_region',  nc_rgi_str & ncdf_attput, nc_sf_sub, /global, 'catchment', strtrim(catchment_selection,2)
 ncdf_attput, nc_sf_sub, /global, 'forcing',     nc_gcm_tag & ncdf_attput, nc_sf_sub, /global, 'gcm', nc_gcm_str
 ncdf_attput, nc_sf_sub, /global, 'scenario',    nc_ssp_str & ncdf_attput, nc_sf_sub, /global, 'gcm_data', nc_dat_str
-ncdf_attput, nc_sf_sub, /global, 'time_resolution', nc_sub_lbl
+ncdf_attput, nc_sf_sub, /global, 'time_resolution', nc_tres_lbl
 ncdf_attput, nc_sf_sub, /global, 'period',      nc_period_fut & ncdf_attput, nc_sf_sub, /global, 'split', 'future_portion'
 ncdf_attput, nc_sf_sub, /global, 'creation_date', systime()
 nc_sf_dim_s   = ncdf_dimdef(nc_sf_sub, 'time', nc_n_sub_fut)
@@ -617,7 +621,7 @@ ncdf_attput, nc_sf_sub_i, /global, 'institution', nc_institution
 ncdf_attput, nc_sf_sub_i, /global, 'rgi_region',  nc_rgi_str & ncdf_attput, nc_sf_sub_i, /global, 'catchment', strtrim(catchment_selection,2)
 ncdf_attput, nc_sf_sub_i, /global, 'forcing',     nc_gcm_tag & ncdf_attput, nc_sf_sub_i, /global, 'gcm', nc_gcm_str
 ncdf_attput, nc_sf_sub_i, /global, 'scenario',    nc_ssp_str & ncdf_attput, nc_sf_sub_i, /global, 'gcm_data', nc_dat_str
-ncdf_attput, nc_sf_sub_i, /global, 'time_resolution', nc_sub_lbl
+ncdf_attput, nc_sf_sub_i, /global, 'time_resolution', nc_tres_lbl
 ncdf_attput, nc_sf_sub_i, /global, 'period',      nc_period_fut & ncdf_attput, nc_sf_sub_i, /global, 'split', 'future_portion'
 ncdf_attput, nc_sf_sub_i, /global, 'creation_date', systime()
 nc_sf_dim_g_s = ncdf_dimdef(nc_sf_sub_i, 'glacier', nc_total_g)
