@@ -261,6 +261,22 @@ ncdf_attput, nc_sub_i, nc_vid_i_run, 'units', 'kg' & ncdf_attput, nc_sub_i, nc_v
 nc_vid_i_rbas = ncdf_vardef(nc_sub_i, 'runoff_basin', [nc_dim_g_s, nc_dim_s_i], /float)
 ncdf_attput, nc_sub_i, nc_vid_i_rbas, 'long_name', 'Runoff from the initial glacierized area' & ncdf_attput, nc_sub_i, nc_vid_i_rbas, 'units', 'kg'
 ncdf_attput, nc_sub_i, nc_vid_i_rbas, 'cell_methods', 'time: sum' & ncdf_attput, nc_sub_i, nc_vid_i_rbas, '_FillValue', nc_fv
+; --- GlacierMIP4 Table 4 mandatory variables (per glacier) ---
+nc_vid_i_acc = ncdf_vardef(nc_sub_i, 'acc', [nc_dim_g_s, nc_dim_s_i], /float)
+ncdf_attput, nc_sub_i, nc_vid_i_acc, 'long_name', 'Total accumulation' & ncdf_attput, nc_sub_i, nc_vid_i_acc, 'units', 'kg'
+ncdf_attput, nc_sub_i, nc_vid_i_acc, 'cell_methods', 'time: sum' & ncdf_attput, nc_sub_i, nc_vid_i_acc, '_FillValue', nc_fv
+nc_vid_i_melt = ncdf_vardef(nc_sub_i, 'melt', [nc_dim_g_s, nc_dim_s_i], /float)
+ncdf_attput, nc_sub_i, nc_vid_i_melt, 'long_name', 'Total glacier melt (snow, ice, firn)' & ncdf_attput, nc_sub_i, nc_vid_i_melt, 'units', 'kg'
+ncdf_attput, nc_sub_i, nc_vid_i_melt, 'cell_methods', 'time: sum' & ncdf_attput, nc_sub_i, nc_vid_i_melt, '_FillValue', nc_fv
+nc_vid_i_refr = ncdf_vardef(nc_sub_i, 'refreeze', [nc_dim_g_s, nc_dim_s_i], /float)
+ncdf_attput, nc_sub_i, nc_vid_i_refr, 'long_name', 'Total refreezing' & ncdf_attput, nc_sub_i, nc_vid_i_refr, 'units', 'kg'
+ncdf_attput, nc_sub_i, nc_vid_i_refr, 'cell_methods', 'time: sum' & ncdf_attput, nc_sub_i, nc_vid_i_refr, '_FillValue', nc_fv
+nc_vid_i_prec = ncdf_vardef(nc_sub_i, 'precip', [nc_dim_g_s, nc_dim_s_i], /float)
+ncdf_attput, nc_sub_i, nc_vid_i_prec, 'long_name', 'Total precipitation over initial glacierized area' & ncdf_attput, nc_sub_i, nc_vid_i_prec, 'units', 'kg'
+ncdf_attput, nc_sub_i, nc_vid_i_prec, 'cell_methods', 'time: sum' & ncdf_attput, nc_sub_i, nc_vid_i_prec, '_FillValue', nc_fv
+nc_vid_i_temp = ncdf_vardef(nc_sub_i, 'temp', [nc_dim_g_s, nc_dim_s_i], /float)
+ncdf_attput, nc_sub_i, nc_vid_i_temp, 'long_name', 'Near-surface air temperature over initial glacierized area' & ncdf_attput, nc_sub_i, nc_vid_i_temp, 'units', 'K'
+ncdf_attput, nc_sub_i, nc_vid_i_temp, 'cell_methods', 'time: mean' & ncdf_attput, nc_sub_i, nc_vid_i_temp, '_FillValue', nc_fv
 ncdf_control, nc_sub_i, /endef
 ncdf_varput, nc_sub_i, nc_vid_i_t_sub, nc_time_sub
 
@@ -473,6 +489,22 @@ ncdf_attput, nc_sp_sub_i, nc_vid_sp_i_run, 'units', 'kg' & ncdf_attput, nc_sp_su
 nc_vid_sp_i_rbas = ncdf_vardef(nc_sp_sub_i, 'runoff_basin', [nc_sp_dim_g_s, nc_sp_dim_s_i], /float)
 ncdf_attput, nc_sp_sub_i, nc_vid_sp_i_rbas, 'long_name', 'Runoff from the initial glacierized area' & ncdf_attput, nc_sp_sub_i, nc_vid_sp_i_rbas, 'units', 'kg'
 ncdf_attput, nc_sp_sub_i, nc_vid_sp_i_rbas, 'cell_methods', 'time: sum' & ncdf_attput, nc_sp_sub_i, nc_vid_sp_i_rbas, '_FillValue', nc_fv
+; --- GlacierMIP4 Table 4 mandatory variables (per glacier) ---
+nc_vid_sp_i_acc = ncdf_vardef(nc_sp_sub_i, 'acc', [nc_sp_dim_g_s, nc_sp_dim_s_i], /float)
+ncdf_attput, nc_sp_sub_i, nc_vid_sp_i_acc, 'long_name', 'Total accumulation' & ncdf_attput, nc_sp_sub_i, nc_vid_sp_i_acc, 'units', 'kg'
+ncdf_attput, nc_sp_sub_i, nc_vid_sp_i_acc, 'cell_methods', 'time: sum' & ncdf_attput, nc_sp_sub_i, nc_vid_sp_i_acc, '_FillValue', nc_fv
+nc_vid_sp_i_melt = ncdf_vardef(nc_sp_sub_i, 'melt', [nc_sp_dim_g_s, nc_sp_dim_s_i], /float)
+ncdf_attput, nc_sp_sub_i, nc_vid_sp_i_melt, 'long_name', 'Total glacier melt (snow, ice, firn)' & ncdf_attput, nc_sp_sub_i, nc_vid_sp_i_melt, 'units', 'kg'
+ncdf_attput, nc_sp_sub_i, nc_vid_sp_i_melt, 'cell_methods', 'time: sum' & ncdf_attput, nc_sp_sub_i, nc_vid_sp_i_melt, '_FillValue', nc_fv
+nc_vid_sp_i_refr = ncdf_vardef(nc_sp_sub_i, 'refreeze', [nc_sp_dim_g_s, nc_sp_dim_s_i], /float)
+ncdf_attput, nc_sp_sub_i, nc_vid_sp_i_refr, 'long_name', 'Total refreezing' & ncdf_attput, nc_sp_sub_i, nc_vid_sp_i_refr, 'units', 'kg'
+ncdf_attput, nc_sp_sub_i, nc_vid_sp_i_refr, 'cell_methods', 'time: sum' & ncdf_attput, nc_sp_sub_i, nc_vid_sp_i_refr, '_FillValue', nc_fv
+nc_vid_sp_i_prec = ncdf_vardef(nc_sp_sub_i, 'precip', [nc_sp_dim_g_s, nc_sp_dim_s_i], /float)
+ncdf_attput, nc_sp_sub_i, nc_vid_sp_i_prec, 'long_name', 'Total precipitation over initial glacierized area' & ncdf_attput, nc_sp_sub_i, nc_vid_sp_i_prec, 'units', 'kg'
+ncdf_attput, nc_sp_sub_i, nc_vid_sp_i_prec, 'cell_methods', 'time: sum' & ncdf_attput, nc_sp_sub_i, nc_vid_sp_i_prec, '_FillValue', nc_fv
+nc_vid_sp_i_temp = ncdf_vardef(nc_sp_sub_i, 'temp', [nc_sp_dim_g_s, nc_sp_dim_s_i], /float)
+ncdf_attput, nc_sp_sub_i, nc_vid_sp_i_temp, 'long_name', 'Near-surface air temperature over initial glacierized area' & ncdf_attput, nc_sp_sub_i, nc_vid_sp_i_temp, 'units', 'K'
+ncdf_attput, nc_sp_sub_i, nc_vid_sp_i_temp, 'cell_methods', 'time: mean' & ncdf_attput, nc_sp_sub_i, nc_vid_sp_i_temp, '_FillValue', nc_fv
 ncdf_control, nc_sp_sub_i, /endef
 ncdf_varput, nc_sp_sub_i, nc_vid_sp_i_t_sub, nc_time_sub_past
 
@@ -598,6 +630,22 @@ ncdf_attput, nc_sf_sub_i, nc_vid_sf_i_run, 'units', 'kg' & ncdf_attput, nc_sf_su
 nc_vid_sf_i_rbas = ncdf_vardef(nc_sf_sub_i, 'runoff_basin', [nc_sf_dim_g_s, nc_sf_dim_s_i], /float)
 ncdf_attput, nc_sf_sub_i, nc_vid_sf_i_rbas, 'long_name', 'Runoff from the initial glacierized area' & ncdf_attput, nc_sf_sub_i, nc_vid_sf_i_rbas, 'units', 'kg'
 ncdf_attput, nc_sf_sub_i, nc_vid_sf_i_rbas, 'cell_methods', 'time: sum' & ncdf_attput, nc_sf_sub_i, nc_vid_sf_i_rbas, '_FillValue', nc_fv
+; --- GlacierMIP4 Table 4 mandatory variables (per glacier) ---
+nc_vid_sf_i_acc = ncdf_vardef(nc_sf_sub_i, 'acc', [nc_sf_dim_g_s, nc_sf_dim_s_i], /float)
+ncdf_attput, nc_sf_sub_i, nc_vid_sf_i_acc, 'long_name', 'Total accumulation' & ncdf_attput, nc_sf_sub_i, nc_vid_sf_i_acc, 'units', 'kg'
+ncdf_attput, nc_sf_sub_i, nc_vid_sf_i_acc, 'cell_methods', 'time: sum' & ncdf_attput, nc_sf_sub_i, nc_vid_sf_i_acc, '_FillValue', nc_fv
+nc_vid_sf_i_melt = ncdf_vardef(nc_sf_sub_i, 'melt', [nc_sf_dim_g_s, nc_sf_dim_s_i], /float)
+ncdf_attput, nc_sf_sub_i, nc_vid_sf_i_melt, 'long_name', 'Total glacier melt (snow, ice, firn)' & ncdf_attput, nc_sf_sub_i, nc_vid_sf_i_melt, 'units', 'kg'
+ncdf_attput, nc_sf_sub_i, nc_vid_sf_i_melt, 'cell_methods', 'time: sum' & ncdf_attput, nc_sf_sub_i, nc_vid_sf_i_melt, '_FillValue', nc_fv
+nc_vid_sf_i_refr = ncdf_vardef(nc_sf_sub_i, 'refreeze', [nc_sf_dim_g_s, nc_sf_dim_s_i], /float)
+ncdf_attput, nc_sf_sub_i, nc_vid_sf_i_refr, 'long_name', 'Total refreezing' & ncdf_attput, nc_sf_sub_i, nc_vid_sf_i_refr, 'units', 'kg'
+ncdf_attput, nc_sf_sub_i, nc_vid_sf_i_refr, 'cell_methods', 'time: sum' & ncdf_attput, nc_sf_sub_i, nc_vid_sf_i_refr, '_FillValue', nc_fv
+nc_vid_sf_i_prec = ncdf_vardef(nc_sf_sub_i, 'precip', [nc_sf_dim_g_s, nc_sf_dim_s_i], /float)
+ncdf_attput, nc_sf_sub_i, nc_vid_sf_i_prec, 'long_name', 'Total precipitation over initial glacierized area' & ncdf_attput, nc_sf_sub_i, nc_vid_sf_i_prec, 'units', 'kg'
+ncdf_attput, nc_sf_sub_i, nc_vid_sf_i_prec, 'cell_methods', 'time: sum' & ncdf_attput, nc_sf_sub_i, nc_vid_sf_i_prec, '_FillValue', nc_fv
+nc_vid_sf_i_temp = ncdf_vardef(nc_sf_sub_i, 'temp', [nc_sf_dim_g_s, nc_sf_dim_s_i], /float)
+ncdf_attput, nc_sf_sub_i, nc_vid_sf_i_temp, 'long_name', 'Near-surface air temperature over initial glacierized area' & ncdf_attput, nc_sf_sub_i, nc_vid_sf_i_temp, 'units', 'K'
+ncdf_attput, nc_sf_sub_i, nc_vid_sf_i_temp, 'cell_methods', 'time: mean' & ncdf_attput, nc_sf_sub_i, nc_vid_sf_i_temp, '_FillValue', nc_fv
 ncdf_control, nc_sf_sub_i, /endef
 ncdf_varput, nc_sf_sub_i, nc_vid_sf_i_t_sub, nc_time_sub_fut
 

@@ -116,6 +116,11 @@ ncdf_varput, nc_ann_i, nc_vid_i_aar,   gl_aar,     offset=[nc_g, 0], count=[1, n
 ncdf_varput, nc_sub_i, nc_vid_i_rgid_s, nc_rgiid,  offset=[nc_g]
 ncdf_varput, nc_sub_i, nc_vid_i_run,    gl_run,    offset=[nc_g, 0], count=[1, nc_n_sub]
 ncdf_varput, nc_sub_i, nc_vid_i_rbas,   gl_rbas,   offset=[nc_g, 0], count=[1, nc_n_sub]
+ncdf_varput, nc_sub_i, nc_vid_i_acc,    gl_acc,    offset=[nc_g, 0], count=[1, nc_n_sub]
+ncdf_varput, nc_sub_i, nc_vid_i_melt,   gl_melt,   offset=[nc_g, 0], count=[1, nc_n_sub]
+ncdf_varput, nc_sub_i, nc_vid_i_refr,   gl_refr,   offset=[nc_g, 0], count=[1, nc_n_sub]
+ncdf_varput, nc_sub_i, nc_vid_i_prec,   gl_prec,   offset=[nc_g, 0], count=[1, nc_n_sub]
+ncdf_varput, nc_sub_i, nc_vid_i_temp,   gl_temp,   offset=[nc_g, 0], count=[1, nc_n_sub]
 
 ; ================================================================
 ; ACCUMULATE INTO REGIONAL SUMS (NaN-safe: only add valid values)
@@ -176,6 +181,11 @@ ncdf_varput, nc_sp_ann_i, nc_vid_sp_i_aar,   gl_aar_p,  offset=[nc_g, 0], count=
 ncdf_varput, nc_sp_sub_i, nc_vid_sp_i_rgid_s, nc_rgiid,  offset=[nc_g]
 ncdf_varput, nc_sp_sub_i, nc_vid_sp_i_run,    gl_run_p,  offset=[nc_g, 0], count=[1, nc_n_sub_past]
 ncdf_varput, nc_sp_sub_i, nc_vid_sp_i_rbas,   gl_rbas_p, offset=[nc_g, 0], count=[1, nc_n_sub_past]
+ncdf_varput, nc_sp_sub_i, nc_vid_sp_i_acc,    gl_acc_p,  offset=[nc_g, 0], count=[1, nc_n_sub_past]
+ncdf_varput, nc_sp_sub_i, nc_vid_sp_i_melt,   gl_melt_p, offset=[nc_g, 0], count=[1, nc_n_sub_past]
+ncdf_varput, nc_sp_sub_i, nc_vid_sp_i_refr,   gl_refr_p, offset=[nc_g, 0], count=[1, nc_n_sub_past]
+ncdf_varput, nc_sp_sub_i, nc_vid_sp_i_prec,   gl_prec_p, offset=[nc_g, 0], count=[1, nc_n_sub_past]
+ncdf_varput, nc_sp_sub_i, nc_vid_sp_i_temp,   gl_temp_p, offset=[nc_g, 0], count=[1, nc_n_sub_past]
 
 for ye = 0, nc_years_past-1 do begin
     if gl_area_p[ye] gt 0 then nc_reg_sp_area[ye] += gl_area_p[ye]
@@ -223,6 +233,11 @@ ncdf_varput, nc_sf_ann_i, nc_vid_sf_i_aar,   gl_aar_f,  offset=[nc_g, 0], count=
 ncdf_varput, nc_sf_sub_i, nc_vid_sf_i_rgid_s, nc_rgiid,  offset=[nc_g]
 ncdf_varput, nc_sf_sub_i, nc_vid_sf_i_run,    gl_run_f,  offset=[nc_g, 0], count=[1, nc_n_sub_fut]
 ncdf_varput, nc_sf_sub_i, nc_vid_sf_i_rbas,   gl_rbas_f, offset=[nc_g, 0], count=[1, nc_n_sub_fut]
+ncdf_varput, nc_sf_sub_i, nc_vid_sf_i_acc,    gl_acc_f,  offset=[nc_g, 0], count=[1, nc_n_sub_fut]
+ncdf_varput, nc_sf_sub_i, nc_vid_sf_i_melt,   gl_melt_f, offset=[nc_g, 0], count=[1, nc_n_sub_fut]
+ncdf_varput, nc_sf_sub_i, nc_vid_sf_i_refr,   gl_refr_f, offset=[nc_g, 0], count=[1, nc_n_sub_fut]
+ncdf_varput, nc_sf_sub_i, nc_vid_sf_i_prec,   gl_prec_f, offset=[nc_g, 0], count=[1, nc_n_sub_fut]
+ncdf_varput, nc_sf_sub_i, nc_vid_sf_i_temp,   gl_temp_f, offset=[nc_g, 0], count=[1, nc_n_sub_fut]
 
 for ye = 0, nc_years_fut-1 do begin
     if gl_area_f[ye] gt 0 then nc_reg_sf_area[ye] += gl_area_f[ye]
