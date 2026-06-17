@@ -12,6 +12,12 @@ compile_opt idl2
 b='/files'+mtt+'/'+GCM_model[gcms]+'/'+GCM_rcp[rcps]
 if reanalysis_direct eq 'y' then b='/PAST'+mtt
 
+; b is a generic scratch name reused for unrelated numeric purposes inside
+; the month loop (e.g. meltmodel.pro's "b = a + (tgs[j]-tgs[0])"), so by the
+; time save_geometry_output.pro runs at the end of each year it would no
+; longer hold this path string. Capture it now, before the year loop starts.
+geom_output_path_b = b
+
 if write_mb_elevationbands eq 'y' then begin
 
    c=findfile(dirres+'/'+time_resolution+'/'+dir_region+b+'/mb_elevation')

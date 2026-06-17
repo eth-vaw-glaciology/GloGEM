@@ -48,6 +48,20 @@ ENDIF ELSE BEGIN
    ENDFOR
 ENDELSE
 
+;*********************
+; Pre-compute the pressure-melting-point (PMP) profile once per call, used
+; below as an unconditional safety clamp on every layer of tl_fit. The
+; per-block clamps above only cover j=1..tt-2, which can skip layers
+; entirely for very thin/marginal bands (small tt) -- the clamp below
+; guarantees no output path (conduction, advection, latent heat,
+; bedrock-fill) can ever leave a value above PMP regardless of tt.
+nfit = total(fit_layers)
+pmp_profile = dblarr(nfit + 1)
+pmp_profile[0] = 0d0
+for jp = 1, nfit - 1 do pmp_profile[jp] = (fit_dz[1,jp] * 0.9d0 / 10.0d0) * (-0.00742d0)
+pmp_profile[nfit] = pmp_profile[nfit - 1]
+;*********************
+
 ii=where(gl ne noval,ci)
 for i=0,ci-1 do begin
 
@@ -105,8 +119,12 @@ tt=min([ind+1,total(fit_layers)])  ; either run to bedrock, or to max of layers
          ; Upglacier source is the next higher-elevation band (i+1)
          upglacier_idx = i + 1
 
-         ; Calculate timestep in seconds
-         dt_seconds = rf_dt * 3600.0D * 24.0D * 30.5D / rf_dsc
+         ; Timestep in seconds. rf_dt (settings.pro) is already seconds-per-
+         ; substep (= seconds-in-a-month / rf_dsc) -- do not multiply by
+         ; another month-seconds/rf_dsc factor here, that double-counts the
+         ; conversion and inflates dt_seconds by ~rf_dsc*86400*30.5, which
+         ; saturates the courant clamp below for almost any nonzero velocity.
+         dt_seconds = rf_dt
 
          ; Horizontal distance to upglacier band, derived from actual elevation spacing and slope
          delta_elev = ABS(elev[ii[i+1]] - elev[ii[i]])  ; vertical elevation step [m]
@@ -148,36 +166,37 @@ tt=min([ind+1,total(fit_layers)])  ; either run to bedrock, or to max of layers
          ; Calculate vertical velocity component
          vertical_vel = DBLARR(tt)
 
-         ; In accumulation area: downward movement due to burial by new snow
-         ; In ablation area: upward movement due to emergence velocity
-         IF sno[ii[i]] GT mel[ii[i]] THEN BEGIN
-         ; Accumulation area: downward movement
-         ; Surface velocity = net accumulation rate
-         surface_vertical_vel = MAX([(sno[ii[i]] - mel[ii[i]]), 0.0]) ; m/year, downward positive
-
-
-         ; Linear decrease of vertical velocity with depth (zero at bed)
-         FOR j=0,tt-1 DO BEGIN
-            relative_depth = DOUBLE(j) / DOUBLE(tt-1)
-            vertical_vel[j] = surface_vertical_vel * (1.0D - relative_depth)
-         ENDFOR
+         IF use_flow_model EQ 'y' AND N_ELEMENTS(w_flowmodel) EQ nb THEN BEGIN
+            ; Kinematic vertical velocity from GloGEMflow (mass-continuity
+            ; surface boundary condition; see glogemflow_coupled.pro STEP 7),
+            ; m/year, downward positive. Tied to the same smooth, annually-
+            ; resolved SIA state as u_flowmodel -- replaces the heuristics
+            ; below when available.
+            surface_vertical_vel = w_flowmodel[ii_perm[i]]
          ENDIF ELSE BEGIN
-         ; Ablation area: upward movement (emergence velocity)
-         ; Simplified emergence velocity estimate based on surface slope and ice velocity
-         min_slope_rad = 0.01D * !DTOR  ; Minimum slope to prevent division by zero
-         local_slope_rad = MAX([slope[ii_perm[i]] * !DTOR, min_slope_rad])
-         current_vel = u[i] ; Get velocity for current elevation band
-         emergence_vel = current_vel * TAN(local_slope_rad) ; m/year, upward positive
-
-         ; Convert to our coordinate system (downward positive)
-         surface_vertical_vel = -emergence_vel
+            ; Standalone fallback: used for year 0 (no SIA step has run yet
+            ; so w_flowmodel isn't populated) or when use_flow_model='n'.
+            IF sno[ii[i]] GT mel[ii[i]] THEN BEGIN
+               ; Accumulation area: downward movement
+               ; Surface velocity = net accumulation rate
+               surface_vertical_vel = MAX([(sno[ii[i]] - mel[ii[i]]), 0.0]) ; m/year, downward positive
+            ENDIF ELSE BEGIN
+               ; Ablation area: upward movement (emergence velocity)
+               ; Simplified emergence velocity estimate based on surface slope and ice velocity
+               min_slope_rad = 0.01D * !DTOR  ; Minimum slope to prevent division by zero
+               local_slope_rad = MAX([slope[ii_perm[i]] * !DTOR, min_slope_rad])
+               current_vel = u[i] ; Get velocity for current elevation band
+               emergence_vel = current_vel * TAN(local_slope_rad) ; m/year, upward positive
+               ; Convert to our coordinate system (downward positive)
+               surface_vertical_vel = -emergence_vel
+            ENDELSE
+         ENDELSE
 
          ; Linear decrease of vertical velocity with depth (zero at bed)
          FOR j=0,tt-1 DO BEGIN
             relative_depth = DOUBLE(j) / DOUBLE(tt-1)
             vertical_vel[j] = surface_vertical_vel * (1.0D - relative_depth)
          ENDFOR
-         ENDELSE
 
          ; Apply vertical advection (upwind scheme)
          ; Only if vertical velocity is significant
@@ -186,13 +205,24 @@ tt=min([ind+1,total(fit_layers)])  ; either run to bedrock, or to max of layers
          temp_v = tl_fit[ii[i],*]
          temp_before_v = tl_fit[ii[i],10]  ; Store 10m temperature before vertical advection
 
-         ; Convert to proper time units
-         dt_years = rf_dt * (30.5D/rf_dsc) / 365.25D
+         ; Convert rf_dt (already seconds-per-substep) to years directly --
+         ; do not multiply by another month-seconds/rf_dsc factor here, see
+         ; the matching note on dt_seconds above (same bug, same fix).
+         dt_years = rf_dt / (365.25D * 24.0D * 3600.0D)
 
          ; Apply vertical advection for each layer (except boundaries)
          FOR j=1,tt-2 DO BEGIN
-            ; Calculate vertical grid spacing (might vary with depth in your model)
-            dz = fit_dz[0,j]
+            ; Grid-aware spacing: use the actual center-to-center distance
+            ; between donor and receiver layers (from the cumulative depth
+            ; array fit_dz[1,*]) rather than this layer's own thickness --
+            ; correctly handles the 1m/5m/20m depth-resolution transitions
+            ; (~9m, ~59m) instead of mismatching dz across them.
+            IF vertical_vel[j] GE 0 THEN BEGIN
+               dz = fit_dz[1,j] - fit_dz[1,j-1]     ; downward: distance to layer above
+            ENDIF ELSE BEGIN
+               dz = fit_dz[1,j+1] - fit_dz[1,j]      ; upward: distance to layer below
+            ENDELSE
+            dz = dz > 1d-3                            ; guard against zero spacing
 
             ; Calculate Courant number for vertical advection
             v_courant = vertical_vel[j] * dt_years / dz
@@ -230,6 +260,9 @@ tt=min([ind+1,total(fit_layers)])  ; either run to bedrock, or to max of layers
 
 ; setting all bedrock temperatures to lowermost computed layer (to avoid constant warming from beneath)
 tl_fit[ii[i],tt-1:total(fit_layers)]=tl_fit[ii[i],tt-2]
+
+; universal PMP safety clamp -- see pmp_profile note above
+tl_fit[ii[i],*] = tl_fit[ii[i],*] < pmp_profile
 
 fit_water=mel[ii[i]]+plg[ii[i]]  ; liquid water available from surface (melt+rain)
 

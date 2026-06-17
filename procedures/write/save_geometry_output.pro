@@ -7,8 +7,10 @@
 ;
 ; Variables read from the calling scope (glogem.pro):
 ;   ye, years, tran, nb, thick, elev, bed_elev, width, area, bal, length,
-;   volumes, areas, mb, id, gg, g, dirres, dir_region, GCM_model, gcms,
-;   GCM_rcp, rcps, use_flow_model,
+;   volumes, areas, mb, id, gg, g, dirres, dir_region, time_resolution,
+;   geom_output_path_b (set in prepare_output_mb_in_bins.pro -- NOT b
+;   itself, which is clobbered by meltmodel.pro's unrelated scratch use of
+;   the same name every month), GCM_model, gcms, GCM_rcp, rcps, use_flow_model,
 ;   flow_thick_hist, flow_sur_hist, flow_bal_hist, flow_width_hist,
 ;   bed_dx, dist_dx, dx, xnum, spinup_aflow, spinup_ela_bias, thick_dx
 
@@ -45,7 +47,13 @@ if ye eq years-1 then begin
   scenario_tag = 'dhdt'
   if use_flow_model eq 'y' then scenario_tag = 'flow'
 
-  out_dir = dirres + dir_region + '/' + GCM_model[gcms] + '/' + GCM_rcp[rcps]
+  ; Same path convention as prepare_output_firnicetemp.pro / prepare_output_mb_in_bins.pro.
+  ; Uses geom_output_path_b (captured in prepare_output_mb_in_bins.pro right
+  ; after it computes b) rather than b itself -- by this point in the year
+  ; loop, b has been overwritten with an unrelated numeric value by
+  ; meltmodel.pro (which reuses the name "b" as a scratch variable every
+  ; month), so the original path string is long gone from b itself.
+  out_dir = dirres + '/' + time_resolution + '/' + dir_region + geom_output_path_b + '/geometry'
   if ~file_test(out_dir, /directory) then spawn, 'mkdir -p "' + out_dir + '"'
 
   geometry_hist = { $

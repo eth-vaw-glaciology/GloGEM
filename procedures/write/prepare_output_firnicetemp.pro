@@ -58,7 +58,7 @@ if firnice_write[1] eq 'y' then begin
 
     for j=0,n_elements(firnice_profile)-1 do begin
         close,51+j & openw,51+j, firnice_dir + '/temp_ID' + firnice_profile_ID[j] + '_' + id[gg[g]] + '.dat'
-        printf,51+j,'Point elevation  '+string(firnice_profile_ind[1,0],fo='(i4)')+' masl: Depth in m'
+        printf,51+j,'Point elevation  '+string(firnice_profile_ind[1,j],fo='(i4)')+' masl: Depth in m'
         a='' & for i=1,total(fit_layers)-1 do a=a+string(fit_dz[1,i],fo='(i4)')+'  '
         printf,51+j,'Year  Month '+a
     endfor
