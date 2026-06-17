@@ -89,10 +89,6 @@ endif else begin
             nc_time_sub[yr*365+doy] = long(julday(1,1,nc_tran[0]+yr) - nc_ref_jd + doy)
 endelse
 
-; Label for the time_resolution global attribute (filenames still use nc_sub_lbl)
-nc_tres_lbl = nc_sub_lbl
-if nc_aggregate then nc_tres_lbl = 'daily agg. to monthly'
-
 nc_time_ann = lonarr(nc_years)
 for yr = 0L, nc_years-1L do $
     nc_time_ann[yr] = long(julday(1, 1, nc_tran[0]+yr) - nc_ref_jd)
@@ -157,7 +153,7 @@ ncdf_attput, nc_sub, /global, 'institution',    'ETH, VAW'
 ncdf_attput, nc_sub, /global, 'rgi_region',     nc_rgi_str
 ncdf_attput, nc_sub, /global, 'catchment',      strtrim(catchment_selection, 2)
 ncdf_attput, nc_sub, /global, 'forcing',        nc_rea
-ncdf_attput, nc_sub, /global, 'time_resolution', nc_tres_lbl
+ncdf_attput, nc_sub, /global, 'time_resolution', nc_sub_lbl
 ncdf_attput, nc_sub, /global, 'period',         nc_period
 ncdf_attput, nc_sub, /global, 'creation_date',  systime()
 
@@ -266,7 +262,7 @@ ncdf_attput, nc_sub_i, /global, 'institution',    'ETH, VAW'
 ncdf_attput, nc_sub_i, /global, 'rgi_region',     nc_rgi_str
 ncdf_attput, nc_sub_i, /global, 'catchment',      strtrim(catchment_selection, 2)
 ncdf_attput, nc_sub_i, /global, 'forcing',        nc_rea
-ncdf_attput, nc_sub_i, /global, 'time_resolution', nc_tres_lbl
+ncdf_attput, nc_sub_i, /global, 'time_resolution', nc_sub_lbl
 ncdf_attput, nc_sub_i, /global, 'period',         nc_period
 ncdf_attput, nc_sub_i, /global, 'creation_date',  systime()
 
