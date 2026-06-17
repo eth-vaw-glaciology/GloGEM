@@ -46,8 +46,9 @@ nc_rgiid = 'RGI' + strtrim(RGIversion, 2) + '0-' + nc_rgi_str + '.' + strtrim(id
 ; ================================================================
 
 ; Expand annual areas to sub-annual for variables using evolving area
+; (monthly layout when running monthly OR when aggregating a daily run to monthly)
 nc_area_sub = dblarr(nc_n_sub)
-if time_resolution eq 'monthly' then begin
+if time_resolution eq 'monthly' or nc_aggregate then begin
     for ye = 0, nc_years-1 do $
         nc_area_sub[ye*12:ye*12+11] = areas[ye]
 endif else begin
@@ -72,6 +73,38 @@ if time_resolution eq 'monthly' then begin
     gl_run  = float(discharge_gl * nc_area_sub * 1e9)
     gl_prec = float(precmo_ini   * 1e9)              ; [m w.e. x km2] -> kg
     gl_temp = tempmo_ini                             ; already in K
+    gl_rbas = float(discharge    * area_cat * 1e9)   ; basin runoff over initial area -> kg
+endif else if nc_aggregate then begin
+    ; Daily run aggregated to monthly NetCDF: sum daily values within each
+    ; calendar month; mean for temperature. Fixed month lengths (sum to 365);
+    ; note mon_len is all-ones in a daily run, so a local array is used here.
+    nc_mlen = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    melt_day = snowmeltday + icemeltday
+    acc_m  = dblarr(nc_n_sub) & melt_m = acc_m & refr_m = acc_m
+    run_m  = acc_m & prec_m = acc_m & rbas_m = acc_m & temp_m = acc_m
+    for ye = 0L, nc_years-1L do begin
+        m0 = 0L
+        for mo = 0, 11 do begin
+            i0 = ye*365L + m0
+            i1 = i0 + nc_mlen[mo] - 1
+            k  = ye*12 + mo
+            acc_m[k]  = total(accday[i0:i1])
+            melt_m[k] = total(melt_day[i0:i1])
+            refr_m[k] = total(refrday[i0:i1])
+            run_m[k]  = total(discharge_gl[i0:i1])
+            prec_m[k] = total(precday_ini[i0:i1])
+            rbas_m[k] = total(discharge[i0:i1])
+            temp_m[k] = mean(tempday_ini[i0:i1])
+            m0 = m0 + nc_mlen[mo]
+        endfor
+    endfor
+    gl_acc  = float(acc_m  * nc_ini_area * 1e9)
+    gl_melt = float(melt_m * nc_ini_area * 1e9)
+    gl_refr = float(refr_m * nc_ini_area * 1e9)
+    gl_run  = float(run_m  * nc_area_sub * 1e9)
+    gl_prec = float(prec_m * 1e9)
+    gl_temp = temp_m
+    gl_rbas = float(rbas_m * area_cat * 1e9)
 endif else begin
     ; acc/melt/refr: divided by total(area_ini) in store step
     gl_acc  = float(accday                        * nc_ini_area * 1e9)
@@ -80,12 +113,12 @@ endif else begin
     gl_run  = float(discharge_gl                  * nc_area_sub * 1e9)
     gl_prec = float(precday_ini  * 1e9)
     gl_temp = tempday_ini
+    gl_rbas = float(discharge    * area_cat * 1e9)   ; basin runoff over initial area -> kg
 endelse
 
-; GlacierMIP4 Table 5 optional individual-glacier variables
+; GlacierMIP4 Table 5 optional individual-glacier annual variables
 gl_ela  = float(ela)                          ; annual ELA [m a.s.l.]
 gl_aar  = float(aar) / 100.                   ; annual AAR [fraction 0-1] (aar stored as percent)
-gl_rbas = float(discharge * area_cat * 1e9)   ; basin runoff over initial area -> kg
 
 ; Replace snoval with NaN
 nc_sv = snoval + 1.

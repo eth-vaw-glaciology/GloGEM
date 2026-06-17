@@ -66,7 +66,11 @@ nc_tran   = tran
 nc_fv     = !VALUES.F_NAN
 nc_ref_jd = julday(1, 1, 1850)
 
-if time_resolution eq 'monthly' then begin
+; Aggregate a daily run's NetCDF sub-annual output to monthly (the .dat stays daily).
+; When set, the sub-annual files are monthly even though the model ran daily.
+nc_aggregate = (time_resolution eq 'daily' and netcdf_daily_aggregated_monthly eq 'y')
+
+if time_resolution eq 'monthly' or nc_aggregate then begin
     nc_n_sub  = nc_years * 12
     nc_sub_lbl = 'monthly'
     nc_time_sub = lonarr(nc_n_sub)

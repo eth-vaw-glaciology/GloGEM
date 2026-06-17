@@ -85,7 +85,11 @@ nc_tran   = tran
 nc_fv     = !VALUES.F_NAN
 nc_ref_jd = julday(1, 1, 1850)
 
-if time_resolution eq 'monthly' then begin
+; Aggregate a daily run's NetCDF sub-annual output to monthly (the .dat stays daily).
+; When set, the sub-annual files are monthly even though the model ran daily.
+nc_aggregate = (time_resolution eq 'daily' and netcdf_daily_aggregated_monthly eq 'y')
+
+if time_resolution eq 'monthly' or nc_aggregate then begin
     nc_n_sub   = nc_years * 12
     nc_sub_lbl = 'monthly'
     nc_time_sub = lonarr(nc_n_sub)
@@ -306,7 +310,7 @@ if ~nc_has_split then goto, init_proj_done
 nc_split_idx     = netcdf_split_year - tran[0]
 nc_years_past    = nc_split_idx
 nc_years_fut     = nc_years - nc_split_idx
-if time_resolution eq 'monthly' then begin
+if time_resolution eq 'monthly' or nc_aggregate then begin
     nc_split_idx_sub = nc_split_idx * 12
     nc_n_sub_past    = nc_years_past * 12
     nc_n_sub_fut     = nc_years_fut  * 12
@@ -322,7 +326,7 @@ for yr = 0L, nc_years_past-1L do $
     nc_time_ann_past[yr] = long(julday(1, 1, tran[0]+yr) - nc_ref_jd)
 
 nc_time_sub_past = lonarr(nc_n_sub_past)
-if time_resolution eq 'monthly' then begin
+if time_resolution eq 'monthly' or nc_aggregate then begin
     idx = 0L
     for yr = 0L, nc_years_past-1L do $
         for mo = 1, 12 do begin
@@ -341,7 +345,7 @@ for yr = 0L, nc_years_fut-1L do $
     nc_time_ann_fut[yr] = long(julday(1, 1, netcdf_split_year+yr) - nc_ref_jd)
 
 nc_time_sub_fut = lonarr(nc_n_sub_fut)
-if time_resolution eq 'monthly' then begin
+if time_resolution eq 'monthly' or nc_aggregate then begin
     idx = 0L
     for yr = 0L, nc_years_fut-1L do $
         for mo = 1, 12 do begin
