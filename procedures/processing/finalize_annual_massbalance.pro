@@ -14,6 +14,11 @@ compile_opt idl2
 ; calculate balance - store results
 if ar_gl ne 0 then mb[ye]=total(bal*area)/ar_gl
 baly[ye,*]=bal
+
+; Accumulate per-band melt and refreeze for firn temperature validation (before noval masking)
+melt_rf_sum += melt
+refr_rf_sum += refreeze
+
 if nb gt elev_range_p/step and plot eq 'y' then begin
    ii=where(gl eq noval,ci) & if ci gt 0 then melt[ii]=noval
    accy[ye,*]=acc & mely[ye,*]=melt & refry[ye,*]=refreeze
