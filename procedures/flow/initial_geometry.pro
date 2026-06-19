@@ -27,7 +27,7 @@ if width_flag eq 1 or width_flag eq 2 then begin
   for i = 0, xnum - 1 do begin
     width_surface_dx_init[i] = width_dx_init[i]
     if width_surface_dx_init[i] eq 0 then begin
-      width_surface_dx_init[i] = mean(width_dx_init[first_icp : first_icp + 10])
+      width_surface_dx_init[i] = mean(width_dx_init[first_icp : (first_icp + 10) < (xnum - 1)])
     endif
   endfor
 endif

@@ -306,6 +306,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                     endif
 
                     if use_flow_model eq 'y' then flow_initialised = !NULL
+                    use_flow_model_gl = use_flow_model  ; per-glacier, may be overridden below
 
                     for cal1=0,cal1max do begin
 
@@ -324,6 +325,14 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
                         ; define variables and process hypsometry
                         @procedures/processing/process_hypsometry_data.pro
+
+                        ; Flow model only for glaciers >= 1 km at inventory date;
+                        ; shorter glaciers fall back to the dhdt parametrisation.
+                        if use_flow_model eq 'y' and length[0] lt 1.0d0 then begin
+                          use_flow_model_gl = 'n'
+                          if cal1 eq 0 then print, '  Flow model skipped: length=' + $
+                            strtrim(string(length[0], fo='(f5.2)'), 2) + ' km (<1 km threshold)'
+                        endif
 
                         ; prepare output for mass balance in elevation bands
 
@@ -547,7 +556,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                         @procedures/processing/calving_model.pro
 
                         if glacier_retreat eq 'y' then begin
-                          if use_flow_model eq 'y' then begin
+                          if use_flow_model_gl eq 'y' then begin
                             @procedures/flow/glogemflow_coupled
                             @procedures/flow/update_elevation_bands
                           endif else begin
@@ -561,6 +570,11 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                         endif
 
                       endfor    ; Loop over years
+
+                      ; write firn temperature validation diagnostics (C&P vs. model f_rf)
+                      if firnice_temperature eq 'y' then begin
+                        @procedures/write/write_firnicetemp_validation
+                      endif
 
                       ; === Optimization - SINGLE-GLACIER MASS BALANCE
 

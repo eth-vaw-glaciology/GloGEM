@@ -76,17 +76,24 @@ endfor
 
 n_pts = n_elements(elev_ref)
 print, 'SMB polynomial fit: ', n_pts, ' valid bands'
-if n_pts lt 3 then message, 'Too few valid bands for SMB polynomial fit'
+if n_pts lt 1 then message, 'No valid bands for SMB polynomial fit'
+; Degrade polynomial degree for small glaciers with few elevation bands.
+; Degree-2 needs 3+ points; degree-1 (linear) needs 2; degree-0 (constant) needs 1.
+poly_order = 2 < (n_pts - 1)
+if poly_order lt 2 then $
+  print, 'Warning: ' + strtrim(n_pts,2) + ' valid bands — using degree-' + strtrim(poly_order,2) + ' polynomial'
 
 ; Center elevations before fitting to improve Vandermonde matrix conditioning.
 ; All polynomial evaluations use (z - z_center) consistently.
 z_center    = mean(elev_ref)
 elev_norm   = elev_ref - z_center
 bal_ref_ice = bal_ref / 0.917d0
-smb_coeffs  = poly_fit(elev_norm, bal_ref_ice, 2, /double)
+smb_coeffs  = poly_fit(elev_norm, bal_ref_ice, poly_order, /double)
 smb_c = smb_coeffs[0]   ; constant
-smb_b = smb_coeffs[1]   ; linear
-smb_a = smb_coeffs[2]   ; quadratic
+smb_b = 0d0              ; linear  (zero if degree < 1)
+smb_a = 0d0              ; quadratic (zero if degree < 2)
+if poly_order ge 1 then smb_b = smb_coeffs[1]
+if poly_order ge 2 then smb_a = smb_coeffs[2]
 
 ; ELA from polynomial (in centred coordinates, then shift back)
 discrim = smb_b^2 - 4d0 * smb_a * smb_c

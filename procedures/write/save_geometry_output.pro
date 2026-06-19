@@ -76,7 +76,6 @@ if ye eq years-1 then begin
   }
   save_file = out_dir + '/geometry_' + id[gg[g]] + '_' + scenario_tag + '.sav'
   save, geometry_hist, file=save_file
-  print, 'Saved geometry: ' + save_file
 
   if use_flow_model eq 'y' and n_elements(thick_dx) gt 0 then begin
     flow_hist = { $
@@ -101,6 +100,5 @@ if ye eq years-1 then begin
     }
     save_file_flow = out_dir + '/flowgrid_' + id[gg[g]] + '_' + scenario_tag + '.sav'
     save, flow_hist, file=save_file_flow
-    print, 'Saved flow grid: ' + save_file_flow
   endif
 endif

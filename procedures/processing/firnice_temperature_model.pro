@@ -37,7 +37,7 @@ n = 3         ; Glen's flow law exponent
 u     = FLTARR(N_ELEMENTS(gl))
 tau_d = FLTARR(N_ELEMENTS(gl))
 
-IF use_flow_model EQ 'y' AND N_ELEMENTS(u_flowmodel) EQ nb THEN BEGIN
+IF use_flow_model_gl EQ 'y' AND N_ELEMENTS(u_flowmodel) EQ nb THEN BEGIN
    ; Use calibrated velocity from GloGEMflow (mapped to elevation bands at end of previous SIA year)
    FOR i = 0, ci-1 DO u[i] = u_flowmodel[ii_perm[i]]
 ENDIF ELSE BEGIN
