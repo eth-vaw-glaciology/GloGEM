@@ -45,10 +45,32 @@ if n_elements(flow_initialised) eq 0 then begin
 
   ; ---- Run spin-up: full Zekollari (2019) calibration ----
   ; Calibrates A_flow (volume) + ELA bias (length) via nested loops.
-  ; Each iteration: spin-up to SS → historical run tran[0]→survey year.
-  ; After return: thick_dx/sur_dx are the model state AT the survey year
-  ; (not the SS geometry), ready for the transient projection.
-  @procedures/flow/spinup_flowmodel
+  ; After return: thick_dx/sur_dx are the model state AT the survey year.
+  ;
+  ; The calibrated parameters (spinup_aflow, spinup_ela_bias) and the
+  ; resulting glacier state (thick_dx) are SSP-independent — they depend
+  ; only on the inventory geometry and the 1961-1990 SMB climatology.
+  ; Cache them to disk after the first SSP so subsequent SSPs can skip
+  ; the ~5-minute calibration loop entirely.
+  spinup_cache_dir  = dirres + 'spinup_cache/'
+  spinup_cache_file = spinup_cache_dir + strtrim(id[gg[g]], 2) + '_spinup.sav'
+
+  if file_test(spinup_cache_file) then begin
+    restore, spinup_cache_file   ; restores: spinup_aflow, spinup_ela_bias, thick_dx,
+                                 ;           sur_dx, width_surface_dx, width_mid_dx,
+                                 ;           width_base_dx, lambda_dx
+    aflow = spinup_aflow
+    print, 'Spin-up cache hit: ' + strtrim(id[gg[g]], 2) + $
+      '  A_flow=' + strtrim(spinup_aflow, 2) + $
+      '  ELA_bias=' + strtrim(spinup_ela_bias, 2) + ' m'
+  endif else begin
+    file_mkdir, spinup_cache_dir
+    @procedures/flow/spinup_flowmodel
+    save, spinup_aflow, spinup_ela_bias, thick_dx, sur_dx, $
+          width_surface_dx, width_mid_dx, width_base_dx, lambda_dx, $
+          file=spinup_cache_file
+    print, 'Spin-up cache saved: ' + strtrim(id[gg[g]], 2)
+  endelse
 
   ; Initialise time-stepping state
   t = 0l
