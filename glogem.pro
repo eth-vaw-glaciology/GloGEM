@@ -455,8 +455,15 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
                             ; --- firn/ice temperatures
                             ; (separate workflow as the target and setup differs)
+                            ; When the flow model is active, skip ice temperature updates
+                            ; until the flow model has been initialised (geometry converged).
+                            ; Pre-convergence years use a frozen geometry that does not
+                            ; reflect the calibrated flowline state, so evolving temperatures
+                            ; there is both physically wrong and wasteful. The C&P
+                            ; initialisation already provides the equilibrium starting profile.
 
-                            if firnice_temperature eq 'y' then begin
+                            if firnice_temperature eq 'y' and $
+                               (use_flow_model_gl ne 'y' or n_elements(flow_initialised) gt 0) then begin
                               @procedures/processing/firnice_temperature_model.pro
                             endif    ; firn-ice temperature model
 

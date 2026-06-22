@@ -23,11 +23,17 @@ ccmon=0l
 
 te_rf=dblarr(nb,rf_layers) & tl_rf=te_rf
 
+; ── Lapse rate for ice temperature only: enforce free-air floor (-0.0065 K/m).
+; ERA5 dtdz is calibrated over terrain up to ~2400 m and is too shallow when
+; extrapolated to high-altitude bands. The corrected rate is used exclusively
+; here — the global dtdz used by the mass balance model is NOT modified.
+dtdz_icetemp = (dtdz < (-0.0065d))
+
 ; ── Long-term annual mean T_maat per band (reference period: cyear < 2020) ───
 tt=dblarr(nb) & ii=where(cyear lt 2020,ci)
 for i=0,nb-1 do begin
-   if ci gt 0 then a=temp[ii]+(elev[i]-hclim)*mean(dtdz)+t_offset $
-     else a=temp+(elev[i]-hclim)*mean(dtdz)+t_offset
+   if ci gt 0 then a=temp[ii]+(elev[i]-hclim)*mean(dtdz_icetemp)+t_offset $
+     else a=temp+(elev[i]-hclim)*mean(dtdz_icetemp)+t_offset
    tt[i]=mean(a)
 endfor
 
@@ -52,7 +58,7 @@ endfor
 dT_firn_band = dblarr(nb)
 t_amp_band   = dblarr(nb)
 for i = 0, nb-1 do begin
-    tg_band       = tclim_ref + (elev[i] - hclim) * dtdz + t_offset
+    tg_band       = tclim_ref + (elev[i] - hclim) * dtdz_icetemp + t_offset
     t_amp_band[i] = max(tg_band) - min(tg_band)
     if t_amp_band[i] le T_AMP_THRESH then begin
         if elev[i] le ELEV_MAR_SPLIT then dT_firn_band[i] = DT_MAR_LOW $
