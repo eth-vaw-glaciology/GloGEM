@@ -17,10 +17,12 @@ endif else begin
    a='_final_'+reanalysis
 endelse
 
-if catchment_selection ne '' then begin 
-   cc='_'+catchment_selection 
-endif else begin 
-   cc=''
+if catchment_selection ne '' then begin
+  cc = '_' + catchment_selection
+  fn_test = dircali+'/'+time_resolution+'/'+dir_region+'/calibration/calibrate_m'+meltmodel+'_cID'+string(calperiod_ID,fo='(i1)')+'_'+sub_region+a+cc+'.dat'
+  if ~file_test(fn_test) then cc = ''  ; no catchment-specific file — use region-wide calibration
+endif else begin
+  cc = ''
 endelse
 
 fn=dircali+'/'+time_resolution+'/'+dir_region+'/calibration/calibrate_m'+meltmodel+'_cID'+string(calperiod_ID,fo='(i1)')+'_'+sub_region+a+cc+'.dat'
