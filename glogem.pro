@@ -732,6 +732,8 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
     @procedures/write/zip_and_clean_hypsometry_files.pro
   endif
 
+  if calibrate eq 'y' then break  ; calibration uses reanalysis — SSP choice is irrelevant
+
 endfor  ; RCPs
 
 endfor        ; GCMs
