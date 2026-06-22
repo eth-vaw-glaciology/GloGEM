@@ -1,7 +1,7 @@
 #!/bin/bash
 # launch_batches.sh  —  start N parallel GloGEM flow batches in tmux sessions
 #
-# Each session runs:  GLOGEM_BATCH=<NN> idl -e "@glogem"
+# Each session runs:  echo ".r glogem" | GLOGEM_BATCH=<NN> idl
 # config.pro reads GLOGEM_BATCH and sets catchment_selection = 'alps_batchNN'.
 #
 # Prerequisites (run once before this script):
@@ -40,7 +40,7 @@ for i in $(seq 1 "$N"); do
     tmux kill-session -t "$SESSION" 2>/dev/null || true
 
     tmux new-session -d -s "$SESSION" \
-        "cd '${GLOGEM_DIR}' && GLOGEM_BATCH=${BATCH} idl -e '@glogem' 2>&1 | tee '${LOGFILE}'; echo 'Batch ${BATCH} finished'; read -r _"
+        "cd '${GLOGEM_DIR}' && echo '.r glogem' | GLOGEM_BATCH=${BATCH} idl 2>&1 | tee '${LOGFILE}'; echo 'Batch ${BATCH} finished'; read -r _"
 
     echo "  Started: $SESSION  (GLOGEM_BATCH=$BATCH)"
 done
