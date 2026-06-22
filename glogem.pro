@@ -330,7 +330,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                         ; shorter glaciers fall back to the dhdt parametrisation.
                         if use_flow_model eq 'y' and length[0] lt 1.0d0 then begin
                           use_flow_model_gl = 'n'
-                          if cal1 eq 0 then print, '  Flow model skipped: length=' + $
+                          if cal1 eq 0 and calibrate ne 'y' then print, '  Flow model skipped: length=' + $
                             strtrim(string(length[0], fo='(f5.2)'), 2) + ' km (<1 km threshold)'
                         endif
 
