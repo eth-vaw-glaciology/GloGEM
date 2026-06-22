@@ -33,6 +33,15 @@
 ;region_id_loop = [14, 14]       ; region IDs to run (see region lookup at end of file)
 ;single_glacier = '01450'        ; single glacier RGI ID ('' to disable)
 ;catchment_selection = ''        ; catchment name ('' for single glacier or full region)
+;
+; Parallel-batch mode (see scripts/launch_batches.sh):
+;   Set GLOGEM_BATCH=01..16 as an environment variable before calling IDL.
+;   The block below reads it and selects the matching catchment file.
+;   Without the env var the full region is run (catchment_selection = '').
+;_batch = getenv('GLOGEM_BATCH')
+;if _batch ne '' then catchment_selection = 'alps_batch' + _batch $
+;else catchment_selection = ''
+;
 ;size_range = [0.002, 100000]    ; [km2] glacier size filter
 
 ; -----------------------------------------------------------------------
