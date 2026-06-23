@@ -323,8 +323,8 @@ case MIP of
     ; Glacier Model Intercomparison Project 4 — fixed model/scenario specifications.
     ; Not all model/SSP combinations are available (see GMIP4 protocol).
     ; ssp370 is used as the primary batch scenario.
-    GCM_model = ['BCC-CSM2-MR'] ; , 'ACCESS-ESM1-5', 'CESM2-WACCM', 'IPSL-CM6A-LR', 'MRI-ESM2-0', 'MPI-ESM1-2-HR', 'MIROC6', 'NorESM2-MM']
-    GCM_rcp = ['ssp126'] ; , 'ssp370', 'ssp585', 'ssp534-over']
+    GCM_model = ['ACCESS-ESM1-5', 'BCC-CSM2-MR', 'CESM2-WACCM', 'IPSL-CM6A-LR', 'MRI-ESM2-0', 'MPI-ESM1-2-HR', 'MIROC6', 'NorESM2-MM']
+    GCM_rcp = ['ssp126', 'ssp370', 'ssp585'] ; 'ssp534-over']
     GCM_experiment = 'r1i1p1f1'
     rcp_batch = intarr(8) + 1 ; ssp370 as default batch scenario
     GCM_data = 'gmip4'
