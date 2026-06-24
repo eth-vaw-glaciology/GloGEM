@@ -78,9 +78,9 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
   ; automatically setting end of modelling period for future runs
   if reanalysis_direct ne 'y' then tran[1]=2100
   if long_GCM ne '' then tran[1]=2300
+  if AMOC eq 'y' then tran[1]=2499
 
   ; === LOOP OVER DIFFERENT RCPs/SSPs
-
   if rcp_batch[0] ne 0 then ne_GCM_rcp=rcp_batch[gcms] else ne_GCM_rcp=n_elements(GCM_rcp)
 
   for rcps=0,ne_GCM_rcp-1 do begin
@@ -128,13 +128,13 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
             lon0=[min(rvlon)-0.1,max(rvlon)]
           endif
           ; We keep for the moment reading in .mdi files for the CMIP6 models before looping over the grid
-          if time_resolution eq 'monthly' then begin
-            @procedures/read/read_climatepast_monthly.pro
-            if reanalysis_direct ne 'y' and mip ne 'GMIP4' then begin
-              @procedures/read/read_gcmdata_monthly.pro
-            endif
+          if time_resolution eq 'monthly' and AMOC ne 'y' then begin
+             @procedures/read/read_climatepast_monthly.pro
+             if GMIP4 ne 'y' then begin
+                @procedures/read/read_gcmdata_monthly.pro
+             endif
           endif
-
+          
           ; read regional parameter file
           if regparams_readfromfile eq 'y' then begin
             @procedures/read/read_regionalparams.pro
@@ -188,7 +188,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
             if ci gt 0 and cj gt 0 then survey_year[jj]=mean(survey_year[ii])
 
             ; if find_startyear eq 'y' then tran(0)=max([1980,min(survey_year)])
-            years=tran[1]-tran[0]+1
+            years=tran[1]-tran[0]
 
             nout=fix(years/outst)+1
             nouty=indgen(nout)*outst
@@ -219,7 +219,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
             endif
 
             ; === CALIBRATION LOOP - for overall calibration on entire region
-
+            
             cal0max=0
             if calibrate eq 'y' and calibrate_individual ne 'y' then cal0max=20
 
@@ -264,7 +264,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                   @procedures/initialise/init_netcdf_projections.pro
                 endelse
               endif
-
+        
               for gx=0,ngx-1 do begin
 
                 for gy=0,ngy-1 do begin

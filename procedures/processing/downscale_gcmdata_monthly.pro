@@ -73,9 +73,19 @@ endif else begin
       for m=1,12 do begin
          dd=where(ryear ge rea_eval[0] and ryear le rea_eval[1] and rmon eq m)
          kk=where(gcm_year ge rea_eval[0] and gcm_year le rea_eval[1] and gcm_mon eq m)
-         bias[0,m-1]=mean(gcm_temp[kk,jj[0],ii[0]])-mean(rtemp[dd,cc[0],bb[0]])
-         bias[1,m-1]=mean(gcm_prec[kk,jj[0],ii[0]])/mean(rprec[dd,cc[0],bb[0]])
-         if variability_bias eq 'y' then bias[2,m-1]=stdev(rtemp[dd,cc[0],bb[0]])/stdev(gcm_temp[kk,jj[0],ii[0]])
+         if AMOC ne 'y' then begin
+            bias[0,m-1]=mean(gcm_temp[kk,jj[0],ii[0]])-mean(rtemp[dd,cc[0],bb[0]])
+            bias[1,m-1]=mean(gcm_prec[kk,jj[0],ii[0]])/mean(rprec[dd,cc[0],bb[0]])
+            if variability_bias eq 'y' then begin
+               bias[2,m-1]=stdev(rtemp[dd,cc[0],bb[0]])/stdev(gcm_temp[kk,jj[0],ii[0]])
+            endif
+         endif else begin
+            bias[0,m-1]=mean(gcm_temp[kk])-mean(rtemp[dd,cc[0],bb[0]])
+            bias[1,m-1]=mean(gcm_prec[kk])/mean(rprec[dd,cc[0],bb[0]])
+            if variability_bias eq 'y' then begin
+               bias[2,m-1]=stdev(rtemp[dd,cc[0],bb[0]])/stdev(gcm_temp[kk])
+            endif
+         endelse
          hclim=relev[cc[0],bb[0]]
       endfor
       ; optionally restrict temperature bias to a minimum value - if extreme
@@ -102,14 +112,18 @@ endif else begin
       endif
 
       ; time series with Bias-corrected GCM-data
-      temp=dblarr((years+1)*12)
+      if AMOC eq 'y' then begin
+         temp=dblarr((years)*12)
+      endif else begin
+         temp=dblarr((years+1)*12)
+      endelse
       prec=temp
       rad=temp
       cyear=temp
       cmon=temp
       n=0l
 
-      for i=0,years do begin
+      for i=0,years-1 do begin
       ; use re-analysis data as long as available! After (AND before) use GCM data
          if i+tran[0] le max(ryear) and i+tran[0] gt min(ryear) then begin
             for m=1,12 do begin
@@ -132,11 +146,18 @@ endif else begin
                cmon[n]=m
                kk=where(gcm_year eq i+tran[0] and gcm_mon eq m,ck)
                ; hack for GCMs only extending to 2099 / 2298
-               if ck eq 0 then kk=where(gcm_year eq i+tran[0]-2 and gcm_mon eq m,ck)
-               if ck eq 0 then kk=where(gcm_year eq i+tran[0]-3 and gcm_mon eq m,ck)
-               temp[n]=gcm_temp[kk[0],jj[0],ii[0]]-bias[0,m-1]
-               prec[n]=gcm_prec[kk[0],jj[0],ii[0]]/bias[1,m-1]
-               if meltmodel ne '1' then begin 
+               if AMOC ne 'y' then begin
+                  if ck eq 0 then kk=where(gcm_year eq i+tran[0]-2 and gcm_mon eq m,ck)
+                  if ck eq 0 then kk=where(gcm_year eq i+tran[0]-3 and gcm_mon eq m,ck)
+               endif
+               if AMOC eq 'y' then begin
+                  temp[n]=gcm_temp[kk[0]]-bias[0,m-1]
+                  prec[n]=gcm_prec[kk[0]]/bias[1,m-1]
+               endif else begin
+                  temp[n]=gcm_temp[kk[0],jj[0],ii[0]]-bias[0,m-1]
+                  prec[n]=gcm_prec[kk[0],jj[0],ii[0]]/bias[1,m-1]
+               endelse
+               if meltmodel ne '1' then begin
                   rad[n]=mrad[m-1]
                endif
                n=n+1
@@ -146,14 +167,25 @@ endif else begin
       ; --------------------
       ; adapt temperature variability of GCM to re-analysis
       if variability_bias eq 'y' then begin
-         ; smoothed monthly temperature time series
-         tm_smooth=dblarr(12,years+1)
-         for i=0,years do for m=0,11 do tm_smooth[m,i]=temp[12*i+m]
+         ; smoothed monthly temperature time series                                                                                                                                                                                                                                                                      
+         tm_smooth=dblarr(12,years)
+         for i=0,years-1 do begin
+            for m=0,11 do begin
+               tm_smooth[m,i]=temp[12*i+m]
+            endfor
+         endfor
          for m=0,11 do begin
-            tt=dblarr(years+1) & for i=0,years do tt[i]=tm_smooth[m,i]
+            tt=dblarr(years) &
+            for i=0,years-1 do begin
+               tt[i]=tm_smooth[m,i]
+            endfor
             tm_smooth[m,*]=rmean(rmean(tt,5),25)
          endfor
-         for i=0,years do for m=0,11 do temp[12*i+m]=tm_smooth[m,i]+(temp[12*i+m]-tm_smooth[m,i])*bias[2,m]
+         for i=0,years-1 do begin
+            for m=0,11 do begin
+               temp[12*i+m]=tm_smooth[m,i]+(temp[12*i+m]-tm_smooth[m,i])*bias[2,m]
+            endfor
+         endfor
       endif
 
    endif else begin 

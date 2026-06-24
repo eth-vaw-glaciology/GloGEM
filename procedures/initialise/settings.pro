@@ -307,6 +307,7 @@ case MIP of
     GCM_data = 'cmip6'
     CMIP6 = 'y'
     GMIP4 = 'n'
+    AMOC = 'n'
   end
   'CMIP5': begin
     GCM_model = ['BCC-CSM1-1', 'CanESM2', 'CCSM4', 'CNRM-CM5', 'CSIRO-Mk3-6-0', 'GFDL-CM3', $
@@ -318,6 +319,7 @@ case MIP of
     GCM_data = 'cmip5'
     CMIP6 = 'n'
     GMIP4 = 'n'
+    AMOC = 'n'
   end
   'GMIP4': begin
     ; Glacier Model Intercomparison Project 4 — fixed model/scenario specifications.
@@ -330,7 +332,19 @@ case MIP of
     GCM_data = 'gmip4'
     CMIP6 = 'n'
     GMIP4 = 'y'
-  end
+    AMOC = 'n'
+ end
+  'AMOC': begin
+    ; AMOC GCMs                                                                                                                                                                                                                                                                      
+    GCM_model = ['CESM'] 
+    GCM_rcp = ['RCP45']                                                                                                                                                                                                                                                           
+    GCM_experiment = 'r1i1p1f1'
+    rcp_batch = intarr(8) + 1 ;                                                                                                                                                                                                                                                          
+    GCM_data = 'amoc'
+    CMIP6 = 'n'
+    GMIP4 = 'n'
+    AMOC = 'y'
+ end
   else: message, 'Unknown MIP: "' + MIP + '". Valid options: CMIP6, CMIP5, GMIP4'
 endcase
 

@@ -58,7 +58,7 @@
 ; selects n consecutive entries starting at k (e.g. indgen(5)+1 for 1-5).
 ; GCM and SSP/RCP codes: see GCM/SSP lookup at end of file.
 ; -----------------------------------------------------------------------
-;MIP = 'CMIP6'                   ; 'CMIP6' (default), 'CMIP5', or 'GMIP4'
+;MIP = 'CMIP6'                   ; 'CMIP6' (default), 'CMIP5', 'GMIP4', 'AMOC'
 ;long_GCM = ''                   ; '' for runs to 2100, 'long_' for runs to 2300
 ;GCM_model_idx    = [0]          ; model indices (1-based); [0] = all; e.g. [1,2,5]
 ;GCM_rcp_idx      = [0]          ; SSP/RCP indices;          [0] = all; e.g. [4]
