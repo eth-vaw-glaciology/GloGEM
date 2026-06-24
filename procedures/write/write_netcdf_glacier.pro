@@ -158,22 +158,18 @@ ncdf_varput, nc_sub_i, nc_vid_i_temp,   gl_temp,   offset=[nc_g, 0], count=[1, n
 ; ================================================================
 ; ACCUMULATE INTO REGIONAL SUMS (NaN-safe: only add valid values)
 ; ================================================================
-; Annual
-for ye = 0, nc_years-1 do begin
-    if gl_area[ye] gt 0 then nc_reg_area[ye] += gl_area[ye]
-    if gl_mass[ye] gt 0 then nc_reg_mass[ye] += gl_mass[ye]
-    if gl_mbsl[ye] gt 0 then nc_reg_mbsl[ye] += gl_mbsl[ye]
-    if gl_fabl[ye] gt 0 then nc_reg_fabl[ye] += gl_fabl[ye]
-endfor
+; Annual (vectorised: add only positive, finite values per time step)
+add = gl_area & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_area += add
+add = gl_mass & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_mass += add
+add = gl_mbsl & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_mbsl += add
+add = gl_fabl & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_fabl += add
 
-; Sub-annual
-for ts = 0L, nc_n_sub-1L do begin
-    if gl_acc[ts]  gt 0 then nc_reg_acc[ts]  += gl_acc[ts]
-    if gl_melt[ts] gt 0 then nc_reg_melt[ts] += gl_melt[ts]
-    if gl_refr[ts] gt 0 then nc_reg_refr[ts] += gl_refr[ts]
-    if gl_run[ts]  gt 0 then nc_reg_run[ts]  += gl_run[ts]
-    if gl_prec[ts] gt 0 then nc_reg_prec[ts] += gl_prec[ts]
-endfor
+; Sub-annual (vectorised)
+add = gl_acc  & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_acc  += add
+add = gl_melt & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_melt += add
+add = gl_refr & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_refr += add
+add = gl_run  & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_run  += add
+add = gl_prec & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_prec += add
 ; Temperature: area-weighted accumulation (skip snoval entries)
 if nc_ini_area gt 0 then begin
     ii = where(gl_temp gt nc_sv, ci)
@@ -220,19 +216,17 @@ ncdf_varput, nc_sp_sub_i, nc_vid_sp_i_refr,   gl_refr_p, offset=[nc_g, 0], count
 ncdf_varput, nc_sp_sub_i, nc_vid_sp_i_prec,   gl_prec_p, offset=[nc_g, 0], count=[1, nc_n_sub_past]
 ncdf_varput, nc_sp_sub_i, nc_vid_sp_i_temp,   gl_temp_p, offset=[nc_g, 0], count=[1, nc_n_sub_past]
 
-for ye = 0, nc_years_past-1 do begin
-    if gl_area_p[ye] gt 0 then nc_reg_sp_area[ye] += gl_area_p[ye]
-    if gl_mass_p[ye] gt 0 then nc_reg_sp_mass[ye] += gl_mass_p[ye]
-    if gl_mbsl_p[ye] gt 0 then nc_reg_sp_mbsl[ye] += gl_mbsl_p[ye]
-    if gl_fabl_p[ye] gt 0 then nc_reg_sp_fabl[ye] += gl_fabl_p[ye]
-endfor
-for ts = 0L, nc_n_sub_past-1L do begin
-    if gl_acc_p[ts]  gt 0 then nc_reg_sp_acc[ts]  += gl_acc_p[ts]
-    if gl_melt_p[ts] gt 0 then nc_reg_sp_melt[ts] += gl_melt_p[ts]
-    if gl_refr_p[ts] gt 0 then nc_reg_sp_refr[ts] += gl_refr_p[ts]
-    if gl_run_p[ts]  gt 0 then nc_reg_sp_run[ts]  += gl_run_p[ts]
-    if gl_prec_p[ts] gt 0 then nc_reg_sp_prec[ts] += gl_prec_p[ts]
-endfor
+; Annual (vectorised)
+add = gl_area_p & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_sp_area += add
+add = gl_mass_p & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_sp_mass += add
+add = gl_mbsl_p & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_sp_mbsl += add
+add = gl_fabl_p & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_sp_fabl += add
+; Sub-annual (vectorised)
+add = gl_acc_p  & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_sp_acc  += add
+add = gl_melt_p & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_sp_melt += add
+add = gl_refr_p & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_sp_refr += add
+add = gl_run_p  & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_sp_run  += add
+add = gl_prec_p & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_sp_prec += add
 if nc_ini_area gt 0 then begin
     ii = where(gl_temp_p gt nc_sv, ci)
     if ci gt 0 then begin
@@ -272,19 +266,17 @@ ncdf_varput, nc_sf_sub_i, nc_vid_sf_i_refr,   gl_refr_f, offset=[nc_g, 0], count
 ncdf_varput, nc_sf_sub_i, nc_vid_sf_i_prec,   gl_prec_f, offset=[nc_g, 0], count=[1, nc_n_sub_fut]
 ncdf_varput, nc_sf_sub_i, nc_vid_sf_i_temp,   gl_temp_f, offset=[nc_g, 0], count=[1, nc_n_sub_fut]
 
-for ye = 0, nc_years_fut-1 do begin
-    if gl_area_f[ye] gt 0 then nc_reg_sf_area[ye] += gl_area_f[ye]
-    if gl_mass_f[ye] gt 0 then nc_reg_sf_mass[ye] += gl_mass_f[ye]
-    if gl_mbsl_f[ye] gt 0 then nc_reg_sf_mbsl[ye] += gl_mbsl_f[ye]
-    if gl_fabl_f[ye] gt 0 then nc_reg_sf_fabl[ye] += gl_fabl_f[ye]
-endfor
-for ts = 0L, nc_n_sub_fut-1L do begin
-    if gl_acc_f[ts]  gt 0 then nc_reg_sf_acc[ts]  += gl_acc_f[ts]
-    if gl_melt_f[ts] gt 0 then nc_reg_sf_melt[ts] += gl_melt_f[ts]
-    if gl_refr_f[ts] gt 0 then nc_reg_sf_refr[ts] += gl_refr_f[ts]
-    if gl_run_f[ts]  gt 0 then nc_reg_sf_run[ts]  += gl_run_f[ts]
-    if gl_prec_f[ts] gt 0 then nc_reg_sf_prec[ts] += gl_prec_f[ts]
-endfor
+; Annual (vectorised)
+add = gl_area_f & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_sf_area += add
+add = gl_mass_f & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_sf_mass += add
+add = gl_mbsl_f & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_sf_mbsl += add
+add = gl_fabl_f & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_sf_fabl += add
+; Sub-annual (vectorised)
+add = gl_acc_f  & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_sf_acc  += add
+add = gl_melt_f & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_sf_melt += add
+add = gl_refr_f & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_sf_refr += add
+add = gl_run_f  & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_sf_run  += add
+add = gl_prec_f & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_sf_prec += add
 if nc_ini_area gt 0 then begin
     ii = where(gl_temp_f gt nc_sv, ci)
     if ci gt 0 then begin
