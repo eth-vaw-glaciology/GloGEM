@@ -81,25 +81,76 @@ a=min(abs(thick[ii[i]]-fit_dz[1,*]),ind)
 if firnice_batch eq 'y' then a=min(abs(firnice_maxdepth[0]-fit_dz[1,*]),ind)  ; run to actual depth of profile in batch/validation-mode
 tt=min([ind+1,total(fit_layers)])  ; either run to bedrock, or to max of layers
 
+; Permeability limit for meltwater percolation: stop water at the firn-ice
+; transition (~830 kg/m³). Below this density meltwater cannot penetrate in
+; reality. Heat conduction still runs to bedrock (tt-2). Only the latent-heat
+; refreezing loop for firn bands is capped here.
+firnice_perm_dens = 830.d
+perm_idx = where(dens_fit ge firnice_perm_dens, cperm)
+perm_limit = (cperm gt 0) ? ((perm_idx[0]-1) > 1) : (tt-2)
+perm_limit = perm_limit < (tt-2)
+
    for h=0,rf_dsc-1 do begin
 
-      ; heat conduction (vertical) in the firn/ice layers
-      for j=1,tt-2 do begin
+      ; ── boundary conditions (shared by both conduction schemes) ──────────────
+      tl_fit[ii[i],0] = min([0d, tgs[ii[i]]])
+      ttgeot = tl_fit[ii[i],tt-1] + geothermal_flux*(3600d*24d*30.5d/rf_dsc)/cice
+      tl_fit[ii[i],tt-1] = min([ttgeot, (fit_dz[1,tt-1]*0.9d/10.d)*(-0.00742d)])
 
-         tl_fit[ii[i],0]=min([0,tgs[ii[i]]]) ; temperature of topmost layer corresponding to air temperature or melting point!
-         ; temperature of bottommost layer warmed up by geothermal heat flux (cumulative energy over one time step over a )
-         ttgeot=tl_fit[ii[i],tt-1]+geothermal_flux*(3600*24*30.5/rf_dsc)/cice       ; /fit_dz(0,tt-1) ; unclear how to attribute a layer thickness for collecting flux (1m at the moment...)
+      ; ── heat conduction (vertical) ────────────────────────────────────────────
+      if firnice_implicit eq 'n' then begin
 
-         tl_fit[ii[i],tt-1]=min([ttgeot,(fit_dz[1,tt-1]*0.9/10.)*(-0.00742)])    ; cannot be higher than pressure melting point
+         ; explicit forward-difference with ×½ stability factor
+         for j=1,tt-2 do begin
+            te_fit[ii[i],j]=tl_fit[ii[i],j]+((rf_dt*cond_fit[j]/(cap_fit[j])*(tl_fit[ii[i],j-1]-tl_fit[ii[i],j])/fit_dz[0,j]^2.)- $
+                (rf_dt*cond_fit[j]/(cap_fit[j])*(tl_fit[ii[i],j]-tl_fit[ii[i],j+1])/fit_dz[0,j]^2.))/2.
+            tl_fit[ii[i],j]=te_fit[ii[i],j]
+            if tl_fit[ii[i],j] gt (fit_dz[1,j]*0.9/10.)*(-0.00742) then tl_fit[ii[i],j]=(fit_dz[1,j]*0.9/10.)*(-0.00742)
+         endfor
 
-         te_fit[ii[i],j]=tl_fit[ii[i],j]+((rf_dt*cond_fit[j]/(cap_fit[j])*(tl_fit[ii[i],j-1]-tl_fit[ii[i],j])/fit_dz[0,j]^2.)- $
-             (rf_dt*cond_fit[j]/(cap_fit[j])*(tl_fit[ii[i],j]-tl_fit[ii[i],j+1])/fit_dz[0,j]^2.))/2. ; division by 2 to be removed?! result becomes unstable without ?!?
-         tl_fit[ii[i],j]=te_fit[ii[i],j]
+      endif else begin
 
-         ; set back any temperatures to pressure melting point
-         if tl_fit[ii[i],j] gt (fit_dz[1,j]*0.9/10.)*(-0.00742) then tl_fit[ii[i],j]=(fit_dz[1,j]*0.9/10.)*(-0.00742)
+         ; fully implicit backward Euler — Thomas algorithm, O(N) per column.
+         ; Unconditionally stable; uses the correct thermal diffusivity k/(c·dz²)
+         ; with no artificial halving factor.
+         n_inner = tt - 2
+         if n_inner gt 0 then begin
+            aa = dblarr(n_inner)   ; subdiagonal   a_k = -r_j
+            bb = dblarr(n_inner)   ; diagonal      b_k =  1 + 2*r_j
+            cc = dblarr(n_inner)   ; superdiagonal c_k = -r_j
+            dd = dblarr(n_inner)   ; RHS
 
-      endfor
+            for k=0,n_inner-1 do begin
+               j  = k + 1
+               rj = rf_dt * cond_fit[j] / (cap_fit[j] * fit_dz[0,j]^2d)
+               aa[k] = -rj
+               bb[k] = 1.0d + 2.0d * rj
+               cc[k] = -rj
+               dd[k] = tl_fit[ii[i],j]
+            endfor
+
+            ; fold Dirichlet surface and bed values into the RHS
+            dd[0]         = dd[0]         - aa[0]         * tl_fit[ii[i],0]
+            dd[n_inner-1] = dd[n_inner-1] - cc[n_inner-1] * tl_fit[ii[i],tt-1]
+
+            ; Thomas forward sweep
+            for k=1,n_inner-1 do begin
+               m     = aa[k] / bb[k-1]
+               bb[k] = bb[k] - m * cc[k-1]
+               dd[k] = dd[k] - m * dd[k-1]
+            endfor
+
+            ; back substitution — write result directly to tl_fit, apply PMP clamp
+            tl_fit[ii[i],tt-2] = min([dd[n_inner-1]/bb[n_inner-1], $
+                                       (fit_dz[1,tt-2]*0.9d/10.d)*(-0.00742d)])
+            for k=n_inner-2,0,-1 do begin
+               j = k + 1
+               tl_fit[ii[i],j] = min([(dd[k] - cc[k]*tl_fit[ii[i],j+1])/bb[k], $
+                                       (fit_dz[1,j]*0.9d/10.d)*(-0.00742d)])
+            endfor
+         endif
+
+      endelse
 
       ; advection (horizontal and vertical) in the firn/ice layers
       IF enable_advection EQ 'y' THEN BEGIN
@@ -268,10 +319,12 @@ fit_water=mel[ii[i]]+plg[ii[i]]  ; liquid water available from surface (melt+rai
 
 if firn_permeability eq 'n' then fit_water = 0  ; check if permeability is disabled, if yes then set infiltrating water to zero
 
-; latent heat release over firn/snow surface (entirely permeable)
+; latent heat release over firn/snow surface
+; water percolation is capped at perm_limit (firn-ice transition density);
+; cold ice below that depth is not reachable by annual meltwater
 if firn[ii[i]] eq 1 then begin
 
-for j=1,tt-2 do begin ; loop through all considered layers from top, and update temperatures
+for j=1,perm_limit do begin ; percolate to firn-ice transition only
    c=(-1)*(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*cap_fit[j]*fit_dz[0,j]/Lh_rf ; cold content in layer below pressure melting point
    if fit_water gt c then begin   ; temperate layer if cold reservoir used, remaining water being transferred
       tl_fit[ii[i],j]=(fit_dz[1,j]*0.9/10.)*(-0.00742) & fit_water=fit_water-c

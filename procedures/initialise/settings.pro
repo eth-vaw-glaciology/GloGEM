@@ -149,9 +149,11 @@ refreezing_parametrised = 'y'
 
 ; --- englacial temperature model
 firnice_temperature = 'n'
+firnice_implicit = 'n'      ; heat conduction scheme: 'n' = explicit (×½ factor), 'y' = fully implicit (Thomas algorithm)
 firnice_write = ['y', 'y'] ; [overall time series, detailed profiles]
 firnice_batch = 'n'
 firnice_profile = [0.2, 0.65, 0.95] ; elevation ratios (or masl if >1) for profile output
+firnice_glenglat_lookup = ''  ; path to per-glacier borehole elevation lookup; '' = disabled
 enable_advection = 'n'
 advection_write = 'n'
 firn_permeability = 'y'
