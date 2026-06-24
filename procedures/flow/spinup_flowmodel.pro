@@ -194,6 +194,12 @@ len_prec       = 0.01d0   ; length tolerance: 1 % (floor; adapted below to grid 
 max_vol_iter   = 6
 max_len_iter   = 15
 
+; Adaptive time step: halve spinup_dtfactor on blow-up before touching A_flow.
+; Matches MATLAB volume_calibration.m: dtfactor halved down to 5e-2 before giving up.
+spinup_dtfactor = dtfactor
+dtfactor_min    = 0.05d0
+max_dt_retry    = 4l       ; 0.75→0.375→0.1875→0.09375→(below min)
+
 ; Initial guesses
 aflow_init      = aflow          ; save default (from set_flow_model_parameters.pro)
 aflow_guess     = aflow
@@ -250,7 +256,7 @@ for len_iter = 0, max_len_iter - 1 do begin
       spinup_t = 0d0
       while spinup_t lt 1d0 do begin
         if max(df_dx) gt 0 then $
-          dt = dtfactor * (dx^2) / max(df_dx) $
+          dt = spinup_dtfactor * (dx^2) / max(df_dx) $
         else $
           dt = 0.25d0
         dt = (dt < 0.25d0) > 1d-4
@@ -279,60 +285,101 @@ for len_iter = 0, max_len_iter - 1 do begin
             ss_reached = 1
             break
           endif
+          ; Early exit: volume exceeds target and is still growing — this A_flow won't converge
+          if spinup_yr ge 200 and ss_vol gt vol_target and ss_vol gt spinup_vol_prev then begin
+            print, '    Phase A non-convergent: vol=', ss_vol/1d9, ' km3 growing, target=', $
+              vol_target/1d9, ' km3 --- forcing exit'
+            ss_reached = 1
+            break
+          endif
         endif
         spinup_vol_prev = ss_vol
       endif
     endfor
 
     if phase_a_failed then begin
-      print, '    Phase A blow-up --- halving A_flow'
-      aflow_guess = (aflow_guess * 0.5d0) > 1d-20
+      if spinup_dtfactor gt dtfactor_min then begin
+        spinup_dtfactor = (spinup_dtfactor * 0.5d0) > dtfactor_min
+        print, '    Phase A blow-up --- halving dtfactor to ' + strtrim(spinup_dtfactor, 2)
+      endif else begin
+        print, '    Phase A blow-up (dtfactor at min) --- halving A_flow'
+        aflow_guess = (aflow_guess * 0.5d0) > 1d-20
+      endelse
       continue
     endif
     if ~ss_reached then print, '    WARNING: SS not reached after ', spinup_nyears, ' yr'
 
     ; -------- Phase B: historical transient run --------
+    ; Save Phase A end state so we can restore it for dtfactor retry
+    thick_dx_after_a     = thick_dx
+    sur_dx_after_a       = sur_dx
+    wsurf_after_a        = width_surface_dx
+    wmid_after_a         = width_mid_dx
+
     print, '    Historical run: ', tran[0]+hist_b0, ' -> ', tran[0]+ye-1
-    phase_b_failed = 0
+    phase_b_passed = 0
 
-    for yy = 0, hist_n - 1 do begin
-      ha = hist_smb_a[hist_b0 + yy]
-      hb = hist_smb_b[hist_b0 + yy]
-      hc = hist_smb_c[hist_b0 + yy]
-      z_h = sur_dx - z_center
-      ii_hcap = where(z_h gt (obs_sur_dx - z_center) and obs_thick_dx gt 0, c_hcap)
-      if c_hcap gt 0 then z_h[ii_hcap] = obs_sur_dx[ii_hcap] - z_center
-      bal_dx = ha * z_h^2 + hb * z_h + hc
-      ii_hzero = where(thick_dx le 0 and bal_dx lt 0, c_hzero)
-      if c_hzero gt 0 then bal_dx[ii_hzero] = 0d0
-      ii_hnan = where(~finite(bal_dx), c_hnan)
-      if c_hnan gt 0 then bal_dx[ii_hnan] = 0d0
+    for dt_b_retry = 0l, max_dt_retry do begin
+      if dt_b_retry gt 0 then begin
+        ; Restore Phase A endpoint and retry with the newly halved spinup_dtfactor
+        thick_dx         = thick_dx_after_a
+        sur_dx           = sur_dx_after_a
+        width_surface_dx = wsurf_after_a
+        width_mid_dx     = wmid_after_a
+      endif
+      phase_b_failed = 0
 
-      hist_t = 0d0
-      while hist_t lt 1d0 do begin
-        if max(df_dx) gt 0 then $
-          dt = dtfactor * (dx^2) / max(df_dx) $
-        else $
-          dt = 0.25d0
-        dt = (dt < 0.25d0) > 1d-4
-        if hist_t + dt gt 1d0 then dt = 1d0 - hist_t
-        @procedures/flow/diffusivity
-        @procedures/flow/ice_thickness
-        hist_t = hist_t + dt
-        if max(thick_dx) gt 5000d0 or total(~finite(thick_dx)) gt 0 then begin
-          phase_b_failed = 1
-          break
-        endif
-      endwhile
-      if phase_b_failed then break
+      for yy = 0, hist_n - 1 do begin
+        ha = hist_smb_a[hist_b0 + yy]
+        hb = hist_smb_b[hist_b0 + yy]
+        hc = hist_smb_c[hist_b0 + yy]
+        z_h = sur_dx - z_center
+        ii_hcap = where(z_h gt (obs_sur_dx - z_center) and obs_thick_dx gt 0, c_hcap)
+        if c_hcap gt 0 then z_h[ii_hcap] = obs_sur_dx[ii_hcap] - z_center
+        bal_dx = ha * z_h^2 + hb * z_h + hc
+        ii_hzero = where(thick_dx le 0 and bal_dx lt 0, c_hzero)
+        if c_hzero gt 0 then bal_dx[ii_hzero] = 0d0
+        ii_hnan = where(~finite(bal_dx), c_hnan)
+        if c_hnan gt 0 then bal_dx[ii_hnan] = 0d0
 
-      sur_dx = bed_dx + thick_dx
-      width_surface_dx = width_base_dx + lambda_dx * thick_dx
-      width_mid_dx = (width_base_dx + width_surface_dx) / 2.0
+        hist_t = 0d0
+        while hist_t lt 1d0 do begin
+          if max(df_dx) gt 0 then $
+            dt = spinup_dtfactor * (dx^2) / max(df_dx) $
+          else $
+            dt = 0.25d0
+          dt = (dt < 0.25d0) > 1d-4
+          if hist_t + dt gt 1d0 then dt = 1d0 - hist_t
+          @procedures/flow/diffusivity
+          @procedures/flow/ice_thickness
+          hist_t = hist_t + dt
+          if max(thick_dx) gt 5000d0 or total(~finite(thick_dx)) gt 0 then begin
+            phase_b_failed = 1
+            break
+          endif
+        endwhile
+        if phase_b_failed then break
+
+        sur_dx = bed_dx + thick_dx
+        width_surface_dx = width_base_dx + lambda_dx * thick_dx
+        width_mid_dx = (width_base_dx + width_surface_dx) / 2.0
+      endfor
+
+      if NOT phase_b_failed then begin
+        phase_b_passed = 1
+        break
+      endif
+
+      if spinup_dtfactor gt dtfactor_min then begin
+        spinup_dtfactor = (spinup_dtfactor * 0.5d0) > dtfactor_min
+        print, '    Phase B blow-up --- halving dtfactor to ' + strtrim(spinup_dtfactor, 2)
+      endif else begin
+        break  ; dtfactor at minimum, still failing → let outer handler change A_flow
+      endelse
     endfor
 
-    if phase_b_failed then begin
-      print, '    Phase B blow-up --- halving A_flow'
+    if NOT phase_b_passed then begin
+      print, '    Phase B blow-up (dtfactor at min) --- halving A_flow'
       aflow_guess = (aflow_guess * 0.5d0) > 1d-20
       continue
     endif
@@ -482,6 +529,7 @@ print, '=== Spin-up complete ==='
 print, 'Spin-up wall time   : ', systime(1) - spinup_t0, ' s'
 print, 'Calibrated A_flow   : ', spinup_aflow, ' Pa^-3 yr^-1'
 print, 'ELA bias            : ', spinup_ela_bias, ' m'
+print, 'Effective dtfactor  : ', spinup_dtfactor
 print, 'Final volume        : ', final_vol / 1d9, ' km3  (target=', vol_target/1d9, ')'
 print, 'Volume error        : ', (final_vol - vol_target) / vol_target * 100d0, ' %'
 print, 'Final area          : ', final_area, ' km2'

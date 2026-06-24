@@ -60,13 +60,18 @@ if n_elements(flow_initialised) eq 0 then begin
                                  ;           sur_dx, width_surface_dx, width_mid_dx,
                                  ;           width_base_dx, lambda_dx
     aflow = spinup_aflow
+    if n_elements(spinup_dtfactor) gt 0 then begin
+      dtfactor = spinup_dtfactor
+      if abs(spinup_dtfactor - 0.75d0) gt 0.01d0 then $
+        print, 'dtfactor set to ' + strtrim(dtfactor, 2) + ' (from spinup cache)'
+    endif
     print, 'Spin-up cache hit: ' + strtrim(id[gg[g]], 2) + $
       '  A_flow=' + strtrim(spinup_aflow, 2) + $
       '  ELA_bias=' + strtrim(spinup_ela_bias, 2) + ' m'
   endif else begin
     file_mkdir, spinup_cache_dir
     @procedures/flow/spinup_flowmodel
-    save, spinup_aflow, spinup_ela_bias, thick_dx, sur_dx, $
+    save, spinup_aflow, spinup_ela_bias, spinup_dtfactor, thick_dx, sur_dx, $
           width_surface_dx, width_mid_dx, width_base_dx, lambda_dx, $
           file=spinup_cache_file
     print, 'Spin-up cache saved: ' + strtrim(id[gg[g]], 2)
@@ -111,6 +116,31 @@ if n_elements(flow_initialised) eq 0 then begin
   print, 'GloGEMflow coupled: initialised at year ' + $
     strtrim(ye + tran[0], 2) + $
     ' (xnum=' + strtrim(xnum, 2) + ', dx=' + strtrim(dx, 2) + ' m)'
+
+  ; ---- Scale geometry to match GloGEM survey volume ----
+  ; The spin-up finds the correct ice dynamics parameters (A_flow, ELA_bias)
+  ; but Phase B often drifts away from the target volume. Scale thick_dx so
+  ; the flow model starts from exactly the GloGEM-observed volume at the survey
+  ; year. This ensures sur_dx is at the correct elevation for mass-balance
+  ; interpolation — without this, inflated ice surfaces see too-positive MB
+  ; (accumulation zone) and glaciers grow instead of retreat.
+  flow_blown_up = 0
+  if flow_vol_init_m3 gt 0d0 and volumes[ye] gt 0d0 then begin
+    f_scale = (volumes[ye] * 1d9) / flow_vol_init_m3
+    thick_dx         = thick_dx * f_scale
+    sur_dx           = bed_dx + thick_dx
+    width_surface_dx = width_base_dx + lambda_dx * thick_dx
+    width_mid_dx     = (width_base_dx + width_surface_dx) / 2d0
+    if abs(f_scale - 1d0) gt 0.01d0 then $
+      print, 'INFO: Rescaled thick_dx by factor ' + strtrim(f_scale, 2) + $
+        ' to match GloGEM survey vol (was ' + strtrim(flow_vol_init_m3/1d9, 2) + ' km3)'
+  endif
+
+  ; Reference surface frozen at inventory-date state (after scaling).
+  ; Used in STEP 2 to cap MB interpolation elevation — matches MATLAB massbal.m:
+  ;   mb_sur(z) = obs_surf(z)  for cells where sur > obs_surf
+  obs_sur_dx = sur_dx
+
 endif
 
 ; ========== STEP 2: MAP GloGEM'S MB ONTO FLOWLINE GRID ========== ;
@@ -119,11 +149,15 @@ endif
 ; to m ice. Replaces the duplicate T-index recalculation in
 ; flowline_massbal.pro — GloGEM's calibrated MB is the single source.
 bal_dx = dblarr(xnum)
+; Cap surface elevation used for MB interpolation at the inventory-date reference surface.
+; Prevents runaway positive feedback when modelled ice temporarily exceeds the observed
+; profile (inflated geometry → high elevation → positive accumulation-zone MB → more growth).
+mb_sur_dx = sur_dx < obs_sur_dx
 ii_gl_bands = where(gl ne noval, n_gl_bands)
 if n_gl_bands ge 2 then begin
-  bal_we_interp = interpol(bal[ii_gl_bands], elev[ii_gl_bands], sur_dx)
+  bal_we_interp = interpol(bal[ii_gl_bands], elev[ii_gl_bands], mb_sur_dx)
 endif else begin
-  bal_we_interp = interpol(bal, elev, sur_dx)
+  bal_we_interp = interpol(bal, elev, mb_sur_dx)
 endelse
 ii_ice_mb = where(thick_dx gt 0, c_ice_mb)
 if c_ice_mb gt 0 then bal_dx[ii_ice_mb] = bal_we_interp[ii_ice_mb] / 0.917d0
@@ -141,33 +175,38 @@ endif
 ; ========== STEP 2b: STORE BEGINNING-OF-YEAR STATE (matching dhdt timing) ========== ;
 ; finalize_annual_massbalance.pro stores volumes[ye] BEFORE retreat.
 ; We match this: store the flowline state before the SIA advance.
-ii_boy = where(thick_dx gt 0, c_boy)
-if c_boy gt 0 then begin
-  volumes[ye] = total(thick_dx[ii_boy] * width_dx[ii_boy] * dx) / 1d9
-  ; Area with fractional terminus/head correction for smooth evolution
-  i_t_boy = min(ii_boy)
-  i_h_boy = max(ii_boy)
-  area_sum_boy = total(width_surface_dx[ii_boy] * dx)
-  if i_t_boy lt i_h_boy then begin
-    if thick_dx[i_t_boy + 1] gt 0 then begin
-      frac_t = (thick_dx[i_t_boy] / thick_dx[i_t_boy + 1]) < 1d0
-      area_sum_boy = area_sum_boy + (frac_t - 1d0) * width_surface_dx[i_t_boy] * dx
+; Skip if blown up: volumes[ye]/areas[ye] from finalize_annual_massbalance.pro
+; (the dhdt parametrisation) are then automatically kept in the output.
+if NOT flow_blown_up then begin
+  ii_boy = where(thick_dx gt 0, c_boy)
+  if c_boy gt 0 then begin
+    volumes[ye] = total(thick_dx[ii_boy] * width_dx[ii_boy] * dx) / 1d9
+    ; Area with fractional terminus/head correction for smooth evolution
+    i_t_boy = min(ii_boy)
+    i_h_boy = max(ii_boy)
+    area_sum_boy = total(width_surface_dx[ii_boy] * dx)
+    if i_t_boy lt i_h_boy then begin
+      if thick_dx[i_t_boy + 1] gt 0 then begin
+        frac_t = (thick_dx[i_t_boy] / thick_dx[i_t_boy + 1]) < 1d0
+        area_sum_boy = area_sum_boy + (frac_t - 1d0) * width_surface_dx[i_t_boy] * dx
+      endif
+      if thick_dx[i_h_boy - 1] gt 0 then begin
+        frac_h = (thick_dx[i_h_boy] / thick_dx[i_h_boy - 1]) < 1d0
+        area_sum_boy = area_sum_boy + (frac_h - 1d0) * width_surface_dx[i_h_boy] * dx
+      endif
     endif
-    if thick_dx[i_h_boy - 1] gt 0 then begin
-      frac_h = (thick_dx[i_h_boy] / thick_dx[i_h_boy - 1]) < 1d0
-      area_sum_boy = area_sum_boy + (frac_h - 1d0) * width_surface_dx[i_h_boy] * dx
-    endif
-  endif
-  areas[ye] = (area_sum_boy > 0d0) / 1d6
-  mb[ye]    = total(bal_dx[ii_boy] * width_surface_dx[ii_boy] * dx * 0.917d0) / $
-              total(width_surface_dx[ii_boy] * dx)
-endif else begin
-  volumes[ye] = 0d0
-  areas[ye]   = 0d0
-  mb[ye]      = 0d0
-endelse
+    areas[ye] = (area_sum_boy > 0d0) / 1d6
+    mb[ye]    = total(bal_dx[ii_boy] * width_surface_dx[ii_boy] * dx * 0.917d0) / $
+                total(width_surface_dx[ii_boy] * dx)
+  endif else begin
+    volumes[ye] = 0d0
+    areas[ye]   = 0d0
+    mb[ye]      = 0d0
+  endelse
+endif
 
 ; ========== STEP 3: ADVANCE FLOW MODEL BY 1 YEAR ========== ;
+if NOT flow_blown_up then begin
 time_flow = 0d0
 year_end_flow = 1d0
 iter_flow = 0l
@@ -193,16 +232,22 @@ while (time_flow lt year_end_flow) and (iter_flow lt max_iter_flow) do begin
   time_flow = time_flow + dt
   iter_flow = iter_flow + 1l
 
-  ; Safety: bail out if thickness blows up
+  ; Safety: bail out if thickness blows up; fall back to dhdt for rest of run
   if max(thick_dx) gt 5000d0 or total(~finite(thick_dx)) gt 0 then begin
     print, 'WARNING: GloGEMflow blow-up at iter=' + strtrim(iter_flow, 2) + $
       ', max(thick_dx)=' + strtrim(max(thick_dx), 2)
+    print, '  Falling back to dhdt parametrisation for remainder of run.'
+    flow_blown_up = 1
+    thick_dx[*]   = 0d0
+    sur_dx        = bed_dx
     break
   endif
 endwhile
 
 if iter_flow ge max_iter_flow then $
   print, 'WARNING: GloGEMflow hit max iterations for year ' + strtrim(ye + tran[0], 2)
+
+endif  ; NOT flow_blown_up (STEP 3)
 
 ; ========== STEP 4: UPDATE GEOMETRY ========== ;
 ; No explicit terminus cleanup here — ice_thickness.pro already zeroes
