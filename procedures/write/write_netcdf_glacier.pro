@@ -27,6 +27,7 @@
 ;     accmo/accday, melmo/snowmeltday/icemeltday,
 ;     refrmo/refrday, discharge_gl,
 ;     tempmo_ini/tempday_ini, precmo_ini/precday_ini,
+;     ela, aar, discharge, area_cat (Table 5 optional vars),
 ;     area_ini, id, gg, g, snoval, time_resolution
 ;   From init procedure: nc_*, nc_vid_*, nc_reg_*, nc_has_split,
 ;     nc_years, nc_n_sub, nc_fv, nc_g,
@@ -36,12 +37,18 @@
 compile_opt idl2
 
 ; ================================================================
+; RGI ID STRING  (GlacierMIP4 format, e.g. RGI70-11.02596)
+; ================================================================
+nc_rgiid = 'RGI' + strtrim(RGIversion, 2) + '0-' + nc_rgi_str + '.' + strtrim(id[gg[g]], 2)
+
+; ================================================================
 ; UNIT CONVERSIONS
 ; ================================================================
 
 ; Expand annual areas to sub-annual for variables using evolving area
+; (monthly layout when running monthly OR when aggregating a daily run to monthly)
 nc_area_sub = dblarr(nc_n_sub)
-if time_resolution eq 'monthly' then begin
+if time_resolution eq 'monthly' or nc_aggregate then begin
     for ye = 0, nc_years-1 do $
         nc_area_sub[ye*12:ye*12+11] = areas[ye]
 endif else begin
@@ -66,6 +73,38 @@ if time_resolution eq 'monthly' then begin
     gl_run  = float(discharge_gl * nc_area_sub * 1e9)
     gl_prec = float(precmo_ini   * 1e9)              ; [m w.e. x km2] -> kg
     gl_temp = tempmo_ini                             ; already in K
+    gl_rbas = float(discharge    * area_cat * 1e9)   ; basin runoff over initial area -> kg
+endif else if nc_aggregate then begin
+    ; Daily run aggregated to monthly NetCDF: sum daily values within each
+    ; calendar month; mean for temperature. Fixed month lengths (sum to 365);
+    ; note mon_len is all-ones in a daily run, so a local array is used here.
+    nc_mlen = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    melt_day = snowmeltday + icemeltday
+    acc_m  = dblarr(nc_n_sub) & melt_m = acc_m & refr_m = acc_m
+    run_m  = acc_m & prec_m = acc_m & rbas_m = acc_m & temp_m = acc_m
+    for ye = 0L, nc_years-1L do begin
+        m0 = 0L
+        for mo = 0, 11 do begin
+            i0 = ye*365L + m0
+            i1 = i0 + nc_mlen[mo] - 1
+            k  = ye*12 + mo
+            acc_m[k]  = total(accday[i0:i1])
+            melt_m[k] = total(melt_day[i0:i1])
+            refr_m[k] = total(refrday[i0:i1])
+            run_m[k]  = total(discharge_gl[i0:i1])
+            prec_m[k] = total(precday_ini[i0:i1])
+            rbas_m[k] = total(discharge[i0:i1])
+            temp_m[k] = mean(tempday_ini[i0:i1])
+            m0 = m0 + nc_mlen[mo]
+        endfor
+    endfor
+    gl_acc  = float(acc_m  * nc_ini_area * 1e9)
+    gl_melt = float(melt_m * nc_ini_area * 1e9)
+    gl_refr = float(refr_m * nc_ini_area * 1e9)
+    gl_run  = float(run_m  * nc_area_sub * 1e9)
+    gl_prec = float(prec_m * 1e9)
+    gl_temp = temp_m
+    gl_rbas = float(rbas_m * area_cat * 1e9)
 endif else begin
     ; acc/melt/refr: divided by total(area_ini) in store step
     gl_acc  = float(accday                        * nc_ini_area * 1e9)
@@ -74,7 +113,12 @@ endif else begin
     gl_run  = float(discharge_gl                  * nc_area_sub * 1e9)
     gl_prec = float(precday_ini  * 1e9)
     gl_temp = tempday_ini
+    gl_rbas = float(discharge    * area_cat * 1e9)   ; basin runoff over initial area -> kg
 endelse
+
+; GlacierMIP4 Table 5 optional individual-glacier annual variables
+gl_ela  = float(ela)                          ; annual ELA [m a.s.l.]
+gl_aar  = float(aar) / 100.                   ; annual AAR [fraction 0-1] (aar stored as percent)
 
 ; Replace snoval with NaN
 nc_sv = snoval + 1.
@@ -88,38 +132,44 @@ ii = where(gl_refr lt nc_sv, ci) & if ci gt 0 then gl_refr[ii] = nc_fv
 ii = where(gl_run  lt nc_sv, ci) & if ci gt 0 then gl_run[ii]  = nc_fv
 ii = where(gl_prec lt nc_sv, ci) & if ci gt 0 then gl_prec[ii] = nc_fv
 ii = where(gl_temp lt nc_sv, ci) & if ci gt 0 then gl_temp[ii] = nc_fv
+ii = where(gl_ela  lt nc_sv, ci) & if ci gt 0 then gl_ela[ii]  = nc_fv
+ii = where(gl_aar  lt nc_sv/100., ci) & if ci gt 0 then gl_aar[ii]  = nc_fv   ; threshold scaled (AAR now fraction)
 
 ; ================================================================
 ; WRITE INDIVIDUAL FILES (full period)
 ; ================================================================
-ncdf_varput, nc_ann_i, nc_vid_i_rgid,  id[gg[g]],  offset=[nc_g]
+ncdf_varput, nc_ann_i, nc_vid_i_rgid,  nc_rgiid,   offset=[nc_g]
 ncdf_varput, nc_ann_i, nc_vid_i_area,  gl_area,    offset=[nc_g, 0], count=[1, nc_years]
 ncdf_varput, nc_ann_i, nc_vid_i_mass,  gl_mass,    offset=[nc_g, 0], count=[1, nc_years]
 ncdf_varput, nc_ann_i, nc_vid_i_mbsl,  gl_mbsl,    offset=[nc_g, 0], count=[1, nc_years]
 ncdf_varput, nc_ann_i, nc_vid_i_fabl,  gl_fabl,    offset=[nc_g, 0], count=[1, nc_years]
+ncdf_varput, nc_ann_i, nc_vid_i_ela,   gl_ela,     offset=[nc_g, 0], count=[1, nc_years]
+ncdf_varput, nc_ann_i, nc_vid_i_aar,   gl_aar,     offset=[nc_g, 0], count=[1, nc_years]
 
-ncdf_varput, nc_sub_i, nc_vid_i_rgid_s, id[gg[g]], offset=[nc_g]
+ncdf_varput, nc_sub_i, nc_vid_i_rgid_s, nc_rgiid,  offset=[nc_g]
 ncdf_varput, nc_sub_i, nc_vid_i_run,    gl_run,    offset=[nc_g, 0], count=[1, nc_n_sub]
+ncdf_varput, nc_sub_i, nc_vid_i_rbas,   gl_rbas,   offset=[nc_g, 0], count=[1, nc_n_sub]
+ncdf_varput, nc_sub_i, nc_vid_i_acc,    gl_acc,    offset=[nc_g, 0], count=[1, nc_n_sub]
+ncdf_varput, nc_sub_i, nc_vid_i_melt,   gl_melt,   offset=[nc_g, 0], count=[1, nc_n_sub]
+ncdf_varput, nc_sub_i, nc_vid_i_refr,   gl_refr,   offset=[nc_g, 0], count=[1, nc_n_sub]
+ncdf_varput, nc_sub_i, nc_vid_i_prec,   gl_prec,   offset=[nc_g, 0], count=[1, nc_n_sub]
+ncdf_varput, nc_sub_i, nc_vid_i_temp,   gl_temp,   offset=[nc_g, 0], count=[1, nc_n_sub]
 
 ; ================================================================
 ; ACCUMULATE INTO REGIONAL SUMS (NaN-safe: only add valid values)
 ; ================================================================
-; Annual
-for ye = 0, nc_years-1 do begin
-    if gl_area[ye] gt 0 then nc_reg_area[ye] += gl_area[ye]
-    if gl_mass[ye] gt 0 then nc_reg_mass[ye] += gl_mass[ye]
-    if gl_mbsl[ye] gt 0 then nc_reg_mbsl[ye] += gl_mbsl[ye]
-    if gl_fabl[ye] gt 0 then nc_reg_fabl[ye] += gl_fabl[ye]
-endfor
+; Annual (vectorised: add only positive, finite values per time step)
+add = gl_area & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_area += add
+add = gl_mass & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_mass += add
+add = gl_mbsl & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_mbsl += add
+add = gl_fabl & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_fabl += add
 
-; Sub-annual
-for ts = 0L, nc_n_sub-1L do begin
-    if gl_acc[ts]  gt 0 then nc_reg_acc[ts]  += gl_acc[ts]
-    if gl_melt[ts] gt 0 then nc_reg_melt[ts] += gl_melt[ts]
-    if gl_refr[ts] gt 0 then nc_reg_refr[ts] += gl_refr[ts]
-    if gl_run[ts]  gt 0 then nc_reg_run[ts]  += gl_run[ts]
-    if gl_prec[ts] gt 0 then nc_reg_prec[ts] += gl_prec[ts]
-endfor
+; Sub-annual (vectorised)
+add = gl_acc  & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_acc  += add
+add = gl_melt & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_melt += add
+add = gl_refr & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_refr += add
+add = gl_run  & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_run  += add
+add = gl_prec & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_prec += add
 ; Temperature: area-weighted accumulation (skip snoval entries)
 if nc_ini_area gt 0 then begin
     ii = where(gl_temp gt nc_sv, ci)
@@ -146,28 +196,37 @@ gl_refr_p = gl_refr[0:nc_split_idx_sub-1]
 gl_run_p  = gl_run[0:nc_split_idx_sub-1]
 gl_prec_p = gl_prec[0:nc_split_idx_sub-1]
 gl_temp_p = gl_temp[0:nc_split_idx_sub-1]
+gl_ela_p  = gl_ela[0:nc_split_idx-1]
+gl_aar_p  = gl_aar[0:nc_split_idx-1]
+gl_rbas_p = gl_rbas[0:nc_split_idx_sub-1]
 
-ncdf_varput, nc_sp_ann_i, nc_vid_sp_i_rgid,  id[gg[g]], offset=[nc_g]
+ncdf_varput, nc_sp_ann_i, nc_vid_sp_i_rgid,  nc_rgiid,  offset=[nc_g]
 ncdf_varput, nc_sp_ann_i, nc_vid_sp_i_area,  gl_area_p, offset=[nc_g, 0], count=[1, nc_years_past]
 ncdf_varput, nc_sp_ann_i, nc_vid_sp_i_mass,  gl_mass_p, offset=[nc_g, 0], count=[1, nc_years_past]
 ncdf_varput, nc_sp_ann_i, nc_vid_sp_i_mbsl,  gl_mbsl_p, offset=[nc_g, 0], count=[1, nc_years_past]
 ncdf_varput, nc_sp_ann_i, nc_vid_sp_i_fabl,  gl_fabl_p, offset=[nc_g, 0], count=[1, nc_years_past]
-ncdf_varput, nc_sp_sub_i, nc_vid_sp_i_rgid_s, id[gg[g]], offset=[nc_g]
+ncdf_varput, nc_sp_ann_i, nc_vid_sp_i_ela,   gl_ela_p,  offset=[nc_g, 0], count=[1, nc_years_past]
+ncdf_varput, nc_sp_ann_i, nc_vid_sp_i_aar,   gl_aar_p,  offset=[nc_g, 0], count=[1, nc_years_past]
+ncdf_varput, nc_sp_sub_i, nc_vid_sp_i_rgid_s, nc_rgiid,  offset=[nc_g]
 ncdf_varput, nc_sp_sub_i, nc_vid_sp_i_run,    gl_run_p,  offset=[nc_g, 0], count=[1, nc_n_sub_past]
+ncdf_varput, nc_sp_sub_i, nc_vid_sp_i_rbas,   gl_rbas_p, offset=[nc_g, 0], count=[1, nc_n_sub_past]
+ncdf_varput, nc_sp_sub_i, nc_vid_sp_i_acc,    gl_acc_p,  offset=[nc_g, 0], count=[1, nc_n_sub_past]
+ncdf_varput, nc_sp_sub_i, nc_vid_sp_i_melt,   gl_melt_p, offset=[nc_g, 0], count=[1, nc_n_sub_past]
+ncdf_varput, nc_sp_sub_i, nc_vid_sp_i_refr,   gl_refr_p, offset=[nc_g, 0], count=[1, nc_n_sub_past]
+ncdf_varput, nc_sp_sub_i, nc_vid_sp_i_prec,   gl_prec_p, offset=[nc_g, 0], count=[1, nc_n_sub_past]
+ncdf_varput, nc_sp_sub_i, nc_vid_sp_i_temp,   gl_temp_p, offset=[nc_g, 0], count=[1, nc_n_sub_past]
 
-for ye = 0, nc_years_past-1 do begin
-    if gl_area_p[ye] gt 0 then nc_reg_sp_area[ye] += gl_area_p[ye]
-    if gl_mass_p[ye] gt 0 then nc_reg_sp_mass[ye] += gl_mass_p[ye]
-    if gl_mbsl_p[ye] gt 0 then nc_reg_sp_mbsl[ye] += gl_mbsl_p[ye]
-    if gl_fabl_p[ye] gt 0 then nc_reg_sp_fabl[ye] += gl_fabl_p[ye]
-endfor
-for ts = 0L, nc_n_sub_past-1L do begin
-    if gl_acc_p[ts]  gt 0 then nc_reg_sp_acc[ts]  += gl_acc_p[ts]
-    if gl_melt_p[ts] gt 0 then nc_reg_sp_melt[ts] += gl_melt_p[ts]
-    if gl_refr_p[ts] gt 0 then nc_reg_sp_refr[ts] += gl_refr_p[ts]
-    if gl_run_p[ts]  gt 0 then nc_reg_sp_run[ts]  += gl_run_p[ts]
-    if gl_prec_p[ts] gt 0 then nc_reg_sp_prec[ts] += gl_prec_p[ts]
-endfor
+; Annual (vectorised)
+add = gl_area_p & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_sp_area += add
+add = gl_mass_p & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_sp_mass += add
+add = gl_mbsl_p & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_sp_mbsl += add
+add = gl_fabl_p & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_sp_fabl += add
+; Sub-annual (vectorised)
+add = gl_acc_p  & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_sp_acc  += add
+add = gl_melt_p & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_sp_melt += add
+add = gl_refr_p & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_sp_refr += add
+add = gl_run_p  & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_sp_run  += add
+add = gl_prec_p & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_sp_prec += add
 if nc_ini_area gt 0 then begin
     ii = where(gl_temp_p gt nc_sv, ci)
     if ci gt 0 then begin
@@ -187,28 +246,37 @@ gl_refr_f = gl_refr[nc_split_idx_sub:*]
 gl_run_f  = gl_run[nc_split_idx_sub:*]
 gl_prec_f = gl_prec[nc_split_idx_sub:*]
 gl_temp_f = gl_temp[nc_split_idx_sub:*]
+gl_ela_f  = gl_ela[nc_split_idx:*]
+gl_aar_f  = gl_aar[nc_split_idx:*]
+gl_rbas_f = gl_rbas[nc_split_idx_sub:*]
 
-ncdf_varput, nc_sf_ann_i, nc_vid_sf_i_rgid,  id[gg[g]], offset=[nc_g]
+ncdf_varput, nc_sf_ann_i, nc_vid_sf_i_rgid,  nc_rgiid,  offset=[nc_g]
 ncdf_varput, nc_sf_ann_i, nc_vid_sf_i_area,  gl_area_f, offset=[nc_g, 0], count=[1, nc_years_fut]
 ncdf_varput, nc_sf_ann_i, nc_vid_sf_i_mass,  gl_mass_f, offset=[nc_g, 0], count=[1, nc_years_fut]
 ncdf_varput, nc_sf_ann_i, nc_vid_sf_i_mbsl,  gl_mbsl_f, offset=[nc_g, 0], count=[1, nc_years_fut]
 ncdf_varput, nc_sf_ann_i, nc_vid_sf_i_fabl,  gl_fabl_f, offset=[nc_g, 0], count=[1, nc_years_fut]
-ncdf_varput, nc_sf_sub_i, nc_vid_sf_i_rgid_s, id[gg[g]], offset=[nc_g]
+ncdf_varput, nc_sf_ann_i, nc_vid_sf_i_ela,   gl_ela_f,  offset=[nc_g, 0], count=[1, nc_years_fut]
+ncdf_varput, nc_sf_ann_i, nc_vid_sf_i_aar,   gl_aar_f,  offset=[nc_g, 0], count=[1, nc_years_fut]
+ncdf_varput, nc_sf_sub_i, nc_vid_sf_i_rgid_s, nc_rgiid,  offset=[nc_g]
 ncdf_varput, nc_sf_sub_i, nc_vid_sf_i_run,    gl_run_f,  offset=[nc_g, 0], count=[1, nc_n_sub_fut]
+ncdf_varput, nc_sf_sub_i, nc_vid_sf_i_rbas,   gl_rbas_f, offset=[nc_g, 0], count=[1, nc_n_sub_fut]
+ncdf_varput, nc_sf_sub_i, nc_vid_sf_i_acc,    gl_acc_f,  offset=[nc_g, 0], count=[1, nc_n_sub_fut]
+ncdf_varput, nc_sf_sub_i, nc_vid_sf_i_melt,   gl_melt_f, offset=[nc_g, 0], count=[1, nc_n_sub_fut]
+ncdf_varput, nc_sf_sub_i, nc_vid_sf_i_refr,   gl_refr_f, offset=[nc_g, 0], count=[1, nc_n_sub_fut]
+ncdf_varput, nc_sf_sub_i, nc_vid_sf_i_prec,   gl_prec_f, offset=[nc_g, 0], count=[1, nc_n_sub_fut]
+ncdf_varput, nc_sf_sub_i, nc_vid_sf_i_temp,   gl_temp_f, offset=[nc_g, 0], count=[1, nc_n_sub_fut]
 
-for ye = 0, nc_years_fut-1 do begin
-    if gl_area_f[ye] gt 0 then nc_reg_sf_area[ye] += gl_area_f[ye]
-    if gl_mass_f[ye] gt 0 then nc_reg_sf_mass[ye] += gl_mass_f[ye]
-    if gl_mbsl_f[ye] gt 0 then nc_reg_sf_mbsl[ye] += gl_mbsl_f[ye]
-    if gl_fabl_f[ye] gt 0 then nc_reg_sf_fabl[ye] += gl_fabl_f[ye]
-endfor
-for ts = 0L, nc_n_sub_fut-1L do begin
-    if gl_acc_f[ts]  gt 0 then nc_reg_sf_acc[ts]  += gl_acc_f[ts]
-    if gl_melt_f[ts] gt 0 then nc_reg_sf_melt[ts] += gl_melt_f[ts]
-    if gl_refr_f[ts] gt 0 then nc_reg_sf_refr[ts] += gl_refr_f[ts]
-    if gl_run_f[ts]  gt 0 then nc_reg_sf_run[ts]  += gl_run_f[ts]
-    if gl_prec_f[ts] gt 0 then nc_reg_sf_prec[ts] += gl_prec_f[ts]
-endfor
+; Annual (vectorised)
+add = gl_area_f & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_sf_area += add
+add = gl_mass_f & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_sf_mass += add
+add = gl_mbsl_f & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_sf_mbsl += add
+add = gl_fabl_f & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_sf_fabl += add
+; Sub-annual (vectorised)
+add = gl_acc_f  & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_sf_acc  += add
+add = gl_melt_f & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_sf_melt += add
+add = gl_refr_f & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_sf_refr += add
+add = gl_run_f  & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_sf_run  += add
+add = gl_prec_f & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_sf_prec += add
 if nc_ini_area gt 0 then begin
     ii = where(gl_temp_f gt nc_sv, ci)
     if ci gt 0 then begin

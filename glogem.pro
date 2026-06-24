@@ -1,5 +1,5 @@
 ; *************************************************************
-; glogem
+; GloGEM
 ;
 ; Orchestrate the GloGEM glacier mass balance model from model
 ; initialisation through to results output.
@@ -119,7 +119,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
           ; attribute updated space ranges to be calculated
           lat0=[9999,9999]        ; run for entire region
           lon0=[0,0]        ; or specify sub-regions
-          if clim_subregion ne '' then begin
+          if clim_subregion ne '' and time_resolution eq 'monthly' then begin
             ccl='_'+clim_subregion 
             @procedures/read/read_climatepast_monthly.pro
             @procedures/read/read_gcmdata_monthly.pro

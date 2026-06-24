@@ -105,6 +105,7 @@ write_file = 'y'
 write_netcdf = 'n' ; 'y' to write GlacierMIP4-compliant NetCDF output
 netcdf_split = 'n' ; 'y' to also split projection runs into past/future NetCDF files
 netcdf_split_year = 2025 ; first year of the projection period (split boundary)
+netcdf_daily_aggregated_monthly = 'n' ; for daily runs: 'y' to aggregate the NetCDF sub-annual output to monthly (the .dat output stays daily)
 
 ; === parameters
 
@@ -431,6 +432,9 @@ if long_GCM ne '' then outf_names = ['Area', 'Volume', 'Annual_Balance_sfc', 'Wi
 ; If a user has cleared outf_names[14] (e.g. via a custom outf_names override or the
 ; long_GCM reduction above), re-enable it so the NetCDF writer does not crash.
 if write_netcdf eq 'y' and outf_names[14] eq '' then outf_names[14] = 'Discharge_gl'
+
+; Daily->monthly NetCDF aggregation only applies to daily runs that write NetCDF.
+if time_resolution ne 'daily' or write_netcdf ne 'y' then netcdf_daily_aggregated_monthly = 'n'
 
 ; **********************************
 ; -----------------------------------

@@ -153,3 +153,6 @@
 ;                                ;   past portion  -> PAST/PAST_netcdf/   (reanalysis naming)
 ;                                ;   future portion -> files/files_netcdf/split/ (GCM naming)
 ;netcdf_split_year = 2025        ; first year of the projection period (split boundary)
+;netcdf_daily_aggregated_monthly = 'n' ; daily runs only: 'y' aggregates the NetCDF sub-annual
+;                                ;   output to monthly (years x 12) while the .dat output stays
+;                                ;   daily. Ignored unless time_resolution='daily' and write_netcdf='y'.
