@@ -212,6 +212,14 @@ year_end_flow = 1d0
 iter_flow = 0l
 max_iter_flow = 50000l
 
+; Save beginning-of-year geometry so blow-up can restore it rather than
+; zeroing thick_dx. Zeroing would cause update_elevation_bands (called
+; immediately after this file in glogem.pro) to deactivate all bands,
+; making finalize_annual_massbalance report vol=0 for every subsequent
+; year — even though dhdt should continue evolving the glacier normally.
+thick_dx_year_start = thick_dx
+sur_dx_year_start   = sur_dx
+
 while (time_flow lt year_end_flow) and (iter_flow lt max_iter_flow) do begin
   ; ---- Adaptive time step (CFL criterion) ----
   if max(df_dx) gt 0 then begin
@@ -232,14 +240,16 @@ while (time_flow lt year_end_flow) and (iter_flow lt max_iter_flow) do begin
   time_flow = time_flow + dt
   iter_flow = iter_flow + 1l
 
-  ; Safety: bail out if thickness blows up; fall back to dhdt for rest of run
+  ; Safety: bail out if thickness blows up; fall back to dhdt for rest of run.
+  ; Restore beginning-of-year geometry (not zero) so update_elevation_bands
+  ; keeps the band state intact and dhdt can continue retreating the glacier.
   if max(thick_dx) gt 5000d0 or total(~finite(thick_dx)) gt 0 then begin
     print, 'WARNING: GloGEMflow blow-up at iter=' + strtrim(iter_flow, 2) + $
       ', max(thick_dx)=' + strtrim(max(thick_dx), 2)
     print, '  Falling back to dhdt parametrisation for remainder of run.'
     flow_blown_up = 1
-    thick_dx[*]   = 0d0
-    sur_dx        = bed_dx
+    thick_dx      = thick_dx_year_start
+    sur_dx        = sur_dx_year_start
     break
   endif
 endwhile
