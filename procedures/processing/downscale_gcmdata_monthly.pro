@@ -17,12 +17,11 @@
 compile_opt idl2
 
 ; find corresponding grid cell of reanalysis-file
-dtt=dblarr(2,nlons[0])
-for i=0,nlons[0]-1 do begin
-   a=min(sqrt((rlat-gmid[0])^2+(rlon[i]-gmid[1])^2),ind) & dtt[0,i]=a & dtt[1,i]=ind
-endfor
-a=min(dtt[0,*],ind2)
-rmid=[rlat[ind],rlon[ind2]]
+; Closest latitude
+dummy = min(abs(rlat - gmid[0]), ind_lat)
+; Closest longitude
+dummy = min(abs(rlon - gmid[1]), ind_lon)
+rmid = [rlat[ind_lat], rlon[ind_lon]]
 
 ; ------------------------------
 ; meteo time series directly from re-analysis data (past)
@@ -57,12 +56,11 @@ endif else begin
    ; Original for .mdi files
    if GMIP4 eq 'n' then begin
       ; find closest GCM-point
-      dtt=dblarr(2,n_elements(gcm_lon))
-      for i=0,n_elements(gcm_lon)-1 do begin
-         a=min(sqrt((gcm_lat-rmid[0])^2+(gcm_lon[i]-rmid[1])^2),ind) & dtt[0,i]=a & dtt[1,i]=ind
-      endfor
-      a=min(dtt[0,*],ind2)
-      gcm_mid=[gcm_lat[ind],gcm_lon[ind2]]
+      ; Closest latitude
+      dummy = min(abs(gcm_lat - rmid[0]), ind_lat)
+      ; Closest longitude
+      dummy = min(abs(gcm_lon - rmid[1]), ind_lon)
+      gcm_mid = [gcm_lat[ind_lat], gcm_lon[ind_lon]]
       ; calculate monthly bias in the past
       bias=dblarr(3,12)    ; (0) temp, (1) prec, (2) tvar
       ii=where(gcm_lat eq gcm_mid[0])
@@ -152,31 +150,26 @@ endif else begin
                endif
             endfor
          endif else begin
-      ; use projections only for unmeasured future
-            hh=where(gcm_year eq i+tran[0])
-            for m=1,12 do begin
-               cyear[n]=i+tran[0]
-               cmon[n]=m
-               kk=where(gcm_year eq i+tran[0] and gcm_mon eq m,ck)
-               ; hack for GCMs only extending to 2099 / 2298
-               if AMOC ne 'y' then begin
-                  if ck eq 0 then kk=where(gcm_year eq i+tran[0]-2 and gcm_mon eq m,ck)
-                  if ck eq 0 then kk=where(gcm_year eq i+tran[0]-3 and gcm_mon eq m,ck)
+         ; use projections only for unmeasured future
+            for m = 1, 12 do begin
+               kk = where(gcm_year eq current_year and gcm_mon eq m, ck)
+               if ck gt 0 then begin
+                  cyear[n] = current_year
+                  cmon[n] = m
+                  if AMOC eq 'y' then begin
+                     temp[n]=gcm_temp[kk[0]]-bias[0,m-1]
+                     prec[n]=gcm_prec[kk[0]]/bias[1,m-1]
+                  endif else begin
+                     temp[n]=gcm_temp[kk[0],jj[0],ii[0]]-bias[0,m-1]
+                     prec[n]=gcm_prec[kk[0],jj[0],ii[0]]/bias[1,m-1]
+                  endelse
+                  if meltmodel ne '1' then rad[n] = mrad[m - 1]
+                  n = n + 1
                endif
-               if AMOC eq 'y' then begin
-                  temp[n]=gcm_temp[kk[0]]-bias[0,m-1]
-                  prec[n]=gcm_prec[kk[0]]/bias[1,m-1]
-               endif else begin
-                  temp[n]=gcm_temp[kk[0],jj[0],ii[0]]-bias[0,m-1]
-                  prec[n]=gcm_prec[kk[0],jj[0],ii[0]]/bias[1,m-1]
-               endelse
-               if meltmodel ne '1' then begin
-                  rad[n]=mrad[m-1]
-               endif
-               n=n+1
             endfor
          endelse
       endfor
+      
       ; --------------------
       ; adapt temperature variability of GCM to re-analysis
       if variability_bias eq 'y' then begin
@@ -203,13 +196,6 @@ endif else begin
 
    endif else begin 
    ; Case GMIP4
-      ; find closest GCM-point of reanalysis (so far still the .mdi product)
-      dtt=dblarr(2,n_elements(gcm_lon))
-      for i=0,n_elements(gcm_lon)-1 do begin
-         a=min(sqrt((gcm_lat-rmid[0])^2+(gcm_lon[i]-rmid[1])^2),ind) & dtt[0,i]=a & dtt[1,i]=ind
-      endfor
-      a=min(dtt[0,*],ind2)
-      gcm_mid=[gcm_lat[ind],gcm_lon[ind2]]
       temp=dblarr((years+1)*12)
       prec=temp
       rad=temp
@@ -218,12 +204,12 @@ endif else begin
       n=0l
    
       ; find closest GCM-point
-      dtt=dblarr(2,n_elements(gcm_lon))
-      for i=0,n_elements(gcm_lon)-1 do begin
-         a=min(sqrt((gcm_lat-rmid[0])^2+(gcm_lon[i]-rmid[1])^2),ind) & dtt[0,i]=a & dtt[1,i]=ind
-      endfor
-      a=min(dtt[0,*],ind2)
-      gcm_mid=[gcm_lat[ind],gcm_lon[ind2]]
+      ; Closest latitude
+      dummy = min(abs(gcm_lat - rmid[0]), ind_lat)
+      ; Closest longitude
+      dummy = min(abs(gcm_lon - rmid[1]), ind_lon)
+      gcm_mid = [gcm_lat[ind_lat], gcm_lon[ind_lon]]
+
       ; calculate monthly bias in the past
       bias=dblarr(3,12)    ; (0) temp, (1) prec, (2) tvar
       ii=where(gcm_lat eq gcm_mid[0])
