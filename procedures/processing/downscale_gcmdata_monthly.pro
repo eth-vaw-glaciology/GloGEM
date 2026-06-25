@@ -123,20 +123,33 @@ endif else begin
       cmon=temp
       n=0l
 
-      for i=0,years-1 do begin
-      ; use re-analysis data as long as available! After (AND before) use GCM data
-         if i+tran[0] le max(ryear) and i+tran[0] gt min(ryear) then begin
-            for m=1,12 do begin
-               bb=where(rlat eq rmid[0]) & cc=where(rlon eq rmid[1]) & hh=where(ryear eq i+tran[0]-1 and rmon eq m,ci)
-               cyear[n]=i+tran[0]-1 & cmon[n]=m
+      ; Precompute constants
+      tran_offset = tran[0]
+      max_ryear = max(ryear)
+      min_ryear = min(ryear)
+      max_gcm_year = max(gcm_year) ; Get the maximum year from GCM data
+      n = 0
+
+      ; Precompute indices for re-analysis and GCM data
+      for i = 0, years do begin
+         current_year = i + tran_offset
+         ; Stop processing if the current year exceeds the maximum GCM year
+         if current_year gt max_gcm_year then break
+         ; Use re-analysis data if available
+         if current_year le max_ryear and current_year gt min_ryear then begin
+            for m = 1, 12 do begin
+               ; Precompute indices for the current year and month
+               hh = where(ryear eq current_year and rmon eq m, ci)
                if ci gt 0 then begin
-                  temp[n]=rtemp[hh[0],cc[0],bb[0]]
-                  prec[n]=rprec[hh[0],cc[0],bb[0]]
-               endif else stop
-               if meltmodel ne '1' then begin 
-                  rad[n]=mrad[m-1]
+                  bb = where(rlat eq rmid[0])
+                  cc = where(rlon eq rmid[1])
+                  cyear[n] = current_year
+                  cmon[n] = m
+                  temp[n] = rtemp[hh[0], cc[0], bb[0]]
+                  prec[n] = rprec[hh[0], cc[0], bb[0]]
+                  if meltmodel ne '1' then rad[n] = mrad[m - 1]
+                  n = n + 1
                endif
-               n=n+1
             endfor
          endif else begin
       ; use projections only for unmeasured future
