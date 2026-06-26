@@ -127,7 +127,6 @@ endif else begin
       min_ryear = min(ryear)
       max_gcm_year = max(gcm_year) ; Get the maximum year from GCM data
       n = 0
-
       ; Precompute indices for re-analysis and GCM data
       for i = 0, years do begin
          current_year = i + tran_offset
@@ -172,30 +171,24 @@ endif else begin
       
       ; --------------------
       ; adapt temperature variability of GCM to re-analysis
+      ; Apply only to GCM/projection months, identified by cyear/cmon
       if variability_bias eq 'y' then begin
-         ; smoothed monthly temperature time series                                                                                                                                                                                                                                                                      
-         tm_smooth=dblarr(12,years)
-         for i=0,years-1 do begin
-            for m=0,11 do begin
-               tm_smooth[m,i]=temp[12*i+m]
-            endfor
-         endfor
-         for m=0,11 do begin
-            tt=dblarr(years) &
-            for i=0,years-1 do begin
-               tt[i]=tm_smooth[m,i]
-            endfor
-            tm_smooth[m,*]=rmean(rmean(tt,5),25)
-         endfor
-         for i=0,years-1 do begin
-            for m=0,11 do begin
-               temp[12*i+m]=tm_smooth[m,i]+(temp[12*i+m]-tm_smooth[m,i])*bias[2,m]
-            endfor
+         for p = 1, 12 do begin
+           pp = where(cmon[0:n-1] eq p, ch)
+            if ch gt 0 then begin
+               tt = temp[pp]
+               tt_smooth = rmean(rmean(tt,5),25)
+               ; Only correct GCM period
+               rr = where(cyear[pp] gt max_ryear, cp)
+               if cp gt 0 then begin
+                  temp[pp[rr]] = tt_smooth[rr] + (temp[hh[rr]] - tt_smooth[rr]) * bias[2,p-1]
+               endif
+            endif
          endfor
       endif
-
+      
    endif else begin 
-   ; Case GMIP4
+   ; Case GMIP4 
       temp=dblarr((years+1)*12)
       prec=temp
       rad=temp
