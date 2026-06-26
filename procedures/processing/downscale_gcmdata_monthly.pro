@@ -181,7 +181,7 @@ endif else begin
                ; Only correct GCM period
                rr = where(cyear[pp] gt max_ryear, cp)
                if cp gt 0 then begin
-                  temp[pp[rr]] = tt_smooth[rr] + (temp[hh[rr]] - tt_smooth[rr]) * bias[2,p-1]
+                  temp[pp[rr]] = tt_smooth[rr] + (temp[pp[rr]] - tt_smooth[rr]) * bias[2,p-1]
                endif
             endif
          endfor
