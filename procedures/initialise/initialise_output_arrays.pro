@@ -26,3 +26,6 @@ ela=dblarr(years)+snoval & dbdz=ela & btongue=ela & aar=ela & hmin_g=ela
 area_cat=total(area)
 
 if adv_lookup eq 'y' then adv_lookup_data=dblarr(3,nb,years)
+ccmon=0l
+melt_rf_sum = dblarr(nb)
+refr_rf_sum = dblarr(nb)

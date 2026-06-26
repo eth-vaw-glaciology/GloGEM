@@ -154,9 +154,18 @@ firnice_write = ['y', 'y'] ; [overall time series, detailed profiles]
 firnice_batch = 'n'
 firnice_profile = [0.2, 0.65, 0.95] ; elevation ratios (or masl if >1) for profile output
 firnice_glenglat_lookup = ''  ; path to per-glacier borehole elevation lookup; '' = disabled
+firnice_thermal_spinup = 'n'          ; 'y' = run 1D thermal spinup before main loop
+firnice_spinup_ref_period = [1961, 1990] ; climate reference period for equilibrium spinup
+firnice_spinup_max_cycles = 500       ; max equilibrium cycles (convergence usually <200)
+firnice_spinup_tol = 0.05d            ; °C convergence tolerance (max change in deep layers)
+firnice_spinup_min_cycles = 200       ; minimum equilibrium cycles before convergence is checked
 enable_advection = 'n'
 advection_write = 'n'
 firn_permeability = 'y'
+firnice_perm_frac       = 1.0d  ; 0-1: scales effective percolation depth (1 = full H-L depth)
+firnice_dT_scale        = 1.0d  ; 0-2: scales firn insulation correction to surface BC
+firnice_temp_calib      = 'n'   ; 'y' = apply per-band transfer-model calibration
+firnice_temp_calib_file = ''    ; path to per-glacier override file; '' = use transfer model or defaults
 
 ; --- geometry evolution model
 ; two options: (1) dhdt-parameterisation (Huss et al., 2010) via glacier_retreat='y',

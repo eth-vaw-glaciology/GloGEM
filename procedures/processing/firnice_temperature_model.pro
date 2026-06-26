@@ -81,19 +81,28 @@ a=min(abs(thick[ii[i]]-fit_dz[1,*]),ind)
 if firnice_batch eq 'y' then a=min(abs(firnice_maxdepth[0]-fit_dz[1,*]),ind)  ; run to actual depth of profile in batch/validation-mode
 tt=min([ind+1,total(fit_layers)])  ; either run to bedrock, or to max of layers
 
-; Permeability limit for meltwater percolation: stop water at the firn-ice
-; transition (~830 kg/m³). Below this density meltwater cannot penetrate in
-; reality. Heat conduction still runs to bedrock (tt-2). Only the latent-heat
-; refreezing loop for firn bands is capped here.
-firnice_perm_dens = 830.d
-perm_idx = where(dens_fit ge firnice_perm_dens, cperm)
-perm_limit = (cperm gt 0) ? ((perm_idx[0]-1) > 1) : (tt-2)
-perm_limit = perm_limit < (tt-2)
+; Permeability limit: stop meltwater at the firn-ice transition. Depth is
+; band-specific (Herron-Langway, computed in initialise_firnicetemp_spinup.pro)
+; so that high-accumulation sites get the physically correct ~50-80 m depth
+; rather than the fixed 30 m that the constant fit_dens profile would give.
+; Heat conduction still runs to bedrock (tt-2); only the latent-heat loop is capped.
+z_perm_b  = firnice_perm_depth[ii[i]] * firnice_perm_frac_b[ii[i]]
+pdidx_arr = where(fit_dz[1,*] ge z_perm_b, n_pdi)
+perm_limit = (n_pdi gt 0) ? ((pdidx_arr[0] - 1l) > 1l) : (tt - 2l)
+perm_limit = perm_limit < (tt - 2l)
 
    for h=0,rf_dsc-1 do begin
 
       ; ── boundary conditions (shared by both conduction schemes) ──────────────
-      tl_fit[ii[i],0] = min([0d, tgs[ii[i]]])
+      ; Firn bands: add snow/firn insulation correction (dT_scale * dT_firn_band).
+      ; The firn surface temperature is warmer than ERA5 air T in winter (snow cover
+      ; insulation) and capped at 0 °C in summer (melting) — same assumption as C&P.
+      ; Ice bands: no firn insulation; surface follows air temperature directly.
+      if firn[ii[i]] eq 1 then begin
+          tl_fit[ii[i],0] = min([0d, tgs[ii[i]] + firnice_dT_scale_b[ii[i]] * dT_firn_band[ii[i]]])
+      endif else begin
+          tl_fit[ii[i],0] = min([0d, tgs[ii[i]]])
+      endelse
       ttgeot = tl_fit[ii[i],tt-1] + geothermal_flux*(3600d*24d*30.5d/rf_dsc)/cice
       tl_fit[ii[i],tt-1] = min([ttgeot, (fit_dz[1,tt-1]*0.9d/10.d)*(-0.00742d)])
 

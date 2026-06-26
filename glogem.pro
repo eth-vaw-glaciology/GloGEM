@@ -65,6 +65,9 @@ if firnice_temperature eq 'y' then begin
   if firnice_batch eq 'y' then begin
     @procedures/read/read_firnicebatch.pro
   endif
+  if firnice_temp_calib_file ne '' then begin
+    @procedures/initialise/read_firnicetemp_calibration.pro
+  endif
 endif
 
 ; === START OF PROGRAM
@@ -384,7 +387,12 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
                       ; === MAIN LOOP over years
 
-                      @procedures/initialise/initialise_firnicetemp_spinup.pro
+                      if firnice_temperature eq 'y' then begin
+                        @procedures/initialise/initialise_firnicetemp_spinup.pro
+                        if firnice_temp_calib_file ne '' then begin
+                          @procedures/initialise/apply_firnicetemp_calibration.pro
+                        endif
+                      endif
 
                       for ye=0,years-1 do begin
 
