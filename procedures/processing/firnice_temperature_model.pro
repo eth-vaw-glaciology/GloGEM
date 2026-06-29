@@ -94,14 +94,16 @@ perm_limit = perm_limit < (tt - 2l)
    for h=0,rf_dsc-1 do begin
 
       ; ── boundary conditions (shared by both conduction schemes) ──────────────
-      ; Firn bands: add snow/firn insulation correction (dT_scale * dT_firn_band).
-      ; The firn surface temperature is warmer than ERA5 air T in winter (snow cover
-      ; insulation) and capped at 0 °C in summer (melting) — same assumption as C&P.
-      ; Ice bands: no firn insulation; surface follows air temperature directly.
+      ; All bands get a snow/firn insulation correction to the surface BC:
+      ;   Firn bands: full correction  — dT_scale_b * dT_firn_band
+      ;   Ice bands:  reduced (ICE_FRAC) — seasonal snow insulates ~40% as much
+      ;               as perennial firn; gives non-flat ice profiles matching C&P init.
+      ; ICE_FRAC must match the value in initialise_firnicetemp_spinup.pro.
+      ICE_FRAC = 0.4d
       if firn[ii[i]] eq 1 then begin
           tl_fit[ii[i],0] = min([0d, tgs[ii[i]] + firnice_dT_scale_b[ii[i]] * dT_firn_band[ii[i]]])
       endif else begin
-          tl_fit[ii[i],0] = min([0d, tgs[ii[i]]])
+          tl_fit[ii[i],0] = min([0d, tgs[ii[i]] + ICE_FRAC * firnice_dT_scale_b[ii[i]] * dT_firn_band[ii[i]]])
       endelse
       ttgeot = tl_fit[ii[i],tt-1] + geothermal_flux*(3600d*24d*30.5d/rf_dsc)/cice
       tl_fit[ii[i],tt-1] = min([ttgeot, (fit_dz[1,tt-1]*0.9d/10.d)*(-0.00742d)])

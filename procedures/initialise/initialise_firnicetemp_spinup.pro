@@ -154,32 +154,33 @@ firnice_dT_scale_b  = dblarr(nb) + firnice_dT_scale
 ; notebook (05_firnicetemp_calibration.ipynb) derives them from glenglat data.
 ; Ice bands always keep the scalar default (no firn percolation or insulation).
 if firnice_temp_calib eq 'y' then begin
-    ; Transfer model coefficients — replace with notebook output (05_firnicetemp_calibration.ipynb).
-    ; Predictor order: c1=tt[i] (MAAT, °C), c2=t_amp_band[i] (°C),
-    ;                  c3=acc_ann_b[i] (m w.e./yr), c4=elev[i] (m)
-    c0_pf = 1.0d & c1_pf = 0.0d & c2_pf = 0.0d & c3_pf = 0.0d & c4_pf = 0.0d
-    c0_ds = 1.0d & c1_ds = 0.0d & c2_ds = 0.0d & c3_ds = 0.0d & c4_ds = 0.0d
+    ; Transfer model: dT_scale only — perm_frac uses scalar default from settings.pro.
+    ; perm_frac is not identifiable from annual-mean borehole observations.
+    ; Coefficients from 05_firnicetemp_calibration.ipynb — replace placeholders below.
+    ; Predictors: c1=tt[i] (MAAT, °C), c2=t_amp_band[i] (°C), c3=elev[i] (m)
+    c0_ds = 1.0d & c1_ds = 0.0d & c2_ds = 0.0d & c3_ds = 0.0d
     for i = 0, nb-1 do begin
         if firn[i] ne 1 then continue
-        firnice_perm_frac_b[i] = (c0_pf + c1_pf*tt[i] + c2_pf*t_amp_band[i] $
-            + c3_pf*acc_ann_b[i] + c4_pf*elev[i]) > 0.05d < 1.0d
-        firnice_dT_scale_b[i]  = (c0_ds + c1_ds*tt[i] + c2_ds*t_amp_band[i] $
-            + c3_ds*acc_ann_b[i] + c4_ds*elev[i]) > 0.2d < 3.0d
+        firnice_dT_scale_b[i] = (c0_ds + c1_ds*tt[i] + c2_ds*t_amp_band[i] $
+            + c3_ds*elev[i]) > 0.2d < 3.0d
     endfor
 endif
 
-; ── C&P exponential profile for firn bands; isothermal for ice bands ─────────
+; ── C&P exponential profile for all bands ────────────────────────────────────
+; Firn bands: full insulation correction (dT_scale_b * dT_firn_band).
+; Ice bands:  reduced insulation via ICE_FRAC — seasonal snow insulates ~40%
+;             as much as perennial firn.  Gives non-flat initial profiles for
+;             both cold-continental and maritime ablation zones.
+; ICE_FRAC must match the value in firnice_temperature_model.pro.
+ICE_FRAC = 0.4d
 te_fit = dblarr(nb, total(fit_layers)+1)
 for i = 0, nb-1 do begin
-    if firn[i] eq 1 then begin
-        depth = 0.d
-        for j = 0, total(fit_layers)-1 do begin
-            depth += fit_dz[0, j]
-            te_fit[i, j] = min([0.d, tt[i] + firnice_dT_scale_b[i] * dT_firn_band[i] * exp(-depth / z0_firn)])
-        endfor
-    endif else begin
-        te_fit[i, *] = tt[i]
-    endelse
+    ins_scale = (firn[i] eq 1) ? firnice_dT_scale_b[i] : (ICE_FRAC * firnice_dT_scale_b[i])
+    depth = 0.d
+    for j = 0, total(fit_layers)-1 do begin
+        depth += fit_dz[0, j]
+        te_fit[i, j] = min([0.d, tt[i] + ins_scale * dT_firn_band[i] * exp(-depth / z0_firn)])
+    endfor
 endfor
 tl_fit = te_fit
 
