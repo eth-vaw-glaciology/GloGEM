@@ -74,6 +74,7 @@ if time_resolution eq 'monthly' then begin
     gl_prec = float(precmo_ini   * 1e9)              ; [m w.e. x km2] -> kg
     gl_temp = tempmo_ini                             ; already in K
     gl_rbas = float(discharge    * area_cat * 1e9)   ; basin runoff over initial area -> kg
+    gl_snowline = float(snowlinemon)                 ; monthly transient snowline [m a.s.l.]
 endif else if nc_aggregate then begin
     ; Daily run aggregated to monthly NetCDF: sum daily values within each
     ; calendar month; mean for temperature. Fixed month lengths (sum to 365);
@@ -81,7 +82,7 @@ endif else if nc_aggregate then begin
     nc_mlen = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
     melt_day = snowmeltday + icemeltday
     acc_m  = dblarr(nc_n_sub) & melt_m = acc_m & refr_m = acc_m
-    run_m  = acc_m & prec_m = acc_m & rbas_m = acc_m & temp_m = acc_m
+    run_m  = acc_m & prec_m = acc_m & rbas_m = acc_m & temp_m = acc_m & snln_m = acc_m
     for ye = 0L, nc_years-1L do begin
         m0 = 0L
         for mo = 0, 11 do begin
@@ -95,6 +96,8 @@ endif else if nc_aggregate then begin
             prec_m[k] = total(precday_ini[i0:i1])
             rbas_m[k] = total(discharge[i0:i1])
             temp_m[k] = mean(tempday_ini[i0:i1])
+            ; monthly snowline = highest the daily snowline reached that month (maximum)
+            snln_m[k] = max(snowlineday[i0:i1])
             m0 = m0 + nc_mlen[mo]
         endfor
     endfor
@@ -105,6 +108,7 @@ endif else if nc_aggregate then begin
     gl_prec = float(prec_m * 1e9)
     gl_temp = temp_m
     gl_rbas = float(rbas_m * area_cat * 1e9)
+    gl_snowline = float(snln_m)                      ; monthly transient snowline [m a.s.l.]
 endif else begin
     ; acc/melt/refr: divided by total(area_ini) in store step
     gl_acc  = float(accday                        * nc_ini_area * 1e9)
@@ -114,6 +118,7 @@ endif else begin
     gl_prec = float(precday_ini  * 1e9)
     gl_temp = tempday_ini
     gl_rbas = float(discharge    * area_cat * 1e9)   ; basin runoff over initial area -> kg
+    gl_snowline = float(snowlineday)                 ; daily transient snowline [m a.s.l.]
 endelse
 
 ; GlacierMIP4 Table 5 optional individual-glacier annual variables
@@ -134,6 +139,7 @@ ii = where(gl_prec lt nc_sv, ci) & if ci gt 0 then gl_prec[ii] = nc_fv
 ii = where(gl_temp lt nc_sv, ci) & if ci gt 0 then gl_temp[ii] = nc_fv
 ii = where(gl_ela  lt nc_sv, ci) & if ci gt 0 then gl_ela[ii]  = nc_fv
 ii = where(gl_aar  lt nc_sv/100., ci) & if ci gt 0 then gl_aar[ii]  = nc_fv   ; threshold scaled (AAR now fraction)
+ii = where(gl_snowline lt nc_sv, ci) & if ci gt 0 then gl_snowline[ii] = nc_fv
 
 ; ================================================================
 ; WRITE INDIVIDUAL FILES (full period)
@@ -154,6 +160,7 @@ ncdf_varput, nc_sub_i, nc_vid_i_melt,   gl_melt,   offset=[nc_g, 0], count=[1, n
 ncdf_varput, nc_sub_i, nc_vid_i_refr,   gl_refr,   offset=[nc_g, 0], count=[1, nc_n_sub]
 ncdf_varput, nc_sub_i, nc_vid_i_prec,   gl_prec,   offset=[nc_g, 0], count=[1, nc_n_sub]
 ncdf_varput, nc_sub_i, nc_vid_i_temp,   gl_temp,   offset=[nc_g, 0], count=[1, nc_n_sub]
+ncdf_varput, nc_sub_i, nc_vid_i_snln,   gl_snowline, offset=[nc_g, 0], count=[1, nc_n_sub]
 
 ; ================================================================
 ; ACCUMULATE INTO REGIONAL SUMS (NaN-safe: only add valid values)
@@ -196,6 +203,7 @@ gl_refr_p = gl_refr[0:nc_split_idx_sub-1]
 gl_run_p  = gl_run[0:nc_split_idx_sub-1]
 gl_prec_p = gl_prec[0:nc_split_idx_sub-1]
 gl_temp_p = gl_temp[0:nc_split_idx_sub-1]
+gl_snowline_p = gl_snowline[0:nc_split_idx_sub-1]
 gl_ela_p  = gl_ela[0:nc_split_idx-1]
 gl_aar_p  = gl_aar[0:nc_split_idx-1]
 gl_rbas_p = gl_rbas[0:nc_split_idx_sub-1]
@@ -215,6 +223,7 @@ ncdf_varput, nc_sp_sub_i, nc_vid_sp_i_melt,   gl_melt_p, offset=[nc_g, 0], count
 ncdf_varput, nc_sp_sub_i, nc_vid_sp_i_refr,   gl_refr_p, offset=[nc_g, 0], count=[1, nc_n_sub_past]
 ncdf_varput, nc_sp_sub_i, nc_vid_sp_i_prec,   gl_prec_p, offset=[nc_g, 0], count=[1, nc_n_sub_past]
 ncdf_varput, nc_sp_sub_i, nc_vid_sp_i_temp,   gl_temp_p, offset=[nc_g, 0], count=[1, nc_n_sub_past]
+ncdf_varput, nc_sp_sub_i, nc_vid_sp_i_snln,   gl_snowline_p, offset=[nc_g, 0], count=[1, nc_n_sub_past]
 
 ; Annual (vectorised)
 add = gl_area_p & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_sp_area += add
@@ -246,6 +255,7 @@ gl_refr_f = gl_refr[nc_split_idx_sub:*]
 gl_run_f  = gl_run[nc_split_idx_sub:*]
 gl_prec_f = gl_prec[nc_split_idx_sub:*]
 gl_temp_f = gl_temp[nc_split_idx_sub:*]
+gl_snowline_f = gl_snowline[nc_split_idx_sub:*]
 gl_ela_f  = gl_ela[nc_split_idx:*]
 gl_aar_f  = gl_aar[nc_split_idx:*]
 gl_rbas_f = gl_rbas[nc_split_idx_sub:*]
@@ -265,6 +275,7 @@ ncdf_varput, nc_sf_sub_i, nc_vid_sf_i_melt,   gl_melt_f, offset=[nc_g, 0], count
 ncdf_varput, nc_sf_sub_i, nc_vid_sf_i_refr,   gl_refr_f, offset=[nc_g, 0], count=[1, nc_n_sub_fut]
 ncdf_varput, nc_sf_sub_i, nc_vid_sf_i_prec,   gl_prec_f, offset=[nc_g, 0], count=[1, nc_n_sub_fut]
 ncdf_varput, nc_sf_sub_i, nc_vid_sf_i_temp,   gl_temp_f, offset=[nc_g, 0], count=[1, nc_n_sub_fut]
+ncdf_varput, nc_sf_sub_i, nc_vid_sf_i_snln,   gl_snowline_f, offset=[nc_g, 0], count=[1, nc_n_sub_fut]
 
 ; Annual (vectorised)
 add = gl_area_f & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_sf_area += add

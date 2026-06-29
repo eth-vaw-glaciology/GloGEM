@@ -312,6 +312,12 @@ ncdf_attput, nc_sub_i, nc_vid_i_temp, 'long_name', 'Near-surface air temperature
 ncdf_attput, nc_sub_i, nc_vid_i_temp, 'units', 'K'
 ncdf_attput, nc_sub_i, nc_vid_i_temp, 'cell_methods', 'time: mean'
 ncdf_attput, nc_sub_i, nc_vid_i_temp, '_FillValue', nc_fv
+; --- GlacierMIP4 Table 5 optional individual-glacier variable: transient snowline ---
+nc_vid_i_snln = ncdf_vardef(nc_sub_i, 'snowline', [nc_dim_g_s, nc_dim_s_i], /float)
+ncdf_attput, nc_sub_i, nc_vid_i_snln, 'long_name', 'Transient equilibrium line altitude'
+ncdf_attput, nc_sub_i, nc_vid_i_snln, 'units', 'm'
+ncdf_attput, nc_sub_i, nc_vid_i_snln, 'cell_methods', 'time: maximum'
+ncdf_attput, nc_sub_i, nc_vid_i_snln, '_FillValue', nc_fv
 ncdf_control, nc_sub_i, /endef
 ncdf_varput, nc_sub_i, nc_vid_i_t_sub, nc_time_sub
 
