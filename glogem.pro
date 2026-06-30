@@ -573,7 +573,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                         @procedures/processing/calving_model.pro
 
                         if glacier_retreat eq 'y' then begin
-                          if use_flow_model_gl eq 'y' then begin
+                          if use_flow_model_gl eq 'y' and ye + tran[0] ge survey_year[gg[g]] then begin
                             @procedures/flow/glogemflow_coupled
                             @procedures/flow/update_elevation_bands
                           endif else begin

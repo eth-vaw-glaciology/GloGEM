@@ -15,12 +15,12 @@
 # Usage:
 #   cd /home/jabeer/projects/glogemflow_development/GloGEM
 #   bash scripts/launch_batches.sh [N_BATCHES]
-#   bash scripts/launch_batches.sh 16            # default
+#   bash scripts/launch_batches.sh 24            # default (matches vierzack04 core count)
 
 set -euo pipefail
 
 GLOGEM_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-N="${1:-16}"
+N="${1:-24}"
 LOG_DIR="${GLOGEM_DIR}/logs"
 
 cd "$GLOGEM_DIR"
