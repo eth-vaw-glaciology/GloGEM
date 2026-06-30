@@ -43,7 +43,7 @@ DT_MAR_LOW     = 4.40d    ; °C  Maritime,     elev <= 4300 m
 DT_MAR_HIGH    = 0.54d    ; °C  Maritime,     elev >  4300 m (high-altitude)
 DT_CON_HIGH    = 7.26d    ; °C  Non-Maritime, elev >  1500 m
 DT_CON_LOW     = 10.34d   ; °C  Non-Maritime, elev <= 1500 m
-z0_firn        = 15.0d    ; m   C&P e-folding depth
+; z0_firn per band → firnice_z0_firn_b (initialised from firnice_z0_firn in settings.pro)
 
 ; ── Reference period monthly climatology at climate grid point ────────────────
 tclim_ref = dblarr(12)
@@ -147,6 +147,7 @@ endfor
 ; this file in glogem.pro) can then override all bands for a specific glacier.
 firnice_perm_frac_b = dblarr(nb) + firnice_perm_frac
 firnice_dT_scale_b  = dblarr(nb) + firnice_dT_scale
+firnice_z0_firn_b   = dblarr(nb) + firnice_z0_firn   ; per-band C&P e-folding depth [m]
 
 ; ── Transfer-model calibration (optional, firnice_temp_calib='y') ─────────────
 ; Predicts (perm_frac, dT_scale) per firn band from climate predictors.
@@ -154,15 +155,18 @@ firnice_dT_scale_b  = dblarr(nb) + firnice_dT_scale
 ; notebook (05_firnicetemp_calibration.ipynb) derives them from glenglat data.
 ; Ice bands always keep the scalar default (no firn percolation or insulation).
 if firnice_temp_calib eq 'y' then begin
-    ; Transfer model: dT_scale only — perm_frac uses scalar default from settings.pro.
-    ; perm_frac is not identifiable from annual-mean borehole observations.
+    ; Transfer model: dT_scale and Z0 — perm_frac uses scalar default from settings.pro.
     ; Coefficients from 05_firnicetemp_calibration.ipynb — replace placeholders below.
     ; Predictors: c1=tt[i] (MAAT, °C), c2=t_amp_band[i] (°C), c3=elev[i] (m)
-    c0_ds = 1.0d & c1_ds = 0.0d & c2_ds = 0.0d & c3_ds = 0.0d
+    ; Coefficients from 05_firnicetemp_calibration.ipynb (2D calibration, 18 firn glaciers)
+    c0_ds = 0.809322d & c1_ds = 0.099254d & c2_ds = 0.092134d & c3_ds = -0.00009667d
+    c0_z0 = 118.107411d & c1_z0 = 2.006667d & c2_z0 = 0.714340d & c3_z0 = -0.00949955d
     for i = 0, nb-1 do begin
         if firn[i] ne 1 then continue
         firnice_dT_scale_b[i] = (c0_ds + c1_ds*tt[i] + c2_ds*t_amp_band[i] $
-            + c3_ds*elev[i]) > 0.2d < 3.0d
+            + c3_ds*elev[i]) > 0.2d < 5.0d
+        firnice_z0_firn_b[i]  = (c0_z0 + c1_z0*tt[i] + c2_z0*t_amp_band[i] $
+            + c3_z0*elev[i]) > 5.0d < 100.0d
     endfor
 endif
 
@@ -179,7 +183,7 @@ for i = 0, nb-1 do begin
     depth = 0.d
     for j = 0, total(fit_layers)-1 do begin
         depth += fit_dz[0, j]
-        te_fit[i, j] = min([0.d, tt[i] + ins_scale * dT_firn_band[i] * exp(-depth / z0_firn)])
+        te_fit[i, j] = min([0.d, tt[i] + ins_scale * dT_firn_band[i] * exp(-depth / firnice_z0_firn_b[i])])
     endfor
 endfor
 tl_fit = te_fit

@@ -91,6 +91,67 @@ pdidx_arr = where(fit_dz[1,*] ge z_perm_b, n_pdi)
 perm_limit = (n_pdi gt 0) ? ((pdidx_arr[0] - 1l) > 1l) : (tt - 2l)
 perm_limit = perm_limit < (tt - 2l)
 
+; ── latent heat from refreezing (applied BEFORE conduction substeps) ─────────────
+; Moved before the conduction loop so that all rf_dsc substeps of heat diffusion
+; can smooth the temperature gradient at perm_limit depth each month. If refreezing
+; ran AFTER conduction (as before), the sharp warm/cold boundary at perm_limit was
+; recreated every month with no subsequent smoothing pass, producing a non-physical
+; step discontinuity in the profile. Applying it first, then diffusing, is also the
+; more natural operator-split: phase change is fast, diffusion is slow.
+fit_water=mel[ii[i]]+plg[ii[i]]  ; liquid water available from surface (melt+rain)
+
+if firn_permeability eq 'n' then fit_water = 0  ; check if permeability is disabled, if yes then set infiltrating water to zero
+
+; latent heat release over firn/snow surface
+; water percolation is capped at perm_limit (firn-ice transition density);
+; cold ice below that depth is not reachable by annual meltwater
+if firn[ii[i]] eq 1 then begin
+
+for j=1,perm_limit do begin ; percolate to firn-ice transition only
+   c=(-1)*(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*cap_fit[j]*fit_dz[0,j]/Lh_rf ; cold content in layer below pressure melting point
+   if fit_water gt c then begin   ; temperate layer if cold reservoir used, remaining water being transferred
+      tl_fit[ii[i],j]=(fit_dz[1,j]*0.9/10.)*(-0.00742) & fit_water=fit_water-c
+   endif else begin
+      if c gt 0 and fit_water gt 0 then tl_fit[ii[i],j]=tl_fit[ii[i],j]-(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*(fit_water/c)
+      fit_water=fit_water-c
+   endelse
+ ;  if j eq 10 and ii(i) eq 245 then print, m,c,fit_water,tl_fit(ii(i),10)
+endfor
+
+endif else begin
+
+; latent heat release over ice surface, incl. seasonal snow (mainly impermeable)
+
+kk=where(dens_fit lt 900,ck)
+for j=1,ck do begin ; loop through all SNOW layers from top, and update temperatures
+   c=(-1)*(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*cap_fit[j]*fit_dz[0,j]/Lh_rf ; cold content in layer below pressure melting point
+   if fit_water gt c then begin   ; temperate layer if cold reservoir used, remaining water being transferred
+      tl_fit[ii[i],j]=(fit_dz[1,j]*0.9/10.)*(-0.00742) & fit_water=fit_water-c
+   endif else begin
+      if c gt 0 and fit_water gt 0 then tl_fit[ii[i],j]=tl_fit[ii[i],j]-(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*(fit_water/c)
+      fit_water=fit_water-c
+   endelse
+endfor
+
+; ice is assumed impermeable: no liquid water enters glacier ice
+fit_water=fit_water*0
+
+for j=ck+1,tt-2 do begin ; loop through all ICE layers from top, and update temperatures
+   c=(-1)*(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*cap_fit[j]*fit_dz[0,j]/Lh_rf ; cold content in layer below pressure melting point
+   if fit_water gt c then begin   ; temperate layer if cold reservoir used, remaining water being transferred
+      tl_fit[ii[i],j]=(fit_dz[1,j]*0.9/10.)*(-0.00742) & fit_water=fit_water-c
+   endif else begin
+      if c gt 0 and fit_water gt 0 then tl_fit[ii[i],j]=tl_fit[ii[i],j]-(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*(fit_water/c)
+      fit_water=fit_water-c
+   endelse
+;   if j eq 10 and ii(i) eq 20 then print, m,c,fit_water,tl_fit(ii(i),20),f
+endfor
+
+endelse
+
+   ; driving stress (SIA): used for strain heating if enabled
+   tau_d_sh = rho_ice * grav * (thick[ii[i]] > 1.0d) * sin(slope[ii[i]] * !DTOR)
+
    for h=0,rf_dsc-1 do begin
 
       ; ── boundary conditions (shared by both conduction schemes) ──────────────
@@ -162,6 +223,17 @@ perm_limit = perm_limit < (tt - 2l)
          endif
 
       endelse
+
+      ; ── strain heating (viscous dissipation) ──────────────────────────────────────
+      if enable_strain_heating eq 'y' then begin
+          sh_exp = double(n) + 1.0d   ; = 4 for Glen n=3
+          for j = 1, tt-2 do begin
+              tau_j = tau_d_sh * (fit_dz[1,j] / (thick[ii[i]] > 1.0d))
+              Q_j   = 2.0d * A * tau_j^sh_exp          ; W m⁻³
+              dT_j  = Q_j * rf_dt / (dens_fit[j] * cap_fit[j])  ; K per substep
+              tl_fit[ii[i],j] = (tl_fit[ii[i],j] + dT_j) < pmp_profile[j]
+          endfor
+      endif
 
       ; advection (horizontal and vertical) in the firn/ice layers
       IF enable_advection EQ 'y' THEN BEGIN
@@ -325,57 +397,6 @@ tl_fit[ii[i],tt-1:total(fit_layers)]=tl_fit[ii[i],tt-2]
 
 ; universal PMP safety clamp -- see pmp_profile note above
 tl_fit[ii[i],*] = tl_fit[ii[i],*] < pmp_profile
-
-fit_water=mel[ii[i]]+plg[ii[i]]  ; liquid water available from surface (melt+rain)
-
-if firn_permeability eq 'n' then fit_water = 0  ; check if permeability is disabled, if yes then set infiltrating water to zero
-
-; latent heat release over firn/snow surface
-; water percolation is capped at perm_limit (firn-ice transition density);
-; cold ice below that depth is not reachable by annual meltwater
-if firn[ii[i]] eq 1 then begin
-
-for j=1,perm_limit do begin ; percolate to firn-ice transition only
-   c=(-1)*(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*cap_fit[j]*fit_dz[0,j]/Lh_rf ; cold content in layer below pressure melting point
-   if fit_water gt c then begin   ; temperate layer if cold reservoir used, remaining water being transferred
-      tl_fit[ii[i],j]=(fit_dz[1,j]*0.9/10.)*(-0.00742) & fit_water=fit_water-c
-   endif else begin
-      if c gt 0 and fit_water gt 0 then tl_fit[ii[i],j]=tl_fit[ii[i],j]-(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*(fit_water/c)
-      fit_water=fit_water-c
-   endelse
- ;  if j eq 10 and ii(i) eq 245 then print, m,c,fit_water,tl_fit(ii(i),10)
-endfor
-
-endif else begin
-
-; latent heat release over ice surface, incl. seasonal snow (mainly impermeable)
-
-kk=where(dens_fit lt 900,ck)
-for j=1,ck do begin ; loop through all SNOW layers from top, and update temperatures
-   c=(-1)*(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*cap_fit[j]*fit_dz[0,j]/Lh_rf ; cold content in layer below pressure melting point
-   if fit_water gt c then begin   ; temperate layer if cold reservoir used, remaining water being transferred
-      tl_fit[ii[i],j]=(fit_dz[1,j]*0.9/10.)*(-0.00742) & fit_water=fit_water-c
-   endif else begin
-      if c gt 0 and fit_water gt 0 then tl_fit[ii[i],j]=tl_fit[ii[i],j]-(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*(fit_water/c)
-      fit_water=fit_water-c
-   endelse
-endfor
-
-; ice is assumed impermeable: no liquid water enters glacier ice
-fit_water=fit_water*0
-
-for j=ck+1,tt-2 do begin ; loop through all ICE layers from top, and update temperatures
-   c=(-1)*(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*cap_fit[j]*fit_dz[0,j]/Lh_rf ; cold content in layer below pressure melting point
-   if fit_water gt c then begin   ; temperate layer if cold reservoir used, remaining water being transferred
-      tl_fit[ii[i],j]=(fit_dz[1,j]*0.9/10.)*(-0.00742) & fit_water=fit_water-c
-   endif else begin
-      if c gt 0 and fit_water gt 0 then tl_fit[ii[i],j]=tl_fit[ii[i],j]-(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*(fit_water/c)
-      fit_water=fit_water-c
-   endelse
-;   if j eq 10 and ii(i) eq 20 then print, m,c,fit_water,tl_fit(ii(i),20),f
-endfor
-
-endelse
 
 ; prepare for output
 if firnice_write[0] eq 'y' then begin

@@ -22,5 +22,6 @@ if n_elements(firnicecali_id) gt 0 then begin
     if n_match gt 0 then begin
         firnice_perm_frac_b[*] = firnicecali_perm_frac[jj[0]]
         firnice_dT_scale_b[*]  = firnicecali_dT_scale[jj[0]]
+        firnice_z0_firn_b[*]   = firnicecali_z0[jj[0]]
     endif
 endif

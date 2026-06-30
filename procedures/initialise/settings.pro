@@ -160,10 +160,12 @@ firnice_spinup_max_cycles = 500       ; max equilibrium cycles (convergence usua
 firnice_spinup_tol = 0.05d            ; °C convergence tolerance (max change in deep layers)
 firnice_spinup_min_cycles = 200       ; minimum equilibrium cycles before convergence is checked
 enable_advection = 'n'
+enable_strain_heating   = 'n'   ; 'y' to add viscous dissipation heat source (SIA)
 advection_write = 'n'
 firn_permeability = 'y'
 firnice_perm_frac       = 1.0d  ; 0-1: scales effective percolation depth (1 = full H-L depth)
-firnice_dT_scale        = 1.0d  ; 0-2: scales firn insulation correction to surface BC
+firnice_dT_scale        = 1.0d  ; amplitude scalar on firn insulation correction (surface BC)
+firnice_z0_firn         = 15.0d ; C&P e-folding depth [m]; Z0=κ/w_acc — 15m≈alpine, 60-100m≈polar
 firnice_temp_calib      = 'n'   ; 'y' = apply per-band transfer-model calibration
 firnice_temp_calib_file = ''    ; path to per-glacier override file; '' = use transfer model or defaults
 
