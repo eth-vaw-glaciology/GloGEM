@@ -105,6 +105,7 @@ write_file = 'y'
 write_netcdf = 'n' ; 'y' to write GlacierMIP4-compliant NetCDF output
 netcdf_split = 'n' ; 'y' to also split projection runs into past/future NetCDF files
 netcdf_split_year = 2025 ; first year of the projection period (split boundary)
+netcdf_daily_aggregated_monthly = 'n' ; for daily runs: 'y' to aggregate the NetCDF sub-annual output to monthly (the .dat output stays daily)
 
 ; === parameters
 
@@ -325,6 +326,7 @@ case MIP of
     GCM_data = 'cmip6'
     CMIP6 = 'y'
     GMIP4 = 'n'
+    AMOC = 'n'
   end
   'CMIP5': begin
     GCM_model = ['BCC-CSM1-1', 'CanESM2', 'CCSM4', 'CNRM-CM5', 'CSIRO-Mk3-6-0', 'GFDL-CM3', $
@@ -336,19 +338,32 @@ case MIP of
     GCM_data = 'cmip5'
     CMIP6 = 'n'
     GMIP4 = 'n'
+    AMOC = 'n'
   end
   'GMIP4': begin
     ; Glacier Model Intercomparison Project 4 — fixed model/scenario specifications.
     ; Not all model/SSP combinations are available (see GMIP4 protocol).
     ; ssp370 is used as the primary batch scenario.
-    GCM_model = ['BCC-CSM2-MR'] ; , 'ACCESS-ESM1-5', 'CESM2-WACCM', 'IPSL-CM6A-LR', 'MRI-ESM2-0', 'MPI-ESM1-2-HR', 'MIROC6', 'NorESM2-MM']
-    GCM_rcp = ['ssp126'] ; , 'ssp370', 'ssp585', 'ssp534-over']
+    GCM_model = ['ACCESS-ESM1-5', 'BCC-CSM2-MR', 'CESM2-WACCM', 'IPSL-CM6A-LR', 'MRI-ESM2-0', 'MPI-ESM1-2-HR', 'MIROC6', 'NorESM2-MM']
+    GCM_rcp = ['ssp126', 'ssp370', 'ssp585'] ; 'ssp534-over']
     GCM_experiment = 'r1i1p1f1'
     rcp_batch = intarr(8) + 1 ; ssp370 as default batch scenario
     GCM_data = 'gmip4'
     CMIP6 = 'n'
     GMIP4 = 'y'
-  end
+    AMOC = 'n'
+ end
+  'AMOC': begin
+    ; AMOC GCMs                                                                                                                                                                                                                                                                      
+    GCM_model = ['CESM'] 
+    GCM_rcp = ['RCP45']                                                                                                                                                                                                                                                           
+    GCM_experiment = 'r1i1p1f1'
+    rcp_batch = intarr(8) + 1 ;                                                                                                                                                                                                                                                          
+    GCM_data = 'amoc'
+    CMIP6 = 'n'
+    GMIP4 = 'n'
+    AMOC = 'y'
+ end
   else: message, 'Unknown MIP: "' + MIP + '". Valid options: CMIP6, CMIP5, GMIP4'
 endcase
 
@@ -373,7 +388,7 @@ endif
 if full_output eq 'y' then begin
   if time_resolution eq 'monthly' then outf_names = ['Area', 'Volume', 'Annual_Balance_sfc', 'Winter_balance_sfc', 'Icemelt_sfc', $
     'Snowmelt_sfc', 'Accumulation_sfc', 'Rain_sfc', 'ELA', 'AAR', 'Refreezing_sfc', 'Hmin', 'Frontal_ablation', 'Discharge', 'Discharge_gl' $
-    , 'Balance_mon', 'Precipitation_mon', 'Accumulation_mon', 'Melt_mon', 'Refreezing_mon'] $
+    , 'Balance_mon', 'Precipitation_mon', 'Accumulation_mon', 'Melt_mon', 'Refreezing_mon', 'Snowline_mon'] $
   else outf_names = ['Area', 'Volume', 'Annual_Balance_sfc', 'Winter_balance_sfc', 'Icemelt_sfc', $
     'Snowmelt_sfc', 'Accumulation_sfc', 'Rain_sfc', 'ELA', 'AAR', 'Refreezing_sfc', 'Hmin', 'Frontal_ablation', 'Discharge', 'Discharge_gl' $
     , 'Accumulation_day', 'Rain_day', 'Snowmelt_day', 'Icemelt_day', 'Refreezing_day', 'Snowline_day']
@@ -396,7 +411,7 @@ if calibrate eq 'y' then begin
   GCM_rcp_idx = [1]
 endif
 
-if calibrate eq 'n' and tran[1] lt 2021 then begin
+if calibrate eq 'n' and tran[1] lt 2026 then begin
   reanalysis_direct = 'y'
   GCM_model_idx = [1]
   GCM_rcp_idx = [1]
@@ -436,6 +451,9 @@ if long_GCM ne '' then outf_names = ['Area', 'Volume', 'Annual_Balance_sfc', 'Wi
 ; If a user has cleared outf_names[14] (e.g. via a custom outf_names override or the
 ; long_GCM reduction above), re-enable it so the NetCDF writer does not crash.
 if write_netcdf eq 'y' and outf_names[14] eq '' then outf_names[14] = 'Discharge_gl'
+
+; Daily->monthly NetCDF aggregation only applies to daily runs that write NetCDF.
+if time_resolution ne 'daily' or write_netcdf ne 'y' then netcdf_daily_aggregated_monthly = 'n'
 
 ; **********************************
 ; -----------------------------------

@@ -40,7 +40,7 @@ if cg gt 0 then begin
   ; --- MONTHLY
   if time_resolution eq 'monthly' then begin
     ; READING MONTHLY CLIMATE DATA, so far only implemented like this for GMIP4
-    if GMIP4 eq 'y' then begin
+    if GMIP4 eq 'y' or AMOC eq 'y' then begin
       if clim_subregion ne '' then begin
         ccl='_'+clim_subregion 
       endif else begin

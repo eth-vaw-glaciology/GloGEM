@@ -43,6 +43,7 @@ compile_opt idl2
 			17: var = accmo
 			18: var = melmo
 			19: var = refrmo
+			20: var = snowlinemon   ; monthly transient snowline [m a.s.l.] (written directly, no scaling)
             endcase
          	if ii[i] ge 13 then a=12 else a=1
 	   		printf,string(i+10,fo='(i2)'),id[gg[g]]+' '+string(var,fo='('+strcompress(string(years)*a,/remove_all)+format_of[i]+')')

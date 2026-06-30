@@ -14,8 +14,9 @@
 
 compile_opt idl2
 
-if GMIP4 eq 'n' then begin
-  fn=dir_clim+'/future/'+time_resolution+'/'+long_GCM+'/'+GCM_data+'/'+dir_region+'/'+GCM_model[gcms]+ $
+if CMIP6 eq 'y' then begin
+   if long_GCM ne '' then a='long' else a=''
+  fn=dir_clim+'/future/'+time_resolution+'/'+a+GCM_data+'/'+dir_region+'/'+GCM_model[gcms]+ $
      '/'+GCM_model[gcms]+'_'+GCM_rcp[rcps]+'_'+GCM_experiment+'_'+dir_region+ccl+'.mdi'
 
    a=findfile(fn) ;& if a(0) eq '' then goto,next_GCM
@@ -84,7 +85,7 @@ endif else begin
          ; Increase search window
          radius = radius + 1
          ; Stop if search window gets 100 ... (1°)
-         if radius eq 100 then begin
+         if radius eq 100 and 'AMOC' eq 'n' then begin
                print, 'No suitable GCM grid point found within 1° radius. Please check your input coordinates.'
                STOP
          endif
