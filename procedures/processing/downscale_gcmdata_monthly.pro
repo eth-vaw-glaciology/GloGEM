@@ -127,8 +127,9 @@ endif else begin
       min_ryear = min(ryear)
       max_gcm_year = max(gcm_year) ; Get the maximum year from GCM data
       n = 0
+      nr_years = years 
       ; Precompute indices for re-analysis and GCM data
-      for i = 0, years do begin
+      for i = 0, nr_years do begin
          current_year = i + tran_offset
          ; Stop processing if the current year exceeds the maximum GCM year
          if current_year gt max_gcm_year then break
@@ -222,9 +223,10 @@ endif else begin
       min_ryear = min(ryear)
       max_gcm_year = max(gcm_year) ; Get the maximum year from GCM data
       n = 0
-
+      nr_years = years
+      
       ; Precompute indices for re-analysis and GCM data
-      for i = 0, years do begin
+      for i = 0, nr_years do begin
          current_year = i + tran_offset
          ; Stop processing if the current year exceeds the maximum GCM year
          if current_year gt max_gcm_year then break
