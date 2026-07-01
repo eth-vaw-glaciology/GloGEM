@@ -22,6 +22,8 @@ If you want to refer to GloGEM in your publications or presentations, please ref
 
 **Huss, M. and Hock, R.: A new model for global glacier change and sea-level rise. Frontiers in Earth Science, 3, 5, https://www.doi.org/10.3389/feart.2015.00054, 2015**
 
+To cite this repository/codebase itself, see [`CITATION.cff`](CITATION.cff) — GitHub's "Cite this repository" button (in the sidebar) uses this file to generate APA/BibTeX entries automatically.
+
 ## Glacier model type
 
 GloGEM is a “glacier centric model”, which means that it runs for each glacier independently of the others. In the case of glacier complexes, 
