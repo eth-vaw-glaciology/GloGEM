@@ -25,7 +25,9 @@ if write_mb_elevationbands eq 'y' then begin
 
    c=findfile(dirres+'/'+time_resolution+'/'+dir_region+subpath+'/mb_elevation')
    if c[0] eq '' then begin
-      spawn, 'mkdir -p ' + dirres + '/' + time_resolution + '/' + dir_region + subpath + '/mb_elevation && chmod -R a+rx ' + dirres + '/' + time_resolution + '/' + dir_region + subpath + '/mb_elevation'
+      mb_elevation_dir = dirres + '/' + time_resolution + '/' + dir_region + subpath + '/mb_elevation'
+      file_mkdir, mb_elevation_dir
+      file_chmod, mb_elevation_dir, /a_read, /a_execute
    endif
 
    openw,8,dirres+'/'+time_resolution+'/'+dir_region+subpath+'/mb_elevation/belev_'+id[gg[g]]+'.dat'
@@ -36,7 +38,9 @@ if write_mb_elevationbands eq 'y' then begin
    ; elevation-specified refreezing files 
    c=findfile(dirres+'/'+time_resolution+'/'+dir_region+subpath+'/refr_elevation')
    if c[0] eq '' then begin
-      spawn,'mkdir '+dirres+'/'+time_resolution+'/'+dir_region+subpath+'/refr_elevation' & spawn,'chmod a+rx '+dirres+dir_region+subpath+'/refr_elevation'
+      refr_elevation_dir = dirres+'/'+time_resolution+'/'+dir_region+subpath+'/refr_elevation'
+      file_mkdir, refr_elevation_dir
+      file_chmod, refr_elevation_dir, /a_read, /a_execute
    endif
    openw,40,dirres+'/'+time_resolution+'/'+dir_region+subpath+'/refr_elevation/refrelev_'+id[gg[g]]+'.dat'
    a='' & for i=0,years-1 do a=a+string(i+tran[0],fo='(i4)')+'  '
@@ -46,7 +50,9 @@ if write_mb_elevationbands eq 'y' then begin
    ; elevation-specified debris files 
       c=findfile(dirres+'/'+time_resolution+'/'+dir_region+subpath+'/debris_elevation')
       if c[0] eq '' then begin
-         spawn,'mkdir '+dirres+'/'+time_resolution+'/'+dir_region+subpath+'/debris_elevation' & spawn,'chmod a+rx '+dirres+dir_region+subpath+'/debris_elevation'
+         debris_elevation_dir = dirres+'/'+time_resolution+'/'+dir_region+subpath+'/debris_elevation'
+         file_mkdir, debris_elevation_dir
+         file_chmod, debris_elevation_dir, /a_read, /a_execute
       endif
       openw,41,dirres+'/'+time_resolution+'/'+dir_region+subpath+'/debris_elevation/debthick_'+id[gg[g]]+'.dat'
       a='' & for i=0,years-1 do a=a+string(i+tran[0],fo='(i4)')+'  '

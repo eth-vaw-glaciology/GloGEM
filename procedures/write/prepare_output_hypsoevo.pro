@@ -12,7 +12,11 @@ b='/files'+mtt+'/files_original/'+GCM_model[gcms]+'/'+GCM_rcp[rcps]
 if reanalysis_direct eq 'y' then b='/PAST/PAST_original/'
 c=findfile(dirres+'/'+time_resolution+'/'+dir_region+b+'/hypsometry')
 
-if c[0] eq '' then spawn,'mkdir '+dirres+'/'+time_resolution+'/'+dir_region+b+'/hypsometry' & if b[0] eq '' then spawn,'chmod a+rx '+dirres+'/'+time_resolution+'/'+dir_region+b+'/hypsometry'
+if c[0] eq '' then begin
+   hypsometry_dir = dirres+'/'+time_resolution+'/'+dir_region+b+'/hypsometry'
+   file_mkdir, hypsometry_dir
+   file_chmod, hypsometry_dir, /a_read, /a_execute
+endif
 openw,9,dirres+'/'+time_resolution+'/'+dir_region+b+'/hypsometry/hypso_'+id[gg[g]]+'.dat'
 openw,34,dirres+'/'+time_resolution+'/'+dir_region+b+'/hypsometry/volume_'+id[gg[g]]+'.dat'
 openw,35,dirres+'/'+time_resolution+'/'+dir_region+b+'/hypsometry/temp_'+id[gg[g]]+'.dat'

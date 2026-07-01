@@ -107,7 +107,9 @@ nrc=0
 ; Make folder for results
 a=findfile(path+region_now+'/'+gcm+'/'+ssp)
 if a(0) eq '' then begin
-   spawn,'mkdir '+path+region_now+'/'+gcm+'/'+ssp & spawn,'chmod a+rx '+path+region_now+'/'+gcm+'/'+ssp
+   gmip4_dir = path+region_now+'/'+gcm+'/'+ssp
+   file_mkdir, gmip4_dir
+   file_chmod, gmip4_dir, /a_read, /a_execute
 endif
 
 a=findfile(fnt)

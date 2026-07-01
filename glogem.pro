@@ -29,7 +29,7 @@ fn='procedures/initialise/settings.pro' & anz=file_lines(fn) & input_file_conten
 openr,1,fn & readf,1,input_file_content & close,1
 
 ; open log file to capture all console output
-spawn, 'mkdir -p ' + base_dir + '/logs'
+file_mkdir, base_dir + '/logs'
 a=systime() & b=strsplit(a,' ',/extract)
 log_timestamp=string(b[4],fo='(a4)')+'_'+string(b[1],fo='(a3)')+string(b[2],fo='(a2)')+'_'+strjoin(strsplit(b[3],':',/extract),'h')+'m'
 log_file=base_dir+'/logs/glogem_'+log_timestamp+'.log'
