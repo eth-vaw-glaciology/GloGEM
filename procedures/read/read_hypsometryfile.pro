@@ -29,13 +29,13 @@ compile_opt idl2
 ; HF2012(updated) if needed
 if RGIversion eq '6' then begin   ; checks relevant to RGIv6.0
    if min(da[1,*]) lt -300 or abs(a_gl[gg[g]]-total(da[3,*]))*100./a_gl[gg[g]] gt 50 then begin
-      fn=dir_data_alt+'/'+region+'/'+id[gg[g]]+'.dat' & a=findfile(fn)
+      fn=dir_data_alt+'/'+region+'/'+id[gg[g]]+'.dat' & a=file_search(fn)
       nb=file_lines(fn)-5 & s=strarr(5) & da=dblarr(12,nb)
       openr,1,fn & readf,1,s & readf,1,da & close,1
    endif
 endif else begin   ; checks relevant to RGIv7.0
    if a_gl[gg[g]] lt 0.25 then begin   ; very small glaciers only for now
-      fn=dir_data_alt+'/'+region+'/'+id[gg[g]]+'.dat' & a=findfile(fn)
+      fn=dir_data_alt+'/'+region+'/'+id[gg[g]]+'.dat' & a=file_search(fn)
       if a[0] ne '' then begin
          nb=file_lines(fn)-5 & s=strarr(5) & da=dblarr(12,nb)
          openr,1,fn & readf,1,s & readf,1,da & close,1

@@ -308,7 +308,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                     for cal1=0,cal1max do begin
 
                       ; read hypsometry-file
-                      fn=dir_data+'/'+region+'/'+id[gg[g]]+'.dat' & a=findfile(fn)
+                      fn=dir_data+'/'+region+'/'+id[gg[g]]+'.dat' & a=file_search(fn)
 
                       if a[0] ne '' then begin
 
@@ -600,7 +600,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                   endif
 
                   ; write elevation band file
-                  fn=dir_data+'/'+region+'/'+id[gg[g]]+'.dat' & a=findfile(fn)
+                  fn=dir_data+'/'+region+'/'+id[gg[g]]+'.dat' & a=file_search(fn)
                   if write_mb_elevationbands eq 'y' and a[0] ne '' then begin
                     @procedures/write/write_elevationband_file.pro
                   endif

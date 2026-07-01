@@ -23,7 +23,7 @@ if reanalysis_direct eq 'y' then b='/PAST'+mtt
 
 if write_mb_elevationbands eq 'y' then begin
 
-   c=findfile(dirres+'/'+time_resolution+'/'+dir_region+subpath+'/mb_elevation')
+   c=file_search(dirres+'/'+time_resolution+'/'+dir_region+subpath+'/mb_elevation')
    if c[0] eq '' then begin
       mb_elevation_dir = dirres + '/' + time_resolution + '/' + dir_region + subpath + '/mb_elevation'
       file_mkdir, mb_elevation_dir
@@ -36,7 +36,7 @@ if write_mb_elevationbands eq 'y' then begin
    elev_bmb=dblarr(years,nb)+snoval
    elev_bwb=elev_bmb 
    ; elevation-specified refreezing files 
-   c=findfile(dirres+'/'+time_resolution+'/'+dir_region+subpath+'/refr_elevation')
+   c=file_search(dirres+'/'+time_resolution+'/'+dir_region+subpath+'/refr_elevation')
    if c[0] eq '' then begin
       refr_elevation_dir = dirres+'/'+time_resolution+'/'+dir_region+subpath+'/refr_elevation'
       file_mkdir, refr_elevation_dir
@@ -48,7 +48,7 @@ if write_mb_elevationbands eq 'y' then begin
 
    if debris_supraglacial eq 'y' then begin
    ; elevation-specified debris files 
-      c=findfile(dirres+'/'+time_resolution+'/'+dir_region+subpath+'/debris_elevation')
+      c=file_search(dirres+'/'+time_resolution+'/'+dir_region+subpath+'/debris_elevation')
       if c[0] eq '' then begin
          debris_elevation_dir = dirres+'/'+time_resolution+'/'+dir_region+subpath+'/debris_elevation'
          file_mkdir, debris_elevation_dir

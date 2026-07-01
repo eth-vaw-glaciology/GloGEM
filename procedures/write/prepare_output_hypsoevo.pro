@@ -10,7 +10,7 @@ compile_opt idl2
 
 b='/files'+mtt+'/files_original/'+GCM_model[gcms]+'/'+GCM_rcp[rcps]
 if reanalysis_direct eq 'y' then b='/PAST/PAST_original/'
-c=findfile(dirres+'/'+time_resolution+'/'+dir_region+b+'/hypsometry')
+c=file_search(dirres+'/'+time_resolution+'/'+dir_region+b+'/hypsometry')
 
 if c[0] eq '' then begin
    hypsometry_dir = dirres+'/'+time_resolution+'/'+dir_region+b+'/hypsometry'

@@ -20,7 +20,7 @@ compile_opt idl2
 
     ; Construct the filename for the debris data file
     fn = dir_data + '../debris/' + region + '/debris_' + id[gg[g]] + '.dat'
-    a = findfile(fn)  ; Search for the file
+    a = file_search(fn)  ; Search for the file
 
     ; If the file exists, read its contents
     if a[0] ne '' then begin
