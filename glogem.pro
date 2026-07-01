@@ -330,7 +330,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                         @procedures/processing/process_hypsometry_data.pro
 
                         ; Flow model only for glaciers >= 1 km at inventory date;
-                        ; shorter glaciers fall back to the dhdt parametrisation.
+                        ; shorter glaciers fall back to the Δh parameterisation.
                         if use_flow_model eq 'y' and length[0] lt 1.0d0 then begin
                           use_flow_model_gl = 'n'
                           if cal1 eq 0 and calibrate ne 'y' then print, '  Flow model skipped: length=' + $

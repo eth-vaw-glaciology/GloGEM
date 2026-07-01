@@ -2,7 +2,7 @@
 """
 create_batches.py  —  split all Alpine glacier IDs into N catchment files.
 
-Reads the authoritative full-Alps ID list from the completed dhdt run, sorts
+Reads the authoritative full-Alps ID list from the completed Δh parameterisation run, sorts
 glaciers by 2003 area (largest first), then assigns them to batches via round-
 robin so every batch contains a balanced mix of large and small glaciers.
 This eliminates the persistent bottleneck where batch02/batch11 held the largest
@@ -34,7 +34,7 @@ def main():
     args = parser.parse_args()
     n = args.n
 
-    # Read glacier IDs and 2003 area from dhdt Area output
+    # Read glacier IDs and 2003 area from Δh parameterisation Area output
     glaciers = []
     with open(DHDT_AREA) as fh:
         header = fh.readline().split()

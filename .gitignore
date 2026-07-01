@@ -6,6 +6,7 @@ thickness_extended/
 smb_rcm/
 output/
 *.png
+*.pdf
 *.grid
 *.agr
 *.log

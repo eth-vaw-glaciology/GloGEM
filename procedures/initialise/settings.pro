@@ -171,11 +171,11 @@ firnice_temp_calib      = 'n'   ; 'y' = apply per-band transfer-model calibratio
 firnice_temp_calib_file = ''    ; path to per-glacier override file; '' = use transfer model or defaults
 
 ; --- geometry evolution model
-; two options: (1) dhdt-parameterisation (Huss et al., 2010) via glacier_retreat='y',
+; two options: (1) Δh parameterisation (Huss et al., 2010) via glacier_retreat='y',
 ;              (2) coupled flowline model GloGEMflow (Zekollari et al., 2019) via use_flow_model='y'
-use_flow_model = 'n' ; 'y' activates GloGEMflow and disables the dhdt retreat below
+use_flow_model = 'n' ; 'y' activates GloGEMflow and disables the Δh parameterisation below
 
-; --- glacier retreat module (dhdt option)
+; --- glacier retreat module (Δh parameterisation option)
 glacier_retreat = 'y'
 expon = 2. ; valley shape parameter: band area loss vs. thickness loss
 dh_size = [5, 20] ; [km2] boundaries between dh-parameterisations (Huss et al., 2010)
