@@ -25,25 +25,29 @@ if tran[1] le tt then b='/PAST'+version_past+mtt
 bd = dirres + time_resolution + '/' + dir_region
 
 ; Core folder structure
-SPAWN, 'mkdir -p ' + $
-   bd + ' ' + $
-   bd + '/calibration ' + $
-   bd + '/PAST' + version_past + mtt + ' ' + $
-   bd + '/PAST' + version_past + mtt + '/PAST_original ' + $
-   bd + '/files' + mtt + ' ' + $
-   bd + '/files' + mtt + '/files_original ' + $
-   bd + '/files' + mtt + '/files_original/SINGLE ' + $
-   bd + '/files' + mtt + '/files_original/' + GCM_model[gcms] + ' ' + $
-   bd + '/files' + mtt + '/files_original/' + GCM_model[gcms] + '/' + GCM_rcp[rcps]
+core_dirs = [ $
+   bd, $
+   bd + '/calibration', $
+   bd + '/PAST' + version_past + mtt, $
+   bd + '/PAST' + version_past + mtt + '/PAST_original', $
+   bd + '/files' + mtt, $
+   bd + '/files' + mtt + '/files_original', $
+   bd + '/files' + mtt + '/files_original/SINGLE', $
+   bd + '/files' + mtt + '/files_original/' + GCM_model[gcms], $
+   bd + '/files' + mtt + '/files_original/' + GCM_model[gcms] + '/' + GCM_rcp[rcps] ]
+file_mkdir, core_dirs
+file_chmod, core_dirs, /a_read, /a_execute
 
 ; NetCDF folder structure (only created when write_netcdf is enabled)
 if write_netcdf eq 'y' then begin
-    SPAWN, 'mkdir -p ' + $
-       bd + '/PAST' + version_past + mtt + '/PAST_netcdf ' + $
-       bd + '/files' + mtt + '/files_netcdf ' + $
-       bd + '/files' + mtt + '/files_netcdf/full'
-    if netcdf_split eq 'y' then $
-        SPAWN, 'mkdir -p ' + bd + '/files' + mtt + '/files_netcdf/split'
+    netcdf_dirs = [ $
+       bd + '/PAST' + version_past + mtt + '/PAST_netcdf', $
+       bd + '/files' + mtt + '/files_netcdf', $
+       bd + '/files' + mtt + '/files_netcdf/full' ]
+    file_mkdir, netcdf_dirs
+    file_chmod, netcdf_dirs, /a_read, /a_execute
+    if netcdf_split eq 'y' then begin
+        file_mkdir, bd + '/files' + mtt + '/files_netcdf/split'
+        file_chmod, bd + '/files' + mtt + '/files_netcdf/split', /a_read, /a_execute
+    endif
 endif
-
-SPAWN, 'chmod -R a+rx ' + dirres + '/' + time_resolution + '/' + dir_region

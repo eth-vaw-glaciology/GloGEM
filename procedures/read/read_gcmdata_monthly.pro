@@ -19,7 +19,7 @@ if CMIP6 eq 'y' then begin
   fn=dir_clim+'/future/'+time_resolution+'/'+a+GCM_data+'/'+dir_region+'/'+GCM_model[gcms]+ $
      '/'+GCM_model[gcms]+'_'+GCM_rcp[rcps]+'_'+GCM_experiment+'_'+dir_region+ccl+'.mdi'
 
-   a=findfile(fn) ;& if a(0) eq '' then goto,next_GCM
+   a=file_search(fn) ;& if a(0) eq '' then goto,next_GCM
    tt=strarr(1) & nyrs=dblarr(1) & nmonths=nyrs & nlons=nyrs & nlats=nyrs & nvar=dblarr(2)
    openr,1,fn & readf,1,tt & readf,1,ntime & readf,1,nlons & readf,1,nlats  & readf,1,nvar
    ntime=ntime[0] & nlats=nlats[0] & nlons=nlons[0] & nvar=nvar[0]

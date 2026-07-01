@@ -1,0 +1,48 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite both the software itself and the original model description paper below."
+type: software
+title: "GloGEM: The Global Glacier Evolution Model"
+license: BSD-3-Clause
+repository-code: "https://github.com/eth-vaw-glaciology/GloGEM"
+date-released: 2026-07-01
+authors:
+  - family-names: Huss
+    given-names: Matthias
+    orcid: "https://orcid.org/0000-0002-2377-6923"
+    affiliation: >-
+      Laboratory of Hydraulics, Hydrology and Glaciology (VAW), ETH Zurich, Zurich, Switzerland;
+      Swiss Federal Institute for Forest, Snow and Landscape Research (WSL), bâtiment ALPOLE, Sion, Switzerland;
+      Department of Geosciences, University of Fribourg, Fribourg, Switzerland
+  - family-names: van Tricht
+    given-names: Lander
+    orcid: "https://orcid.org/0000-0001-7619-8955"
+    affiliation: >-
+      Laboratory of Hydraulics, Hydrology and Glaciology (VAW), ETH Zurich, Zurich, Switzerland;
+      Swiss Federal Institute for Forest, Snow and Landscape Research (WSL), bâtiment ALPOLE, Sion, Switzerland;
+      Department of Water and Climate, Vrije Universiteit Brussel, Brussels, Belgium
+  - family-names: Beer
+    given-names: Janosch
+    orcid: "https://orcid.org/0009-0002-1128-5470"
+    affiliation: >-
+      Laboratory of Hydraulics, Hydrology and Glaciology (VAW), ETH Zurich, Zurich, Switzerland;
+      Swiss Federal Institute for Forest, Snow and Landscape Research (WSL), bâtiment ALPOLE, Sion, Switzerland
+  - family-names: von der Esch
+    given-names: Alexandra
+    orcid: "https://orcid.org/0009-0002-2974-4903"
+    affiliation: >-
+      Laboratory of Hydraulics, Hydrology and Glaciology (VAW), ETH Zurich, Zurich, Switzerland;
+      Swiss Federal Institute for Forest, Snow and Landscape Research (WSL), bâtiment ALPOLE, Sion, Switzerland
+preferred-citation:
+  type: article
+  title: "A new model for global glacier change and sea-level rise"
+  authors:
+    - family-names: Huss
+      given-names: Matthias
+      orcid: "https://orcid.org/0000-0002-2377-6923"
+    - family-names: Hock
+      given-names: Regine
+  journal: "Frontiers in Earth Science"
+  volume: 3
+  year: 2015
+  pages: "5"
+  doi: "10.3389/feart.2015.00054"
