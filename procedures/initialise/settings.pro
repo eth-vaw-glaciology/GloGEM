@@ -65,7 +65,8 @@ GCM_rcp_range = [0, 0] ; [first, last] range shorthand — [0,0]: not used
 first_GCM = 0 ; first GCM in batch (0-based, minus 1)
 
 ; --- reanalysis
-; default is 'era5' (daily model); 'ERA5' (all caps) is auto-selected for monthly in Zone 2
+; always lowercase; time_resolution determines which parameter file is read
+; (_daily or _monthly suffix, e.g. regional_parameters_era5_daily.dat)
 ; other daily options: 'era5land', 'chelsaw5e5', 'ch2018', 'gswp3w5e5'
 reanalysis = 'era5'
 rea_eval = [1991, 2020]

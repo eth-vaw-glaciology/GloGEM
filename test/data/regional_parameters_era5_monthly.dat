@@ -1,0 +1,34 @@
+Regionally specified parameters: 
+1. c_calving [-] (according to model by Oerlemans and Nick, 2005)
+2. Cprec [-] (start value) --  c_tol1 c_tol2 (tolerance for cprec values)
+3. dPdz [% /100m] (altitudinal increase in precipitation relative to ERA5 gridcell elevation)
+4. t_off  [deg C] (initial air temperature offset - calibrated if necessary)
+Region            Sub-region   c_cal  cprec   c_tol1 c_tol2  dPdz   t_off0  t_offgrid
+Alaska            xxx          2.0    1.5     1.0     2.0    1.0      0.0     y
+WesternCanada     xxx          1.0    1.6     1.1     2.1    2.5      0.0     y
+ArcticCanadaN     xxx          0.12   1.6     1.1     2.1    0.5      0.0     y
+ArcticCanadaS     xxx          0.12   1.8     1.3     2.2    1.5      0.0     y
+Greenland         xxx          1.00   1.6     1.1     2.1    1.0      0.0     y
+Iceland           xxx          0.30   1.8     1.4     2.2    2.0      0.0     y
+Svalbard          xxx          1.0    1.5     1.0     2.0    3.0      0.0     y
+Scandinavia       xxx          1.0    1.8     1.2     2.2    2.5      0.0     y
+RussianArctic     xxx          0.25   1.5     1.0     2.0    1.5      0.0     y
+NorthAsia         xxx          0.50   2.0     1.7     2.8    2.5      0.0     y
+CentralEurope     xxx          1.0    1.7     1.3     2.3    1.5      0.0     y
+Caucasus          xxx          1.0    2.0     1.6     2.6    1.5      0.0     y
+CentralAsia       xxx          1.0    1.5     1.0     2.0    2.5      0.0     y
+SouthAsiaWest     xxx          1.0    1.7     1.2     2.2    2.5      0.0     y
+SouthAsiaEast     xxx          1.0    1.5     1.0     2.0    2.5      0.0     y
+LowLatitudes      Andes        1.0    1.0     0.5     1.5    1.5      0.0     y
+LowLatitudes      Africa       1.0    1.0     0.5     1.5    1.5      0.0     y
+LowLatitudes      Mexico       1.0    1.0     0.5     1.5    1.5      0.0     y
+LowLatitudes      Newguinea    1.0    1.0     0.5     1.5    1.5      0.0     y
+SouthernAndes     xxx          2.4    1.7     1.2     2.2    1.5      0.0     y
+NewZealand        xxx          1.0    1.8     1.4     2.4    1.5      0.0     y
+Antarctic         Atlantic     0.3    1.2     0.8     1.8    1.5      0.0     y
+Antarctic         Indian       0.3    1.2     0.8     1.8    1.5      0.0     y
+Antarctic         Pacific      0.3    1.2     0.8     1.8    1.5      0.0     y
+Antarctic         MaudWilkes   0.2    1.2     0.8     1.8    1.5      0.0     y
+Antarctic         Victoria     0.2    1.2     0.8     1.8    1.5      0.0     y
+Antarctic         Peninsula    0.2    1.2     0.8     1.8    1.5      0.0     y
+Antarctic         MarieByrd    0.2    1.2     0.8     1.8    0.5      0.0     y

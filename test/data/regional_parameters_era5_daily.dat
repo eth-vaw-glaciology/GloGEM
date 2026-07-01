@@ -1,0 +1,38 @@
+Regionally specified parameters: 
+1. c_calving (according to Oerlemans and Nick, 2005)
+2. Cprec0 (to match winter accumulation data)
+3. c1_tolerance (related to cprec)
+4. dPdz (precipitation gradient %/100m)
+5. t_off0 (start-value for temperature offset)
+6. t_offgrid  (grid-based/iterative t_off)
+7. P_threshold (minimum daily precipitation, mm/day)
+8. size_range (regional size range of glaciers to be evaluated)
+Region            Sub-region   c_cal  cprec   c1_tol1 c1_tol2  dPdz   t_off0  t_offgrid P_threshold sr0 sr1
+Alaska            xxx          0.32    1.5     1.0     2.0    1.0      0.0     y         0.2     5.0   10000.0
+WesternCanada     xxx          1.0    1.6     1.1     2.1    2.5      0.0     y         0.2     5.0   10000.0
+ArcticCanadaN     xxx          0.14   1.6     1.1     2.1    1.5      0.0     y         0.2     5.0   10000.0
+ArcticCanadaS     xxx          0.015   1.8     1.3     2.2    1.5      0.0     y         0.2     5.0   10000.0
+Greenland         xxx          0.08   1.6     1.1     2.1    1.0      0.0     y         0.2     5.0   10000.0
+Iceland           xxx          0.015  1.8     1.4     2.2    2.5      0.0     y         0.2     5.0   10000.0
+Svalbard          xxx          1.7    1.5     1.0     2.0    3.0      0.0     y         0.2     5.0   10000.0
+Scandinavia       xxx          1.0    1.8     1.2     2.2    2.5      0.0     y         0.2     5.0   10000.0
+RussianArctic     xxx          1.3    1.5     1.0     2.0    1.5      0.0     y         0.2     5.0   10000.0
+NorthAsia         xxx          0.1   2.0     1.7     2.8    2.5      0.0     y         0.2     5.0   10000.0
+CentralEurope     xxx          1.0    1.2     1.3     2.3    1.5      0.0     y         0.2     5.0   10000.0
+Caucasus          xxx          1.0    2.0     1.6     2.6    1.5      0.0     y         0.2     5.0   10000.0
+CentralAsia       xxx          1.0    1.5     1.0     2.0    3.1      0.0     y         0.2     5.0   10000.0
+SouthAsiaWest     xxx          1.0    1.7     1.2     2.2    5.0      0.0     y         0.2     5.0   10000.0
+SouthAsiaEast     xxx          1.0    1.5     1.0     2.0    2.5      0.0     y         0.2     5.0   10000.0
+LowLatitudes      Andes        1.0    1.0     0.5     1.5    1.5      0.0     y         0.2     5.0   10000.0
+LowLatitudes      Africa       1.0    1.0     0.5     1.5    1.5      0.0     y         0.2     5.0   10000.0
+LowLatitudes      Mexico       1.0    1.0     0.5     1.5    1.5      0.0     y         0.2     5.0   10000.0
+LowLatitudes      Newguinea    1.0    1.0     0.5     1.5    1.5      0.0     y         0.2     5.0   10000.0
+SouthernAndes     xxx          1.8    1.7     1.2     2.2    1.5      0.0     y         0.2     5.0   10000.0
+NewZealand        xxx          1.0    1.8     1.4     2.4    1.5      0.0     y         0.2     5.0   10000.0
+Antarctic         Atlantic     0.3    1.2     0.8     1.8    1.5      0.0     y         0.2     5.0   10000.0
+Antarctic         Indian       0.3    1.2     0.8     1.8    1.5      0.0     y         0.2     5.0   10000.0
+Antarctic         Pacific      0.3    1.2     0.8     1.8    1.5      0.0     y         0.2     5.0   10000.0
+Antarctic         MaudWilkes   0.15   1.2     0.8     1.8    1.5      0.0     y         0.2     5.0   10000.0
+Antarctic         Victoria     0.15   1.2     0.8     1.8    1.5      0.0     y         0.2     5.0   10000.0
+Antarctic         Peninsula    0.15   1.2     0.8     1.8    1.5      0.0     y         0.2     5.0   10000.0
+Antarctic         MarieByrd    0.15   1.2     0.8     1.8    1.5      0.0     y         0.2     5.0   10000.0
