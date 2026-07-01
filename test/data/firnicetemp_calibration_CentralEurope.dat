@@ -1,0 +1,25 @@
+# glacier_id  perm_frac  dT_scale  z0  # glacier_name  region  n_obs
+?????  1.000  5.000  100.0  # North Glacier  Alaska  n=9
+?????  1.000  1.100  100.0  # White Glacier  ArcticCanadaN  n=131
+?????  1.000  5.000  100.0  # Laika Ice Cap  ArcticCanadaN  n=42
+?????  1.000  0.300  100.0  # Qaanaaq Glacier  ArcticCanadaN  n=6
+?????  1.000  1.300  50.0  # John Evans Glacier  ArcticCanadaN  n=4
+?????  1.000  2.500  100.0  # Ледник Туюксу Центральный [Central Tuyuksu Glacier]  CentralAsia  n=451
+?????  1.000  1.600  100.0  # 西琼台兰冰川 [Xiqiongtailan Glacier]  CentralAsia  n=16
+?????  1.000  1.500  85.0  # Abramov Glacier  CentralAsia  n=8
+?????  1.000  1.800  100.0  # Batysh Sook Glacier  CentralAsia  n=10
+?????  1.000  2.600  75.0  # Sofiyskiy Glacier  CentralAsia  n=17
+02596  1.000  2.300  90.0  # Jungfraufirn  CentralEurope  n=88
+02103  1.000  0.700  100.0  # Vadret dal Corvatsch  CentralEurope  n=215
+01225  1.000  0.700  100.0  # Gornergletscher  CentralEurope  n=18
+00777  1.000  1.900  100.0  # Glacier de Tête Rousse  CentralEurope  n=117
+01230  1.000  1.000  55.0  # Grenzgletscher  CentralEurope  n=543
+00773  1.000  0.600  100.0  # Glacier des Bossons  CentralEurope  n=113
+?????  1.000  0.900  100.0  # Hare Glacier  Greenland  n=6
+?????  1.000  1.200  100.0  # Ледник Вавилова [Vavilov Glacier]  RussianArctic  n=99
+?????  1.000  0.100  5.0  # Illimani Volcano  SouthernAndes  n=15
+?????  1.000  0.700  100.0  # Bruce Plateau  SouthernAndes  n=39
+?????  1.000  1.400  100.0  # Austfonna  Svalbard  n=27
+?????  1.000  1.000  100.0  # Waldemarbreen  Svalbard  n=24
+?????  1.000  1.300  100.0  # Vestfonna  Svalbard  n=38
+?????  1.000  2.900  100.0  # Athabasca Glacier  WesternCanada  n=12
