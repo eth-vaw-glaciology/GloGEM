@@ -76,7 +76,12 @@ endfor
 
 n_pts = n_elements(elev_ref)
 print, 'SMB polynomial fit: ', n_pts, ' valid bands'
-if n_pts lt 1 then message, 'No valid bands for SMB polynomial fit'
+if n_pts lt 1 then begin
+  print, 'WARNING: Glacier ' + strtrim(id[gg[g]], 2) + $
+    ': no valid SMB bands for polynomial fit — disabling flow model for this glacier.'
+  use_flow_model_gl = 'n'
+  goto, glogemflow_skip
+endif
 ; Degrade polynomial degree for small glaciers with few elevation bands.
 ; Degree-2 needs 3+ points; degree-1 (linear) needs 2; degree-0 (constant) needs 1.
 poly_order = 2 < (n_pts - 1)
