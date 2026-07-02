@@ -6,6 +6,7 @@ version: 0.1.1
 license: BSD-3-Clause
 repository-code: "https://github.com/eth-vaw-glaciology/GloGEM"
 date-released: 2026-07-02
+doi: 10.5281/zenodo.21133140
 identifiers:
   - type: doi
     value: "10.5281/zenodo.21133140"
