@@ -9,6 +9,7 @@
 # The Global Glacier Evolution Model (GloGEM)
 
 [![License: BSD-3-Clause](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](LICENSE)
+[![DOI](https://zenodo.org/badge/919352632.svg)](https://doi.org/10.5281/zenodo.21133140)
 [![Publication](https://img.shields.io/badge/Huss_%26_Hock_2015-Front._Earth_Sci.-green)](https://doi.org/10.3389/feart.2015.00054)
 
 The Global Glacier Evolution Model is an IDL package which can model the evolution of all of Earth's 200,000 glaciers outside the ice sheets. 
@@ -18,9 +19,11 @@ In contrast to previous global-scale glacier models, GloGEM includes mass loss d
 
 ## Cite GloGEM
 
-If you want to refer to GloGEM in your publications or presentations, please refer to:
+Please cite this repository using its Zenodo DOI, which always resolves to the version you used:
 
-**Huss, M. and Hock, R.: A new model for global glacier change and sea-level rise. Frontiers in Earth Science, 3, 5, https://www.doi.org/10.3389/feart.2015.00054, 2015**
+[![DOI](https://zenodo.org/badge/919352632.svg)](https://doi.org/10.5281/zenodo.21133140)
+
+For background on the original model, see the model description paper (Huss and Hock, 2015 — badge above). Please cite the software itself via the Zenodo DOI rather than the paper, since it reflects the current, actively developed version.
 
 To cite this repository/codebase itself, see [`CITATION.cff`](CITATION.cff) — GitHub's "Cite this repository" button (in the sidebar) uses this file to generate APA/BibTeX entries automatically.
 

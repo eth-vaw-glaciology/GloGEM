@@ -1,10 +1,14 @@
 cff-version: 1.2.0
-message: "If you use this software, please cite both the software itself and the original model description paper below."
+message: "If you use this software, please cite it using the metadata from this file (see the Zenodo DOI under identifiers). The original model description paper is listed under references for background."
 type: software
 title: "GloGEM: The Global Glacier Evolution Model"
 license: BSD-3-Clause
 repository-code: "https://github.com/eth-vaw-glaciology/GloGEM"
 date-released: 2026-07-01
+identifiers:
+  - type: doi
+    value: "10.5281/zenodo.21133140"
+    description: "Zenodo archive of this software release"
 authors:
   - family-names: Huss
     given-names: Matthias
@@ -32,17 +36,18 @@ authors:
     affiliation: >-
       Laboratory of Hydraulics, Hydrology and Glaciology (VAW), ETH Zurich, Zurich, Switzerland;
       Swiss Federal Institute for Forest, Snow and Landscape Research (WSL), bâtiment ALPOLE, Sion, Switzerland
-preferred-citation:
-  type: article
-  title: "A new model for global glacier change and sea-level rise"
-  authors:
-    - family-names: Huss
-      given-names: Matthias
-      orcid: "https://orcid.org/0000-0002-2377-6923"
-    - family-names: Hock
-      given-names: Regine
-  journal: "Frontiers in Earth Science"
-  volume: 3
-  year: 2015
-  pages: "5"
-  doi: "10.3389/feart.2015.00054"
+references:
+  - type: article
+    title: "A new model for global glacier change and sea-level rise"
+    authors:
+      - family-names: Huss
+        given-names: Matthias
+        orcid: "https://orcid.org/0000-0002-2377-6923"
+      - family-names: Hock
+        given-names: Regine
+    journal: "Frontiers in Earth Science"
+    volume: 3
+    year: 2015
+    pages: "5"
+    doi: "10.3389/feart.2015.00054"
+    notes: "Original model description paper. Background reading only — please cite the software itself via the Zenodo DOI above."
