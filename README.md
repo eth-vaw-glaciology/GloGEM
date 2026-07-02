@@ -10,7 +10,7 @@
 
 [![License: BSD-3-Clause](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](LICENSE)
 [![Version](https://img.shields.io/github/v/release/eth-vaw-glaciology/GloGEM?include_prereleases&label=version)](https://github.com/eth-vaw-glaciology/GloGEM/releases)
-[![DOI](https://zenodo.org/badge/919352632.svg)](https://doi.org/10.5281/zenodo.21133140)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21133140.svg)](https://doi.org/10.5281/zenodo.21133140)
 [![Publication](https://img.shields.io/badge/Huss_%26_Hock_2015-Front._Earth_Sci.-green)](https://doi.org/10.3389/feart.2015.00054)
 
 The Global Glacier Evolution Model is an IDL package which can model the evolution of all of Earth's 200,000 glaciers outside the ice sheets. 
