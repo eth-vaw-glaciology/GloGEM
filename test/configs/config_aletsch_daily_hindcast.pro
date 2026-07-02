@@ -1,7 +1,9 @@
 ; GloGEM test configuration — Aletsch / Morteratsch
-; Step 3 of 4: monthly model, calibration
+; Step 2 of 6: daily model, hindcast
 ;
-;   cp test/config_aletsch_monthly_calib.pro config.pro
+; Run AFTER config_aletsch_daily_calib.pro has completed.
+;
+;   cp test/configs/config_aletsch_daily_hindcast.pro config.pro
 ;   .r glogem
 
 ; -----------------------------------------------------------------------
@@ -24,7 +26,7 @@ RGIversion = '7'
 ; -----------------------------------------------------------------------
 ; TIME RESOLUTION
 ; -----------------------------------------------------------------------
-time_resolution = 'monthly'
+time_resolution = 'daily'
 
 ; -----------------------------------------------------------------------
 ; RUN SELECTION
@@ -37,8 +39,9 @@ catchment_selection = 'Aletsch_Morteratsch'
 ; -----------------------------------------------------------------------
 ; RUN MODE
 ; -----------------------------------------------------------------------
-tran      = [1991, 2020]
-calibrate = 'y'
+tran            = [1991, 2020]
+calibrate       = 'n'
+read_parameters = 'y'
 ;find_startyear = 'y'
 
 ; -----------------------------------------------------------------------

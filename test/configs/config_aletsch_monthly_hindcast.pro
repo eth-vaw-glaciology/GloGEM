@@ -1,14 +1,10 @@
 ; GloGEM test configuration — Aletsch / Morteratsch
-; Step 1 of 4: daily model, calibration
+; Step 4 of 6: monthly model, hindcast
 ;
-; Copy to the repo root and run:
-;   cp test/config_aletsch_daily_calib.pro config.pro
+; Run AFTER config_aletsch_monthly_calib.pro has completed.
+;
+;   cp test/configs/config_aletsch_monthly_hindcast.pro config.pro
 ;   .r glogem
-;
-; After this completes, continue with config_aletsch_daily_hindcast.pro.
-;
-; Paths use base_dir (set automatically by glogem.pro from the repo root),
-; so this config works wherever the repo is cloned.
 
 ; -----------------------------------------------------------------------
 ; OUTPUT DIRECTORY
@@ -16,7 +12,7 @@
 dirres = base_dir + '/test/outputs/'
 
 ; -----------------------------------------------------------------------
-; TEST DATA PATHS  (point to the minimal dataset bundled in test/)
+; TEST DATA PATHS
 ; -----------------------------------------------------------------------
 main_dir = base_dir + '/test/'
 dir      = base_dir + '/test/data/'
@@ -30,7 +26,7 @@ RGIversion = '7'
 ; -----------------------------------------------------------------------
 ; TIME RESOLUTION
 ; -----------------------------------------------------------------------
-time_resolution = 'daily'
+time_resolution = 'monthly'
 
 ; -----------------------------------------------------------------------
 ; RUN SELECTION
@@ -43,8 +39,9 @@ catchment_selection = 'Aletsch_Morteratsch'
 ; -----------------------------------------------------------------------
 ; RUN MODE
 ; -----------------------------------------------------------------------
-tran      = [1991, 2020]
-calibrate = 'y'
+tran            = [1991, 2020]
+calibrate       = 'n'
+read_parameters = 'y'
 ;find_startyear = 'y'
 
 ; -----------------------------------------------------------------------

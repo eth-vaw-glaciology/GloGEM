@@ -1,9 +1,7 @@
 ; GloGEM test configuration — Aletsch / Morteratsch
-; Step 6 of 6: monthly model, GCM projection to 2100
+; Step 3 of 6: monthly model, calibration
 ;
-; Run AFTER config_aletsch_monthly_calib.pro has completed.
-;
-;   cp test/config_aletsch_monthly_projection.pro config.pro
+;   cp test/configs/config_aletsch_monthly_calib.pro config.pro
 ;   .r glogem
 
 ; -----------------------------------------------------------------------
@@ -39,9 +37,8 @@ catchment_selection = 'Aletsch_Morteratsch'
 ; -----------------------------------------------------------------------
 ; RUN MODE
 ; -----------------------------------------------------------------------
-tran            = [1991, 2100]
-calibrate       = 'n'
-read_parameters = 'y'
+tran      = [1991, 2020]
+calibrate = 'y'
 ;find_startyear = 'y'
 
 ; -----------------------------------------------------------------------
@@ -54,12 +51,9 @@ read_parameters = 'y'
 ; -----------------------------------------------------------------------
 ; CLIMATE DATA — MODEL INTERCOMPARISON PROJECT
 ; -----------------------------------------------------------------------
-; GlacierMIP4 fixed protocol, one model / one SSP (bundled test data only
-; covers this single combination — do not change without adding the
-; corresponding clim_<lon>_<lat>.dat files under test/climatedata/future/).
-MIP = 'GMIP4'
-GCM_model_idx = [5]   ; MRI-ESM2-0
-GCM_rcp_idx   = [1]   ; ssp126
+;MIP = 'CMIP6'
+;GCM_model_idx = [0]
+;GCM_rcp_idx   = [0]
 
 ; -----------------------------------------------------------------------
 ; REANALYSIS / BIAS CORRECTION
@@ -80,8 +74,8 @@ GCM_rcp_idx   = [1]   ; ssp126
 ;refreezing_full        = 'n'
 ;refreezing_parametrised = 'y'
 ;firnice_temperature    = 'n'
-glacier_retreat  = 'y'   ; enabled — bundled hypsometry already has thickness/width/length per band
-frontal_ablation = 'n'   ; land-terminating glaciers — calving does not apply
+glacier_retreat  = 'n'
+frontal_ablation = 'n'
 
 ; -----------------------------------------------------------------------
 ; OUTPUT OPTIONS

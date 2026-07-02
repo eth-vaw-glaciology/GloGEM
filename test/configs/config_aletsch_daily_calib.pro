@@ -1,10 +1,14 @@
 ; GloGEM test configuration — Aletsch / Morteratsch
-; Step 5 of 6: daily model, GCM projection to 2100
+; Step 1 of 6: daily model, calibration
 ;
-; Run AFTER config_aletsch_daily_calib.pro has completed.
-;
-;   cp test/config_aletsch_daily_projection.pro config.pro
+; Copy to the repo root and run:
+;   cp test/configs/config_aletsch_daily_calib.pro config.pro
 ;   .r glogem
+;
+; After this completes, continue with config_aletsch_daily_hindcast.pro.
+;
+; Paths use base_dir (set automatically by glogem.pro from the repo root),
+; so this config works wherever the repo is cloned.
 
 ; -----------------------------------------------------------------------
 ; OUTPUT DIRECTORY
@@ -12,7 +16,7 @@
 dirres = base_dir + '/test/outputs/'
 
 ; -----------------------------------------------------------------------
-; TEST DATA PATHS
+; TEST DATA PATHS  (point to the minimal dataset bundled in test/)
 ; -----------------------------------------------------------------------
 main_dir = base_dir + '/test/'
 dir      = base_dir + '/test/data/'
@@ -39,9 +43,8 @@ catchment_selection = 'Aletsch_Morteratsch'
 ; -----------------------------------------------------------------------
 ; RUN MODE
 ; -----------------------------------------------------------------------
-tran            = [1991, 2100]
-calibrate       = 'n'
-read_parameters = 'y'
+tran      = [1991, 2020]
+calibrate = 'y'
 ;find_startyear = 'y'
 
 ; -----------------------------------------------------------------------
@@ -54,12 +57,9 @@ read_parameters = 'y'
 ; -----------------------------------------------------------------------
 ; CLIMATE DATA — MODEL INTERCOMPARISON PROJECT
 ; -----------------------------------------------------------------------
-; GlacierMIP4 fixed protocol, one model / one SSP (bundled test data only
-; covers this single combination — do not change without adding the
-; corresponding clim_<lon>_<lat>.dat files under test/climatedata/future/).
-MIP = 'GMIP4'
-GCM_model_idx = [5]   ; MRI-ESM2-0
-GCM_rcp_idx   = [1]   ; ssp126
+;MIP = 'CMIP6'
+;GCM_model_idx = [0]
+;GCM_rcp_idx   = [0]
 
 ; -----------------------------------------------------------------------
 ; REANALYSIS / BIAS CORRECTION
@@ -80,8 +80,8 @@ GCM_rcp_idx   = [1]   ; ssp126
 ;refreezing_full        = 'n'
 ;refreezing_parametrised = 'y'
 ;firnice_temperature    = 'n'
-glacier_retreat  = 'y'   ; enabled — bundled hypsometry already has thickness/width/length per band
-frontal_ablation = 'n'   ; land-terminating glaciers — calving does not apply
+glacier_retreat  = 'n'
+frontal_ablation = 'n'
 
 ; -----------------------------------------------------------------------
 ; OUTPUT OPTIONS
@@ -90,4 +90,4 @@ frontal_ablation = 'n'   ; land-terminating glaciers — calving does not apply
 ;full_output = 'n'
 ;write_file = 'y'
 ;write_mb_elevationbands = 'n'
-write_hypsometry_files = 'y'   ; per-decade area/volume per elevation band, for the profile plot
+;write_hypsometry_files = 'n'
