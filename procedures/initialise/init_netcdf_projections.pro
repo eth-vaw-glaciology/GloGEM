@@ -65,8 +65,11 @@ nc_outdir    = nc_base + 'files' + nc_mtt + path_sep() + 'files_netcdf' + path_s
 if ~file_test(nc_outdir, /directory) then file_mkdir, nc_outdir
 
 ; --- file name tags ---
-; region_id_loop[0] + re gives the current RGI region integer (e.g. 1 for RGI01)
-nc_rgi_str = string(region_id_loop[0] + re, format='(i02)')
+; Use the TRUE RGI region number (rgiregion, cross-referenced from region_batch.dat
+; in assign_region_parameters.pro) rather than the model index region_id_loop, so the
+; NetCDF filename/attribute carries the actual RGI region (e.g. rgi14, not rgi17).
+; rgiregion is a string from the batch array, so fix() converts it for the i02 padding.
+nc_rgi_str = string(fix(rgiregion), format='(i02)')
 if catchment_selection eq '' then begin
     nc_base_tag  = 'rgi' + nc_rgi_str
     nc_indiv_tag = 'rgi' + nc_rgi_str + 'indiv'
