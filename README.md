@@ -1,8 +1,8 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/eth-vaw-glaciology/GloGEM/blob/main/figs/GloGEM_logo_v3_dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="https://github.com/eth-vaw-glaciology/GloGEM/blob/main/figs/GloGEM_logo_v2_light.png">
-    <img alt="GloGEM Logo" src="https://github.com/eth-vaw-glaciology/GloGEM/blob/main/figs/GloGEM_logo_v2_light.png" width="66.6%">
+    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/eth-vaw-glaciology/GloGEM/blob/main/docs/source/images/GloGEM_logo_v3_dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="https://github.com/eth-vaw-glaciology/GloGEM/blob/main/docs/source/images/GloGEM_logo_v2.png">
+    <img alt="GloGEM Logo" src="https://github.com/eth-vaw-glaciology/GloGEM/blob/main/docs/source/images/GloGEM_logo_v2.png" width="66.6%">
   </picture>
 </p>
 
