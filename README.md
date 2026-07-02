@@ -26,7 +26,7 @@ Please cite this repository using its Zenodo DOI, which always resolves to the v
 
 For background on the original model, see the model description paper (Huss and Hock, 2015 — badge above). Please cite the software itself via the Zenodo DOI rather than the paper, since it reflects the current, actively developed version.
 
-You can easily cite this repository using the "Cite this repository" button in the sidebar, which uses [`CITATION.cff`](CITATION.cff) to generate up-to-date APA/BibTeX entries automatically.
+You can easily cite this repository using the "Cite this repository" button in the sidebar, which will generate up-to-date APA/BibTeX entries automatically.
 
 ## Glacier model type
 
