@@ -20,13 +20,13 @@ In contrast to previous global-scale glacier models, GloGEM includes mass loss d
 
 ## Cite GloGEM
 
-Please cite this repository using its Zenodo DOI, which always resolves to the version you used. As generated from [`CITATION.cff`](CITATION.cff):
+Please cite this repository using its Zenodo DOI, which always resolves to the version you used:
 
 > Huss, M., van Tricht, L., Beer, J., von der Esch, A. (2026). GloGEM: The Global Glacier Evolution Model (version 0.1.1). DOI: 10.5281/zenodo.21133140 URL: https://github.com/eth-vaw-glaciology/GloGEM
 
 For background on the original model, see the model description paper (Huss and Hock, 2015 — badge above). Please cite the software itself via the Zenodo DOI rather than the paper, since it reflects the current, actively developed version.
 
-GitHub's "Cite this repository" button (in the sidebar) uses `CITATION.cff` to generate up-to-date APA/BibTeX entries automatically.
+You can easily cite this repository using the "Cite this repository" button in the sidebar, which uses [`CITATION.cff`](CITATION.cff) to generate up-to-date APA/BibTeX entries automatically.
 
 ## Glacier model type
 

@@ -5,11 +5,13 @@ The model is forced by monthly or daily temperature and precipitation from reana
 
 ## Cite GloGEM
 
-Please cite this repository using its Zenodo DOI, which always resolves to the version you used. As generated from [`CITATION.cff`](https://github.com/eth-vaw-glaciology/GloGEM/blob/main/CITATION.cff):
+Please cite this repository using its Zenodo DOI, which always resolves to the version you used:
 
 > Huss, M., van Tricht, L., Beer, J., von der Esch, A. (2026). GloGEM: The Global Glacier Evolution Model (version 0.1.1). DOI: 10.5281/zenodo.21133140 URL: https://github.com/eth-vaw-glaciology/GloGEM
 
 For background on the original model, see the model description paper: Huss, M. and Hock, R.: A new model for global glacier change and sea-level rise. Frontiers in Earth Science, 3, 5, [doi:10.3389/feart.2015.00054](https://www.doi.org/10.3389/feart.2015.00054), 2015. Please cite the software itself via the Zenodo DOI rather than the paper, since it reflects the current, actively developed version.
+
+You can easily cite this repository using the "Cite this repository" button in the sidebar of the [GitHub repository](https://github.com/eth-vaw-glaciology/GloGEM), which uses `CITATION.cff` to generate up-to-date APA/BibTeX entries automatically.
 
 ```{note}
 This documentation is under active development.
