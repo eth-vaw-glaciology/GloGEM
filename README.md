@@ -16,7 +16,7 @@
 The Global Glacier Evolution Model is an IDL package which can model the evolution of all of Earth's 200,000 glaciers outside the ice sheets. 
 The model is forced by monthly/daily near surface air temperature and precipitation from 14 Global Circulation Models and three emission scenarios. 
 In contrast to previous global-scale glacier models, GloGEM includes mass loss due to frontal ablation of marine-terminating glaciers. To get started, please have a look at our
-[Documentation - page](https://glogem-docs.readthedocs.io/en/stable/).
+[Documentation - page](https://glogem-docs.readthedocs.io/en/latest/).
 
 ## Cite GloGEM
 
