@@ -90,4 +90,4 @@ frontal_ablation = 'n'   ; land-terminating glaciers — calving does not apply
 ;full_output = 'n'
 ;write_file = 'y'
 ;write_mb_elevationbands = 'n'
-;write_hypsometry_files = 'n'
+write_hypsometry_files = 'y'   ; per-decade area/volume per elevation band, for the profile plot
