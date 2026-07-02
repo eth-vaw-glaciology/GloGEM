@@ -2,9 +2,10 @@ cff-version: 1.2.0
 message: "If you use this software, please cite it using the metadata from this file (see the Zenodo DOI under identifiers). The original model description paper is listed under references for background."
 type: software
 title: "GloGEM: The Global Glacier Evolution Model"
+version: 0.1.1
 license: BSD-3-Clause
 repository-code: "https://github.com/eth-vaw-glaciology/GloGEM"
-date-released: 2026-07-01
+date-released: 2026-07-02
 identifiers:
   - type: doi
     value: "10.5281/zenodo.21133140"
