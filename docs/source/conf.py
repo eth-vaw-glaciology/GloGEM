@@ -3,8 +3,8 @@
 # -- Project information
 
 project = 'GloGEM'
-copyright = '2025, Beer'
-author = 'Beer'
+copyright = '2015-2026, ETH Zurich - Laboratory of Hydraulics, Hydrology and Glaciology (VAW)'
+author = 'ETH Zurich - Laboratory of Hydraulics, Hydrology and Glaciology (VAW)'
 
 release = '1.0'
 version = '1.0.0'
