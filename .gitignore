@@ -4,3 +4,10 @@ config.pro
 test/outputs/
 test/config_active.pro
 output_checks/
+
+# Documentation build / Python tooling
+docs/_build/
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
