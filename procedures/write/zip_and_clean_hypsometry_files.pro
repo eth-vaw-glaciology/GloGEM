@@ -9,8 +9,8 @@
 compile_opt idl2
 
 if meltmodel eq '1' then mtt='' else mtt='_m3'
-b='/files'+mtt+'/'+GCM_model[gcms]+'/'+GCM_rcp[rcps]
-if reanalysis_direct eq 'y' then b='/PAST'
+b='/files'+mtt+'/files_original/'+GCM_model[gcms]+'/'+GCM_rcp[rcps]
+if reanalysis_direct eq 'y' then b='/PAST/PAST_original/'
 ; zipping automatically,  but not for RGI-regions with subregions
 if region ne 'lowlatitudes' and region ne 'antarctic' and region ne 'northasia' then begin
     hypsometry_dir = dirres+'/'+time_resolution+'/'+dir_region+b+'/hypsometry'
