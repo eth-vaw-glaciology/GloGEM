@@ -16,7 +16,7 @@ compile_opt idl2
   
 ; read default glacier geometry file
 ;    (RGI6.0: Farinotti et al 2019)
-;    (RGI7.0: Maffezzoli et al 2026)
+;    (RGI7.0: Maffezzoli et al 2025)
   nb=file_lines(fn)-5
   s=strarr(5) & da=dblarr(12,nb)
   openr,1,fn & readf,1,s & readf,1,da & close,1
