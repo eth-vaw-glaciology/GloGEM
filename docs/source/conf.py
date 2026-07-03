@@ -20,11 +20,13 @@ extensions = [
     'sphinx.ext.mathjax',
     'myst_parser',
     'sphinx_copybutton',
+    'sphinx_design',
 ]
 
 myst_enable_extensions = [
     "amsmath",  # Enables LaTeX math support
     "dollarmath",  # Enables $...$ and $$...$$ syntax
+    "colon_fence",  # Enables ::: fenced directives (used by sphinx-design)
 ]
 
 mathjax_path = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
