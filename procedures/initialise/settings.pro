@@ -330,7 +330,7 @@ case MIP of
     GCM_model = ['ACCESS-ESM1-5', 'BCC-CSM2-MR', 'CESM2-WACCM', 'IPSL-CM6A-LR', 'MRI-ESM2-0', 'MPI-ESM1-2-HR', 'MIROC6', 'NorESM2-MM']
     GCM_rcp = ['ssp126', 'ssp370', 'ssp585'] ; 'ssp534-over']
     GCM_experiment = 'r1i1p1f1'
-    rcp_batch = intarr(8) + 1 ; ssp370 as default batch scenario
+    rcp_batch = 3 ;
     GCM_data = 'gmip4'
     CMIP6 = 'n'
     GMIP4 = 'y'
