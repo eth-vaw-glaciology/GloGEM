@@ -2,3 +2,4 @@ sphinx==7.1.2
 myst-parser
 sphinx-book-theme
 sphinx-copybutton
+sphinx-design
