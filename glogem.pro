@@ -192,7 +192,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
             if ci gt 0 and cj gt 0 then survey_year[jj]=mean(survey_year[ii])
 
             ; if find_startyear eq 'y' then tran(0)=max([1980,min(survey_year)])
-            years=tran[1]-tran[0]
+            years=tran[1]-tran[0]+1
 
             nout=fix(years/outst)+1
             nouty=indgen(nout)*outst
@@ -377,7 +377,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
                       @procedures/initialise/initialise_firnicetemp_spinup.pro
 
-                      for ye=0,years-1 do begin
+                      for ye=0,years do begin
 
                         if eval_mbelevsensitivity eq 'y' then begin
                           count_mbelevsens=count_mbelevsens_v0 ; initialising to start value of counter
