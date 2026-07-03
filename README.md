@@ -22,7 +22,7 @@ In contrast to previous global-scale glacier models, GloGEM includes mass loss d
 
 Please cite this repository using its Zenodo DOI, which always resolves to the version you used:
 
-> Huss, M., van Tricht, L., Beer, J., & von der Esch, A. (2026). GloGEM: The Global Glacier Evolution Model (Version 0.1.1) [Computer software]. https://doi.org/10.5281/zenodo.21133140
+> Huss, M., Van Tricht, L., Beer, J., & von der Esch, A. (2026). GloGEM: The Global Glacier Evolution Model (Version 0.1.1) [Computer software]. https://doi.org/10.5281/zenodo.21133140
 
 For background on the original model, see the model description paper (Huss and Hock, 2015 — badge above). Please cite the software itself via the Zenodo DOI rather than the paper, since it reflects the current, actively developed version.
 
