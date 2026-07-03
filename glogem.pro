@@ -79,6 +79,10 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
   if reanalysis_direct ne 'y' then tran[1]=2100
   if long_GCM ne '' then tran[1]=2300
   if AMOC eq 'y' then tran[1]=2499
+  if 'gmip4' eq 'y' then begin
+    if gcms eq 0 or gcms eq 3 or gcms eq 4 then tran[1]=2300
+    if gcms eq 2 then tran[1]=2299
+  endif 
 
   ; === LOOP OVER DIFFERENT RCPs/SSPs
   if rcp_batch[0] ne 0 then ne_GCM_rcp=rcp_batch[gcms] else ne_GCM_rcp=n_elements(GCM_rcp)
