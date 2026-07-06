@@ -1,7 +1,5 @@
 # The Global Glacier Evolution Model (GloGEM)
 
-WEBHOOK-TEST-glacierflumph42 (temporary — remove once rebuild is confirmed)
-
 The Global Glacier Evolution Model is an IDL package which allows modelling the evolution of all 200,000 glaciers on Earth outside the ice sheets.
 The model is forced by monthly or daily temperature and precipitation from reanalysis products for the past and global climate models (GCMs) for future projections. In contrast to previous global-scale glacier models, GloGEM includes mass loss due to frontal ablation of marine-terminating glaciers.
 
