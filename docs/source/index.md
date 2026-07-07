@@ -5,7 +5,7 @@ The model is forced by monthly or daily temperature and precipitation from reana
 
 ## Cite GloGEM
 
-Please cite this repository using its Zenodo DOI, which always resolves to the version you used:
+Please cite this repository using its Zenodo DOI:
 
 :::{dropdown} Cite GloGEM
 :icon: quote
@@ -32,6 +32,8 @@ Huss, M., Van Tricht, L., Beer, J., & von der Esch, A. (2026). GloGEM: The Globa
 ```
 <!-- CITATION:BIBTEX:END -->
 :::
+
+This is the *concept DOI* — it always resolves to the latest release, not necessarily the exact version you used. If you need to cite the specific version you ran (recommended for reproducibility), look up its version-specific DOI in the "Versions" list on the [Zenodo record page](https://doi.org/10.5281/zenodo.21133140) and cite that instead.
 
 For background on the original model, see the model description paper: Huss, M. and Hock, R.: A new model for global glacier change and sea-level rise. Frontiers in Earth Science, 3, 5, [doi:10.3389/feart.2015.00054](https://www.doi.org/10.3389/feart.2015.00054), 2015. Please cite the software itself via the Zenodo DOI rather than the paper, since it reflects the current, actively developed version.
 
