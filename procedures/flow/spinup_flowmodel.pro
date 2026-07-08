@@ -225,6 +225,15 @@ max_total_calib_attempts = 20l
 total_calib_attempts     = 0l
 calib_abandoned          = 0
 
+; Wall-clock companion to the attempt cap above. A single Phase A attempt can
+; itself run for hours if the CFL-adaptive dt gets forced very small for a
+; pathological glacier (observed: 1h47m+ and still not converged on ONE
+; attempt) -- the attempt-count cap alone does not bound this. Checked every
+; simulated year inside Phase A/B (cheap: one systime(1) call), not just
+; between attempts, so a single runaway attempt is cut off promptly rather
+; than only after it finishes.
+max_calib_wallclock_sec  = 180d0
+
 ; ====================================================================
 ; OUTER LOOP: ELA-bias / length calibration
 ; ====================================================================
@@ -279,6 +288,12 @@ for len_iter = 0, max_len_iter - 1 do begin
     phase_a_failed   = 0
 
     for spinup_yr = 0l, spinup_nyears - 1 do begin
+      if systime(1) - spinup_t0 gt max_calib_wallclock_sec then begin
+        print, '    Calibration wall-clock budget exhausted (' + strtrim(max_calib_wallclock_sec, 2) + $
+          ' s, Phase A) --- abandoning flow model for this glacier, falling back to Δh parameterisation.'
+        calib_abandoned = 1
+        break
+      endif
       ; SMB polynomial with ELA bias (vectorized, centred coordinates)
       z_eff = (sur_dx - ela_bias) - z_center
       ii_cap = where(z_eff gt ((obs_sur_dx - ela_bias) - z_center) and obs_thick_dx gt 0, c_cap)
@@ -336,6 +351,8 @@ for len_iter = 0, max_len_iter - 1 do begin
       endif
     endfor
 
+    if calib_abandoned then break
+
     if phase_a_failed then begin
       if spinup_dtfactor gt dtfactor_min then begin
         spinup_dtfactor = (spinup_dtfactor * 0.5d0) > dtfactor_min
@@ -369,6 +386,12 @@ for len_iter = 0, max_len_iter - 1 do begin
       phase_b_failed = 0
 
       for yy = 0, hist_n - 1 do begin
+        if systime(1) - spinup_t0 gt max_calib_wallclock_sec then begin
+          print, '    Calibration wall-clock budget exhausted (' + strtrim(max_calib_wallclock_sec, 2) + $
+            ' s, Phase B) --- abandoning flow model for this glacier, falling back to Δh parameterisation.'
+          calib_abandoned = 1
+          break
+        endif
         ha = hist_smb_a[hist_b0 + yy]
         hb = hist_smb_b[hist_b0 + yy]
         hc = hist_smb_c[hist_b0 + yy]
@@ -406,6 +429,8 @@ for len_iter = 0, max_len_iter - 1 do begin
         width_mid_dx = (width_base_dx + width_surface_dx) / 2.0
       endfor
 
+      if calib_abandoned then break
+
       if NOT phase_b_failed then begin
         phase_b_passed = 1
         break
@@ -418,6 +443,8 @@ for len_iter = 0, max_len_iter - 1 do begin
         break  ; dtfactor at minimum, still failing → let outer handler change A_flow
       endelse
     endfor
+
+    if calib_abandoned then break
 
     if NOT phase_b_passed then begin
       print, '    Phase B blow-up (dtfactor at min) --- halving A_flow'
