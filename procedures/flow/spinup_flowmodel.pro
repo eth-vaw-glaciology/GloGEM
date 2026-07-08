@@ -214,6 +214,17 @@ ela_bias        = ela_bias_init
 spinup_len_tbl  = dblarr(max_len_iter, 3)   ; [ela_bias, length_m, aflow]
 n_len_done = 0
 
+; Hard cap on total calibration cost across BOTH loops. Some glaciers (usually
+; very small / poorly-conditioned target volumes) never converge and would
+; otherwise retry close to the full 6x15=90 Phase A/B attempts, each a
+; potentially-expensive 5000-yr integration -- inflating run time for the
+; whole batch over a single glacier. Abandon calibration and fall back to the
+; Δh parameterisation once this budget is exhausted (well below the 90-attempt
+; worst case, but generous enough for legitimately slower-converging glaciers).
+max_total_calib_attempts = 20l
+total_calib_attempts     = 0l
+calib_abandoned          = 0
+
 ; ====================================================================
 ; OUTER LOOP: ELA-bias / length calibration
 ; ====================================================================
@@ -230,8 +241,27 @@ for len_iter = 0, max_len_iter - 1 do begin
   spinup_vol_tbl  = dblarr(max_vol_iter, 2)   ; [aflow, vol_at_survey]
   n_vol_done = 0
   vol_converged = 0
+  prev_aflow_guess = -1d0   ; sentinel; aflow_guess is always positive
 
   for vol_iter = 0, max_vol_iter - 1 do begin
+    ; Stall detection: the secant-style update below degenerates to returning
+    ; the SAME aflow_guess once two consecutive attempts land on an identical
+    ; (usually clamp-floor/ceiling) value -- retrying it further wastes full
+    ; 5000-yr Phase A/B integrations for no new information.
+    if vol_iter gt 0 and aflow_guess eq prev_aflow_guess then begin
+      print, '    A_flow unchanged from previous attempt --- stalled, stopping inner loop early.'
+      break
+    endif
+    prev_aflow_guess = aflow_guess
+
+    total_calib_attempts = total_calib_attempts + 1l
+    if total_calib_attempts gt max_total_calib_attempts then begin
+      print, '  Calibration attempt budget exhausted (' + strtrim(max_total_calib_attempts, 2) + $
+        ') --- abandoning flow model for this glacier, falling back to Δh parameterisation.'
+      calib_abandoned = 1
+      break
+    endif
+
     print, '  Vol iter ', vol_iter+1, '  A_flow=', aflow_guess
 
     ; -------- Phase A: spin-up to steady state --------
@@ -431,6 +461,11 @@ for len_iter = 0, max_len_iter - 1 do begin
     aflow_guess = (aflow_guess > 1d-20) < 1d-12
 
   endfor ; volume calibration loop
+
+  if calib_abandoned then begin
+    use_flow_model_gl = 'n'
+    goto, spinup_skip
+  endif
 
   if ~vol_converged then begin
     print, '  Volume did not converge --- using best result'
