@@ -155,18 +155,21 @@ firnice_z0_firn_b   = dblarr(nb) + firnice_z0_firn   ; per-band C&P e-folding de
 ; notebook (05_firnicetemp_calibration.ipynb) derives them from glenglat data.
 ; Ice bands always keep the scalar default (no firn percolation or insulation).
 if firnice_temp_calib eq 'y' then begin
-    ; Transfer model: dT_scale and Z0 — perm_frac uses scalar default from settings.pro.
-    ; Coefficients from 05_firnicetemp_calibration.ipynb — replace placeholders below.
-    ; Predictors: c1=tt[i] (MAAT, °C), c2=t_amp_band[i] (°C), c3=elev[i] (m)
-    ; Coefficients from 05_firnicetemp_calibration.ipynb (2D calibration, 18 firn glaciers)
+    ; 3-parameter transfer model from 05_firnicetemp_calibration.ipynb (3D grid search).
+    ; perm_frac: predicted for all bands;  dT_scale + z0: firn (accumulation) bands only.
+    ; Replace ALL coefficient blocks below with the output of the calibration notebook.
+    ; Placeholder c0_pf=1.0 keeps perm_frac=1.0 everywhere (old 2D behaviour) until updated.
+    c0_pf = 1.0d & c1_pf = 0.0d & c2_pf = 0.0d & c3_pf = 0.0d
     c0_ds = 0.809322d & c1_ds = 0.099254d & c2_ds = 0.092134d & c3_ds = -0.00009667d
     c0_z0 = 118.107411d & c1_z0 = 2.006667d & c2_z0 = 0.714340d & c3_z0 = -0.00949955d
     for i = 0, nb-1 do begin
+        firnice_perm_frac_b[i] = (c0_pf + c1_pf*tt[i] + c2_pf*t_amp_band[i] $
+            + c3_pf*elev[i]) > 0.1d < 1.0d
         if firn[i] ne 1 then continue
         firnice_dT_scale_b[i] = (c0_ds + c1_ds*tt[i] + c2_ds*t_amp_band[i] $
             + c3_ds*elev[i]) > 0.2d < 5.0d
         firnice_z0_firn_b[i]  = (c0_z0 + c1_z0*tt[i] + c2_z0*t_amp_band[i] $
-            + c3_z0*elev[i]) > 5.0d < 100.0d
+            + c3_z0*elev[i]) > 5.0d < 200.0d
     endfor
 endif
 

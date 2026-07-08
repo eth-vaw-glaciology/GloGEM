@@ -8,8 +8,16 @@
 
 compile_opt idl2
 
-; Build the firnice_temperature subdirectory path once
-firnice_dir = dirres + '/' + time_resolution + '/' + dir_region + b + '/firnice_temperature'
+; Build firnice_dir from run-type flags — never use scratch variable b, which is
+; overwritten to a numeric array between glaciers during the mass-balance year loop.
+if single_glacier ne '' then begin
+    firnice_subpath = '/files/files_original/SINGLE'
+endif else if reanalysis_direct eq 'y' then begin
+    firnice_subpath = '/PAST' + version_past + mtt
+endif else begin
+    firnice_subpath = '/files' + mtt + '/' + GCM_model[gcms] + '/' + GCM_rcp[rcps]
+endelse
+firnice_dir = dirres + time_resolution + '/' + dir_region + firnice_subpath + '/firnice_temperature'
 
 ; Create directory — mkdir -p is silent and idempotent (no error if it already exists)
 spawn, 'mkdir -p ' + firnice_dir
