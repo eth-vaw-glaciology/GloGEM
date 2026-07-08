@@ -80,7 +80,7 @@ if n_pts lt 1 then begin
   print, 'WARNING: Glacier ' + strtrim(id[gg[g]], 2) + $
     ': no valid SMB bands for polynomial fit — disabling flow model for this glacier.'
   use_flow_model_gl = 'n'
-  goto, glogemflow_skip
+  goto, spinup_skip
 endif
 ; Degrade polynomial degree for small glaciers with few elevation bands.
 ; Degree-2 needs 3+ points; degree-1 (linear) needs 2; degree-0 (constant) needs 1.
@@ -545,3 +545,5 @@ if hist_n lt 13 then $
     strtrim(tran[0],2) + '-' + strtrim(tran[0]+hist_n-1,2) + ').'
 
 @procedures/flow/write_spinup_stats
+
+spinup_skip:

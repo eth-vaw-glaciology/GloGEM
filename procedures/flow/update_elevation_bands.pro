@@ -36,6 +36,8 @@
 ; -----------------------------------------------------------------------
 compile_opt idl2
 
+if use_flow_model_gl ne 'y' then goto, update_bands_done
+
 ii_ice = where(thick_dx gt 0d0, n_ice)
 
 if n_ice ge 2l then begin
@@ -107,3 +109,5 @@ if n_ice ge 2l then begin
     endfor
   endif
 endif
+
+update_bands_done:

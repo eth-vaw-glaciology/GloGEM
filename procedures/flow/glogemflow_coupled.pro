@@ -71,6 +71,7 @@ if n_elements(flow_initialised) eq 0 then begin
   endif else begin
     file_mkdir, spinup_cache_dir
     @procedures/flow/spinup_flowmodel
+    if use_flow_model_gl eq 'n' then goto, glogemflow_skip
     save, spinup_aflow, spinup_ela_bias, spinup_dtfactor, thick_dx, sur_dx, $
           width_surface_dx, width_mid_dx, width_base_dx, lambda_dx, $
           file=spinup_cache_file
