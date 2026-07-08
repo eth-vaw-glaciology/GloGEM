@@ -223,10 +223,15 @@ sur_dx_year_start   = sur_dx
 
 while (time_flow lt year_end_flow) and (iter_flow lt max_iter_flow) do begin
   ; ---- Adaptive time step (CFL criterion) ----
+  ; Bootstrap case (df_dx still all-zero, before the first diffusivity call):
+  ; use df_lim as the safe proxy for max diffusivity, matching MATLAB's
+  ; constants_counters_initialvalues_sizevariables.m:17 initial dt. A fixed
+  ; dt=0.25 here ignores this glacier's own dx/df_lim scale and can be ~1000x
+  ; too large, causing the SIA to blow up on the very first sub-step.
   if max(df_dx) gt 0 then begin
     dt = dtfactor * (dx ^ 2) / max(df_dx)
   endif else begin
-    dt = 0.25d0
+    dt = dtfactor * (dx ^ 2) / df_lim
   endelse
   dt = dt < 0.25d0 ; cap
   dt = dt > 1d-4 ; floor

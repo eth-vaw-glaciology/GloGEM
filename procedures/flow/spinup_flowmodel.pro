@@ -260,10 +260,14 @@ for len_iter = 0, max_len_iter - 1 do begin
       ; SIA time step
       spinup_t = 0d0
       while spinup_t lt 1d0 do begin
+        ; Bootstrap case: use df_lim as the safe proxy for max diffusivity
+        ; before the first diffusivity call, matching MATLAB's
+        ; constants_counters_initialvalues_sizevariables.m:17 (see
+        ; glogemflow_coupled.pro's STEP 3 for the full rationale).
         if max(df_dx) gt 0 then $
           dt = spinup_dtfactor * (dx^2) / max(df_dx) $
         else $
-          dt = 0.25d0
+          dt = spinup_dtfactor * (dx^2) / df_lim
         dt = (dt < 0.25d0) > 1d-4
         if spinup_t + dt gt 1d0 then dt = 1d0 - spinup_t
         @procedures/flow/diffusivity
@@ -349,10 +353,12 @@ for len_iter = 0, max_len_iter - 1 do begin
 
         hist_t = 0d0
         while hist_t lt 1d0 do begin
+          ; Bootstrap case: see the Phase A occurrence above / glogemflow_coupled.pro
+          ; STEP 3 for the full rationale (matches MATLAB's initial-dt convention).
           if max(df_dx) gt 0 then $
             dt = spinup_dtfactor * (dx^2) / max(df_dx) $
           else $
-            dt = 0.25d0
+            dt = spinup_dtfactor * (dx^2) / df_lim
           dt = (dt < 0.25d0) > 1d-4
           if hist_t + dt gt 1d0 then dt = 1d0 - hist_t
           @procedures/flow/diffusivity
