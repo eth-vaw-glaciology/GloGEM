@@ -283,7 +283,7 @@ for len_iter = 0, max_len_iter - 1 do begin
       ; Steady-state check every 10 years
       if (spinup_yr mod 10) eq 0 and spinup_yr gt 0 then begin
         ii_ss = where(thick_dx gt 0, c_ss)
-        ss_vol = c_ss gt 0 ? total(thick_dx[ii_ss] * width_dx[ii_ss] * dx) : 0d0
+        ss_vol = c_ss gt 0 ? total(thick_dx[ii_ss] * width_mid_dx[ii_ss] * dx) : 0d0
         if spinup_vol_prev gt 0 then begin
           if abs(ss_vol - spinup_vol_prev) / spinup_vol_prev * 100d0 lt spinup_ss_crit then begin
             print, '    SS yr ', spinup_yr, '  vol=', ss_vol/1d9, ' km3'
@@ -391,7 +391,7 @@ for len_iter = 0, max_len_iter - 1 do begin
 
     ; -------- Check volume at survey year --------
     ii_sv = where(thick_dx gt 0, c_sv)
-    survey_vol = c_sv gt 0 ? total(thick_dx[ii_sv] * width_dx[ii_sv] * dx) : 0d0
+    survey_vol = c_sv gt 0 ? total(thick_dx[ii_sv] * width_mid_dx[ii_sv] * dx) : 0d0
 
     spinup_vol_tbl[vol_iter, 0] = aflow_guess
     spinup_vol_tbl[vol_iter, 1] = survey_vol
@@ -526,7 +526,7 @@ width_surface_dx = width_base_dx + lambda_dx * thick_dx
 width_mid_dx = (width_base_dx + width_surface_dx) / 2.0
 
 ii_fin = where(thick_dx gt 0, c_fin)
-final_vol  = c_fin gt 0 ? total(thick_dx[ii_fin] * width_dx[ii_fin] * dx) : 0d0
+final_vol  = c_fin gt 0 ? total(thick_dx[ii_fin] * width_mid_dx[ii_fin] * dx) : 0d0
 final_area = c_fin gt 0 ? total(width_surface_dx[ii_fin] * dx) / 1d6 : 0d0
 
 print, ''

@@ -101,7 +101,7 @@ if n_elements(flow_initialised) eq 0 then begin
   ; well within ice thickness uncertainty (~30%, Farinotti et al. 2019).
   ii_init = where(thick_dx gt 0, c_init)
   if c_init gt 0 then begin
-    flow_vol_init_m3 = total(thick_dx[ii_init] * width_dx[ii_init] * dx)
+    flow_vol_init_m3 = total(thick_dx[ii_init] * width_mid_dx[ii_init] * dx)
     flow_area_init_km2 = total(width_surface_dx[ii_init] * dx) / 1d6
   endif else begin
     flow_vol_init_m3 = 0d0
@@ -180,7 +180,7 @@ endif
 if NOT flow_blown_up then begin
   ii_boy = where(thick_dx gt 0, c_boy)
   if c_boy gt 0 then begin
-    volumes[ye] = total(thick_dx[ii_boy] * width_dx[ii_boy] * dx) / 1d9
+    volumes[ye] = total(thick_dx[ii_boy] * width_mid_dx[ii_boy] * dx) / 1d9
     ; Area with fractional terminus/head correction for smooth evolution
     i_t_boy = min(ii_boy)
     i_h_boy = max(ii_boy)
@@ -274,10 +274,10 @@ width_mid_dx = (width_base_dx + width_surface_dx) / 2.0
 ; No writeback to GloGEM's vertical bands is needed for the feedback loop.
 ii_ice_dx = where(thick_dx gt 0, c_ice_dx)
 if c_ice_dx gt 0 then begin
-  ; Volume: use thick * width_dx * dx (rectangular, consistent with GloGEM)
-  ; The trapezoidal cross-section is used internally for SIA flux computation
-  ; but volume reporting uses the surface width to match GloGEM's convention.
-  flow_vol = total(thick_dx[ii_ice_dx] * width_dx[ii_ice_dx] * dx)
+  ; Volume: trapezoidal cross-section = thick * width_mid * dx,
+  ; matching MATLAB diagnostic_write.m (Zekollari et al. 2019).
+  ; width_mid = (width_base + width_surface)/2 narrows as the glacier thins.
+  flow_vol = total(thick_dx[ii_ice_dx] * width_mid_dx[ii_ice_dx] * dx)
   ; Continuous area: apply fractional contribution to both the terminus
   ; and head cells, based on each cell's thickness relative to its
   ; adjacent interior neighbour. This smooths retreat from both ends.
