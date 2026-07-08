@@ -61,11 +61,44 @@ if count gt 0 then begin
   bed_dx_init = bed_dx_init[valid_idx]
 endif
 
-; --- After interpolation to the regular grid, smooth geometry arrays to improve stability ---
-sur_dx_init = smooth(sur_dx_init, 3)
-width_dx_init = smooth(width_dx_init, 3)
-thick_dx_init = smooth(thick_dx_init, 3)
-bed_dx_init = smooth(bed_dx_init, 3)
+; --- After interpolation to the regular grid, smooth geometry arrays to improve
+; stability. Small-scale roughness in the input ice-thickness product (worse for
+; RGI7/Maffezzoli than RGI6/Farinotti -- confirmed empirically) creates locally
+; extreme slope*thickness^5 combinations that can blow up the SIA on its very
+; first step. Matches MATLAB's load_glacier.m:189-194 (5-point boxcar via
+; smooth2a), but additionally: (a) protects the terminus (index 0 here -- see
+; the i_term_a convention in glogemflow_coupled.pro STEP 5) from being smoothed,
+; matching MATLAB's explicit avoidance of "creating new pre-frontal ice"; and
+; (b) rescales the smoothed thickness to exactly conserve total volume, which is
+; stronger than MATLAB (which only relies on the terminus exclusion for
+; approximate conservation).
+smooth_width = 5 ; matches MATLAB's Nr=2 boxcar (2*2+1=5)
+term_buffer = 2 ; cells nearest the terminus (index 0) kept unsmoothed, matching MATLAB's smooth_range
+
+vol_before = total(width_dx_init * thick_dx_init) * dx
+
+sur_dx_init_smooth = smooth(sur_dx_init, smooth_width)
+width_dx_init_smooth = smooth(width_dx_init, smooth_width)
+thick_dx_init_smooth = smooth(thick_dx_init, smooth_width)
+bed_dx_init_smooth = smooth(bed_dx_init, smooth_width)
+
+n_dx_init = n_elements(thick_dx_init)
+if n_dx_init gt term_buffer then begin
+  sur_dx_init[term_buffer:n_dx_init - 1] = sur_dx_init_smooth[term_buffer:n_dx_init - 1]
+  width_dx_init[term_buffer:n_dx_init - 1] = width_dx_init_smooth[term_buffer:n_dx_init - 1]
+  thick_dx_init[term_buffer:n_dx_init - 1] = thick_dx_init_smooth[term_buffer:n_dx_init - 1]
+  bed_dx_init[term_buffer:n_dx_init - 1] = bed_dx_init_smooth[term_buffer:n_dx_init - 1]
+endif else begin
+  sur_dx_init = sur_dx_init_smooth
+  width_dx_init = width_dx_init_smooth
+  thick_dx_init = thick_dx_init_smooth
+  bed_dx_init = bed_dx_init_smooth
+endelse
+
+; Preserve total volume exactly: the boxcar smoothing (plus the protected
+; terminus buffer) only approximately conserves volume on its own.
+vol_after = total(width_dx_init * thick_dx_init) * dx
+if vol_after gt 0d0 then thick_dx_init = thick_dx_init * (vol_before / vol_after)
 
 ; --- Add frontal padding (pre-frontal region) ---
 
