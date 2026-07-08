@@ -68,6 +68,12 @@ if firnice_temperature eq 'y' then begin
   if firnice_temp_calib_file ne '' then begin
     @procedures/initialise/read_firnicetemp_calibration.pro
   endif
+  if firnice_temp_calib_knn_file ne '' then begin
+    @procedures/initialise/read_firnicetemp_calibration_knn.pro
+  endif
+  if firnice_temp_calib_bayes_file ne '' then begin
+    @procedures/initialise/read_firnicetemp_calibration_bayes.pro
+  endif
 endif
 
 ; === START OF PROGRAM
@@ -115,6 +121,11 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
           count_glaciers=1
           cali_calflux=0
+          if use_flow_model eq 'y' then begin
+            n_flow_ok       = 0L
+            n_flow_short    = 0L
+            n_flow_fallback = 0L
+          endif
 
           ; Define start of mass balance year and clean stale t_offset
           @procedures/initialise/setup_massbalance_year.pro
@@ -333,8 +344,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                         ; shorter glaciers fall back to the Δh parameterisation.
                         if use_flow_model eq 'y' and length[0] lt 1.0d0 then begin
                           use_flow_model_gl = 'n'
-                          if cal1 eq 0 and calibrate ne 'y' then print, '  Flow model skipped: length=' + $
-                            strtrim(string(length[0], fo='(f5.2)'), 2) + ' km (<1 km threshold)'
+                          if cal1 eq 0 and calibrate ne 'y' then n_flow_short = n_flow_short + 1
                         endif
 
                         ; prepare output for mass balance in elevation bands
@@ -392,7 +402,17 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                         if firnice_temp_calib_file ne '' then begin
                           @procedures/initialise/apply_firnicetemp_calibration.pro
                         endif
+                        if firnice_temp_calib_knn_file ne '' then begin
+                          @procedures/initialise/apply_firnicetemp_calibration_knn.pro
+                        endif
+                        if firnice_temp_calib_bayes_file ne '' then begin
+                          @procedures/initialise/apply_firnicetemp_calibration_bayes.pro
+                        endif
                       endif
+
+                      ; Record eligibility after length check — short glaciers already have
+                      ; use_flow_model_gl='n' and must not inflate the fallback counter.
+                      flow_eligible = (use_flow_model eq 'y') and (use_flow_model_gl eq 'y')
 
                       for ye=0,years-1 do begin
 
@@ -409,6 +429,15 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                         rf_ind=dblarr(nb) & rf_cold=rf_ind
                         ii=where(gl ne noval,ci) & if ci gt 0 then ar_gl=total(area[ii]) else ar_gl=0
                         if elev[0] gt elev[1]+100 then elev[0]=elev[1]
+
+                        ; Geometry stays frozen at the inventory geometry until each glacier's
+                        ; survey year; the Δh parameterisation / flow model only evolve from the
+                        ; inventory date onward. glacier_retreat is 'y' globally (settings.pro)
+                        ; and was only reset to 'n' inside initialise_firnicetemp_spinup (skipped
+                        ; when firnice_temperature='n'), so without this reset the Δh
+                        ; parameterisation ran from tran[0] (1940) and inflated the inventory-date
+                        ; volume well above the ice-thickness product.
+                        if find_startyear eq 'y' or hindcast_dynamic eq 'y' then glacier_retreat = 'n'
 
                         ; allow glacier area changes in hindcast period after date of RGI
                         if hindcast_dynamic eq 'y' then if ye+tran[0] ge survey_year[gg[g]] then glacier_retreat='y'
@@ -608,6 +637,13 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                       ; write hypsometry-evolution file
                       @procedures/write/write_hypsometry_evolution_file.pro
 
+                      ; Count flow model usage (once per glacier, forward runs only).
+                      ; flow_eligible excludes glaciers too short for the flow model.
+                      if flow_eligible and calibrate ne 'y' and cal1 eq 0 then begin
+                        if use_flow_model_gl eq 'y' then n_flow_ok = n_flow_ok + 1 $
+                        else n_flow_fallback = n_flow_fallback + 1
+                      endif
+
                     endif                           ; bedrock-file available?
 
                   endfor                          ; CALIBRATION 1 - single glacier mass balance
@@ -708,6 +744,16 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
           ; output of total calving flux for calibration purposes
           print, '--------- TOTAL CALVING FLUX (Gt/a) (period average):'
           print, string(cali_calflux,fo='(f9.4)')
+          if use_flow_model eq 'y' then begin
+            n_flow_total = count_glaciers - 1   ; total glaciers the loop visited
+            pct_ok      = string(n_flow_ok      * 100. / n_flow_total, fo='(f5.1)')
+            pct_short   = string(n_flow_short   * 100. / n_flow_total, fo='(f5.1)')
+            pct_fallbk  = string(n_flow_fallback* 100. / n_flow_total, fo='(f5.1)')
+            print, '--------- GLOGEMFLOW USAGE (' + strtrim(n_flow_total,2) + ' glaciers total):'
+            print, '  ' + strtrim(n_flow_ok,2)       + ' (' + strtrim(pct_ok,2)     + '%)  ran with GloGEMflow'
+            print, '  ' + strtrim(n_flow_short,2)    + ' (' + strtrim(pct_short,2)  + '%)  excluded: length < 1 km'
+            print, '  ' + strtrim(n_flow_fallback,2) + ' (' + strtrim(pct_fallbk,2) + '%)  excluded: spinup failure (fell back to Dh parameterisation)'
+          endif
         endif
 
         ; print statistics for calibration phases and write file for calibration phase statistics
