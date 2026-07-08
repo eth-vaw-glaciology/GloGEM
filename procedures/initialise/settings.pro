@@ -169,6 +169,21 @@ firnice_dT_scale        = 1.0d  ; amplitude scalar on firn insulation correction
 firnice_z0_firn         = 15.0d ; C&P e-folding depth [m]; Z0=κ/w_acc — 15m≈alpine, 60-100m≈polar
 firnice_temp_calib      = 'n'   ; 'y' = apply per-band transfer-model calibration
 firnice_temp_calib_file = ''    ; path to per-glacier override file; '' = use transfer model or defaults
+firnice_temp_calib_knn_file = '' ; path to per-glacier k-NN residual-correction file (band-aware);
+                                  ; ADDS delta_pf/delta_ds/delta_z0 to the per-band transfer-model
+                                  ; baseline computed per elevation band — requires firnice_temp_calib='y'
+                                  ; (see read/apply_firnicetemp_calibration_knn.pro); '' = disabled
+                                  ; DEPRECATED — undamped nearest-neighbour copy, diagnosed to
+                                  ; produce negative real-world R² (correction applied at full
+                                  ; strength up to 650+ km); superseded by
+                                  ; firnice_temp_calib_bayes_file below. Kept only as a LOO
+                                  ; comparison baseline (see icetemp.calibration.validation).
+firnice_temp_calib_bayes_file = '' ; path to per-glacier Kennedy-O'Hagan Bayesian residual-
+                                  ; correction file (band-aware); ADDS delta_pf/delta_ds/delta_z0
+                                  ; to the per-band transfer-model baseline, same mechanism as
+                                  ; the _knn file above — requires firnice_temp_calib='y' (see
+                                  ; read/apply_firnicetemp_calibration_bayes.pro and Python
+                                  ; icetemp.calibration.writeback.ResidualWriter); '' = disabled
 
 ; --- geometry evolution model
 ; two options: (1) Δh parameterisation (Huss et al., 2010) via glacier_retreat='y',
