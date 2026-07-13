@@ -256,6 +256,12 @@ while (time_flow lt year_end_flow) and (iter_flow lt max_iter_flow) do begin
     flow_blown_up = 1
     thick_dx      = thick_dx_year_start
     sur_dx        = sur_dx_year_start
+    ; Give glacier_retreat.pro a consistent thick[] to take over from -- it
+    ; manipulates thick[] directly and update_elevation_bands.pro never
+    ; writes it (only area/gl/width/elev), so without this sync thick[]
+    ; would still be the pre-flow-model value, inconsistent with area[]/elev[].
+    @procedures/flow/sync_bands_thickness
+    use_flow_model_gl = 'n'   ; actually switch this glacier to Δh from here on
     break
   endif
 endwhile
