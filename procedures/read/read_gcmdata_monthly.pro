@@ -68,8 +68,8 @@ endif else begin
          for r = -radius, radius do begin
                ; Only coordinates on this radius
                if abs(q) eq radius or abs(r) eq radius then begin
-                  ; Bereken nieuwe coördinaten
-                  mid = [mean(lon) + STRING(double(q) / 100, FORMAT='(F5.2)'), mean(lat) + STRING(double(r) / 100, FORMAT='(F5.2)')]
+                  ; get new coordinates
+                  mid = [mean(lon) + double(q)/100., mean(lat) + double(r)/100.]
                   gxs=strcompress(string(mid[0],fo='(f7.2)'),/remove_all)
                   gys=strcompress(string(mid[1],fo='(f7.2)'),/remove_all)
                   fn=dir_clim+'/future/'+time_resolution+'/'+GCM_data+'/'+dir_region+'/'+GCM_model[gcms]+ '/'+GCM_rcp[rcps]+'/clim_' + gxs + '_' + gys + '.dat'

@@ -134,6 +134,7 @@ nc_dat_str = strtrim(GCM_data,         2)
 ; ================================================================
 
 ; 1. Regional annual
+IF FILE_TEST(nc_ann) THEN FILE_DELETE, nc_ann
 nc_ann = ncdf_create(nc_fn_ann, /clobber, /netcdf4)
 ncdf_attput, nc_ann, /global, 'Conventions',   'CF-1.8'
 ncdf_attput, nc_ann, /global, 'model',         'GloGEM'
