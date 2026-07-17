@@ -85,24 +85,9 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
   for rcps=0,ne_GCM_rcp-1 do begin
 
-     ; Normal runs
-     if GMIP4 eq 'y' then begin
-        if rcps eq 0 or rcps eq 2 then begin
-           if gcms eq 0 or gcms eq 3 or gcms eq 4 then tran[1]=2300
-           if gcms eq 2 then tran[1]=2299
-        endif else begin
-           tran[1]=2100
-        endelse
-     endif
+      ; If you want the tran[1] to be different for some GCMs/SSPs
+      @procedures/initialise/check_tran.pro
 
-     ; Overshoot
-     ;if GMIP4 eq 'y' then begin
-     ;   ;if rcps eq 0 or rcps eq 2 then begin
-     ;   if gcms eq 0 then tran[1]=2299
-     ;   if gcms eq 1 or gcms eq 2 then tran[1]=2300
-     ;   if gcms eq 3 then tran[1]=2100
-     ;endif
-     
       experi_short=strmid(GCM_experiment,0,2)
 
       @procedures/read/read_regionbatch.pro
