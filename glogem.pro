@@ -75,20 +75,34 @@ tic ; to check how long the program runs
 
 for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
-  ; automatically setting end of modelling period for future runs
+; automatically setting end of modelling period for future runs
   if reanalysis_direct ne 'y' then tran[1]=2100
   if long_GCM ne '' then tran[1]=2300
   if AMOC eq 'y' then tran[1]=2499
-  if GMIP4 eq 'y' then begin
-    if gcms eq 0 or gcms eq 3 or gcms eq 4 then tran[1]=2300
-    if gcms eq 2 then tran[1]=2299
-  endif 
-
+  
   ; === LOOP OVER DIFFERENT RCPs/SSPs
   if rcp_batch[0] ne 0 then ne_GCM_rcp=rcp_batch[gcms] else ne_GCM_rcp=n_elements(GCM_rcp)
 
   for rcps=0,ne_GCM_rcp-1 do begin
 
+     ; Normal runs
+     if GMIP4 eq 'y' then begin
+        if rcps eq 0 or rcps eq 2 then begin
+           if gcms eq 0 or gcms eq 3 or gcms eq 4 then tran[1]=2300
+           if gcms eq 2 then tran[1]=2299
+        endif else begin
+           tran[1]=2100
+        endelse
+     endif
+
+     ; Overshoot
+     ;if GMIP4 eq 'y' then begin
+     ;   ;if rcps eq 0 or rcps eq 2 then begin
+     ;   if gcms eq 0 then tran[1]=2299
+     ;   if gcms eq 1 or gcms eq 2 then tran[1]=2300
+     ;   if gcms eq 3 then tran[1]=2100
+     ;endif
+     
       experi_short=strmid(GCM_experiment,0,2)
 
       @procedures/read/read_regionbatch.pro
@@ -193,7 +207,6 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
             ; if find_startyear eq 'y' then tran(0)=max([1980,min(survey_year)])
             years=tran[1]-tran[0]+1
-
             nout=fix(years/outst)+1
             nouty=indgen(nout)*outst
 
@@ -290,7 +303,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                   stor_im=dblarr(nout) & stor_dv=stor_im & stor_ar=stor_im & stor_vo=stor_im
 
                   @procedures/processing/read_climate_series.pro
-
+      
                   if cg gt 0 then begin
                     if calibrate eq 'n' then a=GCM_model[gcms]+'/'+GCM_rcp[rcps] else a='CALI - '+reanalysis
                     if total(a_gl[gg]) gt 10. and gx mod 2 eq 0 and gy mod 2 eq 0 then $
@@ -376,8 +389,8 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                       ; === MAIN LOOP over years
 
                       @procedures/initialise/initialise_firnicetemp_spinup.pro
-
-                      for ye=0,years do begin
+   
+                      for ye=0,years-1 do begin
 
                         if eval_mbelevsensitivity eq 'y' then begin
                           count_mbelevsens=count_mbelevsens_v0 ; initialising to start value of counter
@@ -550,7 +563,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
                         if glacier_retreat eq 'y' then begin
                           @procedures/processing/glacier_retreat.pro
-                        endif                           ; glacier retreat
+                        endif    ; glacier retreat
 
                       endfor    ; Loop over years
 
