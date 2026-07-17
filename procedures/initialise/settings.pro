@@ -328,7 +328,7 @@ case MIP of
     ; Not all model/SSP combinations are available (see GMIP4 protocol).
     ; ssp370 is used as the primary batch scenario.
     GCM_model = ['ACCESS-ESM1-5', 'BCC-CSM2-MR', 'CESM2-WACCM', 'IPSL-CM6A-LR', 'MRI-ESM2-0', 'MPI-ESM1-2-HR', 'MIROC6', 'NorESM2-MM']
-    GCM_rcp = ['ssp126', 'ssp370', 'ssp585'] ; 'ssp534-over']
+    GCM_rcp = ['ssp126', 'ssp370', 'ssp585', 'ssp534-over']
     GCM_experiment = 'r1i1p1f1'
     rcp_batch = 3 ;
     GCM_data = 'gmip4'
