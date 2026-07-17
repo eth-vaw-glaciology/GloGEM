@@ -134,6 +134,8 @@ nc_dat_str = strtrim(GCM_data,         2)
 ; ================================================================
 
 ; 1. Regional annual
+;IF FILE_TEST(nc_ann) THEN FILE_DELETE, nc_ann
+nc_ann = ncdf_create(nc_fn_ann, /clobber, /netcdf4)
 ncdf_attput, nc_ann, /global, 'Conventions',   'CF-1.8'
 ncdf_attput, nc_ann, /global, 'model',         'GloGEM'
 ncdf_attput, nc_ann, /global, 'institution',   nc_institution
@@ -374,10 +376,10 @@ if ~file_test(nc_outdir_sp, /directory) then file_mkdir, nc_outdir_sp
 if ~file_test(nc_outdir_sf, /directory) then file_mkdir, nc_outdir_sf
 
 ; --- split past file names (hindcast naming with reanalysis) ---
-nc_sp_fn_ann   = nc_outdir_sp + 'GloGEM_' + nc_base_tag  + '_' + nc_rea + '_annual.nc'
-nc_sp_fn_sub   = nc_outdir_sp + 'GloGEM_' + nc_base_tag  + '_' + nc_rea + '_' + nc_sub_lbl + '.nc'
-nc_sp_fn_ann_i = nc_outdir_sp + 'GloGEM_' + nc_indiv_tag + '_' + nc_rea + '_annual.nc'
-nc_sp_fn_sub_i = nc_outdir_sp + 'GloGEM_' + nc_indiv_tag + '_' + nc_rea + '_' + nc_sub_lbl + '.nc'
+nc_sp_fn_ann   = nc_outdir_sp + 'GloGEM_' + nc_base_tag  + '_' + nc_gcm_tag + '_' + nc_rea + '_annual.nc'
+nc_sp_fn_sub   = nc_outdir_sp + 'GloGEM_' + nc_base_tag  + '_' + nc_gcm_tag + '_' + nc_rea + '_' + nc_sub_lbl + '.nc'
+nc_sp_fn_ann_i = nc_outdir_sp + 'GloGEM_' + nc_indiv_tag + '_' + nc_gcm_tag + '_' + nc_rea + '_annual.nc'
+nc_sp_fn_sub_i = nc_outdir_sp + 'GloGEM_' + nc_indiv_tag + '_' + nc_gcm_tag + '_' + nc_rea + '_' + nc_sub_lbl + '.nc'
 
 ; --- split future file names (projection naming) ---
 nc_sf_fn_ann   = nc_outdir_sf + 'GloGEM_' + nc_base_tag  + '_' + nc_gcm_tag + '_annual.nc'
