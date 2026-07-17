@@ -338,8 +338,8 @@ case MIP of
  end
   'AMOC': begin
     ; AMOC GCMs                                                                                                                                                                                                                                                                      
-    GCM_model = ['CESM'] 
-    GCM_rcp = ['RCP26', 'RCP45', 'RCP85']                                                                                                                                                                                                                                                           
+    GCM_model = ['CESM', 'GFDL_ESM2M'] 
+    GCM_rcp = ['RCP26', 'RCP45', 'RCP85', 'ENS1_2degC_hos_Eref', 'ENS1_2degC_ref']                                                                                                                                                                    
     GCM_experiment = 'r1i1p1f1'
     rcp_batch = intarr(8) + 3 ;                                                                                                                                                                                                                                                          
     GCM_data = 'amoc'
