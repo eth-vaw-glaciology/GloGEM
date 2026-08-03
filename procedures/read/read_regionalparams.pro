@@ -11,16 +11,16 @@
 ; region and sub-region. Handles both single-subregion and multi-
 ; subregion lookups and optionally updates the glacier size range if
 ; size_range_overwrite is enabled.
+;
+; File naming convention: regional_parameters_<reanalysis>_<time_resolution>.dat
+; Daily files have 10 header lines and include P_threshold and size_range columns.
+; Monthly files have 6 header lines and end at the t_offgrid column.
 ; *************************************************************
 
 compile_opt idl2
 
-fn = dir + 'regional_parameters_' + reanalysis + '.dat'
-if time_resolution eq 'monthly' and reanalysis ne 'era5' then begin
-   b = 6
-endif else begin
-   b = 10
-endelse
+fn = dir + 'regional_parameters_' + strlowcase(reanalysis) + '_' + time_resolution + '.dat'
+if time_resolution eq 'monthly' then b = 6 else b = 10
 anz = file_lines(fn) - b
 ss=strarr(b) & da=strarr(anz) & openr,1,fn & readf,1,ss & readf,1,da & close,1
 tt=strarr(anz) & tt2=strarr(anz) & cc=dblarr(anz) & dptt=cc & tott=cc & cprtt=dblarr(3,anz) & toff_gr=tt2

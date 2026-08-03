@@ -19,7 +19,7 @@ if CMIP6 eq 'y' then begin
   fn=dir_clim+'/future/'+time_resolution+'/'+a+GCM_data+'/'+dir_region+'/'+GCM_model[gcms]+ $
      '/'+GCM_model[gcms]+'_'+GCM_rcp[rcps]+'_'+GCM_experiment+'_'+dir_region+ccl+'.mdi'
 
-   a=findfile(fn) ;& if a(0) eq '' then goto,next_GCM
+   a=file_search(fn) ;& if a(0) eq '' then goto,next_GCM
    tt=strarr(1) & nyrs=dblarr(1) & nmonths=nyrs & nlons=nyrs & nlats=nyrs & nvar=dblarr(2)
    openr,1,fn & readf,1,tt & readf,1,ntime & readf,1,nlons & readf,1,nlats  & readf,1,nvar
    ntime=ntime[0] & nlats=nlats[0] & nlons=nlons[0] & nvar=nvar[0]
@@ -68,8 +68,8 @@ endif else begin
          for r = -radius, radius do begin
                ; Only coordinates on this radius
                if abs(q) eq radius or abs(r) eq radius then begin
-                  ; Bereken nieuwe coördinaten
-                  mid = [mean(lon) + STRING(double(q) / 100, FORMAT='(F5.2)'), mean(lat) + STRING(double(r) / 100, FORMAT='(F5.2)')]
+                  ; get new coordinates
+                  mid = [mean(lon) + double(q)/100., mean(lat) + double(r)/100.]
                   gxs=strcompress(string(mid[0],fo='(f7.2)'),/remove_all)
                   gys=strcompress(string(mid[1],fo='(f7.2)'),/remove_all)
                   fn=dir_clim+'/future/'+time_resolution+'/'+GCM_data+'/'+dir_region+'/'+GCM_model[gcms]+ '/'+GCM_rcp[rcps]+'/clim_' + gxs + '_' + gys + '.dat'

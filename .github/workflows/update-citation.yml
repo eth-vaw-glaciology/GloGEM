@@ -1,0 +1,52 @@
+name: Update citation metadata
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-citation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install pyyaml
+
+      - name: Update CITATION.cff and regenerate citation text
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_DATE: ${{ github.event.release.published_at }}
+        run: python .github/scripts/update_citation.py
+
+      - name: Open pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          if git diff --quiet; then
+            echo "No citation changes needed."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          BRANCH="citation-update-${RELEASE_TAG}"
+          git checkout -b "$BRANCH"
+          git add CITATION.cff README.md docs/source/index.md
+          git commit -m "Update citation metadata for ${RELEASE_TAG}"
+          git push origin "$BRANCH"
+          gh pr create --title "Update citation metadata for ${RELEASE_TAG}" \
+            --body "Automated update triggered by the ${RELEASE_TAG} release. Syncs \`version\`/\`date-released\` in \`CITATION.cff\` and regenerates the APA/BibTeX text in \`README.md\` and \`docs/source/index.md\` to match." \
+            --base main --head "$BRANCH"

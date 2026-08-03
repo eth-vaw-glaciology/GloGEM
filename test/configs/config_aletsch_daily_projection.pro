@@ -1,9 +1,9 @@
 ; GloGEM test configuration — Aletsch / Morteratsch
-; Step 2 of 4: daily model, hindcast
+; Step 5 of 6: daily model, GCM projection to 2100
 ;
 ; Run AFTER config_aletsch_daily_calib.pro has completed.
 ;
-;   cp test/config_aletsch_daily_hindcast.pro config.pro
+;   cp test/configs/config_aletsch_daily_projection.pro config.pro
 ;   .r glogem
 
 ; -----------------------------------------------------------------------
@@ -39,7 +39,7 @@ catchment_selection = 'Aletsch_Morteratsch'
 ; -----------------------------------------------------------------------
 ; RUN MODE
 ; -----------------------------------------------------------------------
-tran            = [1991, 2020]
+tran            = [1991, 2100]
 calibrate       = 'n'
 read_parameters = 'y'
 ;find_startyear = 'y'
@@ -54,9 +54,12 @@ read_parameters = 'y'
 ; -----------------------------------------------------------------------
 ; CLIMATE DATA — MODEL INTERCOMPARISON PROJECT
 ; -----------------------------------------------------------------------
-;MIP = 'CMIP6'
-;GCM_model_idx = [0]
-;GCM_rcp_idx   = [0]
+; GlacierMIP4 fixed protocol, one model / one SSP (bundled test data only
+; covers this single combination — do not change without adding the
+; corresponding clim_<lon>_<lat>.dat files under test/climatedata/future/).
+MIP = 'GMIP4'
+GCM_model_idx = [5]   ; MRI-ESM2-0
+GCM_rcp_idx   = [1]   ; ssp126
 
 ; -----------------------------------------------------------------------
 ; REANALYSIS / BIAS CORRECTION
@@ -77,8 +80,8 @@ read_parameters = 'y'
 ;refreezing_full        = 'n'
 ;refreezing_parametrised = 'y'
 ;firnice_temperature    = 'n'
-glacier_retreat  = 'n'
-frontal_ablation = 'n'
+glacier_retreat  = 'y'   ; enabled — bundled hypsometry already has thickness/width/length per band
+frontal_ablation = 'n'   ; land-terminating glaciers — calving does not apply
 
 ; -----------------------------------------------------------------------
 ; OUTPUT OPTIONS
@@ -87,4 +90,4 @@ frontal_ablation = 'n'
 ;full_output = 'n'
 ;write_file = 'y'
 ;write_mb_elevationbands = 'n'
-;write_hypsometry_files = 'n'
+write_hypsometry_files = 'y'   ; per-decade area/volume per elevation band, for the profile plot

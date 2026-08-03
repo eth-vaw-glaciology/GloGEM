@@ -19,9 +19,9 @@ endif else begin
 endelse
 firnice_dir = dirres + time_resolution + '/' + dir_region + firnice_subpath + '/firnice_temperature'
 
-; Create directory — mkdir -p is silent and idempotent (no error if it already exists)
-spawn, 'mkdir -p ' + firnice_dir
-spawn, 'chmod a+rx ' + firnice_dir
+; Create directory — file_mkdir is silent and idempotent (no error if it already exists)
+file_mkdir, firnice_dir
+file_chmod, firnice_dir, /a_read, /a_execute
 
 if firnice_write[0] eq 'y' then begin
     close,45 & openw,45, firnice_dir + '/temp_1m_'      + id[gg[g]] + '.dat'

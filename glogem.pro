@@ -29,7 +29,7 @@ fn='procedures/initialise/settings.pro' & anz=file_lines(fn) & input_file_conten
 openr,1,fn & readf,1,input_file_content & close,1
 
 ; open log file to capture all console output
-spawn, 'mkdir -p ' + base_dir + '/logs'
+file_mkdir, base_dir + '/logs'
 a=systime() & b=strsplit(a,' ',/extract)
 log_timestamp=string(b[4],fo='(a4)')+'_'+string(b[1],fo='(a3)')+string(b[2],fo='(a2)')+'_'+strjoin(strsplit(b[3],':',/extract),'h')+'m'
 log_file=base_dir+'/logs/glogem_'+log_timestamp+'.log'
@@ -84,15 +84,18 @@ tic ; to check how long the program runs
 
 for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
-  ; automatically setting end of modelling period for future runs
+; automatically setting end of modelling period for future runs
   if reanalysis_direct ne 'y' then tran[1]=2100
   if long_GCM ne '' then tran[1]=2300
   if AMOC eq 'y' then tran[1]=2499
-
+  
   ; === LOOP OVER DIFFERENT RCPs/SSPs
   if rcp_batch[0] ne 0 then ne_GCM_rcp=rcp_batch[gcms] else ne_GCM_rcp=n_elements(GCM_rcp)
 
   for rcps=0,ne_GCM_rcp-1 do begin
+
+      ; If you want the tran[1] to be different for some GCMs/SSPs
+      @procedures/initialise/check_tran.pro
 
       experi_short=strmid(GCM_experiment,0,2)
 
@@ -144,7 +147,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
           ; We keep for the moment reading in .mdi files for the CMIP6 models before looping over the grid
           if time_resolution eq 'monthly' and AMOC ne 'y' then begin
              @procedures/read/read_climatepast_monthly.pro
-             if GMIP4 ne 'y' then begin
+             if GMIP4 ne 'y' and reanalysis_direct ne 'y' then begin
                 @procedures/read/read_gcmdata_monthly.pro
              endif
           endif
@@ -202,8 +205,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
             if ci gt 0 and cj gt 0 then survey_year[jj]=mean(survey_year[ii])
 
             ; if find_startyear eq 'y' then tran(0)=max([1980,min(survey_year)])
-            years=tran[1]-tran[0]
-
+            years=tran[1]-tran[0]+1
             nout=fix(years/outst)+1
             nouty=indgen(nout)*outst
 
@@ -300,7 +302,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                   stor_im=dblarr(nout) & stor_dv=stor_im & stor_ar=stor_im & stor_vo=stor_im
 
                   @procedures/processing/read_climate_series.pro
-
+      
                   if cg gt 0 then begin
                     if calibrate eq 'n' then a=GCM_model[gcms]+'/'+GCM_rcp[rcps] else a='CALI - '+reanalysis
                     if total(a_gl[gg]) gt 10. and gx mod 2 eq 0 and gy mod 2 eq 0 then $
@@ -325,7 +327,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                     for cal1=0,cal1max do begin
 
                       ; read hypsometry-file
-                      fn=dir_data+'/'+region+'/'+id[gg[g]]+'.dat' & a=findfile(fn)
+                      fn=dir_data+'/'+region+'/'+id[gg[g]]+'.dat' & a=file_search(fn)
 
                       if a[0] ne '' then begin
 
@@ -679,7 +681,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                   endif
 
                   ; write elevation band file
-                  fn=dir_data+'/'+region+'/'+id[gg[g]]+'.dat' & a=findfile(fn)
+                  fn=dir_data+'/'+region+'/'+id[gg[g]]+'.dat' & a=file_search(fn)
                   if write_mb_elevationbands eq 'y' and a[0] ne '' then begin
                     @procedures/write/write_elevationband_file.pro
                   endif

@@ -65,7 +65,8 @@ GCM_rcp_range = [0, 0] ; [first, last] range shorthand — [0,0]: not used
 first_GCM = 0 ; first GCM in batch (0-based, minus 1)
 
 ; --- reanalysis
-; default is 'era5' (daily model); 'ERA5' (all caps) is auto-selected for monthly in Zone 2
+; always lowercase; time_resolution determines which parameter file is read
+; (_daily or _monthly suffix, e.g. regional_parameters_era5_daily.dat)
 ; other daily options: 'era5land', 'chelsaw5e5', 'ch2018', 'gswp3w5e5'
 reanalysis = 'era5'
 rea_eval = [1991, 2020]
@@ -360,9 +361,9 @@ case MIP of
     ; Not all model/SSP combinations are available (see GMIP4 protocol).
     ; ssp370 is used as the primary batch scenario.
     GCM_model = ['ACCESS-ESM1-5', 'BCC-CSM2-MR', 'CESM2-WACCM', 'IPSL-CM6A-LR', 'MRI-ESM2-0', 'MPI-ESM1-2-HR', 'MIROC6', 'NorESM2-MM']
-    GCM_rcp = ['ssp126', 'ssp370', 'ssp585'] ; 'ssp534-over']
+    GCM_rcp = ['ssp126', 'ssp370', 'ssp585', 'ssp534-over']
     GCM_experiment = 'r1i1p1f1'
-    rcp_batch = intarr(8) + 1 ; ssp370 as default batch scenario
+    rcp_batch = 3 ;
     GCM_data = 'gmip4'
     CMIP6 = 'n'
     GMIP4 = 'y'
@@ -370,10 +371,10 @@ case MIP of
  end
   'AMOC': begin
     ; AMOC GCMs                                                                                                                                                                                                                                                                      
-    GCM_model = ['CESM'] 
-    GCM_rcp = ['RCP45']                                                                                                                                                                                                                                                           
+    GCM_model = ['CESM', 'GFDL_ESM2M'] 
+    GCM_rcp = ['RCP26', 'RCP45', 'RCP85', 'ENS1_2degC_hos_Eref', 'ENS1_2degC_ref']                                                                                                                                                                    
     GCM_experiment = 'r1i1p1f1'
-    rcp_batch = intarr(8) + 1 ;                                                                                                                                                                                                                                                          
+    rcp_batch = intarr(8) + 3 ;                                                                                                                                                                                                                                                          
     GCM_data = 'amoc'
     CMIP6 = 'n'
     GMIP4 = 'n'

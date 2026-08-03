@@ -105,13 +105,15 @@ all_lons(ii)=all_lons(ii)-360.
 nrc=0
 
 ; Make folder for results
-a=findfile(path+region_now+'/'+gcm+'/'+ssp)
+a=file_search(path+region_now+'/'+gcm+'/'+ssp)
 if a(0) eq '' then begin
-   spawn,'mkdir '+path+region_now+'/'+gcm+'/'+ssp & spawn,'chmod a+rx '+path+region_now+'/'+gcm+'/'+ssp
+   gmip4_dir = path+region_now+'/'+gcm+'/'+ssp
+   file_mkdir, gmip4_dir
+   file_chmod, gmip4_dir, /a_read, /a_execute
 endif
 
-a=findfile(fnt)
-b=findfile(fnp)
+a=file_search(fnt)
+b=file_search(fnp)
 
 ; check if SSP file for the respective GCM is available 
 if a(0) ne '' and b(0) ne '' then begin  
@@ -209,7 +211,7 @@ for g=0l,ng-1 do begin
    a=min(abs(xy(0,g)-all_lons),indx) & a=min(abs(xy(1,g)-all_lats),indy)
    gx=strcompress(string(all_lons(indx),fo='(f7.2)'),/remove_all)
    gy=strcompress(string(all_lats(indy),fo='(f7.2)'),/remove_all)
-   a=findfile(path+region_now+'/'+gcm+'/'+ssp+'/clim_'+gx+'_'+gy+'.dat')
+   a=file_search(path+region_now+'/'+gcm+'/'+ssp+'/clim_'+gx+'_'+gy+'.dat')
 
    ; start extraction when no file for the respective glacier is available
    if a(0) eq '' or overwrite_all eq 'y' then begin
