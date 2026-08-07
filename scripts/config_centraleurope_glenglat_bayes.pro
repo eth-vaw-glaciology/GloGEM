@@ -53,7 +53,11 @@ firnice_temp_calib_file     = ''   ; ensure the flat-override mechanism is off �
                                     ; with the bayes residual file double-applies
 firnice_temp_calib_knn_file = ''   ; ensure the OLD k-NN mechanism is off — combining it with
                                     ; the bayes residual file double-applies
-firnice_temp_calib_bayes_file = '/home/jabeer/projects/glogemflow_development/GloGEM/test/data/firnicetemp_calibration_CentralEurope_bayes_residual.dat'
+; NOTE: unlike the _knn predecessor's residual file, this one is NOT under GloGEM/test/data
+; -- that directory is reserved for GloGEM's own test-run fixtures, unrelated to Tier-3
+; calibration output. Matches where icetemp.calibration.writeback.ResidualWriter actually
+; writes it (CalibrationConfig(run_tag='centraleurope_bayescal').residual_file_path).
+firnice_temp_calib_bayes_file = '/home/jabeer/projects/glogemflow_development/glogemflow_icetemp/data/bayescal/centraleurope_bayescal/firnicetemp_calibration_centraleurope_bayescal_bayes_residual.dat'
 
 ; Write IDX profile output at the real glenglat borehole elevations (covers all catchment
 ; glaciers) instead of generic fractional positions — directly comparable to observations.

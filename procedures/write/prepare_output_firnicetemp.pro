@@ -58,8 +58,22 @@ if firnice_write[1] eq 'y' then begin
         firnice_profile_ind[0,i]=fix(firnice_profile[i]*nb) & firnice_profile_ind[1,i]=elev0[firnice_profile_ind[0,i]]
         endfor
     endif else begin  ; abs elev
+        ; Match against glacierized bands only (gl ne noval, set in process_hypsometry_
+        ; data.pro from thick gt 0). The hypsometry array frequently has zero-area/zero-
+        ; thickness "gap" bands interleaved between real ice bands (digitization artifacts)
+        ; or trailing above the highest real ice band near a summit -- a plain nearest-
+        ; elevation search over the FULL band array can land on one of these, silently
+        ; producing a header-only output file with zero data rows for that profile point
+        ; (confirmed for two real glenglat boreholes whose requested elevation happened to
+        ; be numerically closest to such a gap band, even though real ice existed one band
+        ; away).
+        gz=where(gl ne noval,cgz)
         for i=0,n_elements(firnice_profile)-1 do begin
-        a=min(abs(elev0-firnice_profile[i]),ind)
+        if cgz gt 0 then begin
+            a=min(abs(elev0[gz]-firnice_profile[i]),ind) & ind=gz[ind]
+        endif else begin
+            a=min(abs(elev0-firnice_profile[i]),ind)
+        endelse
         firnice_profile_ind[0,i]=ind & firnice_profile_ind[1,i]=elev0[firnice_profile_ind[0,i]]
         endfor
     endelse
