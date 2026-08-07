@@ -31,3 +31,12 @@ __pycache__/
 *.py[cod]
 .ipynb_checkpoints
 */.ipynb_checkpoints/*
+
+# One-off GMIP4 run configs and orchestration scripts (machine/run-specific,
+# not reusable — regenerated per submission push, unlike the *_fwd.pro
+# templates and launch_batches.sh/create_region_batches.py infra they use)
+scripts/config_*_gmip4_*.pro
+scripts/config_cali_rgi7_*.pro
+scripts/run_gmip4_*.sh
+scripts/launch_gmip4_all_regions.sh
+gmon.out

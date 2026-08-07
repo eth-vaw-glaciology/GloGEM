@@ -495,18 +495,54 @@ for len_iter = 0, max_len_iter - 1 do begin
   endif
 
   if ~vol_converged then begin
-    print, '  Volume did not converge --- using best result'
-    best_err = 1d30
-    best_idx = 0
-    for i = 0, n_vol_done - 1 do begin
-      err = abs(spinup_vol_tbl[i, 1] - vol_target)
-      if err lt best_err then begin
-        best_err = err
-        best_idx = i
+    if n_vol_done eq 0 then begin
+      ; Every vol_iter attempt this length-iteration blew up or stalled before
+      ; recording a result (spinup_vol_tbl is still all-zero) -- the loop below
+      ; is a no-op over an empty range, so best_idx would silently stay at its
+      ; initial 0, pointing at an unwritten table row, and aflow_guess would
+      ; become 0.0 as if it were a real calibration (confirmed via
+      ; "Spin-up cache hit: <id> A_flow=0.0000000" for e.g. glacier 01871 --
+      ; zero ice deformation, so thickness just accumulates from SMB with no
+      ; downslope discharge instead of retreating). Treat this the same as the
+      ; other unrecoverable calibration failures above: abandon the flow model
+      ; for this glacier and fall back to the Δh parameterisation.
+      print, '  No A_flow attempt reached a valid volume this length-iteration ' + $
+        '(all blew up or stalled) --- abandoning flow model for this glacier, ' + $
+        'falling back to Δh parameterisation.'
+      calib_abandoned = 1
+    endif else begin
+      print, '  Volume did not converge --- using best result'
+      best_err = 1d30
+      best_idx = 0
+      for i = 0, n_vol_done - 1 do begin
+        err = abs(spinup_vol_tbl[i, 1] - vol_target)
+        if err lt best_err then begin
+          best_err = err
+          best_idx = i
+        endif
+      endfor
+      print, '  Best A_flow=', spinup_vol_tbl[best_idx, 0], '  vol=', spinup_vol_tbl[best_idx, 1]/1d9, ' km3'
+      aflow_guess = spinup_vol_tbl[best_idx, 0]
+
+      ; Even a *recorded* best attempt can be degenerate: A_flow pinned at its
+      ; 1e-20 floor (near-zero ice deformation) while still missing the target
+      ; volume by orders of magnitude -- confirmed in testing for glaciers
+      ; 01817 (111,945% volume error) and 02280 (2,227,413% error), both
+      ; silently accepted here before this guard existed. A merely-unconverged
+      ; result (typically <20% off) is fine to keep; anything this far off is
+      ; not a usable calibration. Same treatment as the n_vol_done=0 case above.
+      best_vol_err_pct = abs(spinup_vol_tbl[best_idx, 1] - vol_target) / vol_target * 100d0
+      if best_vol_err_pct gt 100d0 then begin
+        print, '  Best result still off by ', best_vol_err_pct, '% --- treating as calibration failure, ' + $
+          'falling back to Δh parameterisation.'
+        calib_abandoned = 1
       endif
-    endfor
-    print, '  Best A_flow=', spinup_vol_tbl[best_idx, 0], '  vol=', spinup_vol_tbl[best_idx, 1]/1d9, ' km3'
-    aflow_guess = spinup_vol_tbl[best_idx, 0]
+    endelse
+  endif
+
+  if calib_abandoned then begin
+    use_flow_model_gl = 'n'
+    goto, spinup_skip
   endif
 
   spinup_aflow = aflow_guess
@@ -577,7 +613,11 @@ for len_iter = 0, max_len_iter - 1 do begin
   endelse
 
   if abs(ela_bias) gt ela_bias_max then begin
-    print, '  WARNING: ELA bias hit limit (', ela_bias, ' m) --- stopping length calibration'
+    ; Previously only warned and broke, leaving the out-of-bounds ela_bias (up
+    ; to +6221.7m / -4828.6m observed) as the adopted final value -- clamp to
+    ; the documented physical limit instead of just diagnosing it.
+    ela_bias = (ela_bias gt 0) ? ela_bias_max : -ela_bias_max
+    print, '  WARNING: ELA bias hit limit --- clamped to ', ela_bias, ' m, stopping length calibration'
     break
   endif
 
@@ -596,6 +636,28 @@ width_mid_dx = (width_base_dx + width_surface_dx) / 2.0
 ii_fin = where(thick_dx gt 0, c_fin)
 final_vol  = c_fin gt 0 ? total(thick_dx[ii_fin] * width_mid_dx[ii_fin] * dx) : 0d0
 final_area = c_fin gt 0 ? total(width_surface_dx[ii_fin] * dx) / 1d6 : 0d0
+
+; Final sanity check on the ACTUAL geometry state about to be cached/used --
+; distinct from the n_vol_done/best-result checks above, which only inspect
+; spinup_vol_tbl's RECORDED volume for a given attempt, not the live thick_dx.
+; "Best result" only remembers the winning A_flow *value*; it does not re-run
+; Phase A/B to restore thick_dx to the state that value actually produced. If
+; a LATER vol_iter attempt in the same length-iteration then blows up, that
+; corrupted thick_dx is what final_vol (and the cached geometry) reflects --
+; not the earlier, correctly-converged attempt the search table remembers.
+; Confirmed for glacier 02280: search recorded a converged 0.064 km3 (1.65%
+; error) at vol_iter 5, but vol_iter 6's subsequent blow-up left thick_dx
+; corrupted, and final_vol came out as 1406.8 km3 (2,227,413% error) --
+; passing the checks above (which only look at the table) undetected.
+final_vol_err_pct = vol_target gt 0 ? abs(final_vol - vol_target) / vol_target * 100d0 : 0d0
+if final_vol_err_pct gt 100d0 then begin
+  print, ''
+  print, '  Final geometry state is off by ', final_vol_err_pct, '% despite an earlier ' + $
+    'converged search result --- corrupted by a later failed attempt. Abandoning flow ' + $
+    'model for this glacier, falling back to Δh parameterisation.'
+  use_flow_model_gl = 'n'
+  goto, spinup_skip
+endif
 
 print, ''
 print, '=== Spin-up complete ==='

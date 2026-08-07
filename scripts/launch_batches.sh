@@ -2,16 +2,27 @@
 # launch_batches.sh  —  start N parallel GloGEM batches in tmux sessions
 #
 # Each session runs:  echo ".r glogem" | GLOGEM_BATCH=<NN> idl
-# config.pro reads GLOGEM_BATCH and sets catchment_selection = 'alps_batchNN'.
+# config.pro (or CONFIG_FILE, see below) reads GLOGEM_BATCH and sets
+# catchment_selection = '<name>_batchNN'.
 #
 # Usage:
 #   cd /home/jabeer/projects/glogemflow_development/GloGEM
 #   bash scripts/launch_batches.sh [N_BATCHES] [SESSION_PREFIX]
 #   bash scripts/launch_batches.sh 16 alps_flow_rgi7
 #
-# Environment variables (set by overnight_chain.sh):
-#   DONE_DIR   — if set, touch $DONE_DIR/batchNN.done after IDL exits
-#                (used by the chain script to detect completion)
+# Environment variables:
+#   DONE_DIR     — if set, touch $DONE_DIR/batchNN.done after IDL exits
+#                  (used by chain scripts to detect completion)
+#   CONFIG_FILE  — if set, exported per-session as GLOGEM_CONFIG so each IDL
+#                  process loads this config directly by absolute path,
+#                  instead of the shared base_dir/config.pro. This is what
+#                  makes it safe to run multiple scenarios (or multiple
+#                  hosts sharing this same NFS-mounted repo) concurrently
+#                  without one launch's `cp config.pro` racing another's —
+#                  each batch's config is fixed at spawn time, no shared
+#                  mutable file involved. When unset, falls back to the
+#                  original behaviour (each batch reads whatever the caller
+#                  already copied into base_dir/config.pro).
 
 set -euo pipefail
 
@@ -27,6 +38,9 @@ echo "GloGEM directory : $GLOGEM_DIR"
 echo "Session prefix   : $PREFIX"
 echo "Launching        : $N batch sessions"
 echo "Logs             : $LOG_DIR"
+if [[ -n "${CONFIG_FILE:-}" ]]; then
+    echo "Config           : $CONFIG_FILE (via GLOGEM_CONFIG)"
+fi
 echo ""
 
 for i in $(seq 1 "$N"); do
@@ -39,11 +53,16 @@ for i in $(seq 1 "$N"); do
         DONE_CMD="; touch '${DONE_DIR}/batch${BATCH}.done'"
     fi
 
+    CONFIG_ENV=""
+    if [[ -n "${CONFIG_FILE:-}" ]]; then
+        CONFIG_ENV="GLOGEM_CONFIG='${CONFIG_FILE}' "
+    fi
+
     # Kill any leftover session with the same name
     tmux kill-session -t "$SESSION" 2>/dev/null || true
 
     tmux new-session -d -s "$SESSION" \
-        "cd '${GLOGEM_DIR}' && echo '.r glogem' | GLOGEM_BATCH=${BATCH} idl 2>&1 | tee '${LOGFILE}'; echo 'Batch ${BATCH} finished'${DONE_CMD}; read -r _"
+        "cd '${GLOGEM_DIR}' && echo '.r glogem' | ${CONFIG_ENV}GLOGEM_BATCH=${BATCH} idl 2>&1 | tee '${LOGFILE}'; echo 'Batch ${BATCH} finished'${DONE_CMD}; read -r _"
 
     echo "  Started: $SESSION  (GLOGEM_BATCH=$BATCH)"
 done

@@ -363,7 +363,13 @@ case MIP of
     GCM_model = ['ACCESS-ESM1-5', 'BCC-CSM2-MR', 'CESM2-WACCM', 'IPSL-CM6A-LR', 'MRI-ESM2-0', 'MPI-ESM1-2-HR', 'MIROC6', 'NorESM2-MM']
     GCM_rcp = ['ssp126', 'ssp370', 'ssp585', 'ssp534-over']
     GCM_experiment = 'r1i1p1f1'
-    rcp_batch = 3 ;
+    ; Must stay an 8-element array (one entry per GCM_model), matching every
+    ; other MIP case below — a bare scalar indexes fine at rcp_batch[0] (the
+    ; first GCM) but throws "subscript out of range" as soon as the GCM loop
+    ; advances to gcms=1, i.e. as soon as more than one model is requested
+    ; in the same run (GCM_model_idx=[0], "all") rather than one model per
+    ; invocation (GCM_model_idx=[N]).
+    rcp_batch = intarr(8) + 3
     GCM_data = 'gmip4'
     CMIP6 = 'n'
     GMIP4 = 'y'
