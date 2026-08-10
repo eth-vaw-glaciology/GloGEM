@@ -197,13 +197,41 @@ if NOT flow_blown_up then begin
       endif
     endif
     areas[ye] = (area_sum_boy > 0d0) / 1d6
-    mb[ye]    = total(bal_dx[ii_boy] * width_surface_dx[ii_boy] * dx * 0.917d0) / $
-                total(width_surface_dx[ii_boy] * dx)
+
+    ; mb[ye] specifically depends on bal_dx, which interpol() can leave
+    ; non-finite for some of Iceland's largest, flattest ice caps once enough
+    ; bands have gone ice-free that elev[ii_gl_bands] (STEP 2) stops being
+    ; usefully monotonic -- interpol() assumes monotonic x but never
+    ; validates it. volumes[ye]/areas[ye] above don't depend on bal_dx and
+    ; stay valid regardless; only mb[ye] needs the finite check here.
+    if total(~finite(bal_dx[ii_boy])) eq 0 then begin
+      mb[ye] = total(bal_dx[ii_boy] * width_surface_dx[ii_boy] * dx * 0.917d0) / $
+               total(width_surface_dx[ii_boy] * dx)
+    endif else begin
+      mb[ye] = 0d0
+    endelse
   endif else begin
     volumes[ye] = 0d0
     areas[ye]   = 0d0
     mb[ye]      = 0d0
   endelse
+endif
+
+; Guard: bal_dx must be finite before STEP 3's SIA advance uses it
+; (ice_thickness.pro applies bal_dx directly to the mass update, corrupting
+; thick_dx on the very first sub-step otherwise -- this is what the existing
+; STEP 3 blow-up check below eventually caught, several iterations late).
+; volumes[ye]/areas[ye] above are already valid (computed from thick_dx
+; directly); only mb[ye] (guarded above) and thick_dx from here on need the
+; fallback. No geometry to restore yet -- thick_dx/sur_dx are still last
+; year's end-state, untouched this year -- just sync bands and switch this
+; glacier to Δh from here on.
+if NOT flow_blown_up and total(~finite(bal_dx)) gt 0 then begin
+  print, 'WARNING: GloGEMflow bal_dx non-finite at year ' + strtrim(ye + tran[0], 2) + $
+    ' --- falling back to Δh parameterisation for remainder of run.'
+  flow_blown_up = 1
+  @procedures/flow/sync_bands_thickness
+  use_flow_model_gl = 'n'
 endif
 
 ; ========== STEP 3: ADVANCE FLOW MODEL BY 1 YEAR ========== ;
