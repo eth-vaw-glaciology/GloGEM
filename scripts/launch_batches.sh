@@ -11,8 +11,15 @@
 #   bash scripts/launch_batches.sh 16 alps_flow_rgi7
 #
 # Environment variables:
-#   DONE_DIR     — if set, touch $DONE_DIR/batchNN.done after IDL exits
-#                  (used by chain scripts to detect completion)
+#   DONE_DIR     — if set, touch $DONE_DIR/batchNN.done once the batch log
+#                  contains glogem.pro's own "FINISHED region !!!" marker,
+#                  or write a note to $DONE_DIR/batchNN.failed otherwise
+#                  (used by chain scripts to detect completion). This is a
+#                  content check, not an exit-code check: IDL exits 0 even
+#                  when a run fails outright (e.g. license exhaustion, a
+#                  missing config) — confirmed empirically, `echo '.r
+#                  nonexistent' | idl` still returns $?=0 — so checking
+#                  $? here would silently treat every such failure as done.
 #   CONFIG_FILE  — if set, exported per-session as GLOGEM_CONFIG so each IDL
 #                  process loads this config directly by absolute path,
 #                  instead of the shared base_dir/config.pro. This is what
@@ -48,9 +55,9 @@ for i in $(seq 1 "$N"); do
     SESSION="${PREFIX}_batch${BATCH}"
     LOGFILE="${LOG_DIR}/${PREFIX}_batch${BATCH}_$(date +%Y%m%d_%H%M%S).log"
 
-    DONE_CMD=""
+    DONE_CMD=":"
     if [[ -n "${DONE_DIR:-}" ]]; then
-        DONE_CMD="; touch '${DONE_DIR}/batch${BATCH}.done'"
+        DONE_CMD="if grep -q 'FINISHED region !!!' '${LOGFILE}'; then touch '${DONE_DIR}/batch${BATCH}.done'; else echo \"no FINISHED marker (exit \$EC) -- see ${LOGFILE}\" > '${DONE_DIR}/batch${BATCH}.failed'; fi"
     fi
 
     CONFIG_ENV=""
@@ -62,7 +69,7 @@ for i in $(seq 1 "$N"); do
     tmux kill-session -t "$SESSION" 2>/dev/null || true
 
     tmux new-session -d -s "$SESSION" \
-        "cd '${GLOGEM_DIR}' && echo '.r glogem' | ${CONFIG_ENV}GLOGEM_BATCH=${BATCH} idl 2>&1 | tee '${LOGFILE}'; echo 'Batch ${BATCH} finished'${DONE_CMD}; read -r _"
+        "cd '${GLOGEM_DIR}' && echo '.r glogem' | ${CONFIG_ENV}GLOGEM_BATCH=${BATCH} idl 2>&1 | tee '${LOGFILE}'; EC=\${PIPESTATUS[1]}; echo \"Batch ${BATCH} finished (exit \$EC)\"; ${DONE_CMD}; read -r _"
 
     echo "  Started: $SESSION  (GLOGEM_BATCH=$BATCH)"
 done
