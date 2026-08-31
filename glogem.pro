@@ -137,9 +137,26 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
           lat0=[9999,9999]        ; run for entire region
           lon0=[0,0]        ; or specify sub-regions
           if clim_subregion ne '' and time_resolution eq 'monthly' then begin
-            ccl='_'+clim_subregion 
+            ccl='_'+clim_subregion
             @procedures/read/read_climatepast_monthly.pro
-            @procedures/read/read_gcmdata_monthly.pro
+            ; This region-setup-time GCM read only makes sense for the CMIP6
+            ; path, which loads one whole regional grid (gcm_lon/gcm_lat) up
+            ; front and never touches the per-glacier lon/lat here. The
+            ; GMIP4 (CMIP6='n') branch instead looks up a per-coordinate
+            ; file via mean(lon)/mean(lat) -- but lon/lat aren't assigned
+            ; until the grid loop starts (see 'lon=' below), so calling it
+            ; this early crashes with "Variable is undefined: X" the moment
+            ; a config actually exercises this branch. It's also redundant
+            ; there regardless: rvlat/rvlon (the only thing used right below)
+            ; come from read_climatepast_monthly.pro above, not this call,
+            ; and the real per-grid-cell GCM read already happens correctly
+            ; later via read_climate_series.pro, once lon/lat exist. Confirmed
+            ; via LowLatitudes/Antarctic's flow/ssp126 wave, 2026-08-17 --
+            ; the first time subregion + GMIP4 + a forward (non-calibration)
+            ; run had ever actually been exercised together.
+            if CMIP6 eq 'y' then begin
+              @procedures/read/read_gcmdata_monthly.pro
+            endif
             lat0=[min(rvlat)-0.1,max(rvlat)]
             if clim_subregion eq 'Atlantic' then lat0[0]=-60.5
             lon0=[min(rvlon)-0.1,max(rvlon)]

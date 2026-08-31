@@ -125,9 +125,37 @@ if n_elements(flow_initialised) eq 0 then begin
   ; year. This ensures sur_dx is at the correct elevation for mass-balance
   ; interpolation — without this, inflated ice surfaces see too-positive MB
   ; (accumulation zone) and glaciers grow instead of retreat.
+  ;
+  ; f_scale is NOT simply target/flow_vol_init_m3 (a uniform thickness
+  ; multiplier does not scale volume linearly, because width_surface_dx =
+  ; width_base_dx + lambda_dx*thick_dx also grows with thickness). Expanding
+  ; the trapezoidal volume sum in terms of a scale factor f applied to the
+  ; spin-up's thick_dx gives an exact quadratic:
+  ;   Volume(f) = f*A + f^2*B
+  ;   A = dx * total(thick_dx*width_base_dx)
+  ;   B = dx * total(lambda_dx*thick_dx^2) / 2
+  ; Solving Volume(f) = target_vol for f (positive root) accounts for the
+  ; width-thickness coupling exactly; the old linear f_scale=target/
+  ; flow_vol_init_m3 is only correct when B~0 (little/no trapezoidal
+  ; widening). For glaciers needing a large rescale -- typically ones whose
+  ; flow tracking starts late (spin-up volume far below the survey target at
+  ; that later year) -- the f^2*B term dominates and the linear approximation
+  ; badly overshoots. Found via Svalbard glacier 00250 (RGI7, batch05,
+  ; initialises 2008): linear f_scale=27.6 produced an actual volume of
+  ; 246 km3 against a 115 km3 target (>2x overshoot), which triggered an
+  ; immediate same-step SIA blow-up (see the vol_blowup safety net in STEP 3
+  ; below). The quadratic solve reproduces the target almost exactly.
+  ; 2026-08-18.
   flow_blown_up = 0
   if flow_vol_init_m3 gt 0d0 and volumes[ye] gt 0d0 then begin
-    f_scale = (volumes[ye] * 1d9) / flow_vol_init_m3
+    target_vol_m3 = volumes[ye] * 1d9
+    coefA = dx * total(thick_dx[ii_init] * width_base_dx[ii_init])
+    coefB = dx * total(lambda_dx[ii_init] * thick_dx[ii_init] ^ 2) / 2d0
+    if coefB gt 0d0 then begin
+      f_scale = (-coefA + sqrt(coefA ^ 2 + 4d0 * coefB * target_vol_m3)) / (2d0 * coefB)
+    endif else begin
+      f_scale = target_vol_m3 / flow_vol_init_m3   ; no width-thickness coupling: linear is exact
+    endelse
     thick_dx         = thick_dx * f_scale
     sur_dx           = bed_dx + thick_dx
     width_surface_dx = width_base_dx + lambda_dx * thick_dx
@@ -248,6 +276,11 @@ max_iter_flow = 50000l
 ; year — even though the Δh parameterisation should continue evolving the glacier normally.
 thick_dx_year_start = thick_dx
 sur_dx_year_start   = sur_dx
+; Cheap proxy for glacier-wide volume (sum of per-node thickness, not
+; multiplied by width/dx) used only for the relative-change safety net
+; below -- a true volume would need width_mid_dx recomputed every
+; sub-step, which STEP 4 currently only does once per year.
+vol_proxy_year_start = total(thick_dx_year_start)
 
 while (time_flow lt year_end_flow) and (iter_flow lt max_iter_flow) do begin
   ; ---- Adaptive time step (CFL criterion) ----
@@ -277,9 +310,26 @@ while (time_flow lt year_end_flow) and (iter_flow lt max_iter_flow) do begin
   ; Safety: bail out if thickness blows up; fall back to Δh parameterisation for rest of run.
   ; Restore beginning-of-year geometry (not zero) so update_elevation_bands
   ; keeps the band state intact and the Δh parameterisation can continue retreating the glacier.
-  if max(thick_dx) gt 5000d0 or total(~finite(thick_dx)) gt 0 then begin
+  ;
+  ; Second trigger (vol_blowup): catches broad, moderate-per-cell overshoots
+  ; that never push any single node past 5000 m but still sum to a
+  ; physically implausible whole-glacier volume change within one year --
+  ; observed on wide, low-slope ice-cap glaciers (e.g. Svalbard 00250/01212,
+  ; several RussianArctic ice caps) where df_lim (calibrated on Alpine
+  ; valley-glacier lengths, see constants_counters_initialvalues_sizevariables.pro)
+  ; is loose enough, and the one-sub-step-lagged CFL dt above slow enough to
+  ; react, that diffusivity (~thickness^(nflow+2)) can spike across many wide
+  ; cells in a single sub-step. 30% threshold chosen from a cross-region scan
+  ; 2026-08-18: 0 false positives in NewZealand/Caucasus/Scandinavia/CentralEurope
+  ; (small valley glaciers), catches the genuine ice-cap blow-ups in Svalbard/
+  ; RussianArctic. Guard on vol_proxy_year_start avoids tripping on noisy
+  ; ratios for near-ice-free glaciers.
+  vol_blowup = (vol_proxy_year_start gt 100d0) and $
+    (abs(total(thick_dx) - vol_proxy_year_start) gt 0.30d0 * vol_proxy_year_start)
+  if max(thick_dx) gt 5000d0 or total(~finite(thick_dx)) gt 0 or vol_blowup then begin
     print, 'WARNING: GloGEMflow blow-up at iter=' + strtrim(iter_flow, 2) + $
-      ', max(thick_dx)=' + strtrim(max(thick_dx), 2)
+      ', max(thick_dx)=' + strtrim(max(thick_dx), 2) + $
+      ', total_thick=' + strtrim(total(thick_dx), 2) + ' (was ' + strtrim(vol_proxy_year_start, 2) + ')'
     print, '  Falling back to Δh parameterisation for remainder of run.'
     flow_blown_up = 1
     thick_dx      = thick_dx_year_start
