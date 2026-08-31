@@ -341,3 +341,34 @@ nc_reg_temp_a = dblarr(nc_n_sub)   ; initial area sum (denominator)
 
 nc_has_split = 0   ; no split for pure hindcast runs
 nc_g         = 0L  ; glacier counter (incremented in write_netcdf_glacier)
+
+; ================================================================
+; INDIVIDUAL-GLACIER WRITE BUFFERS -- see the matching block in
+; init_netcdf_projections.pro for the full rationale (2026-08-31): the
+; same nc_buf_* names are used by write_netcdf_glacier.pro regardless of
+; whether it's called from the hindcast or projection path, and flushed
+; in one bulk ncdf_varput per variable by write_netcdf_hindcast.pro
+; before closing nc_ann_i/nc_sub_i, instead of one call per glacier.
+; ================================================================
+; nc_total_g can exceed the number of glaciers that actually reach
+; write_netcdf_glacier.pro -- see init_netcdf_projections.pro for the full
+; rationale (2026-08-31). Initialise every float buffer to nc_fv (not
+; fltarr()'s default 0.0) so unpopulated trailing rows read as the correct
+; _FillValue on write, exactly matching what netCDF4's fill-on-create gave
+; the old immediate-write code for free. RGIId's strarr() default '' is
+; already correct (no _FillValue attribute on that /string var).
+nc_buf_rgiid = strarr(nc_total_g)
+nc_buf_area  = replicate(nc_fv, nc_total_g, nc_years)
+nc_buf_mass  = replicate(nc_fv, nc_total_g, nc_years)
+nc_buf_mbsl  = replicate(nc_fv, nc_total_g, nc_years)
+nc_buf_fabl  = replicate(nc_fv, nc_total_g, nc_years)
+nc_buf_ela   = replicate(nc_fv, nc_total_g, nc_years)
+nc_buf_aar   = replicate(nc_fv, nc_total_g, nc_years)
+nc_buf_run   = replicate(nc_fv, nc_total_g, nc_n_sub)
+nc_buf_rbas  = replicate(nc_fv, nc_total_g, nc_n_sub)
+nc_buf_acc   = replicate(nc_fv, nc_total_g, nc_n_sub)
+nc_buf_melt  = replicate(nc_fv, nc_total_g, nc_n_sub)
+nc_buf_refr  = replicate(nc_fv, nc_total_g, nc_n_sub)
+nc_buf_prec  = replicate(nc_fv, nc_total_g, nc_n_sub)
+nc_buf_temp  = replicate(nc_fv, nc_total_g, nc_n_sub)
+nc_buf_snln  = replicate(nc_fv, nc_total_g, nc_n_sub)

@@ -310,6 +310,45 @@ nc_reg_temp_a = dblarr(nc_n_sub)
 nc_has_split = (netcdf_split eq 'y')
 nc_g         = 0L
 
+; ================================================================
+; INDIVIDUAL-GLACIER WRITE BUFFERS (full period only -- the split
+; past/future files below are unaffected and keep writing directly)
+; ================================================================
+; write_netcdf_glacier.pro accumulates each glacier's values here instead
+; of calling ncdf_varput immediately; write_netcdf_projections.pro flushes
+; each buffer in one bulk call before closing nc_ann_i/nc_sub_i. Same
+; pattern already used for the nc_reg_* regional sums above -- this just
+; extends it to the per-glacier arrays. Measured 2026-08-31 on a real
+; 3150-glacier batch: 888,640 individual ncdf_varput calls -> ~14 bulk
+; calls, same final values/dimensions/attributes, only write timing changes.
+; nc_total_g (this buffer's row count) is a pre-count taken before the
+; glacier loop runs and can exceed the number of glaciers that actually
+; reach write_netcdf_glacier.pro (confirmed 2026-08-31 on a LowLatitudes/
+; Mexico test). The old immediate-write code never touched the unused
+; trailing rows, so netCDF4's own fill-on-create behaviour left them as
+; nc_fv (matching each variable's _FillValue attribute above). IDL's
+; fltarr() defaults to 0.0, not nc_fv, so without this the bulk write
+; below would silently overwrite those rows with explicit zeros instead of
+; the correct fill value -- initialise every float buffer to nc_fv here so
+; a full-buffer write reproduces old behaviour exactly regardless of
+; nc_total_g vs. actual-glacier-count. RGIId is a plain /string var with
+; no _FillValue attribute, so strarr()'s default '' already matches.
+nc_buf_rgiid = strarr(nc_total_g)
+nc_buf_area  = replicate(nc_fv, nc_total_g, nc_years)
+nc_buf_mass  = replicate(nc_fv, nc_total_g, nc_years)
+nc_buf_mbsl  = replicate(nc_fv, nc_total_g, nc_years)
+nc_buf_fabl  = replicate(nc_fv, nc_total_g, nc_years)
+nc_buf_ela   = replicate(nc_fv, nc_total_g, nc_years)
+nc_buf_aar   = replicate(nc_fv, nc_total_g, nc_years)
+nc_buf_run   = replicate(nc_fv, nc_total_g, nc_n_sub)
+nc_buf_rbas  = replicate(nc_fv, nc_total_g, nc_n_sub)
+nc_buf_acc   = replicate(nc_fv, nc_total_g, nc_n_sub)
+nc_buf_melt  = replicate(nc_fv, nc_total_g, nc_n_sub)
+nc_buf_refr  = replicate(nc_fv, nc_total_g, nc_n_sub)
+nc_buf_prec  = replicate(nc_fv, nc_total_g, nc_n_sub)
+nc_buf_temp  = replicate(nc_fv, nc_total_g, nc_n_sub)
+nc_buf_snln  = replicate(nc_fv, nc_total_g, nc_n_sub)
+
 if ~nc_has_split then goto, init_proj_done
 
 ; ================================================================

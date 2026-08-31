@@ -142,25 +142,28 @@ ii = where(gl_aar  lt nc_sv/100., ci) & if ci gt 0 then gl_aar[ii]  = nc_fv   ; 
 ii = where(gl_snowline lt nc_sv, ci) & if ci gt 0 then gl_snowline[ii] = nc_fv
 
 ; ================================================================
-; WRITE INDIVIDUAL FILES (full period)
+; BUFFER INDIVIDUAL FILES (full period) -- flushed to disk once per
+; batch by write_netcdf_projections.pro, see nc_buf_* allocation in
+; init_netcdf_projections.pro. Same values as the direct ncdf_varput
+; calls this replaced, just held in memory until the batch's glacier
+; loop finishes instead of written immediately.
 ; ================================================================
-ncdf_varput, nc_ann_i, nc_vid_i_rgid,  nc_rgiid,   offset=[nc_g]
-ncdf_varput, nc_ann_i, nc_vid_i_area,  gl_area,    offset=[nc_g, 0], count=[1, nc_years]
-ncdf_varput, nc_ann_i, nc_vid_i_mass,  gl_mass,    offset=[nc_g, 0], count=[1, nc_years]
-ncdf_varput, nc_ann_i, nc_vid_i_mbsl,  gl_mbsl,    offset=[nc_g, 0], count=[1, nc_years]
-ncdf_varput, nc_ann_i, nc_vid_i_fabl,  gl_fabl,    offset=[nc_g, 0], count=[1, nc_years]
-ncdf_varput, nc_ann_i, nc_vid_i_ela,   gl_ela,     offset=[nc_g, 0], count=[1, nc_years]
-ncdf_varput, nc_ann_i, nc_vid_i_aar,   gl_aar,     offset=[nc_g, 0], count=[1, nc_years]
+nc_buf_rgiid[nc_g]  = nc_rgiid
+nc_buf_area[nc_g,*]  = gl_area
+nc_buf_mass[nc_g,*]  = gl_mass
+nc_buf_mbsl[nc_g,*]  = gl_mbsl
+nc_buf_fabl[nc_g,*]  = gl_fabl
+nc_buf_ela[nc_g,*]   = gl_ela
+nc_buf_aar[nc_g,*]   = gl_aar
 
-ncdf_varput, nc_sub_i, nc_vid_i_rgid_s, nc_rgiid,  offset=[nc_g]
-ncdf_varput, nc_sub_i, nc_vid_i_run,    gl_run,    offset=[nc_g, 0], count=[1, nc_n_sub]
-ncdf_varput, nc_sub_i, nc_vid_i_rbas,   gl_rbas,   offset=[nc_g, 0], count=[1, nc_n_sub]
-ncdf_varput, nc_sub_i, nc_vid_i_acc,    gl_acc,    offset=[nc_g, 0], count=[1, nc_n_sub]
-ncdf_varput, nc_sub_i, nc_vid_i_melt,   gl_melt,   offset=[nc_g, 0], count=[1, nc_n_sub]
-ncdf_varput, nc_sub_i, nc_vid_i_refr,   gl_refr,   offset=[nc_g, 0], count=[1, nc_n_sub]
-ncdf_varput, nc_sub_i, nc_vid_i_prec,   gl_prec,   offset=[nc_g, 0], count=[1, nc_n_sub]
-ncdf_varput, nc_sub_i, nc_vid_i_temp,   gl_temp,   offset=[nc_g, 0], count=[1, nc_n_sub]
-ncdf_varput, nc_sub_i, nc_vid_i_snln,   gl_snowline, offset=[nc_g, 0], count=[1, nc_n_sub]
+nc_buf_run[nc_g,*]   = gl_run
+nc_buf_rbas[nc_g,*]  = gl_rbas
+nc_buf_acc[nc_g,*]   = gl_acc
+nc_buf_melt[nc_g,*]  = gl_melt
+nc_buf_refr[nc_g,*]  = gl_refr
+nc_buf_prec[nc_g,*]  = gl_prec
+nc_buf_temp[nc_g,*]  = gl_temp
+nc_buf_snln[nc_g,*]  = gl_snowline
 
 ; ================================================================
 ; ACCUMULATE INTO REGIONAL SUMS (NaN-safe: only add valid values)
