@@ -152,7 +152,7 @@ refreezing_parametrised = 'y'
 ; --- englacial temperature model
 firnice_temperature = 'n'
 firnice_implicit = 'n'      ; heat conduction scheme: 'n' = explicit (×½ factor), 'y' = fully implicit (Thomas algorithm)
-firnice_write = ['y', 'y'] ; [overall time series, detailed profiles]
+firnice_write = ['y', 'y', 'n'] ; [overall time series, detailed profiles, full T(band,layer) field]
 firnice_batch = 'n'
 firnice_profile = [0.2, 0.65, 0.95] ; elevation ratios (or masl if >1) for profile output
 firnice_glenglat_lookup = ''  ; path to per-glacier borehole elevation lookup; '' = disabled
@@ -416,6 +416,12 @@ if full_output eq 'y' then begin
     , 'Accumulation_day', 'Rain_day', 'Snowmelt_day', 'Icemelt_day', 'Refreezing_day', 'Snowline_day']
 endif
 
+; Backward compatibility: firnice_write gained a third element (full T field) after
+; some config.pro files were written with only two. Indexing firnice_write[2] on such
+; a config would abort the run, so pad any short array with 'n' (feature off) here.
+if n_elements(firnice_write) lt 3 then $
+  firnice_write = [firnice_write, replicate('n', 3 - n_elements(firnice_write))]
+
 ; --- consistency enforcement (automatic exclusion to avoid erroneous runs)
 
 if calibrate eq 'y' then begin
@@ -492,7 +498,26 @@ endif else begin
 end
 
 ; === ice temperature model initialisation
-fit_layers = [10, 10, 10]
+; Vertical grid of the englacial temperature model, as blocks of equal-thickness layers.
+; The third block was extended from 10 to 23 layers, taking the column from 259 m to 519 m
+; while keeping the 20 m spacing. Indices 0-29 are unchanged, so 2/10/18 still mean 2/14/54 m.
+;
+; The spacing matters as much as the reach. A first attempt appended 5 x 50 m below 259 m:
+; that moved the geothermal bed node to the right depth, but the model only solves interior
+; layers to tt-2, so for a 316 m band the deepest SOLVED value stayed at 259 m and 57 m of
+; ice above the bed had no temperature. Continuing at 20 m instead caps that gap at 19 m.
+; Only 17 of the 4079
+; RGI7 CentralEurope glaciers are thicker than 259 m -- but they hold 35 % of the region's
+; ice volume, and the deepest is 421 m, so 509 m covers the Alps with margin. Before this,
+; the geothermal flux for those glaciers was injected at 259 m rather than at the bed and
+; their basal thermal regime could not be diagnosed at all.
+;
+; Extending the grid is close to free: tt = min([ind+1, total(fit_layers)]) in
+; firnice_temperature_model.pro is set from each band's own thickness and every conduction
+; and advection loop runs to tt-2, so thin bands solve exactly as many layers as before.
+; Only memory and the genuinely deep bands pay. For a global run, lengthen the last block
+; (Alaska and the Karakoram reach ~1000 m); nothing else needs to change.
+fit_layers = [10, 10, 23]
 fit_dzstep = [1., 5., 20.]
 fit_dens = [250, 300, 360, 420, 480, 550, 580, 610, 640, 670, 700, 730, 760, 790, 820, 850, 880, 900]
 
@@ -510,16 +535,12 @@ max_f = 0.5
 
 fit_dz = dblarr(2, total(fit_layers))
 
-for i = 0, fit_layers[0] - 1 do begin
-  fit_dz[0, i] = fit_dzstep[0]
-endfor
-
-for i = fit_layers[0], total(fit_layers[0 : 1]) - 1 do begin
-  fit_dz[0, i] = fit_dzstep[1]
-endfor
-
-for i = total(fit_layers[0 : 1]), total(fit_layers[0 : 2]) - 1 do begin
-  fit_dz[0, i] = fit_dzstep[2]
+; Layer thicknesses, block by block. Generalised from three hardcoded blocks so that
+; fit_layers / fit_dzstep can be any matching length.
+_l0 = 0L
+for _blk = 0, n_elements(fit_layers) - 1 do begin
+  for i = _l0, _l0 + fit_layers[_blk] - 1 do fit_dz[0, i] = fit_dzstep[_blk]
+  _l0 = _l0 + fit_layers[_blk]
 endfor
 
 for i = 1, total(fit_layers) - 1 do begin

@@ -15,5 +15,5 @@ if firnice_write[0] eq 'y' then begin
 endif
 
 if firnice_write[1] eq 'y' then begin
-   for i=0,n_elements(firnice_profile)-1 do close,51+i
+   for i=0,n_elements(firnice_profile)-1 do free_lun,fit_prof_lun[i]
 endif

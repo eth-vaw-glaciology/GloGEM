@@ -47,13 +47,25 @@ if ye eq years-1 then begin
   scenario_tag = 'dhdt'
   if use_flow_model eq 'y' then scenario_tag = 'flow'
 
-  ; Same path convention as prepare_output_firnicetemp.pro / prepare_output_mb_in_bins.pro.
-  ; Uses geom_output_path_b (captured in prepare_output_mb_in_bins.pro right
-  ; after it computes b) rather than b itself -- by this point in the year
-  ; loop, b has been overwritten with an unrelated numeric value by
-  ; meltmodel.pro (which reuses the name "b" as a scratch variable every
-  ; month), so the original path string is long gone from b itself.
-  out_dir = dirres + '/' + time_resolution + '/' + dir_region + geom_output_path_b + '/geometry'
+  ; Same path convention as prepare_output_firnicetemp.pro -- rebuilt here from the run
+  ; flags rather than inherited through the scratch variable b.
+  ;
+  ; This previously used geom_output_path_b, captured from b in prepare_output_mb_in_bins.pro.
+  ; That capture is itself too late: meltmodel.pro reuses the name b as a numeric scratch
+  ; every month, so from the SECOND glacier of a run onward geom_output_path_b held a number,
+  ; not a path -- "Type conversion error: Unable to convert given STRING to Double" followed by
+  ; "FILE_TEST: String expression required", which halted the whole run after glacier 1.
+  ; And on the first glacier b still held setup_output_folders.pro's '/'+date_str+'/' for any
+  ; run ending after 2025, so the .sav landed in a timestamped directory instead of alongside
+  ; the other per-scenario output. Rebuilding the path fixes both.
+  if single_glacier ne '' then begin
+    geom_subpath = '/files/files_original/SINGLE'
+  endif else if reanalysis_direct eq 'y' then begin
+    geom_subpath = '/PAST' + version_past + mtt
+  endif else begin
+    geom_subpath = '/files' + mtt + '/' + GCM_model[gcms] + '/' + GCM_rcp[rcps]
+  endelse
+  out_dir = dirres + time_resolution + '/' + dir_region + geom_subpath + '/geometry'
   if ~file_test(out_dir, /directory) then spawn, 'mkdir -p "' + out_dir + '"'
 
   geometry_hist = { $

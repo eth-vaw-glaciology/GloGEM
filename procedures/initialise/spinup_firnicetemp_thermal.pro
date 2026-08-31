@@ -49,7 +49,7 @@ _adv_saved = enable_advection
 _fw_saved  = firnice_write
 _aw_saved  = advection_write
 enable_advection = 'n'
-firnice_write    = ['n', 'n']
+firnice_write    = ['n', 'n', 'n']
 advection_write  = 'n'
 
 ; ── active bands ───────────────────────────────────────────────────

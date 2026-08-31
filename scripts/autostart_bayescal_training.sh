@@ -31,7 +31,12 @@ TRAINING_ONLY="${2:-}"
 
 CONDA_SH="/scratch_net/vierzack04/jabeer/conda/etc/profile.d/conda.sh"
 CONDA_ENV="glogemflow_icetemp"
-LOCK_FILE="/tmp/bayescal_autostart.lock"
+# Lock is PER-CONFIG, not global. The guard exists to stop two copies racing over the SAME
+# run_dir and *.done sentinels (which would corrupt each other's progress tracking) -- that risk
+# is specific to one config. A single global lock also blocked legitimately independent
+# campaigns on different run_dirs and different hosts: confirmed 2026-08-19, the elevation-split
+# campaign refused to start purely because the widened-bounds campaign was still running.
+LOCK_FILE="/tmp/bayescal_autostart_$(basename "${CALIB_CONFIG%.yaml}").lock"
 
 # ── logging ───────────────────────────────────────────────────────────────────
 

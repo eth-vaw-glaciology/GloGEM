@@ -166,7 +166,27 @@ endelse
       endif else begin
           tl_fit[ii[i],0] = min([0d, tgs[ii[i]] + ICE_FRAC * firnice_dT_scale_b[ii[i]] * dT_firn_band[ii[i]]])
       endelse
-      ttgeot = tl_fit[ii[i],tt-1] + geothermal_flux*(3600d*24d*30.5d/rf_dsc)/cice
+      ; Basal boundary condition: prescribed geothermal GRADIENT (Neumann), from Fourier's law
+      ;     G = -k dT/dz_up   ->   dT/dz = G / k   (z measured downward, T warming with depth)
+      ; so the bed node sits one layer-spacing below its neighbour at that gradient:
+      ;     T[tt-1] = T[tt-2] + G * dz / k
+      ;
+      ; REPLACES an accumulation form, ttgeot = T[tt-1] + G*(month_seconds/rf_dsc)/cice, which
+      ; had three separate problems:
+      ;   (a) UNITS: W m^-2 * s / (J m^-3 K^-1) = K*m, not K -- the division by a layer
+      ;       thickness was missing, so it behaved as if every layer were 1 m thick when the
+      ;       bottom layer is 20 m for any column deeper than 79 m.
+      ;   (b) the month length was hardcoded (3600*24*30.5), so a daily-resolution run would
+      ;       have received a ~30x too large increment.
+      ;   (c) it accumulated into the bed node, but line ~430 then overwrote that node with the
+      ;       node ABOVE it at the end of every month, discarding the accumulated warming.
+      ; Net effect of the old form was an insulating base plus a fixed ~0.08 K offset, i.e. an
+      ; effective gradient near 0.004 K/m against a true G/k of ~0.029 K/m -- roughly 7x too
+      ; weak, biasing modelled deep ice COLD and so under-predicting temperate basal ice.
+      ; The gradient form below is timestep-independent by construction, which is why it fixes
+      ; (a) and (b) together; (c) is fixed at the bedrock-fill line itself.
+      dz_bed = (fit_dz[1,tt-1] - fit_dz[1,tt-2]) > 1.0d   ; true spacing of the bottom layer [m]
+      ttgeot = tl_fit[ii[i],tt-2] + geothermal_flux * dz_bed / cond_fit[tt-1]
       tl_fit[ii[i],tt-1] = min([ttgeot, (fit_dz[1,tt-1]*0.9d/10.d)*(-0.00742d)])
 
       ; ── heat conduction (vertical) ────────────────────────────────────────────
@@ -226,10 +246,23 @@ endelse
 
       ; ── strain heating (viscous dissipation) ──────────────────────────────────────
       if enable_strain_heating eq 'y' then begin
+          ; Rate factor for the dissipation. The flow model calibrates `aflow` per glacier
+          ; (Pa^-3 yr^-1) so that the modelled geometry matches the inventory; using the
+          ; hardcoded A above instead would heat the ice at a rate inconsistent with the
+          ; velocity field the model actually produces -- for Aletsch by a factor 2.4
+          ; (calibrated 1.0e-24 vs hardcoded 2.4e-24 Pa^-3 s^-1), and Q goes as tau^(n+1),
+          ; so the inconsistency is not small. `aflow` lumps sliding in with deformation,
+          ; which is the right total dissipation to first order (tau_b*u_b + internal
+          ; shear both scale with the same calibrated flux) even though this term then
+          ; distributes all of it as internal shear rather than as basal friction.
+          A_sh = A
+          if n_elements(aflow) gt 0 then $
+             if finite(aflow[0]) then $
+                if aflow[0] gt 0 then A_sh = aflow[0] / 3.15576d7   ; yr^-1 -> s^-1
           sh_exp = double(n) + 1.0d   ; = 4 for Glen n=3
           for j = 1, tt-2 do begin
               tau_j = tau_d_sh * (fit_dz[1,j] / (thick[ii[i]] > 1.0d))
-              Q_j   = 2.0d * A * tau_j^sh_exp          ; W m⁻³
+              Q_j   = 2.0d * A_sh * tau_j^sh_exp       ; W m⁻³
               dT_j  = Q_j * rf_dt / (dens_fit[j] * cap_fit[j])  ; K per substep
               tl_fit[ii[i],j] = (tl_fit[ii[i],j] + dT_j) < pmp_profile[j]
           endfor
@@ -240,11 +273,39 @@ endelse
          ; Horizontal advection
          ; Bands are ascending (i=0 = terminus, i=ci-1 = top). Skip topmost band: no upglacier source above it.
          IF i LT ci-1 THEN BEGIN
-         ; Calculate vertical profile of horizontal velocity (Nye's approximation)
-         vprofile = FLTARR(tt)
+         ; Vertical profile of horizontal velocity: the SIA/Nye shear profile
+         ;     u(zeta)/u_surface = 1 - zeta^(n+1),   zeta = depth/H,  n = 3
+         ; Ice moves at close to surface speed through most of the column, with the shear
+         ; concentrated in a thin layer near the bed.
+         ;
+         ; REPLACES the previous form vprofile = (1 - j/tt)^4, i.e. relative_height^4, which is
+         ; a DIFFERENT function -- it decays immediately with depth instead of near the bed. At
+         ; quarter depth it gave 0.32 of the surface speed where the correct profile gives
+         ; 0.996; at half depth 0.06 versus 0.94. That under-applied horizontal advection by
+         ; more than an order of magnitude over most of the column, including the 10-80 m band
+         ; where essentially all glenglat calibration observations sit.
+         ;
+         ; Two further corrections in the same block:
+         ;  (a) zeta is now a true DEPTH fraction (fit_dz[1,j] / resolved column depth), not the
+         ;      layer INDEX fraction j/tt. The grid is stretched (1 m / 5 m / 20 m blocks), so
+         ;      index 10 of 30 is a third of the way down by count but only 14 m of 259 m by
+         ;      depth -- the old form evaluated the profile at the wrong place as well as
+         ;      using the wrong shape.
+         ;  (b) u[i] is a DEPTH-AVERAGED speed in both paths that supply it (GloGEMflow's
+         ;      u_flowmodel = D|ds/dx|/H, glogemflow_coupled.pro STEP 7; and the standalone
+         ;      2A/(n+2)*tau_d^n*H estimate at line 47 -- the (n+2) denominator is the
+         ;      depth-average normalisation). Scaling it by a profile equal to 1 at the surface
+         ;      would apply the depth-averaging twice. The profile is therefore renormalised by
+         ;      its own column mean, mean(1 - zeta^(n+1)) = 1 - 1/(n+2) = 0.8 for n=3, so that
+         ;      the column mean of vprofile is 1 and vprofile[0] = 1/0.8 = 1.25 recovers the
+         ;      surface speed from the depth-averaged input.
+         vprofile  = DBLARR(tt)
+         col_depth = fit_dz[1,tt-1] > 1.0D            ; resolved column depth [m]
+         nye_mean  = 1.0D - 1.0D/(DOUBLE(n) + 2.0D)   ; = 0.8 for n = 3
          FOR j=0,tt-1 DO BEGIN
-            relative_height = 1.0D - (DOUBLE(j) / DOUBLE(tt))  ; 1 at surface, 0 at bed
-            vprofile[j] = relative_height^4  ; approximation of velocity profile with n=3
+            zeta = fit_dz[1,j] / col_depth            ; 0 at surface, 1 at bed
+            zeta = (zeta > 0.0D) < 1.0D
+            vprofile[j] = (1.0D - zeta^(DOUBLE(n) + 1.0D)) / nye_mean
          ENDFOR
 
          ; Get velocity for current elevation band
@@ -276,8 +337,14 @@ endelse
 
          ; Apply advection to each layer
          FOR j=1,tt-2 DO BEGIN
-            ; Scale advection by the vertical velocity profile
+            ; Scale advection by the vertical velocity profile. The 0.8 clamp is re-applied
+            ; PER LAYER, not just to the column-mean courant above: vprofile now peaks at
+            ; 1/0.8 = 1.25 at the surface (see the renormalisation note above), so a
+            ; column-mean courant already at its 0.8 cap would otherwise reach 1.0 in the
+            ; near-surface layers -- the stability boundary of the first-order upwind step,
+            ; at which a layer is replaced wholesale by its upglacier neighbour.
             layer_courant = courant * vprofile[j]
+            layer_courant = (layer_courant > 0.0D) < 0.8D
 
             ; Store the temperature before horizontal advection at 10m depth
             temp_before = tl_fit[ii[i],10]  ; Store 10m temperature before horizontal advection
@@ -332,9 +399,36 @@ endelse
             vertical_vel[j] = surface_vertical_vel * (1.0D - relative_depth)
          ENDFOR
 
+         ; ── velocity-field diagnostic ────────────────────────────────────────
+         ; Records the advection field the model actually applies: the Nye-shaped
+         ; horizontal profile u(zeta) = u_bar (1 - zeta^(n+1)) / (1 - 1/(n+2)) and the
+         ; kinematic vertical profile, both per layer. Sits inside the advection block,
+         ; so it only fills when enable_advection='y' -- and, like the advection itself,
+         ; it skips the topmost band (no upglacier source above it).
+         IF firnice_write[2] EQ 'y' THEN BEGIN
+            col_depth_d = fit_dz[1,tt-1] > 1.0D
+            nye_mean_d  = 1.0D - 1.0D/(DOUBLE(n) + 2.0D)
+            FOR j = 0, tt-1 DO BEGIN
+               zeta_d = ((fit_dz[1,j] / col_depth_d) > 0.0D) < 1.0D
+               fit_u_sum[ye,ii[i],j] = fit_u_sum[ye,ii[i],j] + $
+                  u[i] * (1.0D - zeta_d^(DOUBLE(n) + 1.0D)) / nye_mean_d
+               fit_w_sum[ye,ii[i],j] = fit_w_sum[ye,ii[i],j] + vertical_vel[j]
+            ENDFOR
+            fit_vel_cnt[ye,ii[i]] = fit_vel_cnt[ye,ii[i]] + 1d0
+            fit_vel_tt[ye,ii[i]]  = tt
+         ENDIF
+
          ; Apply vertical advection (upwind scheme)
          ; Only if vertical velocity is significant
-         IF ABS(MAX(vertical_vel)) GT 0.1D THEN BEGIN
+         ; Activation guard. MUST be MAX(ABS(...)), not ABS(MAX(...)): vertical_vel tapers
+         ; linearly to exactly 0.0 at the bed, so in the ABLATION zone -- where the whole
+         ; profile is negative (upward/emergence) -- MAX(vertical_vel) returns that trailing
+         ; 0.0 and ABS(0.0) > 0.1 is false. The entire vertical-advection block was therefore
+         ; skipped for every emergence case, and the v_courant < 0 upwind branch below was
+         ; unreachable. That silently disabled exactly the mechanism that carries deep cold ice
+         ; toward the surface in the ablation zone -- and it was active (enable_advection='y')
+         ; in all four Bayesian calibration campaigns run to date.
+         IF MAX(ABS(vertical_vel)) GT 0.1D THEN BEGIN
          ; Create temporary array to store updated temperatures
          temp_v = tl_fit[ii[i],*]
          temp_before_v = tl_fit[ii[i],10]  ; Store 10m temperature before vertical advection
@@ -392,8 +486,14 @@ endelse
 
    endfor
 
-; setting all bedrock temperatures to lowermost computed layer (to avoid constant warming from beneath)
-tl_fit[ii[i],tt-1:total(fit_layers)]=tl_fit[ii[i],tt-2]
+; Fill the unresolved output slots BELOW the bed with the bed value. Previously this line read
+;   tl_fit[ii[i],tt-1:total(fit_layers)] = tl_fit[ii[i],tt-2]
+; which also overwrote the BED node (tt-1) with the node above it, deleting the geothermal
+; warming every month -- the comment "to avoid constant warming from beneath" describes a
+; symptom of the old accumulating BC (see the basal boundary condition above), not something
+; the gradient BC needs: that form is diagnostic from T[tt-2] each substep and cannot run away.
+; The bed node is now preserved and only slots strictly below it are filled.
+if tt le total(fit_layers) then tl_fit[ii[i],tt:total(fit_layers)]=tl_fit[ii[i],tt-1]
 
 ; universal PMP safety clamp -- see pmp_profile note above
 tl_fit[ii[i],*] = tl_fit[ii[i],*] < pmp_profile
@@ -404,14 +504,24 @@ if firnice_write[0] eq 'y' then begin
    elev_firnicetemp[0,ye,ii[i]]=max([elev_firnicetemp[0,ye,ii[i]],tl_fit[ii[i],2]])  ; 2m
    elev_firnicetemp[1,ye,ii[i]]=max([elev_firnicetemp[1,ye,ii[i]],tl_fit[ii[i],10]]) ; 10m
    elev_firnicetemp[2,ye,ii[i]]=max([elev_firnicetemp[2,ye,ii[i]],tl_fit[ii[i],18]]) ; 50m
-   elev_firnicetemp[3,ye,ii[i]]=max([elev_firnicetemp[3,ye,ii[i]],tl_fit[ii[i],30]]) ; bedrock
+   elev_firnicetemp[3,ye,ii[i]]=max([elev_firnicetemp[3,ye,ii[i]],tl_fit[ii[i],total(fit_layers)]]) ; bedrock (last slot; was hardcoded 30)
+endif
+
+if firnice_write[2] eq 'y' then begin
+         ; full column, accumulated over the months of this year (annual MEAN at write
+         ; time). Layers at or below tt-1 are the bed node and the below-bed fill, so
+         ; tt is stored to let the reader mask everything the model did not resolve.
+   fit_field_sum[ye,ii[i],*] = fit_field_sum[ye,ii[i],*] + reform(tl_fit[ii[i],0:total(fit_layers)-1])
+   fit_field_cnt[ye,ii[i]]   = fit_field_cnt[ye,ii[i]] + 1d0
+   fit_field_tt[ye,ii[i]]    = tt
+   fit_field_th[ye,ii[i]]    = thick[ii[i]]
 endif
 
 if firnice_write[1] eq 'y' then begin
    for j=0,n_elements(firnice_profile)-1 do begin
       if ii[i] eq firnice_profile_ind[0,j] then begin
          a=tl_fit[firnice_profile_ind[0,j],1:total(fit_layers)] & a[tt-2:total(fit_layers)-1]=snoval
-         printf,51+j,ye+tran[0],m,a,fo='(2i4,'+string(total(fit_layers),fo='(i2)')+'f8.3)'
+         printf,fit_prof_lun[j],ye+tran[0],m,a,fo='(2i4,'+string(total(fit_layers),fo='(i2)')+'f8.3)'
       endif
    endfor
 endif

@@ -39,6 +39,42 @@ if firnice_write[0] eq 'y' then begin
     printf,48,'Elev  '+a
 endif
 
+if firnice_write[2] eq 'y' then begin
+    ; Full englacial temperature field: T for every layer of every band, every year.
+    ; The four temp_*m files only sample 4 fixed depths and store the annual MAXIMUM;
+    ; this file stores the annual MEAN of the whole column, which is what a
+    ; cross-section figure needs. Accumulated monthly, averaged at write time.
+    close,90 & openw,90, firnice_dir + '/temp_field_' + id[gg[g]] + '.dat'
+    printf,90,'# full englacial temperature field, annual mean over months'
+    printf,90,'# glacier ' + id[gg[g]] + '  bands ' + string(nb,fo='(i0)') + $
+              '  years ' + string(tran[0],fo='(i0)') + '-' + string(tran[1],fo='(i0)')
+    a='' & for i=1,total(fit_layers) do a=a+string(fit_dz[1,i-1],fo='(i6)')+'  '
+    printf,90,'# columns: year  elev_masl  thick_m  n_resolved  then T at depths [m]:'
+    printf,90,'#'+a
+    ; sum over months and a per-band month counter, both reset implicitly by year index
+    fit_field_sum = dblarr(years, nb, total(fit_layers)) + 0d0
+    fit_field_cnt = dblarr(years, nb) + 0d0
+    fit_field_tt  = dblarr(years, nb) + snoval   ; resolved layers (bed index) per band
+    fit_field_th  = dblarr(years, nb) + snoval   ; band ice thickness [m]
+
+    ; Companion velocity field -- the u and w that drive the advection term. Only
+    ; meaningful when advection is on, so the file is only opened in that case.
+    if enable_advection eq 'y' then begin
+        close,91 & openw,91, firnice_dir + '/vel_field_' + id[gg[g]] + '.dat'
+        printf,91,'# advection velocity field, annual mean over months, m/yr'
+        printf,91,'# u = horizontal (Nye profile, downglacier positive)'
+        printf,91,'# w = vertical (kinematic, DOWNWARD positive, zero at the bed)'
+        printf,91,'# columns: year  elev_masl  n_resolved  u[0..' + $
+                  string(total(fit_layers)-1,fo='(i0)') + ']  w[0..' + $
+                  string(total(fit_layers)-1,fo='(i0)') + ']  at depths [m]:'
+        printf,91,'#'+a
+        fit_u_sum   = dblarr(years, nb, total(fit_layers)) + 0d0
+        fit_w_sum   = dblarr(years, nb, total(fit_layers)) + 0d0
+        fit_vel_cnt = dblarr(years, nb) + 0d0
+        fit_vel_tt  = dblarr(years, nb) + snoval
+    endif
+endif
+
 if enable_advection eq 'y' AND advection_write eq 'y' then begin
     close,70 & openw,70, firnice_dir + '/adv_horizontal_' + id[gg[g]] + '.dat'
     a='' & FOR i=0,years-1 DO a=a+string(i+tran[0],fo='(i4)')+'  '
@@ -78,10 +114,19 @@ if firnice_write[1] eq 'y' then begin
         endfor
     endelse
 
-    for j=0,n_elements(firnice_profile)-1 do begin
-        close,51+j & openw,51+j, firnice_dir + '/temp_ID' + firnice_profile_ID[j] + '_' + id[gg[g]] + '.dat'
-        printf,51+j,'Point elevation  '+string(firnice_profile_ind[1,j],fo='(i4)')+' masl: Depth in m'
+    ; Borehole profile files get dynamically allocated logical units. No fixed base is
+    ; safe: the original 51+j ran into adv_vertical's unit 71 at 21 profiles -- exactly
+    ; what the glenglat lookup holds for Gornergletscher (01225) -- and 10+j collides with
+    ; the main results files, which initialise_results_files.pro opens across 10..10+N-1
+    ; (up to unit 30 with full_output='y'). get_lun allocates from 100 upward, clear of
+    ; every hard-coded unit in the model, and imposes no ceiling on the profile count.
+    n_prof = n_elements(firnice_profile)
+    fit_prof_lun = lonarr(n_prof)
+    for j=0,n_prof-1 do begin
+        get_lun, _plun & fit_prof_lun[j] = _plun
+        openw,fit_prof_lun[j], firnice_dir + '/temp_ID' + firnice_profile_ID[j] + '_' + id[gg[g]] + '.dat'
+        printf,fit_prof_lun[j],'Point elevation  '+string(firnice_profile_ind[1,j],fo='(i4)')+' masl: Depth in m'
         a='' & for i=1,total(fit_layers)-1 do a=a+string(fit_dz[1,i],fo='(i4)')+'  '
-        printf,51+j,'Year  Month '+a
+        printf,fit_prof_lun[j],'Year  Month '+a
     endfor
 endif
