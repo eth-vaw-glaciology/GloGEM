@@ -20,7 +20,7 @@ if cg gt 0 then begin
   if total(a_gl[gg]) gt 10. and gx mod 2 eq 0 and gy mod 2 eq 0 then $
   print, dir_region+' '+clim_subregion+' ('+a+'): '+string(mean(lat),fo='(f5.1)')+'/'+string(mean(lon),fo='(f6.1)')+$
   ', '+string(total(a_gl[gg]),fo='(i5)')+'km2 ('+string(cg,fo='(i4)')+')'
-
+  
   ; SPLIT between DAILY climate data and MONTHLY climate data
   ; --- DAILY
   if time_resolution eq 'daily' then begin
@@ -39,21 +39,40 @@ if cg gt 0 then begin
 
   ; --- MONTHLY
   if time_resolution eq 'monthly' then begin
-    ; READING MONTHLY CLIMATE DATA, so far only implemented like this for GMIP4
-    if GMIP4 eq 'y' or AMOC eq 'y' then begin
-      if clim_subregion ne '' then begin
-        ccl='_'+clim_subregion 
-      endif else begin
-        ccl=''
-      endelse
-      ; GCM --- CLIMATE FILE
-      @procedures/read/read_climatepast_monthly.pro
-      if reanalysis_direct ne 'y' then begin
+     region_str = strlowcase(strtrim(string(region), 2))	
+     if (region_str eq 'northasia') or (region_str eq 'lowlatitudes') or (region_str eq '19') then begin
+        ; New implementation, for now only for the RGI regions with subregions
+        new = 'y'
+     endif else begin
+        ; Old system for the other regions
+        new = 'n'
+     endelse
+     
+     if new eq 'n' then begin
+        ; READING MONTHLY CLIMATE DATA, so far only implemented like this for GMIP4
+        if GMIP4 eq 'y' or AMOC eq 'y' then begin
+           if clim_subregion ne '' then begin
+              ccl='_'+clim_subregion 
+           endif else begin
+              ccl=''
+           endelse
+           ; GCM --- CLIMATE FILE
+           @procedures/read/read_climatepast_monthly.pro
+           if reanalysis_direct ne 'y' then begin
+              @procedures/read/read_gcmdata_monthly.pro
+           endif
+        endif
+        gmid=[mean(latitudes),mean(longitudes)]
+        @procedures/processing/downscale_gcmdata_monthly.pro
+        @procedures/processing/gradient_variability_monthly.pro
+     endif else begin
+        rmid=[mean(lon),mean(lat)]
+        gxs=strcompress(string(rmid[0],fo='(f7.2)'),/remove_all)
+        gys=strcompress(string(rmid[1],fo='(f7.2)'),/remove_all)
+        @procedures/read/read_climatepast_monthly_new.pro
         @procedures/read/read_gcmdata_monthly.pro
-      endif
-    endif
-    gmid=[mean(latitudes),mean(longitudes)]
-    @procedures/processing/downscale_gcmdata_monthly.pro
-    @procedures/processing/gradient_variability_monthly.pro
+        @procedures/processing/gradient_variability_monthly.pro
+        @procedures/processing/downscale_gcmdata_monthly_new.pro
+      endelse
   endif
-endif                               ; is there a glacier in the cell?
+endif                           ; is there a glacier in the cell?
