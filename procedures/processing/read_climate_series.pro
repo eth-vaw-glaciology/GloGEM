@@ -40,7 +40,7 @@ if cg gt 0 then begin
   ; --- MONTHLY
   if time_resolution eq 'monthly' then begin
      region_str = strlowcase(strtrim(string(region), 2))	
-     if (region_str eq 'northasia') or (region_str eq 'lowlatitudes') or (region_str eq '19') then begin
+     if (region_str eq 'northasia') or (region_str eq 'lowlatitudes') or (region_str eq 'antarctic') then begin
         ; New implementation, for now only for the RGI regions with subregions
         new = 'y'
      endif else begin
