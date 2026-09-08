@@ -165,9 +165,12 @@ enable_advection = 'n'
 enable_strain_heating   = 'n'   ; 'y' to add viscous dissipation heat source (SIA)
 advection_write = 'n'
 firn_permeability = 'y'
+firnice_melt_surface = 'n'  ; 'y' = clamp the surface to the melting point in any month with
+                            ; melt, instead of applying air temperature + insulation offset
 firnice_perm_frac       = 1.0d  ; 0-1: scales effective percolation depth (1 = full H-L depth)
 firnice_dT_scale        = 1.0d  ; amplitude scalar on firn insulation correction (surface BC)
 firnice_z0_firn         = 15.0d ; C&P e-folding depth [m]; Z0=κ/w_acc — 15m≈alpine, 60-100m≈polar
+firnice_adv_scale       = 1.0d  ; advection velocity scaling factor (Tier-3 calib param); 1.0 = unscaled baseline
 firnice_temp_calib      = 'n'   ; 'y' = apply per-band transfer-model calibration
 firnice_temp_calib_file = ''    ; path to per-glacier override file; '' = use transfer model or defaults
 firnice_temp_calib_knn_file = '' ; path to per-glacier k-NN residual-correction file (band-aware);

@@ -101,7 +101,6 @@ HL_ln1 = alog(517.d / 367.d)      ; ln((917-400)/(917-550)) ≈ 0.343
 HL_ln2 = alog(367.d / 87.d)       ; ln((917-550)/(917-830)) ≈ 1.439
 
 firnice_perm_depth = dblarr(nb) + 30.d   ; default fallback (matches old fixed value)
-acc_ann_b          = dblarr(nb)           ; per-band net accumulation (m w.e.) for transfer model
 
 for i = 0, nb-1 do begin
     if firn[i] ne 1 then continue   ; ice bands: percolation handled via snow layers only
@@ -120,7 +119,6 @@ for i = 0, nb-1 do begin
         if tg_b gt 0d then acc_ann -= DDFsnow * tg_b * mon_len[ms-1] / 1000.d
     endfor
     if acc_ann lt 0.1d then acc_ann = 0.1d   ; floor: at least nominal firn for firn bands
-    acc_ann_b[i] = acc_ann
 
     ; Band mean annual T in Kelvin (floor at 220 K to avoid numerical issues)
     T_K_b = (tt[i] + 273.15d) > 220.d
@@ -142,36 +140,30 @@ endfor
 
 ; ── Per-band calibration parameter arrays ────────────────────────────────────
 ; Initialized to scalar defaults from settings.pro (or config.pro overrides).
-; When firnice_temp_calib='y', the transfer model overrides per firn band.
 ; A per-glacier file override (apply_firnicetemp_calibration.pro, called after
 ; this file in glogem.pro) can then override all bands for a specific glacier.
+;
+; The climate-regression transfer model that used to predict these per firn
+; band (from tt[i]/t_amp_band[i]/elev[i], gated on firnice_temp_calib='y') has
+; been RETIRED to simplify this file -- its coefficients were placeholders,
+; never fit past a first pass (see notebooks/archive/05_firnicetemp_calibration.ipynb). Any run
+; with firnice_temp_calib='y' (e.g. config_centraleurope_glenglat_knn.pro /
+; _bayes.pro) now starts every band from these flat scalar defaults instead of
+; a per-band prediction; the knn/bayes delta correctors (apply_firnicetemp_
+; calibration_knn.pro / _bayes.pro) still apply on top, just against this
+; flatter baseline than before -- a real output change for those two configs,
+; not merely a no-op cleanup.
 firnice_perm_frac_b = dblarr(nb) + firnice_perm_frac
 firnice_dT_scale_b  = dblarr(nb) + firnice_dT_scale
 firnice_z0_firn_b   = dblarr(nb) + firnice_z0_firn   ; per-band C&P e-folding depth [m]
 
-; ── Transfer-model calibration (optional, firnice_temp_calib='y') ─────────────
-; Predicts (perm_frac, dT_scale) per firn band from climate predictors.
-; Coefficients below are placeholders (all = defaults) until the calibration
-; notebook (05_firnicetemp_calibration.ipynb) derives them from glenglat data.
-; Ice bands always keep the scalar default (no firn percolation or insulation).
-if firnice_temp_calib eq 'y' then begin
-    ; 3-parameter transfer model from 05_firnicetemp_calibration.ipynb (3D grid search).
-    ; perm_frac: predicted for all bands;  dT_scale + z0: firn (accumulation) bands only.
-    ; Replace ALL coefficient blocks below with the output of the calibration notebook.
-    ; Placeholder c0_pf=1.0 keeps perm_frac=1.0 everywhere (old 2D behaviour) until updated.
-    c0_pf = 1.0d & c1_pf = 0.0d & c2_pf = 0.0d & c3_pf = 0.0d
-    c0_ds = 0.809322d & c1_ds = 0.099254d & c2_ds = 0.092134d & c3_ds = -0.00009667d
-    c0_z0 = 118.107411d & c1_z0 = 2.006667d & c2_z0 = 0.714340d & c3_z0 = -0.00949955d
-    for i = 0, nb-1 do begin
-        firnice_perm_frac_b[i] = (c0_pf + c1_pf*tt[i] + c2_pf*t_amp_band[i] $
-            + c3_pf*elev[i]) > 0.1d < 1.0d
-        if firn[i] ne 1 then continue
-        firnice_dT_scale_b[i] = (c0_ds + c1_ds*tt[i] + c2_ds*t_amp_band[i] $
-            + c3_ds*elev[i]) > 0.2d < 5.0d
-        firnice_z0_firn_b[i]  = (c0_z0 + c1_z0*tt[i] + c2_z0*t_amp_band[i] $
-            + c3_z0*elev[i]) > 5.0d < 200.0d
-    endfor
-endif
+; ── Advection velocity scaling factor (Tier-3 Bayesian calibration parameter) ─
+; Replaces z0 as the calibrated parameter for the advection pathway: z0 stays
+; fixed at its settings.pro default (firnice_z0_firn above), while this factor
+; scales the physical advection velocity u in firnice_temperature_model.pro.
+; Default (firnice_adv_scale, settings.pro) = 1.0 = unscaled baseline physics.
+; Overridden per band by the Python calibration writeback script.
+firnice_adv_scale_b = dblarr(nb) + firnice_adv_scale
 
 ; ── C&P exponential profile for all bands ────────────────────────────────────
 ; Firn bands: full insulation correction (dT_scale_b * dT_firn_band).

@@ -63,6 +63,16 @@ pmp_profile[nfit] = pmp_profile[nfit - 1]
 ;*********************
 
 ii=where(gl ne noval,ci)
+
+; ── Advection velocity scaling (Tier-3 Bayesian calibration parameter) ──────
+; Scales the depth-averaged velocity u[i] per elevation band by a calibrated
+; factor (default 1.0 = unscaled baseline; see firnice_adv_scale_b in
+; initialise_firnicetemp_spinup.pro). Applied once here, before the horizontal
+; and vertical advection transport steps below -- both read u[i] (directly,
+; and via emergence_vel in the vertical fallback) -- so both pathways see the
+; scaled velocity.
+for i=0,ci-1 do u[i] = u[i] * firnice_adv_scale_b[ii[i]]
+
 for i=0,ci-1 do begin
 
 ; generate local, and actualized arrays for layer heat capacity, condictivity and density
@@ -166,6 +176,23 @@ endelse
       endif else begin
           tl_fit[ii[i],0] = min([0d, tgs[ii[i]] + ICE_FRAC * firnice_dT_scale_b[ii[i]] * dT_firn_band[ii[i]]])
       endelse
+
+      ; ── melting-surface clamp (experimental, firnice_melt_surface eq 'y') ─────
+      ; A surface that is melting is AT the melting point, by definition; it cannot be
+      ; at the air temperature. The BC above applies air temperature plus a fixed
+      ; insulation offset in every month, so in a wet firn area it produces an annual-mean
+      ; cold skin of 10-20 m that should not exist. Vertical advection then buries that
+      ; skin and horizontal advection carries it downglacier, which is where Aletsch's
+      ; 5-60 m cold layer in the ablation zone comes from -- the ice there ends up colder
+      ; at 14-34 m than at its own surface, a subsurface minimum that local forcing cannot
+      ; produce and which is therefore diagnostic of advected, not generated, cold.
+      ;
+      ; Clamping the surface to the melting point whenever there is melt also reproduces,
+      ; from the physics, the thermal rectification the fixed offset was standing in for:
+      ; summers pinned at 0 C and winters at air temperature give an annual mean warmer
+      ; than the air temperature, with no fitted constant.
+      if firnice_melt_surface eq 'y' then $
+          if mel[ii[i]] gt 0d then tl_fit[ii[i],0] = 0d
       ; Basal boundary condition: prescribed geothermal GRADIENT (Neumann), from Fourier's law
       ;     G = -k dT/dz_up   ->   dT/dz = G / k   (z measured downward, T warming with depth)
       ; so the bed node sits one layer-spacing below its neighbour at that gradient:
