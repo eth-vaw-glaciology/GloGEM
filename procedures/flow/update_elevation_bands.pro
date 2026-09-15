@@ -110,4 +110,9 @@ if n_ice ge 2l then begin
   endif
 endif
 
+; ---- Keep band thick[] consistent with the flowline every year ----
+; Same sync used at the Δh handover; see sync_bands_thickness.pro for why
+; stale thick[] on ice-free bands resurrected melted-out glaciers (2026-09-08).
+@procedures/flow/sync_bands_thickness
+
 update_bands_done:

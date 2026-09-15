@@ -194,6 +194,14 @@ firnice_temp_calib_bayes_file = '' ; path to per-glacier Kennedy-O'Hagan Bayesia
 ;              (2) coupled flowline model GloGEMflow (Zekollari et al., 2019) via use_flow_model='y'
 use_flow_model = 'n' ; 'y' activates GloGEMflow and disables the Δh parameterisation below
 
+; Spin-up quality gate (2026-09-09): after the spin-up (or a cache hit) the flow model is
+; only used if its un-rescaled survey-year state reproduces the observed glacier:
+; |volume error| <= spinup_gate_vol_tol AND modelled length >= spinup_gate_len_min x observed.
+; Otherwise the glacier runs on the Δh parameterisation from the start (like a failed
+; spin-up). Evaluated in glogemflow_coupled.pro; see the comment there for the evidence.
+spinup_gate_vol_tol = 0.5d0   ; fraction of observed volume
+spinup_gate_len_min = 0.5d0   ; fraction of observed length
+
 ; --- glacier retreat module (Δh parameterisation option)
 glacier_retreat = 'y'
 expon = 2. ; valley shape parameter: band area loss vs. thickness loss

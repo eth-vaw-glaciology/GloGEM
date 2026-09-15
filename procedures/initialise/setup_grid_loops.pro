@@ -11,16 +11,21 @@
 compile_opt idl2
 
 ; determine the range of glaciers that are covered in region
+; 2026-09-08: floor() instead of fix() for the LOWER bounds. fix() truncates toward
+; zero, so for a negative min lon/lat the box started up to one grid_step EAST/NORTH
+; of the westernmost/southernmost glacier and that glacier was silently never run
+; (ArcticCanadaN batches lost 05213, 03195 and the 76 km2 02574). Upper bounds keep
+; fix(): truncation toward zero can only enlarge them.
 if clim_subregion eq '' then begin
-  lon0 = [fix(min(lon_gl) / grid_step) * grid_step - grid_step / 2., fix(max(lon_gl) / grid_step) * grid_step + grid_step / 2. + 2 * grid_step]
-  lat0 = [fix(min(lat_gl) / grid_step) * grid_step - grid_step / 2., fix(max(lat_gl) / grid_step) * grid_step + grid_step / 2. + 2 * grid_step]
+  lon0 = [floor(min(lon_gl) / grid_step) * grid_step - grid_step / 2., fix(max(lon_gl) / grid_step) * grid_step + grid_step / 2. + 2 * grid_step]
+  lat0 = [floor(min(lat_gl) / grid_step) * grid_step - grid_step / 2., fix(max(lat_gl) / grid_step) * grid_step + grid_step / 2. + 2 * grid_step]
 endif
 
 if single_glacier ne '' then begin
   gg = where(id eq single_glacier, cg)
   if cg gt 0 then begin
-    lon0 = [fix(min(lon_gl[gg]) / grid_step) * grid_step - grid_step / 2., fix(max(lon_gl[gg]) / grid_step) * grid_step + grid_step / 2.]
-    lat0 = [fix(min(lat_gl[gg]) / grid_step) * grid_step - grid_step / 2., fix(max(lat_gl[gg]) / grid_step) * grid_step + grid_step / 2.]
+    lon0 = [floor(min(lon_gl[gg]) / grid_step) * grid_step - grid_step / 2., fix(max(lon_gl[gg]) / grid_step) * grid_step + grid_step / 2.]
+    lat0 = [floor(min(lat_gl[gg]) / grid_step) * grid_step - grid_step / 2., fix(max(lat_gl[gg]) / grid_step) * grid_step + grid_step / 2.]
   endif
 endif
 

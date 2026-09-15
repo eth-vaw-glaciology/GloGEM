@@ -147,7 +147,7 @@ for i in $BATCH_NUMS; do
     KEEP_PATTERN='Loaded user config|Catchment selection|Reanalysis product selected|MIP scenario selected|FINISHED region|WARNING|Error|ERROR|Illegal|Undefined variable|Permission denied|Failed to acquire|No licenses|Execution halted|Parameter-File.*not available|^License:|^IDL [0-9]'
 
     tmux new-session -d -s "$SESSION" \
-        "cd '${GLOGEM_DIR}' && echo '.r glogem' | ${CONFIG_ENV}GLOGEM_BATCH=${BATCH} idl 2>&1 | grep --line-buffered -E -A10 '${KEEP_PATTERN}' | tee '${LOGFILE}'; EC=\${PIPESTATUS[1]}; echo \"Batch ${BATCH} finished (exit \$EC)\"; ${DONE_CMD}; read -r _"
+        "cd '${GLOGEM_DIR}' && echo '.r glogem' | ${CONFIG_ENV}GLOGEM_BATCH=${BATCH} idl 2>&1 | grep --line-buffered -E -A10 '${KEEP_PATTERN}' | tee '${LOGFILE}'; EC=\${PIPESTATUS[1]}; echo \"Batch ${BATCH} finished (exit \$EC)\"; ${DONE_CMD}; read -r -t 86400 _"
 
     echo "  Started: $SESSION  (GLOGEM_BATCH=$BATCH)"
 done

@@ -1,33 +1,54 @@
 ; -----------------------------------------------------------------------
 ; sync_bands_thickness
 ;
-; Synchronize GloGEM's band-level thick[] from the current flowline
-; geometry. Called once, when a flow-model glacier permanently falls back
-; to the Δh parameterisation (blow-up) -- update_elevation_bands.pro never
-; writes thick[] (only area[j], gl[j], width[j], elev[j]), so
-; glacier_retreat.pro would otherwise inherit a stale thick[] (frozen since
-; before the flow model started) inconsistent with the already-current
-; area[]/elev[]. Mirrors the same sort-by-surface-elevation + interpol()
-; pattern already used for width in update_elevation_bands.pro.
+; Rebuild GloGEM's band-level thick[] from the current flowline geometry,
+; so thick[] is consistent with the area[]/gl[]/elev[] that
+; update_elevation_bands.pro maintains from the same flowline state.
 ;
-; Bands with thick_ini[j]=0 (never part of the original inventory-date
-; elevation-band footprint) are deliberately skipped: glacier_retreat.pro's
-; area-thickness scaling is area_ini*(thick/thick_ini)^(1/expon), which
-; divides by thick_ini and is undefined for a zero reference. Confirmed via
-; live debugging that the flow model's 1D flowline geometry does reach a
-; handful of such bands for large ice caps (Iceland glacier 00375: 10 of
-; ~250 bands) -- the flowline is a coarser, 1D simplification of the
-; elevation-band footprint and doesn't respect its exact boundary. Writing
-; thick[j] there produced X/0 in glacier_retreat.pro, which silently
-; propagated to Infinity/NaN in area[]/thick[]/volumes[ye] for the rest of
-; the run once Δh parameterisation took over. Excluding these few bands from
-; the sync discards a small, bounded amount of ice (bounded by how much the
-; flowline extended past the original footprint) in exchange for a
-; numerically safe handoff.
+; Called (1) every flow-model year, at the end of update_elevation_bands.pro,
+; and (2) when a flow-model glacier permanently falls back to the Δh
+; parameterisation (blow-up or non-finite MB) in glogemflow_coupled.pro.
 ;
-; Inputs  (GloGEM scope) : elev[nb], gl[nb], thick_ini[nb], noval, nb
+; Rule: a band carries ice only where the flowline carries ice.
+;   * bands inside the surface-elevation span of the ice-covered flowline
+;     cells (exactly the bands update_elevation_bands keeps active) get
+;     thick[j] interpolated from the flowline -- the same sort-by-surface-
+;     elevation + interpol() pattern used there for width;
+;   * every other band gets thick[j] = 0 (its area[j] is already 0);
+;   * with fewer than 2 ice-covered cells (flowline melted out) every band
+;     gets 0.
+;
+; Why the zeroing matters (found 2026-09-08): before this, nothing in the
+; flow path ever wrote thick[], so bands outside the flowline's span kept
+; their inventory-date thickness for decades while their area[] was 0.
+; Harmless while the flow model runs (volumes/areas come from the
+; flowline), but glacier_retreat.pro selects bands with `thick gt 0` and
+; rebuilds their area as area_ini*(thick/thick_ini)^(1/expon). So in the
+; first Δh year after a fallback, a glacier that had melted to 0.005 km2
+; was resurrected with its full inventory hypsometry and the advance
+; scheme then ran away on that inconsistent state: SouthAsiaEast 01184 /
+; IPSL-CM6A-LR / ssp585 went 0.00006 -> 434 km3 in one year (2096),
+; ArcticCanadaN 02567 / MRI-ESM2-0 / ssp126 0.0009 -> 4486 km3 (2081);
+; 19,396 glacier-runs in 7 regions were affected. The same glaciers in
+; the pure-Δh model (main branch) melt out and stay out. Verified on
+; instrumented single-glacier runs (_debug_GloGEM, 2026-09-08): with this
+; sync 01184 melts out in 2099 and stays at zero to 2300, exactly like
+; the pure-Δh run; every flow-model year before the handover is unchanged.
+;
+; Bands with thick_ini[j]=0 (never part of the inventory-date footprint)
+; are never given ice: glacier_retreat.pro divides by thick_ini. The 1D
+; flowline can extend past the band footprint (Iceland 00375: 10 of ~250
+; bands); the small amount of ice there is dropped at the handover in
+; exchange for a numerically safe state. At the handover such a band is
+; also deactivated (area 0, gl noval) so Δh does not inherit a band with
+; area but no ice; during flow years area/gl stay as update_elevation_bands
+; set them, so the flow model's MB sampling is untouched.
+;
+; Inputs  (GloGEM scope) : elev[nb], gl[nb], thick_ini[nb], noval, nb,
+;                          flow_blown_up (1 only at the Δh handover)
 ; Inputs  (flow scope)   : sur_dx[xnum], thick_dx[xnum]
-; Modifies (GloGEM scope): thick[j]
+; Modifies (GloGEM scope): thick[j]; at the handover also area[j], gl[j]
+;                          of thick_ini=0 bands
 ; -----------------------------------------------------------------------
 compile_opt idl2
 
@@ -47,12 +68,26 @@ if n_ice_sync ge 2l then begin
       if thick_ini[j] gt 0d0 then begin
         thick[j] = interpol(thick_sorted_sync, sur_sorted_sync, elev[j]) > 0d0
       endif else begin
+        thick[j] = 0d0
         n_skipped_noref = n_skipped_noref + 1l
+        if flow_blown_up then begin
+          area[j] = 0d0
+          gl[j]   = noval
+        endif
       endelse
-    endif
+    endif else begin
+      thick[j] = 0d0   ; no flowline ice at this elevation -- area[j] is 0 as well
+    endelse
   endfor
-  if n_skipped_noref gt 0 then $
-    print, '  sync_bands_thickness: skipped ' + strtrim(n_skipped_noref, 2) + $
-      ' band(s) outside the original inventory footprint (thick_ini=0) -- ' + $
-      'left ice-free rather than dividing by zero in glacier_retreat.pro.'
-endif
+  if flow_blown_up and n_skipped_noref gt 0 then $
+    print, '  sync_bands_thickness: ' + strtrim(n_skipped_noref, 2) + $
+      ' band(s) inside the flowline span but outside the inventory footprint (thick_ini=0) ' + $
+      'left ice-free and deactivated for the Δh handover.'
+endif else begin
+  ; Flowline melted out (fewer than 2 ice cells): nothing to interpolate,
+  ; and update_elevation_bands has already deactivated every band.
+  thick[*] = 0d0
+  if flow_blown_up then $
+    print, '  sync_bands_thickness: flowline melted out (' + strtrim(n_ice_sync, 2) + $
+      ' ice cell(s)) -- all band thick[] zeroed for the Δh handover.'
+endelse

@@ -27,9 +27,29 @@ set -uo pipefail   # deliberately NOT -e: this must survive a single bad
 GLOGEM_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$GLOGEM_DIR"
 
-QUEUE_FILE="$GLOGEM_DIR/logs/launch_queue.txt"
-LOGFILE="$GLOGEM_DIR/logs/auto_relaunch_watcher_$(date +%Y%m%d_%H%M%S).log"
-LICENSE_CEILING=55
+# Both overridable from the environment so one watcher can run per host, each
+# with its own queue and ceiling (2026-09-08):
+#   QUEUE_FILE=logs/launch_queue_vierzack06.txt LICENSE_CEILING=26 bash scripts/auto_relaunch_watcher.sh
+QUEUE_FILE="${QUEUE_FILE:-$GLOGEM_DIR/logs/launch_queue.txt}"
+LOGFILE="$GLOGEM_DIR/logs/auto_relaunch_watcher_$(hostname)_$(date +%Y%m%d_%H%M%S).log"
+LICENSE_CEILING="${LICENSE_CEILING:-55}"
+# Optional launch deadline (2026-09-10): stop starting new batches after this time, so a host
+# that is about to be rebooted is never given work it cannot finish. Already-running sessions
+# are untouched. Format: anything `date -d` understands, e.g. "2026-09-11 05:00".
+LAUNCH_UNTIL="${LAUNCH_UNTIL:-}"
+# Better than a flat deadline on a host with a known shutdown (2026-09-10): give each queue
+# entry an optional 5th field with its expected hours, and launch it only if it would FINISH
+# before SHUTDOWN_AT (minus SHUTDOWN_MARGIN_MIN). Entries that no longer fit are moved to
+# $QUEUE_FILE.deferred -- requeue_incomplete.py picks those up for another host, because that
+# file deliberately does not match the launch_queue_*.txt glob.
+SHUTDOWN_AT="${SHUTDOWN_AT:-}"
+SHUTDOWN_MARGIN_MIN="${SHUTDOWN_MARGIN_MIN:-30}"
+if [ -n "$SHUTDOWN_AT" ]; then
+    SHUTDOWN_EPOCH=$(date -d "$SHUTDOWN_AT" +%s 2>/dev/null) || { echo "bad SHUTDOWN_AT: $SHUTDOWN_AT"; exit 1; }
+fi
+if [ -n "$LAUNCH_UNTIL" ]; then
+    LAUNCH_UNTIL_EPOCH=$(date -d "$LAUNCH_UNTIL" +%s 2>/dev/null) || { echo "bad LAUNCH_UNTIL: $LAUNCH_UNTIL"; exit 1; }
+fi
 POLL_SECONDS=120
 
 mkdir -p "$GLOGEM_DIR/logs"
@@ -59,17 +79,42 @@ pop_queue() {
     echo "$line"
 }
 
+# Each poll fills ALL free slots (2026-09-08; previously one launch per poll, which
+# took >1 h to fill a 40-slot host), with a short gap between launches so IDL
+# licence checkouts don't collide.
 while true; do
     n=$(live_sessions)
-    if [ "$n" -lt "$LICENSE_CEILING" ]; then
-        entry=$(pop_queue)
-        if [ -n "$entry" ]; then
-            IFS='|' read -r cfg batch prefix done_dir <<< "$entry"
-            echo "[$(date '+%Y-%m-%d %H:%M:%S')] Free slot ($n/$LICENSE_CEILING) -- launching batch $batch of $cfg"
-            mkdir -p "$done_dir"
-            CONFIG_FILE="$cfg" DONE_DIR="$done_dir" BATCH_LIST="$batch" \
-                bash scripts/launch_batches.sh 1 "$prefix" >> "$LOGFILE" 2>&1
-        fi
+    if [ -n "$LAUNCH_UNTIL" ] && [ "$(date +%s)" -ge "$LAUNCH_UNTIL_EPOCH" ]; then
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] launch deadline $LAUNCH_UNTIL reached -- no new launches; $(grep -vc '^#' "$QUEUE_FILE" 2>/dev/null) job(s) left in the queue for another host"
+        exit 0
     fi
+    while [ "$n" -lt "$LICENSE_CEILING" ]; do
+        # Circuit breaker (2026-09-09): a launch that dies at once (licence server down, NFS not
+        # back after a reboot, broken code) still consumes its queue entry as a .failed marker.
+        # If 5 or more launches failed in the last 10 minutes, stop launching this poll instead
+        # of draining the whole queue; re-queue the .failed ones by hand once the cause is fixed.
+        nfail=$(find "$GLOGEM_DIR"/logs/done_*_rerun_*/ -name '*.failed' -mmin -10 2>/dev/null | wc -l)
+        if [ "$nfail" -ge 5 ]; then
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] $nfail launches failed in the last 10 min -- pausing launches this poll (queue untouched)"
+            break
+        fi
+        entry=$(pop_queue)
+        [ -n "$entry" ] || break
+        IFS='|' read -r cfg batch prefix done_dir est <<< "$entry"
+        if [ -n "$SHUTDOWN_AT" ]; then
+            need=$(awk -v e="${est:-0}" 'BEGIN{printf "%d", e*3600}')
+            if [ $(( $(date +%s) + need + SHUTDOWN_MARGIN_MIN*60 )) -ge "$SHUTDOWN_EPOCH" ]; then
+                echo "[$(date '+%Y-%m-%d %H:%M:%S')] ${prefix} batch ${batch} (~${est:-?} h) would not finish before ${SHUTDOWN_AT} -- deferred"
+                echo "$entry" >> "${QUEUE_FILE}.deferred"
+                continue
+            fi
+        fi
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Free slot ($n/$LICENSE_CEILING) -- launching batch $batch of $cfg"
+        mkdir -p "$done_dir"
+        CONFIG_FILE="$cfg" DONE_DIR="$done_dir" BATCH_LIST="$batch" \
+            bash scripts/launch_batches.sh 1 "$prefix" >> "$LOGFILE" 2>&1
+        sleep 5
+        n=$(live_sessions)
+    done
     sleep "$POLL_SECONDS"
 done

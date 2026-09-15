@@ -54,6 +54,17 @@ if n_elements(flow_initialised) eq 0 then begin
   ; the ~5-minute calibration loop entirely.
   spinup_cache_dir  = dirres + 'spinup_cache/'
   spinup_cache_file = spinup_cache_dir + strtrim(id[gg[g]], 2) + '_spinup.sav'
+  ; Failure verdicts are cached as well (2026-09-08). A failed spin-up used to be
+  ; recomputed for the same glacier in every GCM loop of a session and in every
+  ; GCM/SSP run of a batch: 30-42 % of a batch's glaciers, each up to several
+  ; minutes of 5000-yr steady-state runs. The verdict depends only on the
+  ; inventory geometry and the reanalysis-driven SMB up to the survey year --
+  ; exactly the inputs the success cache already assumes to be GCM/SSP-
+  ; independent -- so it is reused the same way. Outcome-identical: the glacier
+  ; goes to the Δh parameterisation just as it did after the failed attempt.
+  ; Delete spinup_cache/ (both *_spinup.sav and *_spinup_failed.txt) whenever
+  ; spin-up settings, the flow code or the MB calibration change.
+  spinup_fail_file  = spinup_cache_dir + strtrim(id[gg[g]], 2) + '_spinup_failed.txt'
 
   if file_test(spinup_cache_file) then begin
     restore, spinup_cache_file   ; restores: spinup_aflow, spinup_ela_bias, thick_dx,
@@ -68,10 +79,21 @@ if n_elements(flow_initialised) eq 0 then begin
     print, 'Spin-up cache hit: ' + strtrim(id[gg[g]], 2) + $
       '  A_flow=' + strtrim(spinup_aflow, 2) + $
       '  ELA_bias=' + strtrim(spinup_ela_bias, 2) + ' m'
+  endif else if file_test(spinup_fail_file) then begin
+    print, 'Spin-up cache: failure recorded for ' + strtrim(id[gg[g]], 2) + $
+      ' -- Δh parameterisation without rerunning the spin-up'
+    use_flow_model_gl = 'n'
+    goto, glogemflow_skip
   endif else begin
     file_mkdir, spinup_cache_dir
     @procedures/flow/spinup_flowmodel
-    if use_flow_model_gl eq 'n' then goto, glogemflow_skip
+    if use_flow_model_gl eq 'n' then begin
+      openw, lun_sf, spinup_fail_file, /get_lun
+      printf, lun_sf, 'spin-up failed for glacier ' + strtrim(id[gg[g]], 2) + ' on ' + systime() + $
+        ' -- reason in that run''s log; delete this file to retry the spin-up'
+      free_lun, lun_sf
+      goto, glogemflow_skip
+    endif
     save, spinup_aflow, spinup_ela_bias, spinup_dtfactor, thick_dx, sur_dx, $
           width_surface_dx, width_mid_dx, width_base_dx, lambda_dx, $
           file=spinup_cache_file
@@ -112,6 +134,43 @@ if n_elements(flow_initialised) eq 0 then begin
   print, 'Flow model initial area:   ', flow_area_init_km2, ' km2'
   print, 'GloGEM volume at survey yr: ', volumes[ye], ' km3'
   print, 'GloGEM area at survey yr:   ', areas[ye], ' km2'
+
+  ; ---- Spin-up quality gate (2026-09-09) ----
+  ; The calibration's own guard (spinup_flowmodel.pro, '>100 % volume error') cannot
+  ; fire for an UNDER-estimate: |final-target|/target is at most 100 % (final = 0).
+  ; ArcticCanadaN 01481 (196 km2, 26.7 km3) passed it with a 0.59 km3 / 1.66 km
+  ; flowline (-97.8 % volume, -87.8 % length; A_flow at its floor, ELA bias at its
+  ; cap). The rescale below then forced 26.7 km3 onto 1.66 km -> ~2400 m of ice ->
+  ; blow-up in year one -> a stump handed to the Δh parameterisation (1.4 km3 at
+  ; 2099 vs 15.2 in the pure-Δh run). Across 7 regions 1,765 of 17,106 spun-up
+  ; glaciers (10 %) miss volume or length by more than half; against the pure-Δh
+  ; reference their 2099 volume is a median 2.0x too high, while glaciers with a
+  ; sane spin-up match it (median 1.00). They hold 60-68 % of the flow-model ice in
+  ; ArcticCanada N/S and 37 % in Svalbard. A dynamic model that cannot reproduce
+  ; today's glacier must not be used for it. Evaluated on the UN-rescaled state and
+  ; on cache hits too (a few array ops), so the thresholds in settings.pro can be
+  ; changed without touching spinup_cache/. Observed length as in the spin-up:
+  ; ice cells of the inventory-date flowline geometry.
+  gate_obs_thick_dx = double(horizontal_grid_inputs.thick_dx)
+  ii_gate_obs = where(gate_obs_thick_dx gt 0d0, c_gate_obs)
+  gate_len_obs_m  = double(c_gate_obs) * dx
+  gate_len_mod_m  = double(c_init) * dx
+  gate_vol_targ   = volumes[ye] * 1d9
+  gate_vol_err    = gate_vol_targ gt 0d0 ? abs(flow_vol_init_m3 - gate_vol_targ) / gate_vol_targ : 0d0
+  gate_len_ratio  = gate_len_obs_m gt 0d0 ? gate_len_mod_m / gate_len_obs_m : 1d0
+  if gate_vol_err gt spinup_gate_vol_tol or gate_len_ratio lt spinup_gate_len_min then begin
+    print, 'WARNING: spin-up quality gate: glacier ' + strtrim(id[gg[g]], 2) + $
+      ' -- flow model has ' + strtrim(string(flow_vol_init_m3 / 1d9, fo='(f10.4)'), 2) + ' km3 vs ' + $
+      strtrim(string(volumes[ye], fo='(f10.4)'), 2) + ' km3 observed (' + $
+      strtrim(string(100d0 * gate_vol_err, fo='(f7.1)'), 2) + ' % off), length ' + $
+      strtrim(string(gate_len_mod_m / 1d3, fo='(f7.2)'), 2) + ' vs ' + $
+      strtrim(string(gate_len_obs_m / 1d3, fo='(f7.2)'), 2) + ' km (ratio ' + $
+      strtrim(string(gate_len_ratio, fo='(f5.2)'), 2) + ') --- cannot reproduce the observed glacier, ' + $
+      'using the Δh parameterisation from the start.'
+    use_flow_model_gl = 'n'
+    flow_gated_gl = 1
+    goto, glogemflow_skip
+  endif
 
   flow_initialised = 1
   print, 'GloGEMflow coupled: initialised at year ' + $

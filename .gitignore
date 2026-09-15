@@ -40,3 +40,6 @@ scripts/config_cali_rgi7_*.pro
 scripts/run_gmip4_*.sh
 scripts/launch_gmip4_all_regions.sh
 gmon.out
+
+# timestamped script backups
+*.bak_*

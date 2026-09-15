@@ -75,6 +75,8 @@ RGI_NUM = {
     "svalbard": "07", "iceland": "06", "scandinavia": "08",
     "russianarctic": "09", "caucasus": "12", "centraleurope": "11",
     "newzealand": "18",
+    "arcticcanadan": "03", "arcticcanadas": "04",
+    "southasiawest": "14", "southasiaeast": "15",
 }
 
 # CentralEurope predates the {region}_{method}_rgi7_gmip4 naming
@@ -84,7 +86,14 @@ RGI_NUM = {
 # process() use these to override the default {region}_{method}
 # pattern only for centraleurope; every other region uses the default.
 BASE_DIR_OVERRIDE = {("centraleurope", "dh"): "alps_dhdt", ("centraleurope", "flow"): "alps_flow"}
-BATCH_PREFIX_OVERRIDE = {"centraleurope": "alps"}
+# On-disk filenames embed GloGEM's own internal region_n codename
+# (region_batch.dat), which doesn't always match our own directory-naming
+# convention (the CLI region arg here) -- confirmed by inspection for each.
+BATCH_PREFIX_OVERRIDE = {
+    "centraleurope": "alps",
+    "arcticcanadan": "arcticcanadaN", "arcticcanadas": "arcticcanadaS",
+    "southasiawest": "centralasiaW", "southasiaeast": "centralasiaS",
+}
 
 # On-disk region directory names -- NOT str.capitalize() (which would give
 # "Russianarctic", not "RussianArctic").
@@ -92,6 +101,8 @@ REGION_DIR = {
     "svalbard": "Svalbard", "iceland": "Iceland", "scandinavia": "Scandinavia",
     "russianarctic": "RussianArctic", "caucasus": "Caucasus",
     "centraleurope": "CentralEurope", "newzealand": "NewZealand",
+    "arcticcanadan": "ArcticCanadaN", "arcticcanadas": "ArcticCanadaS",
+    "southasiawest": "SouthAsiaWest", "southasiaeast": "SouthAsiaEast",
 }
 
 # Per-region, per-SSP declaration of which GCMs come from a colleague's

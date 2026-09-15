@@ -128,6 +128,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
             n_flow_ok       = 0L
             n_flow_short    = 0L
             n_flow_fallback = 0L
+            n_flow_gated    = 0L
           endif
 
           ; Define start of mass balance year and clean stale t_offset
@@ -279,13 +280,13 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                 if single_glacier ne '' then begin
                   nc_total_g = 1
                 endif else if size_range[0] ne -99 then begin
-                  void = where(xy[1,*] gt lat0[0] and xy[1,*] lt lat0[1] and $
-                               xy[0,*] gt lon0[0] and xy[0,*] lt lon0[1] and $
+                  void = where(xy[1,*] ge lat0[0] and xy[1,*] le lat0[1] and $
+                               xy[0,*] ge lon0[0] and xy[0,*] le lon0[1] and $
                                a_gl gt size_range[0] and a_gl lt size_range[1] and $
                                volume_ini gt 0, nc_total_g)
                 endif else begin
-                  void = where(xy[1,*] gt lat0[0] and xy[1,*] lt lat0[1] and $
-                               xy[0,*] gt lon0[0] and xy[0,*] lt lon0[1] and $
+                  void = where(xy[1,*] ge lat0[0] and xy[1,*] le lat0[1] and $
+                               xy[0,*] ge lon0[0] and xy[0,*] le lon0[1] and $
                                volume_ini gt 0, nc_total_g)
                 endelse
                 ; Call the appropriate init procedure. It creates the NetCDF file
@@ -303,13 +304,16 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                 for gy=0,ngy-1 do begin
 
                   if grid_run eq 'y' then begin
-                    lon=[lon0[0]+gx*grid_step,lon0[0]+gx*grid_step+grid_step]
-                    lat=[lat0[0]+gy*grid_step,lat0[0]+gy*grid_step+grid_step]
+                    ; 2026-09-08: half-open [lo, hi) cells, hi of cell gx == lo of cell gx+1 bit for bit,
+                    ; so a glacier exactly on a cell edge is run exactly once (SouthAsiaEast batch11
+                    ; lost 05759 at lon 85.450001 to the old strict gt/lt pair).
+                    lon=[lon0[0]+gx*grid_step,lon0[0]+(gx+1)*grid_step]
+                    lat=[lat0[0]+gy*grid_step,lat0[0]+(gy+1)*grid_step]
                   endif
 
                   ; select glacier subsample to be calculated
-                  if lat[0] ne -99 and size_range[0] ne -99 then gg=where(xy[1,*] gt lat[0] and xy[1,*] lt lat[1] and xy[0,*] gt lon[0] and xy[0,*] lt lon[1] and a_gl gt size_range[0] and a_gl lt size_range[1] and volume_ini gt 0,cg)
-                  if lat[0] ne -99 and size_range[0] eq -99 then gg=where(xy[1,*] gt lat[0] and xy[1,*] lt lat[1] and xy[0,*] gt lon[0] and xy[0,*] lt lon[1] and volume_ini gt 0,cg)
+                  if lat[0] ne -99 and size_range[0] ne -99 then gg=where(xy[1,*] ge lat[0] and xy[1,*] lt lat[1] and xy[0,*] ge lon[0] and xy[0,*] lt lon[1] and a_gl gt size_range[0] and a_gl lt size_range[1] and volume_ini gt 0,cg)
+                  if lat[0] ne -99 and size_range[0] eq -99 then gg=where(xy[1,*] ge lat[0] and xy[1,*] lt lat[1] and xy[0,*] ge lon[0] and xy[0,*] lt lon[1] and volume_ini gt 0,cg)
                   if lat[0] eq -99 and size_range[0] ne -99 then gg=where(a_gl gt size_range[0] and a_gl lt size_range[1] and volume_ini gt 0,cg)
                   if single_glacier ne '' then gg=where(id eq single_glacier and volume_ini gt 0,cg)
 
@@ -340,6 +344,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
                     if use_flow_model eq 'y' then flow_initialised = !NULL
                     use_flow_model_gl = use_flow_model  ; per-glacier, may be overridden below
+                    flow_gated_gl = 0   ; set by the spin-up quality gate in glogemflow_coupled.pro
 
                     for cal1=0,cal1max do begin
 
@@ -660,6 +665,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                       ; flow_eligible excludes glaciers too short for the flow model.
                       if flow_eligible and calibrate ne 'y' and cal1 eq 0 then begin
                         if use_flow_model_gl eq 'y' then n_flow_ok = n_flow_ok + 1 $
+                        else if flow_gated_gl then n_flow_gated = n_flow_gated + 1 $
                         else n_flow_fallback = n_flow_fallback + 1
                       endif
 
@@ -768,10 +774,12 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
             pct_ok      = string(n_flow_ok      * 100. / n_flow_total, fo='(f5.1)')
             pct_short   = string(n_flow_short   * 100. / n_flow_total, fo='(f5.1)')
             pct_fallbk  = string(n_flow_fallback* 100. / n_flow_total, fo='(f5.1)')
+            pct_gated   = string(n_flow_gated   * 100. / n_flow_total, fo='(f5.1)')
             print, '--------- GLOGEMFLOW USAGE (' + strtrim(n_flow_total,2) + ' glaciers total):'
             print, '  ' + strtrim(n_flow_ok,2)       + ' (' + strtrim(pct_ok,2)     + '%)  ran with GloGEMflow'
             print, '  ' + strtrim(n_flow_short,2)    + ' (' + strtrim(pct_short,2)  + '%)  excluded: length < 1 km'
             print, '  ' + strtrim(n_flow_fallback,2) + ' (' + strtrim(pct_fallbk,2) + '%)  excluded: spinup failure (fell back to Dh parameterisation)'
+            print, '  ' + strtrim(n_flow_gated,2)    + ' (' + strtrim(pct_gated,2)   + '%)  excluded: spin-up could not reproduce the observed glacier (quality gate)'
           endif
         endif
 

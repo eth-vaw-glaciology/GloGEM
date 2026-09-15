@@ -8,7 +8,7 @@
 # process inspection at that point showed the check was wrong in BOTH directions:
 #   - vierzack03/04/06/07 each showed "1 gmip4-related process" PERMANENTLY, from a stale tmux
 #     wrapper shell (e.g. `gmip4_flow_rerun_centraleurope`, started Aug 6-7, several sitting at
-#     a trailing `read -r _` prompt with 0% CPU) whose SESSION NAME contains "gmip4" -- matched
+#     a trailing `read -r -t 86400 _` prompt with 0% CPU) whose SESSION NAME contains "gmip4" -- matched
 #     by the naive grep forever, regardless of whether real computation was still happening
 #     inside. vierzack07 in particular had load1=0.01-0.10 and ZERO real idl processes -- the
 #     most idle host in the whole cluster -- yet Phase 1 refused to even consider it.
