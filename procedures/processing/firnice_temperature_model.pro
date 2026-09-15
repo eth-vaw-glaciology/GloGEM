@@ -77,18 +77,20 @@ for i=0,ci-1 do begin
 
 ; generate local, and actualized arrays for layer heat capacity, condictivity and density
 dens_fit=dblarr(total(fit_layers))+900
-a=fix(sno[ii[i]]/(fit_dens[1]/1000.)) ; number of snow layers
-if a gt 18 then a=18            ; preventing too many layers for extreme snow depth (??)
+n_snow_lay=fix(sno[ii[i]]/(fit_dens[1]/1000.)) ; number of snow layers
+if n_snow_lay gt 18 then n_snow_lay=18  ; preventing too many layers for extreme snow depth (??)
 ; replacing top of density profile with snow values
-for j=0,a-1 do dens_fit[j]=fit_dens[j]
+for j=0,n_snow_lay-1 do dens_fit[j]=fit_dens[j]
 ; replacing top of density profile with firn values for the firn area
-if firn[ii[i]] eq 1 then for j=min([a,5]),17 do dens_fit[j]=fit_dens[j] ; to be verified...
+if firn[ii[i]] eq 1 then for j=min([n_snow_lay,5]),17 do dens_fit[j]=fit_dens[j] ; to be verified...
 
 cap_fit=(1-dens_fit/1000.)*cair+dens_fit/1000.*cice
+
 cond_fit=(1-dens_fit/1000.)*kair+dens_fit/1000.*kice
 
-a=min(abs(thick[ii[i]]-fit_dz[1,*]),ind)
-if firnice_batch eq 'y' then a=min(abs(firnice_maxdepth[0]-fit_dz[1,*]),ind)  ; run to actual depth of profile in batch/validation-mode
+; only `ind` (the by-reference index) is used; the returned minimum is discarded
+dummy_min=min(abs(thick[ii[i]]-fit_dz[1,*]),ind)
+if firnice_batch eq 'y' then dummy_min=min(abs(firnice_maxdepth[0]-fit_dz[1,*]),ind)  ; run to actual depth of profile in batch/validation-mode
 tt=min([ind+1,total(fit_layers)])  ; either run to bedrock, or to max of layers
 
 ; Permeability limit: stop meltwater at the firn-ice transition. Depth is
@@ -254,9 +256,9 @@ endelse
 
             ; Thomas forward sweep
             for k=1,n_inner-1 do begin
-               m     = aa[k] / bb[k-1]
-               bb[k] = bb[k] - m * cc[k-1]
-               dd[k] = dd[k] - m * dd[k-1]
+               m_thomas = aa[k] / bb[k-1]   ; not `m`: that is the month index, printed below
+               bb[k] = bb[k] - m_thomas * cc[k-1]
+               dd[k] = dd[k] - m_thomas * dd[k-1]
             endfor
 
             ; back substitution — write result directly to tl_fit, apply PMP clamp
@@ -547,8 +549,8 @@ endif
 if firnice_write[1] eq 'y' then begin
    for j=0,n_elements(firnice_profile)-1 do begin
       if ii[i] eq firnice_profile_ind[0,j] then begin
-         a=tl_fit[firnice_profile_ind[0,j],1:total(fit_layers)] & a[tt-2:total(fit_layers)-1]=snoval
-         printf,fit_prof_lun[j],ye+tran[0],m,a,fo='(2i4,'+string(total(fit_layers),fo='(i2)')+'f8.3)'
+         prof_out=tl_fit[firnice_profile_ind[0,j],1:total(fit_layers)] & prof_out[tt-2:total(fit_layers)-1]=snoval
+         printf,fit_prof_lun[j],ye+tran[0],m,prof_out,fo='(2i4,'+string(total(fit_layers),fo='(i2)')+'f8.3)'
       endif
    endfor
 endif
