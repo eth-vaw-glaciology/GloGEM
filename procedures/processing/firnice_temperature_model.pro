@@ -86,7 +86,16 @@ if firn[ii[i]] eq 1 then for j=min([n_snow_lay,5]),17 do dens_fit[j]=fit_dens[j]
 
 cap_fit=(1-dens_fit/1000.)*cair+dens_fit/1000.*cice
 
-cond_fit=(1-dens_fit/1000.)*kair+dens_fit/1000.*kice
+; Effective thermal conductivity. Snow/firn: Calonne et al. (2011), scaled by the
+; calibrated firnice_insul_scale_b. Ice: Yen (1981) temperature-dependent law, left
+; unscaled so the parameter controls the snow-to-ice contrast (the insulation) rather
+; than the overall conduction rate. The snow/firn branch is capped at the ice value --
+; without it, insul_scale above ~1.12 makes dense firn conduct better than solid ice.
+; tl_fit has one layer more than dens_fit, hence the explicit subscript range.
+k_ice_l=k_ice_a*exp(k_ice_b*(reform(tl_fit[ii[i],0:n_elements(dens_fit)-1])+273.15d))
+cond_fit=(poly(dens_fit,k_ca)*firnice_insul_scale_b[ii[i]]) < k_ice_l
+jj_ice=where(dens_fit ge rho_ice_k,n_ice)
+if n_ice gt 0 then cond_fit[jj_ice]=k_ice_l[jj_ice]
 
 ; only `ind` (the by-reference index) is used; the returned minimum is discarded
 dummy_min=min(abs(thick[ii[i]]-fit_dz[1,*]),ind)

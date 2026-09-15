@@ -165,6 +165,12 @@ firnice_z0_firn_b   = dblarr(nb) + firnice_z0_firn   ; per-band C&P e-folding de
 ; Overridden per band by the Python calibration writeback script.
 firnice_adv_scale_b = dblarr(nb) + firnice_adv_scale
 
+; ── Snow/firn insulation scaling ─────────────────────────────────────────────
+; Per-band multiplier on the Calonne (2011) snow/firn conductivity (see
+; firnice_temperature_model.pro); the Yen ice branch is unscaled. Continuous in
+; the tracked snow depth via dens_fit.
+firnice_insul_scale_b = dblarr(nb) + firnice_insul_scale
+
 ; ── C&P exponential profile for all bands ────────────────────────────────────
 ; Firn bands: full insulation correction (dT_scale_b * dT_firn_band).
 ; Ice bands:  reduced insulation via ICE_FRAC — seasonal snow insulates ~40%

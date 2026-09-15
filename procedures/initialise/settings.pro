@@ -171,6 +171,12 @@ firnice_perm_frac       = 1.0d  ; 0-1: scales effective percolation depth (1 = f
 firnice_dT_scale        = 1.0d  ; amplitude scalar on firn insulation correction (surface BC)
 firnice_z0_firn         = 15.0d ; C&P e-folding depth [m]; Z0=κ/w_acc — 15m≈alpine, 60-100m≈polar
 firnice_adv_scale       = 1.0d  ; advection velocity scaling factor (Tier-3 calib param); 1.0 = unscaled baseline
+firnice_insul_scale     = 1.0d  ; snow/firn insulation: multiplies the Calonne (2011) snow/firn
+                                ; conductivity. Higher = snow conducts more, insulates LESS.
+                                ; Ice is on a separate law and is not scaled, so this changes the
+                                ; snow-to-ice contrast rather than the overall conduction rate.
+                                ; 1.0 = Calonne as published; the other standard relations sit at
+                                ; Sturm 1997 0.59 and Yen 1981 1.09, giving a defensible range.
 firnice_temp_calib      = 'n'   ; 'y' = apply per-band transfer-model calibration
 firnice_temp_calib_file = ''    ; path to per-glacier override file; '' = use transfer model or defaults
 firnice_temp_calib_knn_file = '' ; path to per-glacier k-NN residual-correction file (band-aware);
@@ -536,6 +542,11 @@ fit_dens = [250, 300, 360, 420, 480, 550, 580, 610, 640, 670, 700, 730, 760, 790
 cice = 1890000. ; [J m-3 K-1] heat capacity of ice
 cair = 1297. ; [J m-3 K-1] heat capacity of air
 kice = 2.33 ; [J s-1 K-1 m-1] conductivity of ice
+k_ca = [0.024d, -1.23d-4, 2.5d-6] ; Calonne et al. (2011) snow/firn conductivity polynomial,
+                                  ; k = poly(rho) [W m-1 K-1], rho in kg m-3
+k_ice_a = 9.828d   ; Yen (1981) ice conductivity, k = k_ice_a*exp(k_ice_b*T), T in K
+k_ice_b = -5.7d-3  ; gives 2.07 at 0 degC, 2.32 at -20 degC
+rho_ice_k = 900.0d ; [kg m-3] firn-ice transition: at or above this, use the ice law
 kair = 0.001 ; [J s-1 K-1 m-1] conductivity of air
 
 cap = (1 - dens_rf / 1000.) * cair + dens_rf / 1000. * cice
