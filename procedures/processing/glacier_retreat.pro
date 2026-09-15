@@ -13,6 +13,9 @@ compile_opt idl2
 
 noval = -9999
 
+; entry geometry, kept for the mass-conservation guard at the end of this file
+gr_thick0 = thick & gr_area0 = area & gr_elev0 = elev & gr_gl0 = gl
+
 ; -----------------------------
 ; update surface geometry
 
@@ -238,6 +241,35 @@ if adv_lookup eq 'y' and dvol gt 0 and volume1 lt volume0 and ci gt 4 then begin
     elev[ii] = bed_elev[ii] + thick[ii] ; surface elevation calculated with updated band thickness
     jj = where(thick gt 0, cj)
     if cj gt 0 then gl[jj] = elev[jj]
+  endif
+endif
+
+; The geometry change must match the mass balance; if it does not, the
+; redistribution above has gone unstable. Revert and downwaste uniformly
+; instead, keeping the ice so the glacier can still grow later.
+gr_vreal = total(area * thick) - volumes[ye] * 1000.   ; realised change, mio m3
+gr_vexp = dvol / 1000000.                              ; mass-balance change, mio m3
+gr_tol = (0.1 * abs(gr_vexp)) > (0.05 * volumes[ye] * 1000.) > 0.05
+if abs(gr_vreal - gr_vexp) gt gr_tol then begin
+  print, 'WARNING: glacier_retreat mass check failed for ' + strtrim(id[gg[g]], 2) + $
+    ' in ' + strtrim(ye + tran[0], 2) + ': geometry changed by ' + $
+    strtrim(gr_vreal, 2) + ' mio m3, mass balance gave ' + strtrim(gr_vexp, 2) + $
+    ' -- reverting to uniform downwasting this year.'
+  thick = gr_thick0
+  area = gr_area0
+  elev = gr_elev0
+  gl = gr_gl0
+  gr_ii = where(thick gt 0, gr_ci)
+  if gr_ci gt 0 then begin
+    thick[gr_ii] = (thick[gr_ii] + bal[gr_ii] / 0.9) > 0
+    elev[gr_ii] = bed_elev[gr_ii] + thick[gr_ii]
+  endif
+  gr_jj = where(thick le 0, gr_cj)
+  if gr_cj gt 0 then begin
+    thick[gr_jj] = 0
+    area[gr_jj] = 0
+    elev[gr_jj] = bed_elev[gr_jj]
+    gl[gr_jj] = noval
   endif
 endif
 
