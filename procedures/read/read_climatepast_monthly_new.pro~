@@ -50,7 +50,7 @@ endif else begin
       endif
    endwhile
 endelse
-;print, fn
+print, fn
 anz=file_lines(fn)-3 & da=dblarr(5,anz) & tt=strarr(3)
 openr,1,fn & readf,1,tt & readf,1,da & close,1
 

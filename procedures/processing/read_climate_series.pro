@@ -39,7 +39,7 @@ if cg gt 0 then begin
 
   ; --- MONTHLY
   if time_resolution eq 'monthly' then begin
-     region_str = strlowcase(strtrim(string(region), 2))	
+     region_str = strlowcase(strtrim(string(region), 2))
      if (region_str eq 'northasia') or (region_str eq 'lowlatitudes') or (region_str eq 'antarctic') then begin
         ; New implementation, for now only for the RGI regions with subregions
         new = 'y'
@@ -47,7 +47,6 @@ if cg gt 0 then begin
         ; Old system for the other regions
         new = 'n'
      endelse
-     
      if new eq 'n' then begin
         ; READING MONTHLY CLIMATE DATA, so far only implemented like this for GMIP4
         if GMIP4 eq 'y' or AMOC eq 'y' then begin
