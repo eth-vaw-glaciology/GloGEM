@@ -91,7 +91,7 @@ endif else begin
          endif
       endwhile
    endelse
-
+;   print, fn
    anz=file_lines(fn)-3 & da=dblarr(4,anz) & tt=strarr(3)
    openr,1,fn & readf,1,tt & readf,1,da & close,1
    gcm_temp=da[2,*]
