@@ -119,7 +119,10 @@ perm_limit = perm_limit < (tt - 2l)
 ; recreated every month with no subsequent smoothing pass, producing a non-physical
 ; step discontinuity in the profile. Applying it first, then diffusing, is also the
 ; more natural operator-split: phase change is fast, diffusion is slow.
-fit_water=mel[ii[i]]+plg[ii[i]]  ; liquid water available from surface (melt+rain)
+; Surface meltwater+rain reaching the column, scaled by the calibrated percolating
+; fraction. This is the binding constraint on the latent-heat loop below.
+; Energy only: the mass balance's refr still comes from refreezing_parametrised/_full.
+fit_water=(mel[ii[i]]+plg[ii[i]])*firnice_refreeze_frac_b[ii[i]]
 
 if firn_permeability eq 'n' then fit_water = 0  ; check if permeability is disabled, if yes then set infiltrating water to zero
 

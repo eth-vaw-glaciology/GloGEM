@@ -171,6 +171,11 @@ firnice_perm_frac       = 1.0d  ; 0-1: scales effective percolation depth (1 = f
 firnice_dT_scale        = 1.0d  ; amplitude scalar on firn insulation correction (surface BC)
 firnice_z0_firn         = 15.0d ; C&P e-folding depth [m]; Z0=κ/w_acc — 15m≈alpine, 60-100m≈polar
 firnice_adv_scale       = 1.0d  ; advection velocity scaling factor (Tier-3 calib param); 1.0 = unscaled baseline
+firnice_refreeze_frac   = 1.0d  ; 0-1: fraction of surface meltwater+rain that percolates and
+                                ; refreezes rather than running off. Sets the latent heat entering
+                                ; the temperature profile. ENERGY ONLY -- the mass balance keeps
+                                ; taking its refreezing from refreezing_parametrised/_full, so
+                                ; this does not change runoff or require MB recalibration.
 firnice_insul_scale     = 1.0d  ; snow/firn insulation: multiplies the Calonne (2011) snow/firn
                                 ; conductivity. Higher = snow conducts more, insulates LESS.
                                 ; Ice is on a separate law and is not scaled, so this changes the

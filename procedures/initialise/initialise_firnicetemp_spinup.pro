@@ -171,6 +171,12 @@ firnice_adv_scale_b = dblarr(nb) + firnice_adv_scale
 ; the tracked snow depth via dens_fit.
 firnice_insul_scale_b = dblarr(nb) + firnice_insul_scale
 
+; ── Refreezing fraction ──────────────────────────────────────────────────────
+; Per-band share of surface meltwater+rain that percolates into the column (see
+; fit_water in firnice_temperature_model.pro). Energy only; the mass balance is
+; unaffected.
+firnice_refreeze_frac_b = dblarr(nb) + firnice_refreeze_frac
+
 ; ── C&P exponential profile for all bands ────────────────────────────────────
 ; Firn bands: full insulation correction (dT_scale_b * dT_firn_band).
 ; Ice bands:  reduced insulation via ICE_FRAC — seasonal snow insulates ~40%
