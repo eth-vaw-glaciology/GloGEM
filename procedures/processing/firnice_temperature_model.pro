@@ -77,12 +77,27 @@ for i=0,ci-1 do begin
 
 ; generate local, and actualized arrays for layer heat capacity, condictivity and density
 dens_fit=dblarr(total(fit_layers))+900
-n_snow_lay=fix(sno[ii[i]]/(fit_dens[1]/1000.)) ; number of snow layers
-if n_snow_lay gt 18 then n_snow_lay=18  ; preventing too many layers for extreme snow depth (??)
-; replacing top of density profile with snow values
-for j=0,n_snow_lay-1 do dens_fit[j]=fit_dens[j]
-; replacing top of density profile with firn values for the firn area
-if firn[ii[i]] eq 1 then for j=min([n_snow_lay,5]),17 do dens_fit[j]=fit_dens[j] ; to be verified...
+; firn column first, so the snow blend below mixes against the right material underneath
+if firn[ii[i]] eq 1 then dens_fit[0:n_elements(fit_dens)-1]=fit_dens ; to be verified...
+
+; Snow cover: walk the real layer thicknesses fit_dz[0,*] down to the snow depth, blending the
+; last partial layer. sno is water equivalent and fit_dens[1]/1000 is a specific gravity, so
+; sno/(fit_dens[1]/1000) is a DEPTH IN METRES -- the previous code used it as a layer COUNT,
+; which only holds for layers 0-9 (1 m); layers 10-19 are 5 m, so it over-assigned by
+; 4*(count-10) m, up to +32 m. fix() also discarded the partial layer and hid any snow below
+; 0.3 m w.e. entirely. On firn bands the blend is a no-op (snow and firn share fit_dens), so
+; snow depth stays inert there exactly as before.
+z_snow     = sno[ii[i]] / (fit_dens[1]/1000.d)
+n_fd       = n_elements(fit_dens)
+z_top      = 0.d
+n_snow_lay = 0
+for j=0, n_elements(dens_fit)-1 do begin
+   if z_top ge z_snow then break
+   f = ((z_snow - z_top) / fit_dz[0,j]) < 1.0d
+   dens_fit[j] = f*fit_dens[j < (n_fd-1)] + (1.d - f)*dens_fit[j]
+   z_top = z_top + fit_dz[0,j]
+   n_snow_lay = j + 1
+endfor
 
 cap_fit=(1-dens_fit/1000.)*cair+dens_fit/1000.*cice
 
@@ -159,17 +174,10 @@ endfor
 
 ; ice is assumed impermeable: no liquid water enters glacier ice
 fit_water=fit_water*0
-
-for j=ck+1,tt-2 do begin ; loop through all ICE layers from top, and update temperatures
-   c=(-1)*(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*cap_fit[j]*fit_dz[0,j]/Lh_rf ; cold content in layer below pressure melting point
-   if fit_water gt c then begin   ; temperate layer if cold reservoir used, remaining water being transferred
-      tl_fit[ii[i],j]=(fit_dz[1,j]*0.9/10.)*(-0.00742) & fit_water=fit_water-c
-   endif else begin
-      if c gt 0 and fit_water gt 0 then tl_fit[ii[i],j]=tl_fit[ii[i],j]-(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*(fit_water/c)
-      fit_water=fit_water-c
-   endelse
-;   if j eq 10 and ii(i) eq 20 then print, m,c,fit_water,tl_fit(ii(i),20),f
-endfor
+; the ice-layer loop that used to follow was dead code: with fit_water forced to 0 above, both
+; of its branches are unreachable (cold content is >= 0, so `fit_water gt c` and the inner
+; `fit_water gt 0` guard are both false). Removed 2026-09-10; restore it if ice is ever made
+; permeable, i.e. if the line above becomes conditional on firn_permeability.
 
 endelse
 
