@@ -61,6 +61,7 @@ enable_strain_heating  = (getenv('GLOGEM_STRAIN') ne '' ? getenv('GLOGEM_STRAIN'
 ;                    value, 0.2, i.e. it wanted far less percolation than 1.0 allows.
 ;   GLOGEM_PERM      'n' switches infiltration off entirely (fit_water = 0), the cold end
 ;                    member.
+firnice_melt_surface = (getenv('GLOGEM_MELTCLAMP') ne '' ? getenv('GLOGEM_MELTCLAMP') : 'n')
 firnice_perm_frac = (getenv('GLOGEM_PERMFRAC') ne '' ? double(getenv('GLOGEM_PERMFRAC')) : 1.0d)
 firn_permeability = (getenv('GLOGEM_PERM') ne '' ? getenv('GLOGEM_PERM') : 'y')
 
