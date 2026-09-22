@@ -187,17 +187,11 @@ endelse
    for h=0,rf_dsc-1 do begin
 
       ; ── boundary conditions (shared by both conduction schemes) ──────────────
-      ; All bands get a snow/firn insulation correction to the surface BC:
-      ;   Firn bands: full correction  — dT_scale_b * dT_firn_band
-      ;   Ice bands:  reduced (ICE_FRAC) — seasonal snow insulates ~40% as much
-      ;               as perennial firn; gives non-flat ice profiles matching C&P init.
-      ; ICE_FRAC must match the value in initialise_firnicetemp_spinup.pro.
-      ICE_FRAC = 0.4d
-      if firn[ii[i]] eq 1 then begin
-          tl_fit[ii[i],0] = min([0d, tgs[ii[i]] + firnice_dT_scale_b[ii[i]] * dT_firn_band[ii[i]]])
-      endif else begin
-          tl_fit[ii[i],0] = min([0d, tgs[ii[i]] + ICE_FRAC * firnice_dT_scale_b[ii[i]] * dT_firn_band[ii[i]]])
-      endelse
+      ; Surface = air temperature, capped at the melting point. The snow/firn
+      ; insulation offset that used to be added here came from a decision tree; it
+      ; is now carried by the seasonally varying snow conductivity instead
+      ; (firnice_insul_scale_b, see the cond_fit block above).
+      tl_fit[ii[i],0] = min([0d, tgs[ii[i]]])
 
       ; ── melting-surface clamp (experimental, firnice_melt_surface eq 'y') ─────
       ; A surface that is melting is AT the melting point, by definition; it cannot be

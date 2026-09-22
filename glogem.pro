@@ -434,6 +434,12 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                         if firnice_temp_calib_bayes_file ne '' then begin
                           @procedures/initialise/apply_firnicetemp_calibration_bayes.pro
                         endif
+                        ; Spinup runs AFTER the overrides above: it calls the full temperature
+                        ; model, so it must see this glacier's calibrated parameters. Run inside
+                        ; initialise_firnicetemp_spinup (as before) it only ever saw the defaults.
+                        if firnice_thermal_spinup eq 'y' then begin
+                          @procedures/initialise/spinup_firnicetemp_thermal.pro
+                        endif
                       endif
 
                       ; Record eligibility after length check — short glaciers already have

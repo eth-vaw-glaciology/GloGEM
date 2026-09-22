@@ -52,7 +52,9 @@ for m = 1, 12 do begin
     if cm gt 0 then tclim_ref[m-1] = mean(temp[jm])
 endfor
 
-; ── T_amplitude per band → ΔT_firn via 4-leaf decision tree ──────────────────
+; ── T_amplitude per band → ΔT_firn, 4-leaf decision tree ─────────────────────
+; DIAGNOSTIC ONLY: no longer feeds the physics, kept as the reference column that
+; write_firnicetemp_validation.pro compares the modelled offset against.
 dT_firn_band = dblarr(nb)
 t_amp_band   = dblarr(nb)
 for i = 0, nb-1 do begin
@@ -154,7 +156,6 @@ endfor
 ; flatter baseline than before -- a real output change for those two configs,
 ; not merely a no-op cleanup.
 firnice_perm_frac_b = dblarr(nb) + firnice_perm_frac
-firnice_dT_scale_b  = dblarr(nb) + firnice_dT_scale
 firnice_z0_firn_b   = dblarr(nb) + firnice_z0_firn   ; per-band C&P e-folding depth [m]
 
 ; ── Advection velocity scaling factor (Tier-3 Bayesian calibration parameter) ─
@@ -177,30 +178,16 @@ firnice_insul_scale_b = dblarr(nb) + firnice_insul_scale
 ; unaffected.
 firnice_refreeze_frac_b = dblarr(nb) + firnice_refreeze_frac
 
-; ── C&P exponential profile for all bands ────────────────────────────────────
-; Firn bands: full insulation correction (dT_scale_b * dT_firn_band).
-; Ice bands:  reduced insulation via ICE_FRAC — seasonal snow insulates ~40%
-;             as much as perennial firn.  Gives non-flat initial profiles for
-;             both cold-continental and maritime ablation zones.
-; ICE_FRAC must match the value in firnice_temperature_model.pro.
-ICE_FRAC = 0.4d
+; ── Initial profile for all bands ────────────────────────────────────────────
+; Isothermal at the long-term mean air temperature, capped at the melting point.
+; The decision-tree firn insulation offset that used to shape this profile is gone;
+; with firnice_thermal_spinup='y' the real profile is built from the surface BC,
+; conductivity, advection and latent heat instead of being prescribed here.
 te_fit = dblarr(nb, total(fit_layers)+1)
-for i = 0, nb-1 do begin
-    ins_scale = (firn[i] eq 1) ? firnice_dT_scale_b[i] : (ICE_FRAC * firnice_dT_scale_b[i])
-    depth = 0.d
-    for j = 0, total(fit_layers)-1 do begin
-        depth += fit_dz[0, j]
-        te_fit[i, j] = min([0.d, tt[i] + ins_scale * dT_firn_band[i] * exp(-depth / firnice_z0_firn_b[i])])
-    endfor
-endfor
+for i = 0, nb-1 do te_fit[i, 0:total(fit_layers)-1] = min([0.d, tt[i]])
 tl_fit = te_fit
 
-; ── Optional thermal spinup (overrides the C&P analytical profile) ─
-; Set firnice_thermal_spinup='y' in config.pro to activate.
-; Uses the C&P profile above as the starting point, then runs the
-; actual heat equation until deep temperatures converge, followed by
-; a transient run-in through the historical climate up to tran[0].
-if firnice_thermal_spinup eq 'y' and firnice_temperature eq 'y' then begin
-    @procedures/initialise/spinup_firnicetemp_thermal.pro
-endif
+; The thermal spinup used to run here. It now runs in glogem.pro AFTER the
+; apply_firnicetemp_calibration* overrides, so it uses this glacier's calibrated
+; parameters rather than the settings.pro defaults.
 
