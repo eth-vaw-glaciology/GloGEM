@@ -400,6 +400,9 @@ case MIP of
     CMIP6 = 'n'
     GMIP4 = 'y'
     AMOC = 'n'
+    ; GMIP4 wants the ERA5 hindcast to evolve the geometry, not hold it fixed.
+    ; Reset to 'n' further below whenever tran[1] > 2025, so projections are unaffected.
+    hindcast_dynamic = 'y'
  end
   'AMOC': begin
     ; AMOC GCMs                                                                                                                                                                                                                                                                      
@@ -486,7 +489,8 @@ if read_parameters eq 'y' then calibrate = 'n'
 
 if single_glacier ne '' then grid_run = 'n'
 
-if tran[1] gt 2020 then hindcast_dynamic = 'n'
+; dynamics only inside the reanalysis record; ERA5 currently ends 2025
+if tran[1] gt 2025 then hindcast_dynamic = 'n'
 
 if meltmodel eq '3' then c2_tolerance = c2m3_tolerance
 

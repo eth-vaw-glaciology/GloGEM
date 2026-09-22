@@ -5,6 +5,9 @@ compile_opt idl2
 gcmmodel = GCM_model[gcms]
 rcpmodel =  GCM_rcp[rcps]
 
+; GCM end years apply to projections only -- a reanalysis hindcast keeps its config tran
+if reanalysis_direct eq 'y' then goto, check_tran_done
+
 ; Normal runs                                                                                                                                                                                                                                      
 if GMIP4 eq 'y' then begin
     if rcpmodel eq 'ssp126' or rcpmodel eq 'ssp585' then begin
@@ -23,3 +26,5 @@ if GMIP4 eq 'y' then begin
         if gcmmodel eq 'MIROC6' then tran[1]=2100                                                                                                                                                                                                        
     endif 
 endif
+
+check_tran_done:
