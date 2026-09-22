@@ -26,17 +26,17 @@
 ;
 ; Sets outer-scope arrays (used by apply_firnicetemp_calibration_knn.pro):
 ;   firnicecaliknn_id       — string array of glacier IDs
-;   firnicecaliknn_pf_delta — double array of perm_frac residuals
-;   firnicecaliknn_ds_delta — double array of dT_scale residuals
-;   firnicecaliknn_z0_delta — double array of z0 residuals [m]
+;   firnicecaliknn_rf_delta — double array of refreeze_frac residuals
+;   firnicecaliknn_is_delta — double array of insul_scale residuals
+;   firnicecaliknn_av_delta — double array of adv_scale residuals
 ; *************************************************************
 
 compile_opt idl2
 
 firnicecaliknn_id       = ['']
-firnicecaliknn_pf_delta = [0.d]
-firnicecaliknn_ds_delta = [0.d]
-firnicecaliknn_z0_delta = [0.d]
+firnicecaliknn_rf_delta = [0.d]
+firnicecaliknn_is_delta = [0.d]
+firnicecaliknn_av_delta = [0.d]
 n_caliknn = 0l
 
 if ~file_test(firnice_temp_calib_knn_file) then begin
@@ -60,14 +60,14 @@ for k = 0l, anz-1l do begin
     if n_elements(parts) lt 4 then continue
     if n_caliknn eq 0 then begin
         firnicecaliknn_id       = [parts[0]]
-        firnicecaliknn_pf_delta = [double(parts[1])]
-        firnicecaliknn_ds_delta = [double(parts[2])]
-        firnicecaliknn_z0_delta = [double(parts[3])]
+        firnicecaliknn_rf_delta = [double(parts[1])]
+        firnicecaliknn_is_delta = [double(parts[2])]
+        firnicecaliknn_av_delta = [double(parts[3])]
     endif else begin
         firnicecaliknn_id       = [firnicecaliknn_id,       parts[0]]
-        firnicecaliknn_pf_delta = [firnicecaliknn_pf_delta, double(parts[1])]
-        firnicecaliknn_ds_delta = [firnicecaliknn_ds_delta, double(parts[2])]
-        firnicecaliknn_z0_delta = [firnicecaliknn_z0_delta, double(parts[3])]
+        firnicecaliknn_rf_delta = [firnicecaliknn_rf_delta, double(parts[1])]
+        firnicecaliknn_is_delta = [firnicecaliknn_is_delta, double(parts[2])]
+        firnicecaliknn_av_delta = [firnicecaliknn_av_delta, double(parts[3])]
     endelse
     n_caliknn++
 endfor

@@ -8,33 +8,31 @@
 ; when firnice_temp_calib_file ne ''.
 ;
 ; Calibration file format (space-separated, one line per glacier):
-;   # glacier_id  perm_frac  dT_scale  advection_scale
-;   00773  1.000  1.30  1.20
-;   00774  1.000  2.60  0.85
+;   # glacier_id  refreeze_frac  insul_scale  advection_scale
+;   00773  0.850  1.10  1.20
+;   00774  0.400  0.75  0.85
 ;   ...
 ; Lines starting with '#' are treated as comments and skipped.
-; A 3-column file (no advection_scale column) is accepted for backward
-; compatibility; the missing advection_scale is filled with firnice_adv_scale
-; (default from settings.pro).
+; A 3-column file (no advection_scale column) is accepted; the missing
+; advection_scale is filled with firnice_adv_scale (default from settings.pro).
 ;
-; z0 is NOT part of this file (Tier-3 parameter swap): firnice_z0_firn_b stays
-; at its settings.pro default for every glacier now. z0 only ever shaped the
-; analytical C&P SPINUP profile (initialise_firnicetemp_spinup.pro) and never
-; reached the transient physics afterward, unlike advection_scale, which
-; scales u[] every substep in firnice_temperature_model.pro.
+; The columns are POSITIONAL and have been reused twice (perm_frac/dT_scale/z0,
+; then perm_frac/dT_scale/adv, now refreeze_frac/insul_scale/adv), so a stale
+; file parses cleanly with the wrong meaning -- e.g. an old z0 of 200 m read as
+; an advection multiplier of 200. The header check below refuses such files.
 ;
 ; Sets outer-scope arrays (used by apply_firnicetemp_calibration.pro):
 ;   firnicecali_id         — string array of glacier IDs
-;   firnicecali_perm_frac  — double array of perm_frac values
-;   firnicecali_dT_scale   — double array of dT_scale values
+;   firnicecali_refreeze_frac  — double array of refreeze_frac values (slot 1)
+;   firnicecali_insul_scale   — double array of insul_scale values (slot 2)
 ;   firnicecali_adv_scale  — double array of advection_scale values
 ; *************************************************************
 
 compile_opt idl2
 
 firnicecali_id         = ['']
-firnicecali_perm_frac  = [0.d]
-firnicecali_dT_scale   = [0.d]
+firnicecali_refreeze_frac  = [0.d]
+firnicecali_insul_scale   = [0.d]
 firnicecali_adv_scale  = [0.d]
 n_cali = 0l
 
@@ -49,19 +47,30 @@ line = ''
 for k = 0l, anz-1l do begin
     readf, 55, line
     line = strtrim(line, 2)
+    ; refuse a pre-swap file: its columns mean something else (see header)
+    if strmid(line, 0, 1) eq '#' then begin
+        lc = strlowcase(line)
+        if strpos(lc, 'perm_frac') ge 0 or strpos(lc, 'dt_scale') ge 0 then begin
+            close, 55
+            print, '  [firnicetemp calib] ERROR: ' + firnice_temp_calib_file + $
+                   ' uses the old perm_frac/dT_scale columns.'
+            print, '  [firnicetemp calib] Expected: # glacier_id  refreeze_frac  insul_scale  advection_scale'
+            message, 'stale firn/ice temperature calibration file -- refusing to run'
+        endif
+    endif
     if strmid(line, 0, 1) eq '#' or line eq '' then continue
     parts = strsplit(line, /extract)
     if n_elements(parts) lt 3 then continue
     adv_val = (n_elements(parts) ge 4) ? double(parts[3]) : firnice_adv_scale
     if n_cali eq 0 then begin
         firnicecali_id         = [parts[0]]
-        firnicecali_perm_frac  = [double(parts[1])]
-        firnicecali_dT_scale   = [double(parts[2])]
+        firnicecali_refreeze_frac  = [double(parts[1])]
+        firnicecali_insul_scale   = [double(parts[2])]
         firnicecali_adv_scale  = [adv_val]
     endif else begin
         firnicecali_id         = [firnicecali_id,        parts[0]]
-        firnicecali_perm_frac  = [firnicecali_perm_frac, double(parts[1])]
-        firnicecali_dT_scale   = [firnicecali_dT_scale,  double(parts[2])]
+        firnicecali_refreeze_frac  = [firnicecali_refreeze_frac, double(parts[1])]
+        firnicecali_insul_scale   = [firnicecali_insul_scale,  double(parts[2])]
         firnicecali_adv_scale  = [firnicecali_adv_scale, adv_val]
     endelse
     n_cali++

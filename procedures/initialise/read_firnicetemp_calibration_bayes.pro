@@ -31,9 +31,9 @@
 ;
 ; Sets outer-scope arrays (used by apply_firnicetemp_calibration_bayes.pro):
 ;   firnicecalibayes_id       — string array of glacier IDs
-;   firnicecalibayes_pf_delta — double array of perm_frac residuals
-;   firnicecalibayes_ds_delta — double array of dT_scale residuals
-;   firnicecalibayes_z0_delta — double array of z0 residuals [m]
+;   firnicecalibayes_rf_delta — double array of refreeze_frac residuals
+;   firnicecalibayes_is_delta — double array of insul_scale residuals
+;   firnicecalibayes_av_delta — double array of adv_scale residuals
 ;   firnicecalibayes_pf_std   — double array of perm_frac posterior std (diagnostic)
 ;   firnicecalibayes_ds_std   — double array of dT_scale posterior std (diagnostic)
 ;   firnicecalibayes_z0_std   — double array of z0 posterior std [m] (diagnostic)
@@ -42,9 +42,9 @@
 compile_opt idl2
 
 firnicecalibayes_id       = ['']
-firnicecalibayes_pf_delta = [0.d]
-firnicecalibayes_ds_delta = [0.d]
-firnicecalibayes_z0_delta = [0.d]
+firnicecalibayes_rf_delta = [0.d]
+firnicecalibayes_is_delta = [0.d]
+firnicecalibayes_av_delta = [0.d]
 firnicecalibayes_pf_std   = [0.d]
 firnicecalibayes_ds_std   = [0.d]
 firnicecalibayes_z0_std   = [0.d]
@@ -72,17 +72,17 @@ for k = 0l, anz-1l do begin
     has_std = n_elements(parts) ge 7
     if n_calibayes eq 0 then begin
         firnicecalibayes_id       = [parts[0]]
-        firnicecalibayes_pf_delta = [double(parts[1])]
-        firnicecalibayes_ds_delta = [double(parts[2])]
-        firnicecalibayes_z0_delta = [double(parts[3])]
+        firnicecalibayes_rf_delta = [double(parts[1])]
+        firnicecalibayes_is_delta = [double(parts[2])]
+        firnicecalibayes_av_delta = [double(parts[3])]
         firnicecalibayes_pf_std   = [has_std ? double(parts[4]) : 0.d]
         firnicecalibayes_ds_std   = [has_std ? double(parts[5]) : 0.d]
         firnicecalibayes_z0_std   = [has_std ? double(parts[6]) : 0.d]
     endif else begin
         firnicecalibayes_id       = [firnicecalibayes_id,       parts[0]]
-        firnicecalibayes_pf_delta = [firnicecalibayes_pf_delta, double(parts[1])]
-        firnicecalibayes_ds_delta = [firnicecalibayes_ds_delta, double(parts[2])]
-        firnicecalibayes_z0_delta = [firnicecalibayes_z0_delta, double(parts[3])]
+        firnicecalibayes_rf_delta = [firnicecalibayes_rf_delta, double(parts[1])]
+        firnicecalibayes_is_delta = [firnicecalibayes_is_delta, double(parts[2])]
+        firnicecalibayes_av_delta = [firnicecalibayes_av_delta, double(parts[3])]
         firnicecalibayes_pf_std   = [firnicecalibayes_pf_std,   has_std ? double(parts[4]) : 0.d]
         firnicecalibayes_ds_std   = [firnicecalibayes_ds_std,   has_std ? double(parts[5]) : 0.d]
         firnicecalibayes_z0_std   = [firnicecalibayes_z0_std,   has_std ? double(parts[6]) : 0.d]

@@ -3,13 +3,13 @@
 ;
 ; Called per glacier (inside the `g` loop) after
 ; initialise_firnicetemp_spinup.pro has set the per-band
-; firnice_perm_frac_b / firnice_dT_scale_b / firnice_z0_firn_b arrays via
+; firnice_refreeze_frac_b / firnice_insul_scale_b / firnice_adv_scale_b arrays via
 ; the transfer model (requires firnice_temp_calib='y'), and after any flat
 ; apply_firnicetemp_calibration.pro override.
 ;
 ; Looks up the current glacier (id[gg[g]]) in the pre-loaded
 ; firnicecaliknn_id array (read by read_firnicetemp_calibration_knn.pro).
-; If a match is found, its (delta_pf, delta_ds, delta_z0) residual is ADDED
+; If a match is found, its (delta_rf, delta_is, delta_av) residual is ADDED
 ; to every band — NOT overwritten — so the per-band variation already
 ; produced by the transfer model (bands at different elevation/T_amplitude
 ; get different baseline values) is preserved, while the whole glacier is
@@ -22,8 +22,8 @@ compile_opt idl2
 if n_elements(firnicecaliknn_id) gt 0 then begin
     jj = where(firnicecaliknn_id eq id[gg[g]], n_match)
     if n_match gt 0 then begin
-        firnice_perm_frac_b = (firnice_perm_frac_b + firnicecaliknn_pf_delta[jj[0]]) > 0.1d < 1.0d
-        firnice_dT_scale_b  = (firnice_dT_scale_b  + firnicecaliknn_ds_delta[jj[0]]) > 0.2d < 5.0d
-        firnice_z0_firn_b   = (firnice_z0_firn_b   + firnicecaliknn_z0_delta[jj[0]]) > 5.0d < 200.0d
+        firnice_refreeze_frac_b = (firnice_refreeze_frac_b + firnicecaliknn_rf_delta[jj[0]]) > 0.0d < 1.0d
+        firnice_insul_scale_b   = (firnice_insul_scale_b   + firnicecaliknn_is_delta[jj[0]]) > 0.3d < 2.0d
+        firnice_adv_scale_b     = (firnice_adv_scale_b     + firnicecaliknn_av_delta[jj[0]]) > 0.0d < 3.0d
     endif
 endif

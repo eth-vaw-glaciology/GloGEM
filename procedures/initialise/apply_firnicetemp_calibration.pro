@@ -2,13 +2,13 @@
 ; apply_firnicetemp_calibration
 ;
 ; Called per glacier (inside the `g` loop) after
-; initialise_firnicetemp_spinup.pro has set firnice_perm_frac_b and
-; firnice_dT_scale_b to their (flat scalar) defaults.
+; initialise_firnicetemp_spinup.pro has set firnice_refreeze_frac_b and
+; firnice_insul_scale_b to their (flat scalar) defaults.
 ;
 ; Looks up the current glacier (id[gg[g]]) in the pre-loaded
 ; firnicecali_id array (read by read_firnicetemp_calibration.pro).
 ; If a match is found, ALL bands of this glacier are overridden with
-; the per-glacier perm_frac, dT_scale and advection_scale values from
+; the per-glacier refreeze_frac, insul_scale and adv_scale values from
 ; the file -- explicit calibration file values always win.
 ;
 ; z0 is deliberately NOT touched here any more (Tier-3 parameter swap):
@@ -21,8 +21,8 @@ compile_opt idl2
 if n_elements(firnicecali_id) gt 0 then begin
     jj = where(firnicecali_id eq id[gg[g]], n_match)
     if n_match gt 0 then begin
-        firnice_perm_frac_b[*]  = firnicecali_perm_frac[jj[0]]
-        firnice_dT_scale_b[*]   = firnicecali_dT_scale[jj[0]]
-        firnice_adv_scale_b[*]  = firnicecali_adv_scale[jj[0]]
+        firnice_refreeze_frac_b[*] = firnicecali_refreeze_frac[jj[0]]
+        firnice_insul_scale_b[*]   = firnicecali_insul_scale[jj[0]]
+        firnice_adv_scale_b[*]     = firnicecali_adv_scale[jj[0]]
     endif
 endif
