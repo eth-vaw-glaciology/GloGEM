@@ -365,6 +365,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                     if use_flow_model eq 'y' then flow_initialised = !NULL
                     use_flow_model_gl = use_flow_model  ; per-glacier, may be overridden below
                     flow_gated_gl = 0   ; set by the spin-up quality gate in glogemflow_coupled.pro
+                    if n_elements(n_growth_clamped) eq 0 then n_growth_clamped = 0
 
                     for cal1=0,cal1max do begin
 
@@ -657,6 +658,8 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                           endif else begin
                             @procedures/processing/glacier_retreat.pro
                           endelse
+                          ; bound the result whichever path produced it
+                          @procedures/processing/limit_glacier_growth.pro
                         endif                           ; glacier retreat
 
                         ; save per-glacier geometry and flowline grid history (.sav)

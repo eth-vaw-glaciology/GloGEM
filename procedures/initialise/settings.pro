@@ -208,6 +208,11 @@ use_flow_model = 'n' ; 'y' activates GloGEMflow and disables the Δh parameteris
 ; only used if its un-rescaled survey-year state reproduces the observed glacier:
 ; |volume error| <= spinup_gate_vol_tol AND modelled length >= spinup_gate_len_min x observed.
 ; Otherwise the glacier runs on the Δh parameterisation from the start (like a failed
+
+; runtime growth limit (limit_glacier_growth.pro); same numbers as check_gmip4_output.py
+growth_max_thick = 2000.0d0 ; m, mean thickness no glacier may exceed
+growth_max_vol   = 50.0d0   ; km3, only bites together with growth_max_rel
+growth_max_rel   = 20.0d0   ; x the inventory volume
 ; spin-up). Evaluated in glogemflow_coupled.pro; see the comment there for the evidence.
 spinup_gate_vol_tol = 0.5d0   ; fraction of observed volume
 spinup_gate_len_min = 0.5d0   ; fraction of observed length
