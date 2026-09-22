@@ -127,8 +127,30 @@ for i in $BATCH_NUMS; do
         CONFIG_ENV="GLOGEM_CONFIG='${CONFIG_FILE}' "
     fi
 
-    # Kill any leftover session with the same name
-    tmux kill-session -t "$SESSION" 2>/dev/null || true
+    # A same-named session may be a parked leftover or a job mid-run. Only reap
+    # one with no live IDL under it. Every probe ends || true: under `set -e` a
+    # childless `ps --ppid` exits 1 and would abort the launcher.
+    if tmux has-session -t "$SESSION" 2>/dev/null; then
+        session_live=0
+        pane=$(tmux list-panes -t "$SESSION" -F '#{pane_pid}' 2>/dev/null | head -1 || true)
+        gen="${pane:-}"
+        for _ in 1 2 3 4 5; do
+            [ -n "${gen// /}" ] || break
+            kids=$(ps -o pid= --ppid "$(echo ${gen} | tr ' ' ',')" 2>/dev/null | tr '\n' ' ' || true)
+            [ -n "${kids// /}" ] || break
+            for pid in $kids; do
+                cm=$(ps -o comm= -p "$pid" 2>/dev/null || true)
+                if [ "$cm" = "idl" ]; then session_live=1; break; fi
+            done
+            if [ "$session_live" -eq 1 ]; then break; fi
+            gen="$kids"
+        done
+        if [ "$session_live" -eq 1 ]; then
+            echo "  SKIP: $SESSION is already running (live IDL) -- not relaunching"
+            continue
+        fi
+        tmux kill-session -t "$SESSION" 2>/dev/null || true
+    fi
 
     # Filter the (very verbose -- per-glacier-per-year "Flow: vol=..." lines
     # plus per-glacier spin-up iteration detail, ~99.9% of raw output on a

@@ -63,7 +63,9 @@ echo "  License ceiling: $LICENSE_CEILING   Poll: ${POLL_SECONDS}s"
 echo "======================================================"
 
 live_sessions() {
-    pgrep -u "$(whoami)" -f "bin.linux.x86_64/idl$" 2>/dev/null | wc -l
+    # numeric UID: whoami fails without a passwd entry, and an empty -u makes
+    # pgrep return nothing, which reads as "no jobs running"
+    pgrep -u "$(id -u)" -f "bin.linux.x86_64/idl$" 2>/dev/null | wc -l
 }
 
 # Pop the first non-comment, non-blank line from QUEUE_FILE and echo it,

@@ -55,7 +55,9 @@ while true; do
     if [ -n "$alive" ]; then
         best=""; bestn=999999
         for h in $alive; do
-            n=$(grep -vc '^#' "logs/launch_queue_$h.txt" 2>/dev/null || echo 999999)
+            # grep -vc exits 1 on a zero count, so guard instead of using ||
+            n=$(grep -vc '^#' "logs/launch_queue_$h.txt" 2>/dev/null)
+            case "$n" in ''|*[!0-9]*) n=999999 ;; esac
             if [ "$n" -lt "$bestn" ]; then bestn=$n; best=$h; fi
         done
         out=$(python3 scripts/requeue_incomplete.py --stale-min "$STALE_MIN" --to "$best" 2>&1)
