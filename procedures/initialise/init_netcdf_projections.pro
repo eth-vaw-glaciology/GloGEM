@@ -117,11 +117,14 @@ for yr = 0L, nc_years-1L do $
 
 nc_period = strtrim(string(nc_tran[0]),2) + '-' + strtrim(string(nc_tran[1]),2)
 
+; GloGEMflow output must be distinguishable from plain GloGEM in the submission
+nc_model = use_flow_model eq 'y' ? 'GloGEMflow' : 'GloGEM'
+
 ; --- full period file names ---
-nc_fn_ann   = nc_outdir + 'GloGEM_' + nc_base_tag  + '_' + nc_gcm_tag + '_annual.nc'
-nc_fn_sub   = nc_outdir + 'GloGEM_' + nc_base_tag  + '_' + nc_gcm_tag + '_' + nc_sub_lbl + '.nc'
-nc_fn_ann_i = nc_outdir + 'GloGEM_' + nc_indiv_tag + '_' + nc_gcm_tag + '_annual.nc'
-nc_fn_sub_i = nc_outdir + 'GloGEM_' + nc_indiv_tag + '_' + nc_gcm_tag + '_' + nc_sub_lbl + '.nc'
+nc_fn_ann   = nc_outdir + nc_model + '_' + nc_base_tag  + '_' + nc_gcm_tag + '_annual.nc'
+nc_fn_sub   = nc_outdir + nc_model + '_' + nc_base_tag  + '_' + nc_gcm_tag + '_' + nc_sub_lbl + '.nc'
+nc_fn_ann_i = nc_outdir + nc_model + '_' + nc_indiv_tag + '_' + nc_gcm_tag + '_annual.nc'
+nc_fn_sub_i = nc_outdir + nc_model + '_' + nc_indiv_tag + '_' + nc_gcm_tag + '_' + nc_sub_lbl + '.nc'
 
 ; --- global attributes helper values ---
 nc_institution = 'ETH, VAW'
@@ -415,16 +418,16 @@ if ~file_test(nc_outdir_sp, /directory) then file_mkdir, nc_outdir_sp
 if ~file_test(nc_outdir_sf, /directory) then file_mkdir, nc_outdir_sf
 
 ; --- split past file names (hindcast naming with reanalysis) ---
-nc_sp_fn_ann   = nc_outdir_sp + 'GloGEM_' + nc_base_tag  + '_' + nc_gcm_tag + '_' + nc_rea + '_annual.nc'
-nc_sp_fn_sub   = nc_outdir_sp + 'GloGEM_' + nc_base_tag  + '_' + nc_gcm_tag + '_' + nc_rea + '_' + nc_sub_lbl + '.nc'
-nc_sp_fn_ann_i = nc_outdir_sp + 'GloGEM_' + nc_indiv_tag + '_' + nc_gcm_tag + '_' + nc_rea + '_annual.nc'
-nc_sp_fn_sub_i = nc_outdir_sp + 'GloGEM_' + nc_indiv_tag + '_' + nc_gcm_tag + '_' + nc_rea + '_' + nc_sub_lbl + '.nc'
+nc_sp_fn_ann   = nc_outdir_sp + nc_model + '_' + nc_base_tag  + '_' + nc_gcm_tag + '_' + nc_rea + '_annual.nc'
+nc_sp_fn_sub   = nc_outdir_sp + nc_model + '_' + nc_base_tag  + '_' + nc_gcm_tag + '_' + nc_rea + '_' + nc_sub_lbl + '.nc'
+nc_sp_fn_ann_i = nc_outdir_sp + nc_model + '_' + nc_indiv_tag + '_' + nc_gcm_tag + '_' + nc_rea + '_annual.nc'
+nc_sp_fn_sub_i = nc_outdir_sp + nc_model + '_' + nc_indiv_tag + '_' + nc_gcm_tag + '_' + nc_rea + '_' + nc_sub_lbl + '.nc'
 
 ; --- split future file names (projection naming) ---
-nc_sf_fn_ann   = nc_outdir_sf + 'GloGEM_' + nc_base_tag  + '_' + nc_gcm_tag + '_annual.nc'
-nc_sf_fn_sub   = nc_outdir_sf + 'GloGEM_' + nc_base_tag  + '_' + nc_gcm_tag + '_' + nc_sub_lbl + '.nc'
-nc_sf_fn_ann_i = nc_outdir_sf + 'GloGEM_' + nc_indiv_tag + '_' + nc_gcm_tag + '_annual.nc'
-nc_sf_fn_sub_i = nc_outdir_sf + 'GloGEM_' + nc_indiv_tag + '_' + nc_gcm_tag + '_' + nc_sub_lbl + '.nc'
+nc_sf_fn_ann   = nc_outdir_sf + nc_model + '_' + nc_base_tag  + '_' + nc_gcm_tag + '_annual.nc'
+nc_sf_fn_sub   = nc_outdir_sf + nc_model + '_' + nc_base_tag  + '_' + nc_gcm_tag + '_' + nc_sub_lbl + '.nc'
+nc_sf_fn_ann_i = nc_outdir_sf + nc_model + '_' + nc_indiv_tag + '_' + nc_gcm_tag + '_annual.nc'
+nc_sf_fn_sub_i = nc_outdir_sf + nc_model + '_' + nc_indiv_tag + '_' + nc_gcm_tag + '_' + nc_sub_lbl + '.nc'
 
 ; --- create split past files (5–8) ---
 nc_sp_ann = ncdf_create(nc_sp_fn_ann, /clobber, /netcdf4)

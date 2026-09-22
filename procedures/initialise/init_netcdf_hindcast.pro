@@ -99,10 +99,14 @@ for yr = 0L, nc_years-1L do $
 nc_period = strtrim(string(nc_tran[0]),2) + '-' + strtrim(string(nc_tran[1]),2)
 
 ; --- file names ---
-nc_fn_ann   = nc_outdir + 'GloGEM_' + nc_base_tag  + '_' + nc_gcm_tag + '_' + nc_rea + '_annual.nc'
-nc_fn_sub   = nc_outdir + 'GloGEM_' + nc_base_tag  + '_' + nc_gcm_tag + '_' + nc_rea + '_' + nc_sub_lbl + '.nc'
-nc_fn_ann_i = nc_outdir + 'GloGEM_' + nc_indiv_tag + '_' + nc_gcm_tag + '_' + nc_rea + '_annual.nc'
-nc_fn_sub_i = nc_outdir + 'GloGEM_' + nc_indiv_tag + '_' + nc_gcm_tag + '_' + nc_rea + '_' + nc_sub_lbl + '.nc'
+; GloGEMflow output must be distinguishable from plain GloGEM in the submission
+nc_model = use_flow_model eq 'y' ? 'GloGEMflow' : 'GloGEM'
+
+; a pure reanalysis hindcast has no GCM/SSP, so no nc_gcm_tag in the name
+nc_fn_ann   = nc_outdir + nc_model + '_' + nc_base_tag  + '_' + nc_rea + '_annual.nc'
+nc_fn_sub   = nc_outdir + nc_model + '_' + nc_base_tag  + '_' + nc_rea + '_' + nc_sub_lbl + '.nc'
+nc_fn_ann_i = nc_outdir + nc_model + '_' + nc_indiv_tag + '_' + nc_rea + '_annual.nc'
+nc_fn_sub_i = nc_outdir + nc_model + '_' + nc_indiv_tag + '_' + nc_rea + '_' + nc_sub_lbl + '.nc'
 
 ; ================================================================
 ; 1. REGIONAL ANNUAL FILE
