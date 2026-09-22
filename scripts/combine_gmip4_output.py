@@ -141,7 +141,7 @@ def find_own_batch_files(region, method, gcm, ssp, kind):
     # inspection, not assumed). batch?? (exactly 2 digits then '_')
     # excludes the per-glacier "...batch01indiv_..." files, which
     # glob's 'batch*' would also match.
-    pattern = str(d / f"GloGEM_rgi*_{batch_prefix}_batch??_*_{ssp}_{kind}.nc")
+    pattern = str(d / f"GloGEM*_rgi*_{batch_prefix}_batch??_*_{ssp}_{kind}.nc")
     matches = []
     for p in glob.glob(pattern):
         fname = Path(p).name
@@ -250,7 +250,7 @@ def write_monthly(outpath, time, data, attrs):
 
 def process(region, method, verify_only):
     rgi = RGI_NUM[region]
-    outdir = FINAL_BASE / method / REGION_DIR[region]
+    outdir = FINAL_BASE / method / f"{rgi}_{REGION_DIR[region]}_GloGEMflow"
     n_combined, n_reused, n_missing = 0, 0, 0
 
     for ssp in ALL_SSPS:
@@ -260,8 +260,10 @@ def process(region, method, verify_only):
             # contribution; substituting Δh data into it would silently
             # mislabel a different physical model's results as ours).
             reuse = REUSE_SOURCES.get(region, {}).get(ssp, {}).get(gcm) if method == "dh" else None
-            ann_out = outdir / f"GloGEM_rgi{rgi}_{gcm}_{ssp}_annual.nc"
-            mon_out = outdir / f"GloGEM_rgi{rgi}_{gcm}_{ssp}_monthly.nc"
+            # flow runs are a different model from the Delta-h GloGEM and must say so
+            model = "GloGEMflow" if method == "flow" else "GloGEM"
+            ann_out = outdir / f"{model}_rgi{rgi}_{gcm}_{ssp}_annual.nc"
+            mon_out = outdir / f"{model}_rgi{rgi}_{gcm}_{ssp}_monthly.nc"
 
             if reuse:
                 src_ann = Path(reuse) / f"GloGEM_rgi{rgi}_{gcm}_{ssp}_annual.nc"

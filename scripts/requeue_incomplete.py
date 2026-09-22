@@ -23,7 +23,13 @@ HOSTS = ["vierzack03", "vierzack04", "vierzack05", "vierzack06", "iceberg"]
 NB = {"caucasus": 12, "svalbard": 8, "centraleurope": 24, "southasiaeast": 12,
       "arcticcanadan": 10, "arcticcanadas": 12, "southasiawest": 20, "scandinavia": 16,
       "newzealand": 16, "alaska": 18, "westerncanada": 12, "southernandes": 18,
-      "centralasia": 24, "greenland": 20}
+      "centralasia": 24, "greenland": 20,
+      # subregion regions: one job per subregion, selected by region_id_loop (no batches)
+      "antarctic_atlantic": 1, "antarctic_indian": 1, "antarctic_pacific": 1,
+      "antarctic_maudwilkes": 1, "antarctic_victoria": 1, "antarctic_peninsula": 1,
+      "antarctic_mariebyrd": 1, "lowlatitudes_andes": 1, "lowlatitudes_africa": 1,
+      "lowlatitudes_mexico": 1, "lowlatitudes_newguinea": 1,
+      "iceland": 4, "northasia_altay": 1}
 SSPS = ["ssp126", "ssp370", "ssp585", "ssp534over"]
 
 

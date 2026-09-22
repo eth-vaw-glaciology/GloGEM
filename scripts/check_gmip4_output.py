@@ -142,10 +142,10 @@ def check_region_canonical(region, quiet):
     except ImportError:
         print(f"[{region}] netCDF4 not available -- regional check skipped")
         return flagged
-    for p in sorted(glob.glob(f"{FINAL_BASE}/{rdir}/GloGEM_rgi{rgi}_*_annual.nc")):
+    for p in sorted(glob.glob(f"{FINAL_BASE}/{rgi}_{rdir}_GloGEMflow/GloGEM*_rgi{rgi}_*_annual.nc")):
         if "indiv" in p:
             continue
-        m = re.match(rf"GloGEM_rgi{rgi}_(.+)_(ssp[0-9a-z\-]+)_annual\.nc", os.path.basename(p))
+        m = re.match(rf"GloGEM(?:flow)?_rgi{rgi}_(.+)_(ssp[0-9a-z\-]+)_annual\.nc", os.path.basename(p))
         if not m:
             continue
         gcm, ssp = m.groups()
