@@ -62,7 +62,7 @@ if cg gt 0 then begin
               @procedures/read/read_gcmdata_monthly.pro
            endif
         endif
-        gmid=[mean(latitudes),mean(longitudes)]
+        gmid=[mean(latitudes_clim),mean(longitudes_clim)]
         @procedures/processing/downscale_gcmdata_monthly.pro
         @procedures/processing/gradient_variability_monthly.pro
      endif else begin

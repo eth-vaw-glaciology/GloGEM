@@ -248,6 +248,9 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
               @procedures/initialise/initialise_results_files.pro
             endif
 
+            ; full-region inventory, kept so the climate grid point ignores batching
+            xy_clim = xy & a_gl_clim = a_gl & volini_clim = volume_ini
+
             ; selecting a specific subset of glaciers from a list (catchment) within one RGI region
             if catchment_selection ne '' then begin
               @procedures/initialise/catchment_selection.pro
@@ -319,7 +322,22 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                   if lat[0] eq -99 and size_range[0] ne -99 then gg=where(a_gl gt size_range[0] and a_gl lt size_range[1] and volume_ini gt 0,cg)
                   if single_glacier ne '' then gg=where(id eq single_glacier and volume_ini gt 0,cg)
 
+                  ; climate grid point uses every glacier of the cell, not only this batch
+                  cgc = 0
+                  if lat[0] ne -99 and single_glacier eq '' then begin
+                    in_cell = xy_clim[1,*] ge lat[0] and xy_clim[1,*] lt lat[1] and $
+                              xy_clim[0,*] ge lon[0] and xy_clim[0,*] lt lon[1] and volini_clim gt 0
+                    if size_range[0] ne -99 then $
+                      in_cell = in_cell and a_gl_clim gt size_range[0] and a_gl_clim lt size_range[1]
+                    gc = where(in_cell, cgc)
+                  endif
+
                   latitudes=lat_gl[gg] & longitudes=lon_gl[gg]
+                  if cgc gt 0 then begin
+                    latitudes_clim = reform(xy_clim[1, gc]) & longitudes_clim = reform(xy_clim[0, gc])
+                  endif else begin
+                    latitudes_clim = latitudes & longitudes_clim = longitudes
+                  endelse
                   
                   ; storage arrays
                   stor_im=dblarr(nout) & stor_dv=stor_im & stor_ar=stor_im & stor_vo=stor_im
