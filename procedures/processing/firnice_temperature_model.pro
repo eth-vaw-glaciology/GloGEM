@@ -563,7 +563,9 @@ endif
 if firnice_write[1] eq 'y' then begin
    for j=0,n_elements(firnice_profile)-1 do begin
       if ii[i] eq firnice_profile_ind[0,j] then begin
-         prof_out=tl_fit[firnice_profile_ind[0,j],1:total(fit_layers)] & prof_out[tt-2:total(fit_layers)-1]=snoval
+         ; prof_out[k] = tl_fit[k+1], so prof_out[tt-2] IS the bed node. Masking from tt-2
+         ; discarded it; mask from tt-1 so the deepest resolved node reaches the output.
+         prof_out=tl_fit[firnice_profile_ind[0,j],1:total(fit_layers)] & prof_out[tt-1:total(fit_layers)-1]=snoval
          printf,fit_prof_lun[j],ye+tran[0],m,prof_out,fo='(2i4,'+string(total(fit_layers),fo='(i2)')+'f8.3)'
       endif
    endfor
