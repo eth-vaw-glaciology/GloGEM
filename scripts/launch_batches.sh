@@ -63,6 +63,11 @@
 set -euo pipefail
 
 GLOGEM_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+
+# GloGEM's own verbose journal (tens of MB per run) goes to net_scratch, not the
+# home quota. Override by exporting GLOGEM_LOGDIR before calling this script.
+: "${GLOGEM_LOGDIR:=/itet-stor/jabeer/net_scratch/glogem_logs/runlogs}"
+mkdir -p "$GLOGEM_LOGDIR" 2>/dev/null || true
 N="${1:-16}"
 PREFIX="${2:-alps_flow}"
 LOG_DIR="${GLOGEM_DIR}/logs"
@@ -169,7 +174,7 @@ for i in $BATCH_NUMS; do
     KEEP_PATTERN='Loaded user config|Catchment selection|Reanalysis product selected|MIP scenario selected|FINISHED region|WARNING|Error|ERROR|Illegal|Undefined variable|Permission denied|Failed to acquire|No licenses|Execution halted|Parameter-File.*not available|^License:|^IDL [0-9]'
 
     tmux new-session -d -s "$SESSION" \
-        "cd '${GLOGEM_DIR}' && echo '.r glogem' | ${CONFIG_ENV}GLOGEM_BATCH=${BATCH} idl 2>&1 | grep --line-buffered -E -A10 '${KEEP_PATTERN}' | tee '${LOGFILE}'; EC=\${PIPESTATUS[1]}; echo \"Batch ${BATCH} finished (exit \$EC)\"; ${DONE_CMD}; read -r -t 86400 _"
+        "cd '${GLOGEM_DIR}' && echo '.r glogem' | ${CONFIG_ENV}GLOGEM_LOGDIR='${GLOGEM_LOGDIR}' GLOGEM_BATCH=${BATCH} idl 2>&1 | grep --line-buffered -E -A10 '${KEEP_PATTERN}' | tee '${LOGFILE}'; EC=\${PIPESTATUS[1]}; echo \"Batch ${BATCH} finished (exit \$EC)\"; ${DONE_CMD}; read -r -t 86400 _"
 
     echo "  Started: $SESSION  (GLOGEM_BATCH=$BATCH)"
 done
