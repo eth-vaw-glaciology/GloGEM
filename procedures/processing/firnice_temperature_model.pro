@@ -233,6 +233,12 @@ endelse
       tl_fit[ii[i],tt-1] = min([ttgeot, (fit_dz[1,tt-1]*0.9d/10.d)*(-0.00742d)])
 
       ; ── heat conduction (vertical) ────────────────────────────────────────────
+      ; Node spacing is NOT uniform: fit_dz[1,j]=fit_dz[1,j-1]+fit_dz[0,j], so the gap below
+      ; node j is fit_dz[0,j] and the gap above is fit_dz[0,j+1]. Both schemes below use a
+      ; finite-volume form with interface conductivities, correct across the 1/5/20 m block
+      ; edges. The previous fit_dz[0,j]^2 form assumed a uniform grid and made the steady
+      ; profile linear in layer INDEX rather than in depth.
+      n_cond = n_elements(cond_fit)
       if firnice_implicit eq 'n' then begin
 
          ; Explicit forward-difference. The /2. below is NOT cosmetic: explicit stability needs
@@ -240,8 +246,14 @@ endelse
          ; layers is 5.2 days, against rf_dt = 10 days. Halving the diffusivity lifts the limit
          ; to 10.4 days. Remove it only with a smaller timestep. Prefer firnice_implicit='y'.
          for j=1,tt-2 do begin
-            te_fit[ii[i],j]=tl_fit[ii[i],j]+((rf_dt*cond_fit[j]/(cap_fit[j])*(tl_fit[ii[i],j-1]-tl_fit[ii[i],j])/fit_dz[0,j]^2.)- $
-                (rf_dt*cond_fit[j]/(cap_fit[j])*(tl_fit[ii[i],j]-tl_fit[ii[i],j+1])/fit_dz[0,j]^2.))/2.
+            dzm = fit_dz[0,j]
+            dzp = fit_dz[0,(j+1) < (n_cond-1)]
+            dzc = 0.5d*(dzm + dzp)
+            km  = 0.5d*(cond_fit[j-1] + cond_fit[j])
+            kp  = 0.5d*(cond_fit[j] + cond_fit[(j+1) < (n_cond-1)])
+            te_fit[ii[i],j]=tl_fit[ii[i],j]+(rf_dt/(cap_fit[j]*dzc)* $
+                (km*(tl_fit[ii[i],j-1]-tl_fit[ii[i],j])/dzm $
+                 - kp*(tl_fit[ii[i],j]-tl_fit[ii[i],j+1])/dzp))/2.
             tl_fit[ii[i],j]=te_fit[ii[i],j]
             if tl_fit[ii[i],j] gt (fit_dz[1,j]*0.9/10.)*(-0.00742) then tl_fit[ii[i],j]=(fit_dz[1,j]*0.9/10.)*(-0.00742)
          endfor
@@ -249,21 +261,26 @@ endelse
       endif else begin
 
          ; fully implicit backward Euler — Thomas algorithm, O(N) per column.
-         ; Unconditionally stable; uses the correct thermal diffusivity k/(c·dz²)
-         ; with no artificial halving factor.
+         ; Unconditionally stable, so no artificial halving factor is needed.
          n_inner = tt - 2
          if n_inner gt 0 then begin
-            aa = dblarr(n_inner)   ; subdiagonal   a_k = -r_j
-            bb = dblarr(n_inner)   ; diagonal      b_k =  1 + 2*r_j
-            cc = dblarr(n_inner)   ; superdiagonal c_k = -r_j
+            aa = dblarr(n_inner)   ; subdiagonal   -ra
+            bb = dblarr(n_inner)   ; diagonal       1 + ra + rc
+            cc = dblarr(n_inner)   ; superdiagonal -rc
             dd = dblarr(n_inner)   ; RHS
 
             for k=0,n_inner-1 do begin
-               j  = k + 1
-               rj = rf_dt * cond_fit[j] / (cap_fit[j] * fit_dz[0,j]^2d)
-               aa[k] = -rj
-               bb[k] = 1.0d + 2.0d * rj
-               cc[k] = -rj
+               j   = k + 1
+               dzm = fit_dz[0,j]
+               dzp = fit_dz[0,(j+1) < (n_cond-1)]
+               dzc = 0.5d*(dzm + dzp)
+               km  = 0.5d*(cond_fit[j-1] + cond_fit[j])
+               kp  = 0.5d*(cond_fit[j] + cond_fit[(j+1) < (n_cond-1)])
+               ra  = rf_dt * km / (cap_fit[j] * dzc * dzm)
+               rc  = rf_dt * kp / (cap_fit[j] * dzc * dzp)
+               aa[k] = -ra
+               bb[k] = 1.0d + ra + rc
+               cc[k] = -rc
                dd[k] = tl_fit[ii[i],j]
             endfor
 
