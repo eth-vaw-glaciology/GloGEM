@@ -56,6 +56,14 @@ ENDELSE
 ; guarantees no output path (conduction, advection, latent heat,
 ; bedrock-fill) can ever leave a value above PMP regardless of tt.
 nfit = total(fit_layers)
+
+; Output/diagnostic slots chosen by DEPTH, not by hard-coded layer index, so they survive a
+; change of fit_layers/fit_dzstep. On the standard grid these resolve to 2, 10 and 18, whose
+; true node depths are 2, 14 and 54 m (the old comments said 2/10/50 m, which was wrong).
+_dmin = min(abs(reform(fit_dz[1,*]) -  2.d), idx_out_2m)
+_dmin = min(abs(reform(fit_dz[1,*]) - 14.d), idx_out_14m)
+_dmin = min(abs(reform(fit_dz[1,*]) - 54.d), idx_out_54m)
+
 pmp_profile = dblarr(nfit + 1)
 pmp_profile[0] = 0d0
 for jp = 1, nfit - 1 do pmp_profile[jp] = (fit_dz[1,jp] * 0.9d0 / 10.0d0) * (-0.00742d0)
@@ -410,7 +418,7 @@ endelse
             layer_courant = (layer_courant > 0.0D) < 0.8D
 
             ; Store the temperature before horizontal advection at 10m depth
-            temp_before = tl_fit[ii[i],10]  ; Store 10m temperature before horizontal advection
+            temp_before = tl_fit[ii[i],idx_out_14m]  ; 14 m, before horizontal advection
 
             ; First-order upwind scheme for advection
             tl_fit[ii[i],j] = (1.0D - layer_courant) * tl_fit[ii[i],j] + $
@@ -418,7 +426,7 @@ endelse
 
             ; Store horizontal advection effect (average temperature change at key depths)
             IF advection_write EQ 'y' THEN BEGIN
-            IF j EQ 10 THEN adv_horiz_effect[ii[i]] = tl_fit[ii[i],j] - temp_before  ; Effect of horizontal advection at 10m depth
+            IF j EQ idx_out_14m THEN adv_horiz_effect[ii[i]] = tl_fit[ii[i],j] - temp_before  ; at 14 m
             ENDIF
 
             ; Ensure temperature doesn't exceed pressure melting point
@@ -494,7 +502,7 @@ endelse
          IF MAX(ABS(vertical_vel)) GT 0.1D THEN BEGIN
          ; Create temporary array to store updated temperatures
          temp_v = tl_fit[ii[i],*]
-         temp_before_v = tl_fit[ii[i],10]  ; Store 10m temperature before vertical advection
+         temp_before_v = tl_fit[ii[i],idx_out_14m]  ; 14 m, before vertical advection
 
          ; Convert rf_dt (already seconds-per-substep) to years directly --
          ; do not multiply by another month-seconds/rf_dsc factor here, see
@@ -533,7 +541,7 @@ endelse
 
          ; Store vertical advection effect at 10m depth
          IF advection_write EQ 'y' THEN BEGIN
-            adv_vert_effect[ii[i]] = temp_v[10] - temp_before_v  ; Effect at 10m depth
+            adv_vert_effect[ii[i]] = temp_v[idx_out_14m] - temp_before_v  ; Effect at 10m depth
          ENDIF
 
          ; Update temperature array with advected values
@@ -564,9 +572,9 @@ tl_fit[ii[i],*] = tl_fit[ii[i],*] < pmp_profile
 ; prepare for output
 if firnice_write[0] eq 'y' then begin
          ; maximum temperature in layer during one year
-   elev_firnicetemp[0,ye,ii[i]]=max([elev_firnicetemp[0,ye,ii[i]],tl_fit[ii[i],2]])  ; 2m
-   elev_firnicetemp[1,ye,ii[i]]=max([elev_firnicetemp[1,ye,ii[i]],tl_fit[ii[i],10]]) ; 10m
-   elev_firnicetemp[2,ye,ii[i]]=max([elev_firnicetemp[2,ye,ii[i]],tl_fit[ii[i],18]]) ; 50m
+   elev_firnicetemp[0,ye,ii[i]]=max([elev_firnicetemp[0,ye,ii[i]],tl_fit[ii[i],idx_out_2m]])  ; 2 m
+   elev_firnicetemp[1,ye,ii[i]]=max([elev_firnicetemp[1,ye,ii[i]],tl_fit[ii[i],idx_out_14m]]) ; 14 m
+   elev_firnicetemp[2,ye,ii[i]]=max([elev_firnicetemp[2,ye,ii[i]],tl_fit[ii[i],idx_out_54m]]) ; 54 m
    elev_firnicetemp[3,ye,ii[i]]=max([elev_firnicetemp[3,ye,ii[i]],tl_fit[ii[i],total(fit_layers)]]) ; bedrock (last slot; was hardcoded 30)
 endif
 

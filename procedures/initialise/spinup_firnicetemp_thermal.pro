@@ -92,8 +92,14 @@ tg_sp  = dblarr(nb)
 
 n_lyr_total = long(total(fit_layers))
 
-; Convergence tracking: deep layers only (depth > 15 m, index >= 10)
-deep_start = 10l
+; Convergence tracking: deep layers only, selected by DEPTH so it survives a grid change.
+; 19 m is the first node below the depth of zero annual amplitude. The seasonal damping depth
+; d = sqrt(kappa*P/pi) is 3.5 m in ice, so the annual swing is still ~1.9% of the surface value
+; at 14 m (0.19 degC for a 10 degC cycle, above the 0.05 degC tolerance) but 0.45% at 19 m.
+; The cycle-to-cycle comparison is same-phase so the seasonal part cancels either way; this is
+; about the criterion meaning what it says.
+_dmin = min(abs(reform(fit_dz[1,*]) - 19.d), deep_start)
+deep_start = long(deep_start)
 
 print, '  [thermal spinup] Phase 1: equilibrium cycling with ' + $
        strtrim(sp_y0,2) + '-' + strtrim(sp_y1,2) + ' mean climate'

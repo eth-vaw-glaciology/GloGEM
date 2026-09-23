@@ -52,7 +52,7 @@ rho_w_v = 1000.d  ; kg/m3    density of water
 
 n_years_v = double(years) > 1.d
 ; mean firn density over the percolation depth, from the model's own layer profile
-rho_f_v = mean(double(fit_dens))
+rho_f_v = mean(double(fit_dens_ref))   ; the firn curve, not the resampled full column
 
 f_rf_band = dblarr(nb)
 refr_ann  = dblarr(nb)

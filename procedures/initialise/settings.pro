@@ -551,7 +551,7 @@ end
 ; (Alaska and the Karakoram reach ~1000 m); nothing else needs to change.
 fit_layers = [10, 10, 23]
 fit_dzstep = [1., 5., 20.]
-fit_dens = [250, 300, 360, 420, 480, 550, 580, 610, 640, 670, 700, 730, 760, 790, 820, 850, 880, 900]
+; fit_dens is defined below, after fit_dz, because it is resampled onto the layer grid.
 
 ; --- physical constants
 cice = 1890000. ; [J m-3 K-1] heat capacity of ice
@@ -583,6 +583,14 @@ endfor
 for i = 1, total(fit_layers) - 1 do begin
   fit_dz[1, i] = fit_dz[1, i - 1] + fit_dz[0, i]
 endfor
+
+; Firn density as a curve in DEPTH, resampled onto whatever layer grid is in use. It used to be
+; an 18-element list indexed by LAYER, so its meaning changed silently with the grid. The
+; reference points are the original values at their original depths, so this is a no-op on the
+; [10x1, 10x5, 23x20] grid. Below the deepest reference point the column is solid ice.
+fit_dens_z   = [0.d, 1, 2, 3, 4, 5, 6, 7, 8, 9, 14, 19, 24, 29, 34, 39, 44, 49]
+fit_dens_ref = [250.d, 300, 360, 420, 480, 550, 580, 610, 640, 670, 700, 730, 760, 790, 820, 850, 880, 900]
+fit_dens     = (interpol(fit_dens_ref, fit_dens_z, reform(fit_dz[1,*])) > fit_dens_ref[0]) < 900.d
 
 ; Expand range shorthand into index arrays ([0,0] means not used; range takes precedence)
 if GCM_model_range[0] ne 0 then $
