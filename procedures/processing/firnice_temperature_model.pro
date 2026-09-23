@@ -235,7 +235,10 @@ endelse
       ; ── heat conduction (vertical) ────────────────────────────────────────────
       if firnice_implicit eq 'n' then begin
 
-         ; explicit forward-difference with ×½ stability factor
+         ; Explicit forward-difference. The /2. below is NOT cosmetic: explicit stability needs
+         ; dt <= dz^2/(2*kappa), which for ice (kappa ~1.11e-6 m2/s) and the 1 m near-surface
+         ; layers is 5.2 days, against rf_dt = 10 days. Halving the diffusivity lifts the limit
+         ; to 10.4 days. Remove it only with a smaller timestep. Prefer firnice_implicit='y'.
          for j=1,tt-2 do begin
             te_fit[ii[i],j]=tl_fit[ii[i],j]+((rf_dt*cond_fit[j]/(cap_fit[j])*(tl_fit[ii[i],j-1]-tl_fit[ii[i],j])/fit_dz[0,j]^2.)- $
                 (rf_dt*cond_fit[j]/(cap_fit[j])*(tl_fit[ii[i],j]-tl_fit[ii[i],j+1])/fit_dz[0,j]^2.))/2.

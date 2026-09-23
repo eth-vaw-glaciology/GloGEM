@@ -151,7 +151,9 @@ refreezing_parametrised = 'y'
 
 ; --- englacial temperature model
 firnice_temperature = 'n'
-firnice_implicit = 'n'      ; heat conduction scheme: 'n' = explicit (×½ factor), 'y' = fully implicit (Thomas algorithm)
+firnice_implicit = 'y'      ; heat conduction scheme: 'y' = implicit backward Euler (Thomas),
+                            ; unconditionally stable. 'n' = explicit, which needs the ×½ factor
+                            ; below to stay stable at the current layer thickness and timestep.
 firnice_write = ['y', 'y', 'n'] ; [overall time series, detailed profiles, full T(band,layer) field]
 firnice_batch = 'n'
 firnice_profile = [0.2, 0.65, 0.95] ; elevation ratios (or masl if >1) for profile output
