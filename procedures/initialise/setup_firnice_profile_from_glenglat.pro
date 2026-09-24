@@ -11,14 +11,20 @@
 ;
 ; Lookup file format (see GloGEM/test/data/glenglat_borehole_elevations_CentralEurope.dat):
 ;   Lines starting with '#' are comments.
-;   Data lines: glacier_id  elev1  elev2  ...  (space-separated, elevations in m a.s.l.)
+;   Data lines: glacier_id  elev1[:depth1]  elev2[:depth2]  ...  (space-separated, elevations
+;   in m a.s.l.). The optional depth is the deepest observation in that band [m]; it is
+;   returned in firnice_profile_maxdepth so the temperature model can run its column at least
+;   that deep. A plain elevation with no depth gives -1 (no override).
 ;
 ; If the current glacier is not found in the lookup, firnice_profile is
 ; left unchanged (fractional fall-back remains active).
 ;
-; Modifies (glogem.pro scope): firnice_profile, firnice_profile_ID
+; Modifies (glogem.pro scope): firnice_profile, firnice_profile_ID, firnice_profile_maxdepth
 ; -----------------------------------------------------------------------
 compile_opt idl2
+
+; reset per glacier -- these are @-include globals and would otherwise persist from the last one
+firnice_profile_maxdepth = [-1.d]
 
 openr, 77, firnice_glenglat_lookup
 line = ''
@@ -32,7 +38,15 @@ while not eof(77) do begin
     if parts[0] eq id[gg[g]] then begin
         n_elev = n_elements(parts) - 1l
         if n_elev ge 1l then begin
-            firnice_profile    = double(parts[1:*])
+            ev_l = dblarr(n_elev)
+            md_l = dblarr(n_elev) - 1.d
+            for kk = 0l, n_elev-1l do begin
+                tok = strsplit(parts[kk+1l], ':', /extract)
+                ev_l[kk] = double(tok[0])
+                if n_elements(tok) ge 2 then md_l[kk] = double(tok[1])
+            endfor
+            firnice_profile          = ev_l
+            firnice_profile_maxdepth = md_l
             firnice_profile_ID = string(indgen(n_elev) + 1l, fo='(i0)')
             found = 1b
         endif
