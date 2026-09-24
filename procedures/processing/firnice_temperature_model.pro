@@ -260,6 +260,9 @@ endelse
       dz_bed = (fit_dz[1,tt-1] - fit_dz[1,tt-2]) > 1.0d   ; true spacing of the bottom layer [m]
       ttgeot = tl_fit[ii[i],tt-2] + geothermal_flux * dz_bed / cond_fit[tt-1]
       tl_fit[ii[i],tt-1] = min([ttgeot, (fit_dz[1,tt-1]*0.9d/10.d)*(-0.00742d)])
+      if fit_lacc_on then begin   ; spin-up drift correction: column depth and bed conductivity
+         lacc_tt[ii[i]] = tt & lacc_kbed[ii[i]] = cond_fit[tt-1]
+      endif
 
       ; ── heat conduction (vertical) ────────────────────────────────────────────
       ; Node spacing is NOT uniform: fit_dz[1,j]=fit_dz[1,j-1]+fit_dz[0,j], so the gap below
@@ -280,6 +283,10 @@ endelse
             dzc = 0.5d*(dzm + dzp)
             km  = 0.5d*(cond_fit[j-1] + cond_fit[j])
             kp  = 0.5d*(cond_fit[j] + cond_fit[(j+1) < (n_cond-1)])
+            if fit_lacc_on then begin   ; yearly sums of the coupling, halved as below
+               lacc_a[ii[i],j] += 0.5d*rf_dt*km/(cap_fit[j]*dzc*dzm)
+               lacc_c[ii[i],j] += 0.5d*rf_dt*kp/(cap_fit[j]*dzc*dzp)
+            endif
             te_fit[ii[i],j]=tl_fit[ii[i],j]+(rf_dt/(cap_fit[j]*dzc)* $
                 (km*(tl_fit[ii[i],j-1]-tl_fit[ii[i],j])/dzm $
                  - kp*(tl_fit[ii[i],j]-tl_fit[ii[i],j+1])/dzp))/2.
@@ -307,6 +314,9 @@ endelse
                kp  = 0.5d*(cond_fit[j] + cond_fit[(j+1) < (n_cond-1)])
                ra  = rf_dt * km / (cap_fit[j] * dzc * dzm)
                rc  = rf_dt * kp / (cap_fit[j] * dzc * dzp)
+               if fit_lacc_on then begin   ; yearly sums of the coupling for the drift correction
+                  lacc_a[ii[i],j] += ra & lacc_c[ii[i],j] += rc
+               endif
                aa[k] = -ra
                bb[k] = 1.0d + ra + rc
                cc[k] = -rc

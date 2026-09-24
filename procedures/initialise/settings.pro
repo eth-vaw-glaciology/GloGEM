@@ -163,6 +163,11 @@ firnice_spinup_ref_period = [1961, 1990] ; climate reference period for equilibr
 firnice_spinup_max_cycles = 500       ; max equilibrium cycles (convergence usually <200)
 firnice_spinup_tol = 0.05d            ; °C convergence tolerance (max change in deep layers)
 firnice_spinup_min_cycles = 200       ; minimum equilibrium cycles before convergence is checked
+firnice_spinup_solver = 'cycle'       ; 'cycle' = repeat the reference year until the deep layers
+                                      ; stop changing; 'drift' = measure the drift and jump to
+                                      ; equilibrium (spinup_firnicetemp_thermal.pro)
+fit_lacc_on = 0b                      ; set only by the drift spin-up: firnice_temperature_model
+                                      ; then sums its conduction coefficients per band and layer
 enable_advection = 'n'
 enable_strain_heating   = 'n'   ; 'y' to add viscous dissipation heat source (SIA)
 advection_write = 'n'
