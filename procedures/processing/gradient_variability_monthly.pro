@@ -87,6 +87,19 @@ if submonth_variability eq 'y' then begin
    endfor
    close,1
 
+   ; the re-read above returns the file's 0..360 longitudes; convert them as
+   ; read_climatepast_monthly.pro does, or the next cell's downscaling matches
+   ; glaciers west of 0 against 0..360 and picks the westernmost column
+   if new eq 'n' then begin
+      if clim_subregion eq 'East' then begin
+         jlon_gv=where(rlon gt 180,clon_gv) & if clon_gv gt 0 then rlon[jlon_gv]=rlon[jlon_gv]-360
+         jlon_gv=where(rvlon gt 180,clon_gv) & if clon_gv gt 0 then rvlon[jlon_gv]=rvlon[jlon_gv]-360
+      endif else begin
+         jlon_gv=where(rlon ge 180,clon_gv) & if clon_gv gt 0 then rlon[jlon_gv]=rlon[jlon_gv]-360
+         jlon_gv=where(rvlon ge 180,clon_gv) & if clon_gv gt 0 then rvlon[jlon_gv]=rvlon[jlon_gv]-360
+      endelse
+   endif
+
    if new eq 'y' then begin   
       bb=where(rlat eq rmid[0])
       cc=where(rlon eq rmid[1])
