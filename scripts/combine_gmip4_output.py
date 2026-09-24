@@ -153,7 +153,29 @@ def find_own_batch_files(region, method, gcm, ssp, kind):
         token = stem.rsplit("_", 1)[-1]
         if token.lower() == gcm.lower():
             matches.append(p)
-    return sorted(matches)
+
+    # One batch can be on disk twice: GloGEM_* from before the GloGEMflow
+    # rename and GloGEMflow_* from a later re-run. Both match the glob, and
+    # summing both counts that batch twice (RussianArctic came out at exactly
+    # 2x its real area). Keep one file per batch: GloGEMflow_ wins, then mtime.
+    by_batch = {}
+    for p in matches:
+        m = re.search(r"_batch(\d\d)_", Path(p).name)
+        if not m:
+            continue
+        b = m.group(1)
+        cur = by_batch.get(b)
+        if cur is None or _newer(p, cur):
+            by_batch[b] = p
+    return sorted(by_batch.values())
+
+
+def _newer(a, b):
+    """GloGEMflow_ beats GloGEM_; otherwise the newer file wins."""
+    fa, fb = Path(a).name.startswith("GloGEMflow_"), Path(b).name.startswith("GloGEMflow_")
+    if fa != fb:
+        return fa
+    return Path(a).stat().st_mtime > Path(b).stat().st_mtime
 
 
 def sum_annual(paths):
@@ -170,7 +192,12 @@ def sum_annual(paths):
                 total = {v: np.zeros_like(ds.variables[v][:], dtype=np.float64)
                          for v in ("area", "mass", "mass_bsl", "frontal_abl")}
             for v in total:
-                total[v] += np.asarray(ds.variables[v][:], dtype=np.float64)
+                arr = np.asarray(ds.variables[v][:], dtype=np.float64)
+                # a NaN anywhere poisons the whole regional sum, and the result
+                # still looks like a valid file (SouthAsiaWest shipped 4 of them)
+                if v in ("area", "mass") and not np.isfinite(arr).all():
+                    raise ValueError(f"{v} has non-finite values in {Path(p).name}")
+                total[v] += arr
     return time, total, attrs
 
 
