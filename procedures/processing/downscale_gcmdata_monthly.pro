@@ -218,12 +218,12 @@ endif else begin
       endfor
 
       ; Precompute constants
-      tran_offset = tran[0]
+      tran_offset = tran[0] - 1   ; hydrological year: series starts a year early, as the reanalysis branch
       max_ryear = max(ryear)
       min_ryear = min(ryear)
       max_gcm_year = max(gcm_year) ; Get the maximum year from GCM data
       n = 0
-      nr_years = years + 1
+      nr_years = years
       
       ; Precompute indices for re-analysis and GCM data
       for i = 0, nr_years do begin
@@ -231,7 +231,7 @@ endif else begin
          ; Stop processing if the current year exceeds the maximum GCM year
          if current_year gt max_gcm_year then break
          ; Use re-analysis data if available
-         if current_year le max_ryear and current_year gt min_ryear then begin
+         if current_year le max_ryear and current_year ge min_ryear then begin
             for m = 1, 12 do begin
                ; Precompute indices for the current year and month
                hh = where(ryear eq current_year and rmon eq m, ci)
