@@ -164,6 +164,7 @@ perm_limit = perm_limit < (tt - 2l)
 ; fraction. This is the binding constraint on the latent-heat loop below.
 ; Energy only: the mass balance's refr still comes from refreezing_parametrised/_full.
 fit_water=(mel[ii[i]]+plg[ii[i]])*firnice_refreeze_frac_b[ii[i]]
+n_fitdz = n_elements(fit_dz[0,*])
 
 if firn_permeability eq 'n' then fit_water = 0  ; check if permeability is disabled, if yes then set infiltrating water to zero
 
@@ -173,7 +174,8 @@ if firn_permeability eq 'n' then fit_water = 0  ; check if permeability is disab
 if firn[ii[i]] eq 1 then begin
 
 for j=1,perm_limit do begin ; percolate to firn-ice transition only
-   c=(-1)*(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*cap_fit[j]*fit_dz[0,j]/Lh_rf ; cold content in layer below pressure melting point
+   dz_cv = 0.5d*(fit_dz[0,j] + fit_dz[0,(j+1) < (n_fitdz-1)])  ; node's slice, as in conduction
+   c=(-1)*(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*cap_fit[j]*dz_cv/Lh_rf ; cold content in layer below pressure melting point
    if fit_water gt c then begin   ; temperate layer if cold reservoir used, remaining water being transferred
       tl_fit[ii[i],j]=(fit_dz[1,j]*0.9/10.)*(-0.00742) & fit_water=fit_water-c
    endif else begin
@@ -189,7 +191,8 @@ endif else begin
 
 kk=where(dens_fit lt 900,ck)
 for j=1,ck do begin ; loop through all SNOW layers from top, and update temperatures
-   c=(-1)*(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*cap_fit[j]*fit_dz[0,j]/Lh_rf ; cold content in layer below pressure melting point
+   dz_cv = 0.5d*(fit_dz[0,j] + fit_dz[0,(j+1) < (n_fitdz-1)])  ; node's slice, as in conduction
+   c=(-1)*(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*cap_fit[j]*dz_cv/Lh_rf ; cold content in layer below pressure melting point
    if fit_water gt c then begin   ; temperate layer if cold reservoir used, remaining water being transferred
       tl_fit[ii[i],j]=(fit_dz[1,j]*0.9/10.)*(-0.00742) & fit_water=fit_water-c
    endif else begin
