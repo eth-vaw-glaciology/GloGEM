@@ -340,8 +340,11 @@ sur_dx_year_start   = sur_dx
 ; below -- a true volume would need width_mid_dx recomputed every
 ; sub-step, which STEP 4 currently only does once per year.
 vol_proxy_year_start = total(thick_dx_year_start)
+; an ice-free flowline cannot regain ice: skip its no-op sub-steps (df_dx as they would leave it)
+flow_icefree = max(thick_dx) le 0d0
+if flow_icefree then df_dx[*] = 0
 
-while (time_flow lt year_end_flow) and (iter_flow lt max_iter_flow) do begin
+while (~flow_icefree) and (time_flow lt year_end_flow) and (iter_flow lt max_iter_flow) do begin
   ; ---- Adaptive time step (CFL criterion) ----
   ; Bootstrap case (df_dx still all-zero, before the first diffusivity call):
   ; use df_lim as the safe proxy for max diffusivity, matching MATLAB's
