@@ -1,6 +1,5 @@
 ; *************************************************************
 ; downscale_gcmdata_monthly
-;
 ; Construct a continuous monthly climate time series by splicing
 ; reanalysis observations with bias-corrected GCM projections.
 ;
@@ -18,28 +17,42 @@ compile_opt idl2
 
 ; find corresponding grid cell of reanalysis-file
 ; Closest latitude
-dummy = min(abs(rlat - gmid[0]), ind_lat)
+;dummy = min(abs(rlat - gmid[0]), ind_lat)
 ; Closest longitude
-dummy = min(abs(rlon - gmid[1]), ind_lon)
-rmid = [rlat[ind_lat], rlon[ind_lon]]
+;dummy = min(abs(rlon - gmid[1]), ind_lon)
+;rmid = [rlat[ind_lat], rlon[ind_lon]]
 
+;print, rtemp
 ; ------------------------------
 ; meteo time series directly from re-analysis data (past)
 if reanalysis_direct eq 'y' then begin
 
-   temp=dblarr((years+1)*12) & prec=temp & cyear=temp & cmon=temp & n=0l
+   temp=dblarr((years+1)*12)
+   prec=temp
+   cyear=temp
+   cmon=temp
+   n=0l
+
    for i=0,years do begin
       for m=1,12 do begin
-         bb=where(rlat eq rmid[0]) & cc=where(rlon eq rmid[1]) & hh=where(ryear eq i+tran[0]-1 and rmon eq m,ci)
-         cyear[n]=i+tran[0]-1 & cmon[n]=m
+         ;bb=where(rlat eq rmid[0]) & cc=where(rlon eq rmid[1])
+	 hh=where(ryear eq i+tran[0]-1 and rmon eq m,ci)
+	 cyear[n]=i+tran[0]-1
+	 cmon[n]=m
+
+	 ;print, cyear[n]
+	 ;print, cmon[n]
+	 ;print, hh[0]
+	 
          if ci gt 0 then begin
-            temp[n]=rtemp[hh[0],cc[0],bb[0]]
-            prec[n]=rprec[hh[0],cc[0],bb[0]]
-         endif
+            temp[n]=tempre[hh[0]]
+            prec[n]=precre[hh[0]]
+         endif	    
          n=n+1
       endfor
-      if i eq 0 then hclim=relev[cc[0],bb[0]]
+;      if i eq 0 then hclim=relev[cc[0]]
    endfor
+   
    if meltmodel ne '1' then begin
       mrad=dblarr(12) & mtt=indgen(12)
       for i=0,11 do begin
@@ -47,6 +60,7 @@ if reanalysis_direct eq 'y' then begin
       endfor
    endif
 
+;print, temp
 
 ; ---------------------------------
 ; ---------------------------------
@@ -145,7 +159,7 @@ endif else begin
                   cmon[n] = m
                   temp[n] = rtemp[hh[0], cc[0], bb[0]]
                   prec[n] = rprec[hh[0], cc[0], bb[0]]
-                  if meltmodel ne '1' then rad[n] = mrad[m - 1]
+		  if meltmodel ne '1' then rad[n] = mrad[m - 1]
                   n = n + 1
                endif
             endfor
@@ -203,18 +217,16 @@ endif else begin
       ; Closest longitude
       dummy = min(abs(gcm_lon - rmid[1]), ind_lon)
       gcm_mid = [gcm_lat[ind_lat], gcm_lon[ind_lon]]
-
       ; calculate monthly bias in the past
       bias=dblarr(3,12)    ; (0) temp, (1) prec, (2) tvar
       ii=where(gcm_lat eq gcm_mid[0])
       jj=where(gcm_lon eq gcm_mid[1])
       hh=where(gcm_year ge rea_eval[0] and gcm_year le rea_eval[1])
-      bb=where(rlat eq rmid[0])
-      cc=where(rlon eq rmid[1])
+ ;     bb=where(rlat eq rmid[0])
+ ;     cc=where(rlon eq rmid[1])
       for m=1,12 do begin
          dd=where(ryear ge rea_eval[0] and ryear le rea_eval[1] and rmon eq m)
          kk=where(gcm_year ge rea_eval[0] and gcm_year le rea_eval[1] and gcm_mon eq m)
-         hclim=relev[cc[0],bb[0]]
       endfor
 
       ; Precompute constants
@@ -226,27 +238,25 @@ endif else begin
       nr_years = years + 1
       
       ; Precompute indices for re-analysis and GCM data
-      for i = 0, nr_years do begin
+      for i = 0,nr_years do begin
          current_year = i + tran_offset
-         ; Stop processing if the current year exceeds the maximum GCM year
+	 ; Stop processing if the current year exceeds the maximum GCM year
          if current_year gt max_gcm_year then break
          ; Use re-analysis data if available
-         if current_year le max_ryear and current_year gt min_ryear then begin
-            for m = 1, 12 do begin
+	 if current_year le max_ryear then begin
+         for m = 1, 12 do begin
                ; Precompute indices for the current year and month
                hh = where(ryear eq current_year and rmon eq m, ci)
                if ci gt 0 then begin
-                  bb = where(rlat eq rmid[0])
-                  cc = where(rlon eq rmid[1])
                   cyear[n] = current_year
                   cmon[n] = m
-                  temp[n] = rtemp[hh[0], cc[0], bb[0]]
-                  prec[n] = rprec[hh[0], cc[0], bb[0]]
+                  temp[n] = tempre[hh[0]]
+                  prec[n] = precre[hh[0]]
                   if meltmodel ne '1' then rad[n] = mrad[m - 1]
                   n = n + 1
                endif
             endfor
-         endif else begin
+	 endif else begin
             ; Use projections for future years
             for m = 1, 12 do begin
                kk = where(gcm_year eq current_year and gcm_mon eq m, ck)
@@ -263,3 +273,4 @@ endif else begin
       endfor
    endelse
 endelse
+;print, temp

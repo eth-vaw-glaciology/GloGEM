@@ -87,7 +87,9 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
       ; If you want the tran[1] to be different for some GCMs/SSPs
       @procedures/initialise/check_tran.pro
-
+      ; Show the final year of the processing GCMs
+      print, tran[1]
+      
       experi_short=strmid(GCM_experiment,0,2)
 
       @procedures/read/read_regionbatch.pro
@@ -283,12 +285,12 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                   if single_glacier ne '' then gg=where(id eq single_glacier and volume_ini gt 0,cg)
 
                   latitudes=lat_gl[gg] & longitudes=lon_gl[gg]
-
+                  
                   ; storage arrays
                   stor_im=dblarr(nout) & stor_dv=stor_im & stor_ar=stor_im & stor_vo=stor_im
 
                   @procedures/processing/read_climate_series.pro
-      
+		  
                   if cg gt 0 then begin
                     if calibrate eq 'n' then a=GCM_model[gcms]+'/'+GCM_rcp[rcps] else a='CALI - '+reanalysis
                     if total(a_gl[gg]) gt 10. and gx mod 2 eq 0 and gy mod 2 eq 0 then $
@@ -297,7 +299,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                   endif                               ; is there a glacier in the cell?
 
                   ; === MAIN LOOP over all glaciers in a particular grid cell
-
+		  
                   for g=0l,cg-1 do begin
 
                     ; === CALIBRATION LOOP - for single-glacier calibration
@@ -374,7 +376,6 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                       ; === MAIN LOOP over years
 
                       @procedures/initialise/initialise_firnicetemp_spinup.pro
-   
                       for ye=0,years-1 do begin
 
                         if eval_mbelevsensitivity eq 'y' then begin
@@ -418,11 +419,10 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                             jj=where(sno lt 0,cj) & if cj gt 0 then sno[jj]=0
 
                             ; Climate data extrapolation
-
                             if time_resolution eq 'monthly' then cdm=cmon else cdm=cday
                             if ccmon eq 0 then jjclim=where(cyear eq ye-1+tran[0] and cdm eq m)
                             tg=temp[jjclim[0]+ccmon]+(elev-hclim)*dtdz[m-1]+t_offset
-
+			    
                             ; === Mass balance model
 
                             ; --- accumulation
@@ -632,7 +632,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
               endfor   ; grids y
 
             endfor   ; grids x
-
+	    
             ; === Optimization - OVERALL MASS BALANCE
 
             if calibrate eq 'y' and calibrate_individual ne 'y' then begin

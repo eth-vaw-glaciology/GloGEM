@@ -23,6 +23,9 @@ compile_opt idl2
 
   ; potentially correcting all glacier areas to offset bias in RGIv7.0 thickness data
   da[3,*]=da[3,*]*area_correction_factor[gg[g]]
+  ; hack for New Zealand only! conserve the original volume by inversely applying the area-correction factor
+  if region eq 'newzealand' then da[4,*]=da[4,*]/area_correction_factor[gg[g]]
+  
   volume_ini[gg[g]]=total(da[3,*]*da[4,*])/1000.   ; also now updating initial ice volume
 
 ; performing a check on reference thickness data and replace with
