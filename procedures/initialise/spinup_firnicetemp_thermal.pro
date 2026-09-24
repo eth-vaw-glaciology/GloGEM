@@ -1,36 +1,25 @@
 ; *************************************************************
 ; spinup_firnicetemp_thermal
 ;
-; Two-phase thermal spinup for the firn/ice temperature model.
-; Called from initialise_firnicetemp_spinup.pro when
+; Thermal spin-up for the firn/ice temperature model. Called from
+; glogem.pro (after the calibration overrides) when
 ; firnice_thermal_spinup eq 'y'.
 ;
-; Phase 1 — Equilibrium cycling
-;   Cycles a fixed mean-annual climate derived from the reference
-;   period (firnice_spinup_ref_period, default 1961-1990) until the
-;   deep firn temperatures converge (max change < firnice_spinup_tol).
-;   Uses the same heat-equation kernel as the main loop but with
-;   simplified forcing (DDF melt, no rain, no snow accumulation, no
-;   advection, no output).  The C&P analytical profile computed in
-;   initialise_firnicetemp_spinup.pro is the starting point.
+; Repeats one year of the reference-period mean climate
+; (firnice_spinup_ref_period, default hydrological years 1961-1990,
+; firnice_reference_forcing.pro) until the deep layers stop changing.
+; The year runs in the main run's month order and ends in the month
+; before the main run starts, which then continues from this state.
+; Forcing is simplified (DDF melt, no rain, no snow, no advection, no
+; output).
 ;
-;   firnice_spinup_solver = 'drift' reaches the same equilibrium in ~20 years
-;   instead of hundreds: it measures the remaining drift and jumps to where
-;   it leads, then checks that plain years no longer move the deep layers.
-;   One reference year is spinup_firnicetemp_refyear.pro.
-;
-;   Result: temperate/near-temperate bands converge to 0°C at depth;
-;   cold high-altitude bands converge to their 1961-1990 mean-annual
-;   ice temperature — physically correct for both end-members.
-;
-; Phase 2 — Transient run-in
-;   Runs the heat equation forward through the actual ERA5/reanalysis
-;   climate from firnice_spinup_ref_period[0] to tran[0]-1.  This
-;   plants the 20th-century warming trend in the near-surface firn
-;   before the main simulation begins.
+; firnice_spinup_solver = 'drift' reaches the same equilibrium in ~20
+; years instead of hundreds: it measures the remaining drift and jumps to
+; where it leads, then checks that plain years no longer move the deep
+; layers. One reference year is spinup_firnicetemp_refyear.pro.
 ;
 ; Variables read from outer scope (set by glogem.pro / initialise):
-;   cyear, cmon, temp          – full loaded climate time series
+;   rtemp/rprec (or tempre/precre), clim_ilat/clim_ilon – full reanalysis series
 ;   hclim, dtdz_icetemp        – lapse-rate for ice temperature
 ;   t_offset                   – temperature bias correction
 ;   elev, gl, firn, nb         – glacier geometry
@@ -68,25 +57,8 @@ endif
 
 ; ── Phase 1: Equilibrium cycling with 1961-1990 mean annual cycle ──
 
-; Determine available reference period in the loaded climate data
-sp_y0 = long(firnice_spinup_ref_period[0])
-sp_y1 = long(firnice_spinup_ref_period[1])
-ii_ref = where(cyear ge sp_y0 and cyear le sp_y1, ci_ref)
-if ci_ref eq 0 then begin
-    ; fall back to earliest 30 years in loaded data
-    sp_y0 = min(cyear)
-    sp_y1 = sp_y0 + 29l
-    ii_ref = where(cyear ge sp_y0 and cyear le sp_y1, ci_ref)
-    print, '  [thermal spinup] reference period not in loaded data; using ' + $
-           strtrim(sp_y0,2) + '-' + strtrim(sp_y1,2)
-endif
-
-; Mean monthly temperature at the climate grid point for the reference period
-tclim_sp = dblarr(12)
-for ms = 1, 12 do begin
-    jm = where(cyear ge sp_y0 and cyear le sp_y1 and cmon eq ms, cm)
-    if cm gt 0 then tclim_sp[ms-1] = mean(temp[jm])
-endfor
+; Mean monthly climate of the reference period, from the full reanalysis series
+@procedures/initialise/firnice_reference_forcing.pro
 
 ; Working arrays for the simplified spinup forcing
 sno_sp = dblarr(nb)   ; zero snow (clean firn surface during spinup)
@@ -242,50 +214,6 @@ if not converged_sp then $
     print, '  [thermal spinup] WARNING: Phase 1 did not converge after ' + $
            strtrim(firnice_spinup_max_cycles,2) + ' cycles'
 endif
-
-; ── Phase 2: Transient run-in from sp_y0 to tran[0]-1 ─────────────
-yr_trans_lo = sp_y0
-yr_trans_hi = tran[0] - 1l
-
-ii_trans = where(cyear ge yr_trans_lo and cyear le yr_trans_hi, ci_trans)
-
-if ci_trans gt 0 then begin
-    print, '  [thermal spinup] Phase 2: transient run-in ' + $
-           strtrim(yr_trans_lo,2) + ' – ' + strtrim(yr_trans_hi,2) + $
-           '  (' + strtrim(ci_trans,2) + ' months)'
-
-    for it = 0l, ci_trans - 1l do begin
-        mt = long(cmon[ii_trans[it]])
-        yt = long(cyear[ii_trans[it]])
-
-        ; actual climate for this month
-        tg_sp  = temp[ii_trans[it]] + (elev - hclim) * dtdz_icetemp[mt-1] + t_offset
-        tgs_sp = tg_sp
-
-        mel_sp[*] = 0d
-        for i_sp = 0l, ci_sp - 1l do begin
-            if tg_sp[ii_sp[i_sp]] gt 0d then begin
-                if firn[ii_sp[i_sp]] eq 1 then $
-                    mel_sp[ii_sp[i_sp]] = DDFsnow * tg_sp[ii_sp[i_sp]] * mon_len[mt-1] / 1000d $
-                else $
-                    mel_sp[ii_sp[i_sp]] = DDFice  * tg_sp[ii_sp[i_sp]] * mon_len[mt-1] / 1000d
-            endif
-        endfor
-
-        sno = sno_sp
-        mel = mel_sp
-        plg = plg_sp
-        tgs = tgs_sp
-        m   = mt
-
-        @procedures/processing/firnice_temperature_model.pro
-    endfor
-
-    print, '  [thermal spinup] Phase 2 complete'
-endif else begin
-    print, '  [thermal spinup] Phase 2: no pre-simulation data in loaded climate for ' + $
-           strtrim(yr_trans_lo,2) + '-' + strtrim(yr_trans_hi,2) + '; skipping'
-endelse
 
 ; ── restore flags ──────────────────────────────────────────────────
 spinup_done:
