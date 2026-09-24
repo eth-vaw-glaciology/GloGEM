@@ -10,7 +10,9 @@
 
 compile_opt idl2
 
-pc = prec[jjclim[0] + ccmon] * c_prec / 1000. ; correct quantity to m w.e.
+; mb_book = 0b (thermal spin-up): pc is supplied by the caller, and nothing below touches the
+; climate cursor or the annual totals
+if mb_book then pc = prec[jjclim[0] + ccmon] * c_prec / 1000. ; correct quantity to m w.e.
 pg = pc + pc * ((elev - hclim) / 10000.) * dpdz ; extrapolate with elevation
 ; constrain high elevation precipitation
 jj = where(gl ne noval, cj)
@@ -27,7 +29,9 @@ if ci gt 0 then psg[ii] = pg[ii] * (-(tg[ii] - T_thres - 1.) / 2.)
 plg = pg - psg
 psg = psg * snow_multiplier
 
-if ar_gl ne 0 then accum[ye] = accum[ye] + total(psg * area) / ar_gl
-if ar_gl ne 0 then rain[ye] = rain[ye] + total(plg * area) / ar_gl
+if mb_book then begin
+  if ar_gl ne 0 then accum[ye] = accum[ye] + total(psg * area) / ar_gl
+  if ar_gl ne 0 then rain[ye] = rain[ye] + total(plg * area) / ar_gl
 
-ccmon = ccmon + 1
+  ccmon = ccmon + 1
+endif

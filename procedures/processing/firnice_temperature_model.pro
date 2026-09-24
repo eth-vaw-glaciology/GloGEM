@@ -178,6 +178,7 @@ for j=1,perm_limit do begin ; percolate to firn-ice transition only
    c=(-1)*(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*cap_fit[j]*dz_cv/Lh_rf ; cold content in layer below pressure melting point
    if fit_water gt c then begin   ; temperate layer if cold reservoir used, remaining water being transferred
       tl_fit[ii[i],j]=(fit_dz[1,j]*0.9/10.)*(-0.00742) & fit_water=fit_water-c
+      if fit_lacc_on then lacc_wet[ii[i],j] = 1b   ; drift spin-up: meltwater sets this layer
    endif else begin
       if c gt 0 and fit_water gt 0 then tl_fit[ii[i],j]=tl_fit[ii[i],j]-(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*(fit_water/c)
       fit_water=fit_water-c
@@ -195,6 +196,7 @@ for j=1,ck do begin ; loop through all SNOW layers from top, and update temperat
    c=(-1)*(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*cap_fit[j]*dz_cv/Lh_rf ; cold content in layer below pressure melting point
    if fit_water gt c then begin   ; temperate layer if cold reservoir used, remaining water being transferred
       tl_fit[ii[i],j]=(fit_dz[1,j]*0.9/10.)*(-0.00742) & fit_water=fit_water-c
+      if fit_lacc_on then lacc_wet[ii[i],j] = 1b   ; drift spin-up: meltwater sets this layer
    endif else begin
       if c gt 0 and fit_water gt 0 then tl_fit[ii[i],j]=tl_fit[ii[i],j]-(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*(fit_water/c)
       fit_water=fit_water-c

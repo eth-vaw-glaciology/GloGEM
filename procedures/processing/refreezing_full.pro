@@ -68,4 +68,4 @@ endelse    ; use cold reservoir
 
 endfor
 
-if ar_gl ne 0 then refre[ye]=refre[ye]+total(refr*area)/ar_gl
+if mb_book then if ar_gl ne 0 then refre[ye]=refre[ye]+total(refr*area)/ar_gl

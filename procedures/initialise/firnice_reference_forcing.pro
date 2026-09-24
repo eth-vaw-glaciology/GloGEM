@@ -39,3 +39,53 @@ endfor
 if sp_y1 ne tran[0]-1l then $
     print, '  [thermal spinup] note: reference period ends Sep ' + strtrim(sp_y1,2) + $
            ', main run starts month ' + strtrim(bal_month,2) + ' of ' + strtrim(tran[0]-1l,2)
+
+; ── One reference year of surface forcing, from the main run's own mass-balance files ──
+; accumulation/meltmodel/refreezing run with mb_book = 0b on the spin-up's own snowpack,
+; in the main run's month order and with its snow bookkeeping (glogem.pro month loop and
+; finalize_annual_massbalance). The snowpack settles in the first year; the third is kept.
+; The mass-balance state (sno, sur, snostor) is restored afterwards.
+; Sets per month (hydrological order) and band: forc_sno (start of month, after the
+; January reset), forc_mel, forc_plg, and b_ref [m w.e./yr] = psg - mel + refr of that year.
+sno_keep = sno & sur_keep = sur & snostor_keep = snostor
+sno = dblarr(nb) & sur = dblarr(nb) & snostor = dblarr(nb)
+forc_sno = dblarr(12, nb) & forc_mel = dblarr(12, nb) & forc_plg = dblarr(12, nb)
+b_ref = dblarr(nb)
+mb_book = 0b
+for yr_rf = 0, 2 do begin
+    rf_ind = dblarr(nb) & rf_cold = rf_ind
+    bal_rf = dblarr(nb)
+    for mo_rf = 0, 11 do begin
+        m = ((bal_month - 1 + mo_rf) mod 12) + 1
+        psg = dblarr(nb) & mel = psg & refr = psg & corrdis = psg & snowmel = mel & icemel = mel
+        if bal_month eq dd_thresholds[2] then if m eq 1 then sno = sno - snostor
+        if bal_month eq dd_thresholds[0] then if m eq dd_thresholds[1] then sno = sno - snostor
+        jj = where(sno lt 0, cj) & if cj gt 0 then sno[jj] = 0
+        tg = tclim_sp[m-1] + (elev - hclim) * dtdz[m-1] + t_offset
+        pc = pclim_sp[m-1] * c_prec / 1000.
+        forc_sno[mo_rf, *] = sno
+        @procedures/processing/accumulation.pro
+        @procedures/processing/meltmodel.pro
+        if refreezing_full eq 'y' then begin
+            @procedures/processing/refreezing_full.pro
+        endif else begin
+            if refreezing_parametrised eq 'y' then begin
+                @procedures/processing/refreezing_parametrised.pro
+            endif
+        endelse
+        forc_mel[mo_rf, *] = mel & forc_plg[mo_rf, *] = plg
+        ; snow reservoir and surface type, as in the glogem.pro month loop
+        sno = sno + psg - mel
+        jj = where(sno gt 0, cj) & if cj gt 0 then sur[jj] = 1
+        jj = where(sno lt 0, cj) & if cj gt 0 then sno[jj] = 0
+        jj = where(sno eq 0 and gl ne noval, cj) & if cj gt 0 then sur[jj] = 0
+        jj = where(sno eq 0 and gl eq noval, cj) & if cj gt 0 then sur[jj] = noval
+        jj = where(sno eq 0 and firn eq 1, cj) & if cj gt 0 then sur[jj] = 2
+        bal_rf = bal_rf + psg - mel + refr
+    endfor
+    snostor = sno
+    jj = where(gl eq noval, cj) & if cj gt 0 then sur[jj] = noval
+    b_ref = bal_rf
+endfor
+mb_book = 1b
+sno = sno_keep & sur = sur_keep & snostor = snostor_keep

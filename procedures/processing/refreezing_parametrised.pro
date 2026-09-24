@@ -43,4 +43,4 @@ if ci gt 0 then begin
 endif
 
 ; Update refreezing total
-if ar_gl ne 0 then refre[ye] = refre[ye] + total(refr * area) / ar_gl
+if mb_book then if ar_gl ne 0 then refre[ye] = refre[ye] + total(refr * area) / ar_gl
