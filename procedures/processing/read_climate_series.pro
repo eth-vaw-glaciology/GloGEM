@@ -56,8 +56,11 @@ if cg gt 0 then begin
            endif else begin
               ccl=''
            endelse
-           ; GCM --- CLIMATE FILE
-           @procedures/read/read_climatepast_monthly.pro
+           ; AMOC runs skip the region-level read in glogem.pro, so they read here;
+           ; GMIP4 already holds the regional arrays and nothing modifies them
+           if AMOC eq 'y' then begin
+              @procedures/read/read_climatepast_monthly.pro
+           endif
            if reanalysis_direct ne 'y' then begin
               @procedures/read/read_gcmdata_monthly.pro
            endif
