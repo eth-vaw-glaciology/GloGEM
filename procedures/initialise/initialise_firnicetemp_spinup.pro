@@ -28,12 +28,12 @@ te_rf=dblarr(nb,rf_layers) & tl_rf=te_rf
 dtdz_icetemp = (dtdz < (-0.0065d))
 
 ; ── Long-term annual mean T_maat per band (reference period: cyear < 2020) ───
-tt=dblarr(nb) & ii=where(cyear lt 2020,ci)
+t_maat_band=dblarr(nb) & ii=where(cyear lt 2020,ci)
 for i=0,nb-1 do begin
    dlap = (elev[i]-hclim)*mean(dtdz) + ((elev[i]-hclim) > 0d)*(mean(dtdz_icetemp)-mean(dtdz))
    if ci gt 0 then a=temp[ii]+dlap+t_offset $
      else a=temp+dlap+t_offset
-   tt[i]=mean(a)
+   t_maat_band[i]=mean(a)
 endfor
 
 ; ── glenglat calibration constants (notebook 02 CART depth-2, rounded) ───────
@@ -108,7 +108,7 @@ firnice_perm_depth = dblarr(nb) + 30.d   ; default fallback (matches old fixed v
 ; Mean annual net accumulation (m w.e.) per firn band: snowfall minus DDF melt
 hl_mask = (firn eq 1)
 hl_acc  = dblarr(nb)
-hl_tk   = (tt + 273.15d) > 220.d   ; band mean annual T in Kelvin (floor at 220 K)
+hl_tk   = (t_maat_band + 273.15d) > 220.d   ; band mean annual T in Kelvin (floor at 220 K)
 for i = 0, nb-1 do begin
     if firn[i] ne 1 then continue   ; ice bands: percolation handled via snow layers only
     acc_ann = 0.d
@@ -138,7 +138,7 @@ firn_th = firn
 ; this file in glogem.pro) can then override all bands for a specific glacier.
 ;
 ; The climate-regression transfer model that used to predict these per firn
-; band (from tt[i]/t_amp_band[i]/elev[i], gated on firnice_temp_calib='y') has
+; band (from t_maat_band[i]/t_amp_band[i]/elev[i], gated on firnice_temp_calib='y') has
 ; been RETIRED to simplify this file -- its coefficients were placeholders,
 ; never fit past a first pass (see notebooks/archive/05_firnicetemp_calibration.ipynb). Any run
 ; with firnice_temp_calib='y' (e.g. config_centraleurope_glenglat_knn.pro /
@@ -176,7 +176,7 @@ firnice_refreeze_frac_b = dblarr(nb) + firnice_refreeze_frac
 ; with firnice_thermal_spinup='y' the real profile is built from the surface BC,
 ; conductivity, advection and latent heat instead of being prescribed here.
 te_fit = dblarr(nb, total(fit_layers)+1)
-for i = 0, nb-1 do te_fit[i, 0:total(fit_layers)-1] = min([0.d, tt[i]])
+for i = 0, nb-1 do te_fit[i, 0:total(fit_layers)-1] = min([0.d, t_maat_band[i]])
 tl_fit = te_fit
 
 ; The thermal spinup used to run here. It now runs in glogem.pro AFTER the
