@@ -86,7 +86,7 @@ for i=0,ci-1 do begin
 ; generate local, and actualized arrays for layer heat capacity, condictivity and density
 dens_fit=dblarr(total(fit_layers))+900
 ; firn column first, so the snow blend below mixes against the right material underneath
-if firn[ii[i]] eq 1 then dens_fit[0:n_elements(fit_dens)-1]=fit_dens ; to be verified...
+if firn_th[ii[i]] eq 1 then dens_fit[0:n_elements(fit_dens)-1]=fit_dens ; to be verified...
 
 ; Snow cover: walk the real layer thicknesses fit_dz[0,*] down to the snow depth, blending the
 ; last partial layer. sno is water equivalent and fit_dens[1]/1000 is a specific gravity, so
@@ -171,7 +171,7 @@ if firn_permeability eq 'n' then fit_water = 0  ; check if permeability is disab
 ; latent heat release over firn/snow surface
 ; water percolation is capped at perm_limit (firn-ice transition density);
 ; cold ice below that depth is not reachable by annual meltwater
-if firn[ii[i]] eq 1 then begin
+if firn_th[ii[i]] eq 1 then begin
 
 for j=1,perm_limit do begin ; percolate to firn-ice transition only
    dz_cv = 0.5d*(fit_dz[0,j] + fit_dz[0,(j+1) < (n_fitdz-1)])  ; node's slice, as in conduction

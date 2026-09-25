@@ -46,7 +46,8 @@ if sp_y1 ne tran[0]-1l then $
 ; finalize_annual_massbalance). The snowpack settles in the first year; the third is kept.
 ; The mass-balance state (sno, sur, snostor) is restored afterwards.
 ; Sets per month (hydrological order) and band: forc_sno (start of month, after the
-; January reset), forc_mel, forc_plg, and b_ref [m w.e./yr] = psg - mel + refr of that year.
+; January reset), forc_mel, forc_plg, and b_ref [m w.e./yr] = psg - mel + refr of that year;
+; then the thermal firn mask firn_th (b_ref > 0) and its firnice_perm_depth.
 sno_keep = sno & sur_keep = sur & snostor_keep = snostor
 sno = dblarr(nb) & sur = dblarr(nb) & snostor = dblarr(nb)
 forc_sno = dblarr(12, nb) & forc_mel = dblarr(12, nb) & forc_plg = dblarr(12, nb)
@@ -89,3 +90,21 @@ for yr_rf = 0, 2 do begin
 endfor
 mb_book = 1b
 sno = sno_keep & sur = sur_keep & snostor = snostor_keep
+
+; Thermal firn mask from the reference balance, and its firn-ice transition depth from the same
+; balance and the band's reference-period mean temperature
+firn_th = dblarr(nb)
+jj = where(b_ref gt 0 and gl ne noval, cj) & if cj gt 0 then firn_th[jj] = 1
+hl_mask = (firn_th eq 1)
+hl_acc  = b_ref
+hl_tk   = dblarr(nb)
+for i = 0, nb-1 do hl_tk[i] = mean(tclim_sp + (elev[i] - hclim) * dtdz_icetemp + t_offset)
+hl_tk   = (hl_tk + 273.15d) > 220.d
+@procedures/initialise/firnice_perm_depth.pro
+jg = where(gl ne noval, cg)
+if cg gt 0 then begin
+    jf = where(firn_th[jg] eq 1, cf) & jm = where(firn[jg] eq 1, cm)
+    print, '  [thermal spinup] firn mask from the reference balance: ' + strtrim(cf,2) + ' of ' + $
+           strtrim(cg,2) + ' bands, lowest ' + (cf gt 0 ? strtrim(round(min(elev[jg[jf]])),2) : '-') + $
+           ' m (mass-balance mask: ' + strtrim(cm,2) + ', lowest ' + (cm gt 0 ? strtrim(round(min(elev[jg[jm]])),2) : '-') + ' m)'
+endif

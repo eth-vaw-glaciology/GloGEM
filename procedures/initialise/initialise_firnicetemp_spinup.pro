@@ -104,10 +104,12 @@ HL_ln2 = alog(367.d / 87.d)       ; ln((917-550)/(917-830)) ≈ 1.439
 
 firnice_perm_depth = dblarr(nb) + 30.d   ; default fallback (matches old fixed value)
 
+; Mean annual net accumulation (m w.e.) per firn band: snowfall minus DDF melt
+hl_mask = (firn eq 1)
+hl_acc  = dblarr(nb)
+hl_tk   = (tt + 273.15d) > 220.d   ; band mean annual T in Kelvin (floor at 220 K)
 for i = 0, nb-1 do begin
     if firn[i] ne 1 then continue   ; ice bands: percolation handled via snow layers only
-
-    ; Mean annual net accumulation (m w.e.): snowfall minus DDF melt
     acc_ann = 0.d
     for ms = 1, 12 do begin
         tg_b  = tclim_ref[ms-1] + (elev[i] - hclim) * dtdz_icetemp[ms-1] + t_offset
@@ -120,25 +122,14 @@ for i = 0, nb-1 do begin
         acc_ann += pg_b * sfrac * snow_multiplier
         if tg_b gt 0d then acc_ann -= DDFsnow * tg_b * mon_len[ms-1] / 1000.d
     endfor
-    if acc_ann lt 0.1d then acc_ann = 0.1d   ; floor: at least nominal firn for firn bands
-
-    ; Band mean annual T in Kelvin (floor at 220 K to avoid numerical issues)
-    T_K_b = (tt[i] + 273.15d) > 220.d
-
-    ; Stage 1 (ρ_s=400 → 550 kg/m³): scale height and actual depth
-    ; H_s1 = b / (k₁ × exp(−E₁/(R T)))  [ice-equivalent metres]
-    H_s1  = acc_ann / (HL_k1 * exp(-HL_E1 / (HL_R * T_K_b)))
-    z_s1  = H_s1 * HL_ln1 * (917.d/475.d)
-
-    ; Stage 2 (550 → 830 kg/m³): rate scales as b^0.5
-    ; H_s2 = b^0.5 / (k₂ × exp(−E₂/(R T)))  [ice-equivalent metres]
-    H_s2  = sqrt(acc_ann) / (HL_k2 * exp(-HL_E2 / (HL_R * T_K_b)))
-    z_s2  = H_s2 * HL_ln2 * (917.d/690.d)
-
-    z_fit = (z_s1 + z_s2) > 10.d < 120.d   ; physical bounds: 10–120 m
-
-    firnice_perm_depth[i] = z_fit
+    hl_acc[i] = acc_ann
 endfor
+@procedures/initialise/firnice_perm_depth.pro
+
+; firn mask of the thermal model: the mass-balance mask unless the thermal spin-up replaces it
+; (firnice_reference_forcing.pro); it follows the mass-balance mask again once that is updated
+; from modelled balances (finalize_annual_massbalance.pro)
+firn_th = firn
 
 ; ── Per-band calibration parameter arrays ────────────────────────────────────
 ; Initialized to scalar defaults from settings.pro (or config.pro overrides).

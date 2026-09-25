@@ -32,6 +32,7 @@ if ye gt 4 then begin
    balm=dblarr(nb)
    for i=0,nb-1 do balm[i]=mean(baly[ye-4:ye,i])
    firn=dblarr(nb) & ii=where(balm gt 0 and gl ne noval,ci) & if ci gt 0 then firn[ii]=1
+   firn_th = firn   ; the thermal model follows the modelled mask from here on
 endif
 
 ; statistics (area and volume stored BEFORE surface updating)
