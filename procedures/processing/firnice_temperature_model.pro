@@ -445,6 +445,7 @@ endelse
             ; at which a layer is replaced wholesale by its upglacier neighbour.
             layer_courant = courant * vprofile[j]
             layer_courant = (layer_courant > 0.0D) < 0.8D
+            if fit_lacc_on then lacc_h[ii[i],j] += layer_courant   ; drift spin-up: exchange with the band above
 
             ; Store the temperature before horizontal advection at 10m depth
             temp_before = tl_fit[ii[i],idx_out_14m]  ; 14 m, before horizontal advection
@@ -542,10 +543,16 @@ endelse
 
             IF v_courant GE 0 THEN BEGIN
             ; Downward advection (from above)
-            IF j GT 1 THEN temp_v[j] = temp_v[j] - v_courant * (temp_v[j] - temp_v[j-1])
+            IF j GT 1 THEN BEGIN
+               temp_v[j] = temp_v[j] - v_courant * (temp_v[j] - temp_v[j-1])
+               if fit_lacc_on then lacc_vd[ii[i],j] += v_courant   ; drift spin-up: burial
+            ENDIF
             ENDIF ELSE BEGIN
             ; Upward advection (from below)
-            IF j LT tt-2 THEN temp_v[j] = temp_v[j] - v_courant * (temp_v[j+1] - temp_v[j])
+            IF j LT tt-2 THEN BEGIN
+               temp_v[j] = temp_v[j] - v_courant * (temp_v[j+1] - temp_v[j])
+               if fit_lacc_on then lacc_vu[ii[i],j] -= v_courant   ; drift spin-up: emergence
+            ENDIF
             ENDELSE
          ENDFOR
 

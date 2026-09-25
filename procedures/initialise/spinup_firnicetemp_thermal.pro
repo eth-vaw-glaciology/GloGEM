@@ -11,7 +11,8 @@
 ; The year runs in the main run's month order and ends in the month
 ; before the main run starts, which then continues from this state.
 ; Snowpack, melt and rain come from the main run's mass-balance files run
-; on the reference climate; no advection, no output.
+; on the reference climate; advection with the standalone velocity and the
+; reference balance; no output.
 ;
 ; firnice_spinup_solver = 'drift' reaches the same equilibrium in ~20
 ; years instead of hundreds: it measures the remaining drift and jumps to
@@ -42,9 +43,12 @@ compile_opt idl2
 _adv_saved = enable_advection
 _fw_saved  = firnice_write
 _aw_saved  = advection_write
-enable_advection = 'n'
+_ufm_saved = use_flow_model & _ufg_saved = use_flow_model_gl
 firnice_write    = ['n', 'n', 'n']
 advection_write  = 'n'
+; GloGEMflow's velocity fields do not exist yet for this glacier (any held are the previous
+; glacier's): the spin-up uses the standalone velocity and the reference balance
+use_flow_model = 'n' & use_flow_model_gl = 'n'
 
 ; ── active bands ───────────────────────────────────────────────────
 ii_sp = where(gl ne noval, ci_sp)
@@ -52,6 +56,7 @@ if ci_sp eq 0 then begin
     enable_advection = _adv_saved
     firnice_write    = _fw_saved
     advection_write  = _aw_saved
+    use_flow_model = _ufm_saved & use_flow_model_gl = _ufg_saved
     goto, spinup_done
 endif
 
@@ -85,6 +90,8 @@ if firnice_spinup_solver eq 'drift' then begin
     n_slot_sp = n_lyr_total + 1l
     lacc_a = dblarr(nb, n_slot_sp) & lacc_c = dblarr(nb, n_slot_sp)
     lacc_tt = lonarr(nb) & lacc_kbed = dblarr(nb) & lacc_wet = bytarr(nb, n_slot_sp)
+    lacc_h = dblarr(nb, n_slot_sp) & lacc_vd = lacc_h & lacc_vu = lacc_h   ; advection sums
+    dst_sp = dblarr(nb, n_slot_sp)   ; this jump's change per band, all nodes, for the band below
     ; last 3 measured years per band: state at the start (hx) and at the end (hy)
     hx_sp = dblarr(nb, 3, n_slot_sp) & hy_sp = hx_sp & hn_sp = lonarr(nb)
     pmp_sp = (reform(fit_dz[1,*])*0.9d/10.d)*(-0.00742d)
@@ -100,13 +107,15 @@ if firnice_spinup_solver eq 'drift' then begin
         ; measured year, with coefficient sums
         tl_prev_sp = tl_fit
         lacc_a[*] = 0d & lacc_c[*] = 0d & lacc_wet[*] = 0b
+        lacc_h[*] = 0d & lacc_vd[*] = 0d & lacc_vu[*] = 0d & dst_sp[*] = 0d
         fit_lacc_on = 1b
         @procedures/initialise/spinup_firnicetemp_refyear.pro
         fit_lacc_on = 0b
         n_years_sp = n_years_sp + n_run_sp + 1l
 
         max_jump_sp = 0d
-        for i_sp = 0l, ci_sp - 1l do begin
+        ; top band first: each band's jump uses the change of the band above it
+        for i_sp = ci_sp - 1l, 0l, -1l do begin
             b_sp = ii_sp[i_sp]
             tt_sp = lacc_tt[b_sp]
             ni_sp = tt_sp - 2l
@@ -158,9 +167,21 @@ if firnice_spinup_solver eq 'drift' then begin
             c_sp  = reform(lacc_c[b_sp, 1:tt_sp-2])
             dz_bed_sp = (fit_dz[1,tt_sp-1] - fit_dz[1,tt_sp-2]) > 1.0d
             bed_hot_sp = (Tn_sp[ni_sp-1] + geothermal_flux*dz_bed_sp/lacc_kbed[b_sp]) ge pmp_sp[tt_sp-1]
-            ; L rows: sub a, diag -(a+c) (+c at the bottom for a fixed-flux bed), super c
-            lsub_sp = -a_sp & lsup_sp = -c_sp & ldia_sp = a_sp + c_sp
+            ; L rows: sub a, diag -(a+c) (+c at the bottom for a fixed-flux bed), super c; plus
+            ; burial (from the node above), emergence (from below) and exchange h with the band
+            ; above, whose change this jump (dst_sp) enters at the same relative depth
+            vd_sp = reform(lacc_vd[b_sp, 1:tt_sp-2]) & vu_sp = reform(lacc_vu[b_sp, 1:tt_sp-2])
+            h_sp  = reform(lacc_h[b_sp, 1:tt_sp-2])
+            lsub_sp = -a_sp - vd_sp & lsup_sp = -c_sp - vu_sp & ldia_sp = a_sp + c_sp + vd_sp + vu_sp + h_sp
             if not bed_hot_sp then ldia_sp[ni_sp-1] = ldia_sp[ni_sp-1] - c_sp[ni_sp-1]
+            up_sp = dblarr(ni_sp)
+            if i_sp lt ci_sp - 1l then begin
+                b_up_sp = ii_sp[i_sp+1] & tt_up_sp = lacc_tt[b_up_sp]
+                if tt_up_sp ge 2 then up_sp = interpol(reform(dst_sp[b_up_sp, 0:tt_up_sp-1]), $
+                    reform(fit_dz[1,0:tt_up_sp-1]), $
+                    (reform(fit_dz[1,1:tt_sp-2]) / (fit_dz[1,tt_sp-1] > 1d)) * (fit_dz[1,tt_up_sp-1] > 1d))
+            endif
+            De_sp = Dn_sp + h_sp*up_sp
             ; sign flipped (-L delta = D) so the diagonal is positive for the Thomas sweep
             ; held: at the melting point and still warming (delta to pmp), or brought to the
             ; melting point by meltwater during the measured year (delta 0: refreezing, not
@@ -168,7 +189,7 @@ if firnice_spinup_solver eq 'drift' then begin
             wet_sp  = reform(lacc_wet[b_sp, 1:tt_sp-2]) ne 0
             held_sp = ((Tn_sp ge pm_sp - 1d-6) and (Dn_sp ge -1d-6)) or wet_sp
             for it_as_sp = 0, 49 do begin
-                sa_sp = lsub_sp & sb_sp = ldia_sp & sc_sp = lsup_sp & sd_sp = Dn_sp
+                sa_sp = lsub_sp & sb_sp = ldia_sp & sc_sp = lsup_sp & sd_sp = De_sp
                 jh_sp = where(held_sp, nh_sp)
                 if nh_sp gt 0 then begin
                     sa_sp[jh_sp] = 0d & sc_sp[jh_sp] = 0d & sb_sp[jh_sp] = 1d & sd_sp[jh_sp] = pm_sp[jh_sp] - Tn_sp[jh_sp]
@@ -191,15 +212,20 @@ if firnice_spinup_solver eq 'drift' then begin
                 new_sp = held_sp
                 jf_sp = where(held_sp eq 0, nf_sp)
                 if nf_sp gt 0 then new_sp[jf_sp] = (Tn_sp[jf_sp] + dl_sp[jf_sp]) gt (pm_sp[jf_sp] + 1d-9)
-                jr_sp = where(held_sp and (wet_sp eq 0) and (Dn_sp - lxd_sp) lt 0d, nr_sp)
+                jr_sp = where(held_sp and (wet_sp eq 0) and (De_sp - lxd_sp) lt 0d, nr_sp)
                 if nr_sp gt 0 then new_sp[jr_sp] = 0b
                 if array_equal(new_sp, held_sp) then break
                 held_sp = new_sp
             endfor
             ; interior only: the model resets the bed node and the slots below it every step
             tl_new_sp = (Tn_sp + dl_sp) < pm_sp
-            max_jump_sp = max_jump_sp > max(abs(tl_new_sp - reform(tl_fit[b_sp, 1:tt_sp-2])))
+            chg_sp = tl_new_sp - reform(tl_fit[b_sp, 1:tt_sp-2])
+            max_jump_sp = max_jump_sp > max(abs(chg_sp))
             tl_fit[b_sp, 1:tt_sp-2] = tl_new_sp
+            ; change on all nodes for the band below: surface 0, bed follows its neighbour unless
+            ; held at the melting point
+            dst_sp[b_sp, 1:tt_sp-2] = chg_sp
+            if not bed_hot_sp then dst_sp[b_sp, tt_sp-1] = chg_sp[ni_sp-1]
         endfor
         n_jumps_sp = n_jumps_sp + 1l
         print, '  [thermal spinup] jump ' + strtrim(n_jumps_sp,2) + ' after ' + $
@@ -256,6 +282,7 @@ endif
 
 ; ── restore flags and the mass-balance snow state ─────────────────
 sno = sno_keep & mel = dblarr(nb) & plg = dblarr(nb)
+use_flow_model = _ufm_saved & use_flow_model_gl = _ufg_saved
 spinup_done:
 enable_advection = _adv_saved
 firnice_write    = _fw_saved
