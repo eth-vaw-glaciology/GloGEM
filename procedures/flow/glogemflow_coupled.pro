@@ -53,7 +53,9 @@ if n_elements(flow_initialised) eq 0 then begin
   ; Cache them to disk after the first SSP so subsequent SSPs can skip
   ; the ~5-minute calibration loop entirely.
   spinup_cache_dir  = dirres + 'spinup_cache/'
-  spinup_cache_file = spinup_cache_dir + strtrim(id[gg[g]], 2) + '_spinup.sav'
+  ; keyed by the spin-up year as well: a hindcast spins up one year earlier than a projection
+  spinup_key        = strtrim(id[gg[g]], 2) + '_y' + strtrim(tran[0] + ye - 1, 2)
+  spinup_cache_file = spinup_cache_dir + spinup_key + '_spinup.sav'
   ; Failure verdicts are cached as well (2026-09-08). A failed spin-up used to be
   ; recomputed for the same glacier in every GCM loop of a session and in every
   ; GCM/SSP run of a batch: 30-42 % of a batch's glaciers, each up to several
@@ -64,7 +66,7 @@ if n_elements(flow_initialised) eq 0 then begin
   ; goes to the Δh parameterisation just as it did after the failed attempt.
   ; Delete spinup_cache/ (both *_spinup.sav and *_spinup_failed.txt) whenever
   ; spin-up settings, the flow code or the MB calibration change.
-  spinup_fail_file  = spinup_cache_dir + strtrim(id[gg[g]], 2) + '_spinup_failed.txt'
+  spinup_fail_file  = spinup_cache_dir + spinup_key + '_spinup_failed.txt'
 
   if file_test(spinup_cache_file) then begin
     restore, spinup_cache_file   ; restores: spinup_aflow, spinup_ela_bias, thick_dx,
