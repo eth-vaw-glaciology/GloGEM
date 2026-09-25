@@ -8,9 +8,8 @@
 
 for mo_sp = 0, 11 do begin
     ms = ((bal_month - 1 + mo_sp) mod 12) + 1
-    ; surface temperature per band (lapse-rate extrapolation from climate grid)
-    tgs = tclim_sp[ms-1] + (elev - hclim) * dtdz_icetemp[ms-1] + t_offset
-    ; snowpack, melt and rain of the reference year (firnice_reference_forcing.pro)
+    ; air temperature, snowpack, melt and rain of the reference year (firnice_reference_forcing.pro)
+    tgs = reform(forc_tgs[mo_sp, *])
     sno = reform(forc_sno[mo_sp, *])
     mel = reform(forc_mel[mo_sp, *])
     plg = reform(forc_plg[mo_sp, *])

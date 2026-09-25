@@ -21,17 +21,18 @@ if find_startyear eq 'n' then glacier_retreat='n'
 
 te_rf=dblarr(nb,rf_layers) & tl_rf=te_rf
 
-; ── Lapse rate for ice temperature only: enforce free-air floor (-0.0065 K/m).
-; ERA5 dtdz is calibrated over terrain up to ~2400 m and is too shallow when
-; extrapolated to high-altitude bands. The corrected rate is used exclusively
-; here — the global dtdz used by the mass balance model is NOT modified.
+; ── Lapse rate for ice temperature only: the reanalysis rate up to the climate cell's
+; elevation hclim, at least 6.5 K/km above it (ERA5's rate describes the terrain around the
+; cell and is too shallow when extrapolated upwards). Thermal surface only; the mass balance
+; keeps dtdz. Above hclim the thermal surface is shifted by (elev-hclim)*(dtdz_icetemp-dtdz).
 dtdz_icetemp = (dtdz < (-0.0065d))
 
 ; ── Long-term annual mean T_maat per band (reference period: cyear < 2020) ───
 tt=dblarr(nb) & ii=where(cyear lt 2020,ci)
 for i=0,nb-1 do begin
-   if ci gt 0 then a=temp[ii]+(elev[i]-hclim)*mean(dtdz_icetemp)+t_offset $
-     else a=temp+(elev[i]-hclim)*mean(dtdz_icetemp)+t_offset
+   dlap = (elev[i]-hclim)*mean(dtdz) + ((elev[i]-hclim) > 0d)*(mean(dtdz_icetemp)-mean(dtdz))
+   if ci gt 0 then a=temp[ii]+dlap+t_offset $
+     else a=temp+dlap+t_offset
    tt[i]=mean(a)
 endfor
 
@@ -112,7 +113,7 @@ for i = 0, nb-1 do begin
     if firn[i] ne 1 then continue   ; ice bands: percolation handled via snow layers only
     acc_ann = 0.d
     for ms = 1, 12 do begin
-        tg_b  = tclim_ref[ms-1] + (elev[i] - hclim) * dtdz_icetemp[ms-1] + t_offset
+        tg_b  = tclim_ref[ms-1] + (elev[i] - hclim) * dtdz[ms-1] + t_offset
         ; Elevation-scaled precipitation
         pg_b  = pclim_ref[ms-1] + pclim_ref[ms-1] * ((elev[i] - hclim) / 10000.d) * dpdz
         ; Snow fraction using same T_thres ramp as accumulation.pro

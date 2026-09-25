@@ -46,11 +46,11 @@ if sp_y1 ne tran[0]-1l then $
 ; finalize_annual_massbalance). The snowpack settles in the first year; the third is kept.
 ; The mass-balance state (sno, sur, snostor) is restored afterwards.
 ; Sets per month (hydrological order) and band: forc_sno (start of month, after the
-; January reset), forc_mel, forc_plg, and b_ref [m w.e./yr] = psg - mel + refr of that year;
+; January reset), forc_mel, forc_plg, forc_tgs (air temperature, reanalysis lapse rate), and b_ref [m w.e./yr] = psg - mel + refr of that year;
 ; then the thermal firn mask firn_th (b_ref > 0) and its firnice_perm_depth.
 sno_keep = sno & sur_keep = sur & snostor_keep = snostor
 sno = dblarr(nb) & sur = dblarr(nb) & snostor = dblarr(nb)
-forc_sno = dblarr(12, nb) & forc_mel = dblarr(12, nb) & forc_plg = dblarr(12, nb)
+forc_sno = dblarr(12, nb) & forc_mel = dblarr(12, nb) & forc_plg = dblarr(12, nb) & forc_tgs = dblarr(12, nb)
 b_ref = dblarr(nb)
 mb_book = 0b
 for yr_rf = 0, 2 do begin
@@ -74,7 +74,7 @@ for yr_rf = 0, 2 do begin
                 @procedures/processing/refreezing_parametrised.pro
             endif
         endelse
-        forc_mel[mo_rf, *] = mel & forc_plg[mo_rf, *] = plg
+        forc_mel[mo_rf, *] = mel & forc_plg[mo_rf, *] = plg & forc_tgs[mo_rf, *] = tgs
         ; snow reservoir and surface type, as in the glogem.pro month loop
         sno = sno + psg - mel
         jj = where(sno gt 0, cj) & if cj gt 0 then sur[jj] = 1
@@ -98,7 +98,7 @@ jj = where(b_ref gt 0 and gl ne noval, cj) & if cj gt 0 then firn_th[jj] = 1
 hl_mask = (firn_th eq 1)
 hl_acc  = b_ref
 hl_tk   = dblarr(nb)
-for i = 0, nb-1 do hl_tk[i] = mean(tclim_sp + (elev[i] - hclim) * dtdz_icetemp + t_offset)
+for i = 0, nb-1 do hl_tk[i] = mean(tclim_sp + (elev[i] - hclim) * dtdz + ((elev[i] - hclim) > 0d) * (dtdz_icetemp - dtdz) + t_offset)
 hl_tk   = (hl_tk + 273.15d) > 220.d
 @procedures/initialise/firnice_perm_depth.pro
 jg = where(gl ne noval, cg)

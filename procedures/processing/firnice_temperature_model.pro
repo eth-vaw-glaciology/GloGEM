@@ -204,7 +204,7 @@ endelse
       ; insulation offset that used to be added here came from a decision tree; it
       ; is now carried by the seasonally varying snow conductivity instead
       ; (firnice_insul_scale_b, see the cond_fit block above).
-      tl_fit[ii[i],0] = min([0d, tgs[ii[i]]])
+      tl_fit[ii[i],0] = min([0d, tgs[ii[i]] + ((elev[ii[i]]-hclim) > 0d)*(dtdz_icetemp[m-1]-dtdz[m-1])])
 
       ; ── melting-surface clamp (experimental, firnice_melt_surface eq 'y') ─────
       ; A surface that is melting is AT the melting point, by definition; it cannot be

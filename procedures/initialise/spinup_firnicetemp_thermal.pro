@@ -20,7 +20,7 @@
 ;
 ; Variables read from outer scope (set by glogem.pro / initialise):
 ;   rtemp/rprec (or tempre/precre), clim_ilat/clim_ilon – full reanalysis series
-;   hclim, dtdz_icetemp        – lapse-rate for ice temperature
+;   hclim, dtdz, dtdz_icetemp  – lapse rates (thermal surface: firnice_temperature_model)
 ;   t_offset                   – temperature bias correction
 ;   elev, gl, firn, nb         – glacier geometry
 ;   tl_fit, te_fit             – firn/ice temperature arrays (modified)
