@@ -81,6 +81,33 @@ ii=where(gl ne noval,ci)
 ; scaled velocity.
 for i=0,ci-1 do u[i] = u[i] * firnice_adv_scale_b[ii[i]]
 
+; column depth of every band first: horizontal advection maps from the band above
+tt_col=lonarr(ci)
+for i=0,ci-1 do begin
+   ; only `ind` (the by-reference index) is used; the returned minimum is discarded
+   dummy_min=min(abs(thick[ii[i]]-fit_dz[1,*]),ind)
+   if firnice_batch eq 'y' then dummy_min=min(abs(firnice_maxdepth[0]-fit_dz[1,*]),ind)  ; run to actual depth of profile in batch/validation-mode
+
+   ; glenglat: where the borehole reaches DEEPER than the modelled band thickness, run the column
+   ; to the observed depth instead. thick[] is a width-averaged inventory value and underestimates
+   ; small glaciers badly (Tete Rousse: 19 m modelled against a 70 m borehole), which truncated the
+   ; column above most of the data. Only ever deepens -- a shallow borehole on thick ice is ignored.
+   if n_elements(firnice_profile_maxdepth) gt 0 and n_elements(firnice_profile_ind) gt 0 then begin
+      if n_elements(firnice_profile_maxdepth) eq n_elements(firnice_profile) then begin
+         for jp = 0l, n_elements(firnice_profile)-1l do begin
+            if ii[i] eq firnice_profile_ind[0,jp] and $
+               firnice_profile_maxdepth[jp] gt thick[ii[i]] then begin
+               ; first node AT OR BELOW the borehole depth, not the nearest one: nearest can snap
+               ; UP (a 65 m hole -> the 59 m node) and still truncate the deepest readings.
+               jj_deep = where(reform(fit_dz[1,*]) ge firnice_profile_maxdepth[jp], n_deep)
+               ind = (n_deep gt 0) ? jj_deep[0] : (total(fit_layers) - 1l)
+            endif
+         endfor
+      endif
+   endif
+   tt_col[i]=min([ind+1,total(fit_layers)])  ; either run to bedrock, or to max of layers
+endfor
+
 for i=0,ci-1 do begin
 
 ; generate local, and actualized arrays for layer heat capacity, condictivity and density
@@ -120,28 +147,7 @@ cond_fit=(poly(dens_fit,k_ca)*firnice_insul_scale_b[ii[i]]) < k_ice_l
 jj_ice=where(dens_fit ge rho_ice_k,n_ice)
 if n_ice gt 0 then cond_fit[jj_ice]=k_ice_l[jj_ice]
 
-; only `ind` (the by-reference index) is used; the returned minimum is discarded
-dummy_min=min(abs(thick[ii[i]]-fit_dz[1,*]),ind)
-if firnice_batch eq 'y' then dummy_min=min(abs(firnice_maxdepth[0]-fit_dz[1,*]),ind)  ; run to actual depth of profile in batch/validation-mode
-
-; glenglat: where the borehole reaches DEEPER than the modelled band thickness, run the column
-; to the observed depth instead. thick[] is a width-averaged inventory value and underestimates
-; small glaciers badly (Tete Rousse: 19 m modelled against a 70 m borehole), which truncated the
-; column above most of the data. Only ever deepens -- a shallow borehole on thick ice is ignored.
-if n_elements(firnice_profile_maxdepth) gt 0 and n_elements(firnice_profile_ind) gt 0 then begin
-   if n_elements(firnice_profile_maxdepth) eq n_elements(firnice_profile) then begin
-      for jp = 0l, n_elements(firnice_profile)-1l do begin
-         if ii[i] eq firnice_profile_ind[0,jp] and $
-            firnice_profile_maxdepth[jp] gt thick[ii[i]] then begin
-            ; first node AT OR BELOW the borehole depth, not the nearest one: nearest can snap
-            ; UP (a 65 m hole -> the 59 m node) and still truncate the deepest readings.
-            jj_deep = where(reform(fit_dz[1,*]) ge firnice_profile_maxdepth[jp], n_deep)
-            ind = (n_deep gt 0) ? jj_deep[0] : (total(fit_layers) - 1l)
-         endif
-      endfor
-   endif
-endif
-tt=min([ind+1,total(fit_layers)])  ; either run to bedrock, or to max of layers
+tt=tt_col[i]  ; column depth, set for all bands before the band loop
 
 ; Permeability limit: stop meltwater at the firn-ice transition. Depth is
 ; band-specific (Herron-Langway, computed in initialise_firnicetemp_spinup.pro)
@@ -421,6 +427,14 @@ endelse
          ; Ensure stability by limiting Courant number
          courant = courant < 0.8
 
+         ; Upglacier ice at the same RELATIVE depth: ice flows roughly parallel to the bed, and a
+         ; thinner band above has no ice at the same absolute depth
+         tt_up    = tt_col[upglacier_idx]
+         IF tt_up GE 2 THEN $
+            t_up_map = interpol(reform(tl_fit[ii[upglacier_idx],0:tt_up-1]), reform(fit_dz[1,0:tt_up-1]), $
+                                (reform(fit_dz[1,0:tt-1]) / col_depth) * (fit_dz[1,tt_up-1] > 1.0D)) $
+         ELSE t_up_map = reform(tl_fit[ii[upglacier_idx],0:tt-1])
+
          ; Apply advection to each layer
          FOR j=1,tt-2 DO BEGIN
             ; Scale advection by the vertical velocity profile. The 0.8 clamp is re-applied
@@ -437,7 +451,7 @@ endelse
 
             ; First-order upwind scheme for advection
             tl_fit[ii[i],j] = (1.0D - layer_courant) * tl_fit[ii[i],j] + $
-                     layer_courant * tl_fit[ii[upglacier_idx],j]
+                     layer_courant * t_up_map[j]
 
             ; Store horizontal advection effect (average temperature change at key depths)
             IF advection_write EQ 'y' THEN BEGIN
