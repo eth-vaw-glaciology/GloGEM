@@ -54,7 +54,7 @@ endif else begin
 
 ; New system for the monthly model, but so far only available for GCMs of GMIP4
    
-   mid=[mean(lon),mean(lat)]
+   mid=gcm_start
    gxs=strcompress(string(mid[0],fo='(f7.2)'),/remove_all)
    gys=strcompress(string(mid[1],fo='(f7.2)'),/remove_all)
    fn=dir_clim+'/future/'+time_resolution+'/'+GCM_data+'/'+dir_region+'/'+GCM_model[gcms]+ '/'+GCM_rcp[rcps]+'/clim_' + gxs + '_' + gys + '.dat'
@@ -69,7 +69,7 @@ endif else begin
                ; Only coordinates on this radius
                if abs(q) eq radius or abs(r) eq radius then begin
                   ; get new coordinates
-                  mid = [mean(lon) + double(q)/100., mean(lat) + double(r)/100.]
+                  mid = [gcm_start[0] + double(q)/100., gcm_start[1] + double(r)/100.]
                   gxs=strcompress(string(mid[0],fo='(f7.2)'),/remove_all)
                   gys=strcompress(string(mid[1],fo='(f7.2)'),/remove_all)
                   fn=dir_clim+'/future/'+time_resolution+'/'+GCM_data+'/'+dir_region+'/'+GCM_model[gcms]+ '/'+GCM_rcp[rcps]+'/clim_' + gxs + '_' + gys + '.dat'
