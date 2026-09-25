@@ -188,27 +188,9 @@ endfor
 
 endif else begin
 
-; latent heat release over ice surface, incl. seasonal snow (mainly impermeable)
-
-kk=where(dens_fit lt 900,ck)
-for j=1,ck do begin ; loop through all SNOW layers from top, and update temperatures
-   dz_cv = 0.5d*(fit_dz[0,j] + fit_dz[0,(j+1) < (n_fitdz-1)])  ; node's slice, as in conduction
-   c=(-1)*(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*cap_fit[j]*dz_cv/Lh_rf ; cold content in layer below pressure melting point
-   if fit_water gt c then begin   ; temperate layer if cold reservoir used, remaining water being transferred
-      tl_fit[ii[i],j]=(fit_dz[1,j]*0.9/10.)*(-0.00742) & fit_water=fit_water-c
-      if fit_lacc_on then lacc_wet[ii[i],j] = 1b   ; drift spin-up: meltwater sets this layer
-   endif else begin
-      if c gt 0 and fit_water gt 0 then tl_fit[ii[i],j]=tl_fit[ii[i],j]-(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*(fit_water/c)
-      fit_water=fit_water-c
-   endelse
-endfor
-
-; ice is assumed impermeable: no liquid water enters glacier ice
-fit_water=fit_water*0
-; the ice-layer loop that used to follow was dead code: with fit_water forced to 0 above, both
-; of its branches are unreachable (cold content is >= 0, so `fit_water gt c` and the inner
-; `fit_water gt 0` guard are both false). Removed 2026-09-10; restore it if ice is ever made
-; permeable, i.e. if the line above becomes conditional on firn_permeability.
+; ice bands: meltwater runs off the impermeable ice. The seasonal snow shares the top nodes
+; of the ice column (it enters only through conductivity), so no latent heat goes into them.
+fit_water=0d
 
 endelse
 
