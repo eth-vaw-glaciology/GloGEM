@@ -449,40 +449,21 @@ endelse
          ENDFOR
          ENDIF
 
-         ; Vertical advection
-         ; Calculate vertical velocity component
+         ; Vertical advection: burial (downward, +) or emergence (-), m/yr. Surface value in m w.e.:
+         ; GloGEMflow's kinematic velocity when coupled, otherwise the band's reference balance
+         ; b_ref (firnice_reference_forcing.pro). With depth: the ice passing a level is the surface
+         ; value times 1 - F(zeta), F = share of the Nye flux above zeta (0 at the surface, 1 at
+         ; the bed); in m/yr of the layer's material, i.e. faster in firn (1000/rho).
          vertical_vel = DBLARR(tt)
-
-         IF use_flow_model EQ 'y' AND N_ELEMENTS(w_flowmodel) EQ nb THEN BEGIN
-            ; Kinematic vertical velocity from GloGEMflow (mass-continuity
-            ; surface boundary condition; see glogemflow_coupled.pro STEP 7),
-            ; m/year, downward positive. Tied to the same smooth, annually-
-            ; resolved SIA state as u_flowmodel -- replaces the heuristics
-            ; below when available.
-            surface_vertical_vel = w_flowmodel[ii_perm[i]]
-         ENDIF ELSE BEGIN
-            ; Standalone fallback: used for year 0 (no SIA step has run yet
-            ; so w_flowmodel isn't populated) or when use_flow_model='n'.
-            IF sno[ii[i]] GT mel[ii[i]] THEN BEGIN
-               ; Accumulation area: downward movement
-               ; Surface velocity = net accumulation rate
-               surface_vertical_vel = MAX([(sno[ii[i]] - mel[ii[i]]), 0.0]) ; m/year, downward positive
-            ENDIF ELSE BEGIN
-               ; Ablation area: upward movement (emergence velocity)
-               ; Simplified emergence velocity estimate based on surface slope and ice velocity
-               min_slope_rad = 0.01D * !DTOR  ; Minimum slope to prevent division by zero
-               local_slope_rad = MAX([slope[ii_perm[i]] * !DTOR, min_slope_rad])
-               current_vel = u[i] ; Get velocity for current elevation band
-               emergence_vel = current_vel * TAN(local_slope_rad) ; m/year, upward positive
-               ; Convert to our coordinate system (downward positive)
-               surface_vertical_vel = -emergence_vel
-            ENDELSE
-         ENDELSE
-
-         ; Linear decrease of vertical velocity with depth (zero at bed)
+         IF use_flow_model EQ 'y' AND N_ELEMENTS(w_flowmodel) EQ nb THEN $
+            surface_we_v = w_flowmodel[ii_perm[i]] * 0.9D $
+         ELSE surface_we_v = b_ref[ii[i]]
+         col_depth_v = fit_dz[1,tt-1] > 1.0D
+         nye_mean_v  = 1.0D - 1.0D/(DOUBLE(n) + 2.0D)
          FOR j=0,tt-1 DO BEGIN
-            relative_depth = DOUBLE(j) / DOUBLE(tt-1)
-            vertical_vel[j] = surface_vertical_vel * (1.0D - relative_depth)
+            zeta_v = (fit_dz[1,j] / col_depth_v) < 1.0D
+            flux_above_v = (zeta_v - zeta_v^(DOUBLE(n)+2.0D)/(DOUBLE(n)+2.0D)) / nye_mean_v
+            vertical_vel[j] = surface_we_v * (1000.D / dens_fit[j]) * ((1.0D - flux_above_v) > 0.0D)
          ENDFOR
 
          ; ── velocity-field diagnostic ────────────────────────────────────────

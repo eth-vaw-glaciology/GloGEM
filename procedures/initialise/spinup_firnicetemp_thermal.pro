@@ -57,9 +57,6 @@ endif
 
 ; ── Phase 1: Equilibrium cycling with 1961-1990 mean annual cycle ──
 
-; Mean monthly climate of the reference period, from the full reanalysis series
-@procedures/initialise/firnice_reference_forcing.pro
-
 n_lyr_total = long(total(fit_layers))
 
 ; Convergence tracking: deep layers only, selected by DEPTH so it survives a grid change.

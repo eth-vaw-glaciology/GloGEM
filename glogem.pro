@@ -459,6 +459,11 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                         ; Spinup runs AFTER the overrides above: it calls the full temperature
                         ; model, so it must see this glacier's calibrated parameters. Run inside
                         ; initialise_firnicetemp_spinup (as before) it only ever saw the defaults.
+                        ; reference-period forcing, balance b_ref and thermal firn mask
+                        ; (spin-up forcing, and burial/emergence in the main run)
+                        if time_resolution eq 'monthly' then begin
+                          @procedures/initialise/firnice_reference_forcing.pro
+                        endif else b_ref = dblarr(nb)
                         if firnice_thermal_spinup eq 'y' then begin
                           @procedures/initialise/spinup_firnicetemp_thermal.pro
                         endif
