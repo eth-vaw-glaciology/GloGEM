@@ -20,12 +20,13 @@ Two checks per region:
        peak volume  > VOL_ABS_KM3  AND  peak volume > VOL_REL_X * volume(2020)
        OR  peak mean thickness (vol/area) > THICK_MAX_M
   2. Regional, from the combined canonical *_annual.nc files (if present):
-       mass at 2099 > (1 + REGROW_TOL) * mass at 2050  under ssp370/ssp585
+       mass at 2099 > (1 + REGROW_TOL) * mass at 2050  under ssp370/ssp585,
+       and mass_bsl > mass in any year (every SSP)
      (regional volume rising late-century under high emissions is a runaway
      until proven otherwise).
 
 Usage:
-    python3 scripts/check_gmip4_output.py REGION [REGION ...] [--all] [--quiet]
+    python3 scripts/check_gmip4_output.py REGION [REGION ...] [--all] [--quiet] [--v2]
 
     REGION   lower-case as used in combine_gmip4_output.py, e.g. svalbard,
              arcticcanadan, southasiaeast
@@ -62,13 +63,14 @@ REGION_DIR = {
     "arcticcanadan": "ArcticCanadaN", "arcticcanadas": "ArcticCanadaS",
     "southasiawest": "SouthAsiaWest", "southasiaeast": "SouthAsiaEast",
     "alaska": "Alaska", "westerncanada": "WesternCanada", "southernandes": "SouthernAndes",
+    "centralasia": "CentralAsia",
 }
 # on-disk filename prefix (GloGEM's internal region_n codename), where it
 # differs from the region key
 FILE_PREFIX = {
     "centraleurope": "centraleurope", "arcticcanadan": "arcticcanadaN",
     "arcticcanadas": "arcticcanadaS", "southasiawest": "centralasiaW",
-    "southasiaeast": "centralasiaS",
+    "southasiaeast": "centralasiaS", "centralasia": "centralasiaN",
 }
 BASE_DIR_OVERRIDE = {"centraleurope": "alps_flow"}
 BATCH_PREFIX_OVERRIDE = {"centraleurope": "alps"}
@@ -77,7 +79,9 @@ RGI_NUM = {
     "caucasus": "12", "centraleurope": "11", "newzealand": "18",
     "arcticcanadan": "03", "arcticcanadas": "04", "southasiawest": "14",
     "southasiaeast": "15", "alaska": "01", "westerncanada": "02", "southernandes": "17",
+    "centralasia": "13",
 }
+RUN = "gmip4"   # campaign directory suffix; --v2 selects gmip4v2
 I2020 = 80  # column index for year 2020 (series start 1940)
 
 
@@ -104,13 +108,14 @@ def check_region_glaciers(region, quiet):
     pref = FILE_PREFIX.get(region, region)
     base = BASE_DIR_OVERRIDE.get(region, f"{region}_flow")
     bp = BATCH_PREFIX_OVERRIDE.get(region, pref)
-    d = f"{GLOGEM_BASE}/{base}_rgi7_gmip4/monthly/{rdir}/files/files_original"
+    d = f"{GLOGEM_BASE}/{base}_rgi7_{RUN}/monthly/{rdir}/files/files_original"
     flagged = []
     excess = 0.0
     reg_vol = {}
     vol_files = sorted(glob.glob(f"{d}/*/*/{pref}_Volume_r1_{bp}_batch??.dat"))
     if not vol_files:
-        print(f"[{region}] no batch Volume files under {d}")
+        # an empty or mistyped directory must not read as a clean region
+        flagged.append(("-", "-", "-", "-", f"no batch Volume files under {d}"))
         return flagged, 0.0, 0.0
     for vf in vol_files:
         m = re.search(r"/([^/]+)/(ssp[0-9a-z\-]+)/[^/]+_batch(\d\d)\.dat$", vf)
@@ -159,20 +164,24 @@ def check_region_canonical(region, quiet):
         if not m:
             continue
         gcm, ssp = m.groups()
-        if ssp not in ("ssp370", "ssp585"):
-            continue
         try:
             f = nc.Dataset(p)
             t = f.variables["time"]
             yrs = np.array([x.year for x in nc.num2date(t[:], t.units, t.calendar)])
             mass = f.variables["mass"][:]
+            mbsl = f.variables["mass_bsl"][:]
             f.close()
         except Exception as e:
             flagged.append((gcm, ssp, "-", "-", f"unreadable canonical file: {e}"))
             continue
+        over = np.where(np.asarray(mbsl) > 1.0001 * np.asarray(mass))[0]
+        if len(over):
+            flagged.append((gcm, ssp, "-", "regional",
+                            f"mass_bsl > mass in {len(over)} years (first {yrs[over[0]]})"))
         i50 = np.where(yrs == 2050)[0]
         i99 = np.where(yrs == 2099)[0]
-        if len(i50) and len(i99) and mass[i99[0]] > (1 + REGROW_TOL) * mass[i50[0]]:
+        if ssp in ("ssp370", "ssp585") and len(i50) and len(i99) and \
+                mass[i99[0]] > (1 + REGROW_TOL) * mass[i50[0]]:
             flagged.append((gcm, ssp, "-", "regional",
                             f"mass 2099 ({mass[i99[0]]/900/1e9:.0f} km3) > 2050 "
                             f"({mass[i50[0]]/900/1e9:.0f} km3) under {ssp}"))
@@ -180,7 +189,10 @@ def check_region_canonical(region, quiet):
 
 
 def main(argv):
+    global RUN
     quiet = "--quiet" in argv
+    if "--v2" in argv:
+        RUN = "gmip4v2"
     regions = [a for a in argv if not a.startswith("--")]
     if "--all" in argv or not regions:
         regions = list(REGION_DIR)
@@ -191,7 +203,7 @@ def main(argv):
         fg, excess, regional = check_region_glaciers(region, quiet)
         fc = check_region_canonical(region, quiet)
         share = excess / regional if regional > 0 else 0.0
-        tolerated = bool(fg) and not fc and share <= EXCESS_TOL
+        tolerated = bool(fg) and not fc and regional > 0 and share <= EXCESS_TOL
         n = 0 if tolerated else len(fg) + len(fc)
         total += n
         if tolerated:
