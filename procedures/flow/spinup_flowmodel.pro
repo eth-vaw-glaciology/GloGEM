@@ -92,7 +92,7 @@ if poly_order lt 2 then $
 ; All polynomial evaluations use (z - z_center) consistently.
 z_center    = mean(elev_ref)
 elev_norm   = elev_ref - z_center
-bal_ref_ice = bal_ref / 0.917d0
+bal_ref_ice = bal_ref / 0.9d0   ; m w.e. -> m ice with GloGEM's ice density, as in the coupled run
 smb_coeffs  = poly_fit(elev_norm, bal_ref_ice, poly_order, /double)
 smb_c = smb_coeffs[0]   ; constant
 smb_b = 0d0              ; linear  (zero if degree < 1)
@@ -135,7 +135,7 @@ for yy = 0, ye - 1 do begin
   for i = 0, nb - 1 do begin
     if baly[yy, i] gt -90 then begin
       elev_h = [elev_h, double(elev[i])]
-      bal_h  = [bal_h,  baly[yy, i] / 0.917d0]
+      bal_h  = [bal_h,  baly[yy, i] / 0.9d0]
     endif
   endfor
   if n_elements(elev_h) ge 3 then begin

@@ -149,7 +149,7 @@ endif
 
 ; ---- Convert to m ice / yr for the flow model ----
 ; The SIA continuity equation uses ice-equivalent thickness change
-bal_dx = bal_dx_we / 0.917d0
+bal_dx = bal_dx_we / 0.9d0   ; GloGEM's ice density, as in the coupled run
 
 ; ---- Zero balance where no ice and balance is positive ----
 ; (prevent spontaneous ice growth in ice-free cells)
