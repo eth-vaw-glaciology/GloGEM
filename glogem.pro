@@ -135,6 +135,8 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
             n_flow_short    = 0L
             n_flow_fallback = 0L
             n_flow_gated    = 0L
+            flow_ge_fa_gt   = 0d0   ; grid-end outflow booked as frontal ablation, Gt
+            flow_ge_melt_gt = 0d0   ; grid-end outflow booked as melt, Gt
           endif
 
           ; Define start of mass balance year and clean stale t_offset
@@ -437,6 +439,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                       gls=dblarr(nout,nb) & cnp=0
                       areas=dblarr(years) & volumes=areas
                       flux_calv=areas
+                      flow_gridend=areas & flow_ge_bed=-9999d0   ; flowline grid-end outflow (m w.e.), bed there (m)
 
                       sur=dblarr(nb) & sno=sur & snostor=sur
                       firn=sur & ff=where(elev gt hmed[gg[g]],ci) & if ci gt 0 then firn[ff]=1
@@ -726,6 +729,11 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                     endelse
                   endif
 
+                  ; flowline grid-end outflow of this glacier
+                  if write_file eq 'y' and calibrate ne 'y' and use_flow_model eq 'y' then begin
+                    @procedures/write/write_flow_gridend_outflow.pro
+                  endif
+
                   ; === NETCDF OUTPUT: write this glacier's data slice into the
                   ; open NetCDF files and accumulate it into the regional sum arrays.
                   ; Called once per glacier after its year loop completes. Uses the
@@ -818,6 +826,12 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
             print, '  ' + strtrim(n_flow_short,2)    + ' (' + strtrim(pct_short,2)  + '%)  excluded: length < 1 km'
             print, '  ' + strtrim(n_flow_fallback,2) + ' (' + strtrim(pct_fallbk,2) + '%)  excluded: spinup failure (fell back to Dh parameterisation)'
             print, '  ' + strtrim(n_flow_gated,2)    + ' (' + strtrim(pct_gated,2)   + '%)  excluded: spin-up could not reproduce the observed glacier (quality gate)'
+            flow_ge_gt = flow_ge_fa_gt + flow_ge_melt_gt
+            print, '--------- FLOWLINE GRID-END OUTFLOW (flow_gridend_outflow=''' + flow_gridend_outflow + '''):'
+            print, '  ' + strtrim(string(flow_ge_gt, fo='(f12.4)'), 2) + ' Gt over the run (' + $
+              strtrim(string(flow_ge_gt / years, fo='(f10.4)'), 2) + ' Gt/a averaged over ' + strtrim(years, 2) + ' model years): ' + $
+              strtrim(string(flow_ge_fa_gt, fo='(f12.4)'), 2) + ' Gt booked as frontal ablation, ' + $
+              strtrim(string(flow_ge_melt_gt, fo='(f12.4)'), 2) + ' Gt as melt'
           endif
         endif
 

@@ -8,7 +8,12 @@
 ;   mb[ye]         balance the flowline received in ice_thickness.pro:
 ;                  melt only where there was ice, including ice that
 ;                  flowed onto an ice-free cell during the year
-;   flux_calv[ye]  + ice that left the flowline at its downstream end
+;   flux_calv[ye]  + ice that left the flowline at its downstream end (unless booked as melt)
+;   flow_gridend[ye]  that outflow again, as a diagnostic. With
+;                  flow_gridend_outflow = 'melt_if_land' it is booked as
+;                  ice melt instead of frontal ablation (in mb, imelt and
+;                  the monthly melt) where the bed of the last active cell
+;                  (index 2) is at or above 0 m
 ;   accum, refre   band profiles mapped onto the flowline cells that held
 ;                  ice at the start of the year, like the balance (STEP 2)
 ;   smelt, imelt   scaled together so the components add up to mb[ye]
@@ -30,10 +35,20 @@ if rb_a gt 0d0 then begin
   endif
   rb_melt = rb_acc + rb_refr - rb_mb
 
-  mb[ye] = rb_mb
+  ; ice leaving the grid end: frontal ablation, or melt where it ends on land
+  flow_gridend[ye] = rb_fa
+  flow_ge_bed = bed_dx[2]
+  rb_ge_melt = 0d0
+  if flow_gridend_outflow eq 'melt_if_land' and bed_dx[2] ge 0d0 then begin
+    rb_ge_melt = rb_fa
+    rb_fa = 0d0
+    flow_ge_melt_gt = flow_ge_melt_gt + flow_fa_vol * 0.9d0 / 1d9
+  endif else flow_ge_fa_gt = flow_ge_fa_gt + flow_fa_vol * 0.9d0 / 1d9
+
+  mb[ye] = rb_mb - rb_ge_melt
   flux_calv[ye] = flux_calv[ye] + rb_fa
 
-  ; annual components (snow and ice melt keep their ratio)
+  ; annual components (snow and ice melt keep their ratio; grid-end melt is ice melt)
   rb_m0 = smelt[ye] + imelt[ye]
   if rb_m0 ne 0 and finite(rb_m0) then begin
     smelt[ye] = smelt[ye] * rb_melt / rb_m0
@@ -42,6 +57,8 @@ if rb_a gt 0d0 then begin
     smelt[ye] = 0d0
     imelt[ye] = rb_melt
   endelse
+  imelt[ye] = imelt[ye] + rb_ge_melt
+  rb_melt = rb_melt + rb_ge_melt
   accum[ye] = rb_acc
   refre[ye] = rb_refr
 

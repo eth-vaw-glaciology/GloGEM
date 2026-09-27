@@ -224,6 +224,14 @@ growth_max_rel   = 20.0d0   ; x the inventory volume
 spinup_gate_vol_tol = 0.5d0   ; fraction of observed volume
 spinup_gate_len_min = 0.5d0   ; fraction of observed length
 
+; Ice that flows out of the last active flowline cell (the downstream end of the grid):
+;   'frontal'      book it as frontal ablation
+;   'melt_if_land' book it as frontal ablation only where the bed of that cell is below
+;                  0 m, otherwise as ice melt
+; Either way it is written to *_flow_gridend_outflow.dat and summed in the run log.
+; The default is the behaviour so far; the choice awaits a decision (2026-09-27).
+flow_gridend_outflow = 'frontal'
+
 ; --- glacier retreat module (Δh parameterisation option)
 glacier_retreat = 'y'
 expon = 2. ; valley shape parameter: band area loss vs. thickness loss
@@ -490,6 +498,8 @@ if calibrate eq 'n' then begin
 endif
 
 if use_flow_model eq 'y' then advance = 'y' ; flow model requires advance bands
+if flow_gridend_outflow ne 'frontal' and flow_gridend_outflow ne 'melt_if_land' then $
+  message, 'flow_gridend_outflow must be ''frontal'' or ''melt_if_land'', not ''' + strtrim(flow_gridend_outflow, 2) + ''''
 if glacier_retreat eq 'n' and hindcast_dynamic ne 'y' and use_flow_model eq 'n' then advance = 'n'
 
 if read_parameters eq 'y' then calibrate = 'n'

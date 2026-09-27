@@ -48,3 +48,9 @@ printf,7,'Year  vol_<0masl(km3)'
 
 openw,33,dirres+'/'+time_resolution+'/'+dir_region+subpath+long_GCM+sub_region+cc+'_calving_flux.dat'
 printf,33,'ID  area(km2)  frontal ablation (Gt/a), first model year'
+
+; flowline grid-end outflow per glacier and year (written by write_flow_gridend_outflow)
+if use_flow_model eq 'y' then begin
+    openw,36,dirres+'/'+time_resolution+'/'+dir_region+subpath+long_GCM+sub_region+cc+'_flow_gridend_outflow.dat'
+    printf,36,'ID  bed_end(m)  booked_as  '+string(y,fo='('+strcompress(string(years),/remove_all)+'i10)')
+endif
