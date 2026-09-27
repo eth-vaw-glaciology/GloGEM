@@ -351,6 +351,8 @@ for len_iter = 0, max_len_iter - 1 do begin
       if spinup_dtfactor gt dtfactor_min then begin
         spinup_dtfactor = (spinup_dtfactor * 0.5d0) > dtfactor_min
         print, '    Phase A blow-up --- halving dtfactor to ' + strtrim(spinup_dtfactor, 2)
+        ; retry the same A_flow with the smaller step: not a stall
+        prev_aflow_guess = -1d0
       endif else begin
         print, '    Phase A blow-up (dtfactor at min) --- halving A_flow'
         aflow_guess = (aflow_guess * 0.5d0) > 1d-20
