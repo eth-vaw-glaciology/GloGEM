@@ -198,15 +198,24 @@ if ci gt 4 then begin
         elev[ii[i]] = bed_elev[ii[i]]
       endif else begin
         tt = vcum - thick[ii[i]] * area[ii[i]] * 1000000.
+        gr_area_cut = area[ii[i]]
         thick[ii[i]] = thick[ii[i]] * (vcum - q_calv) / (vcum - tt)
-        elev[ii[i]] = bed_elev[ii[i]] + thick[ii[i]]
         area[ii[i]] = area_ini[ii[i]] * (thick[ii[i]] / thick_ini[ii[i]]) ^ (1. / expon)
+        ; keep the old area if the scaling gives none
+        if ~finite(area[ii[i]]) or area[ii[i]] le 0 then area[ii[i]] = gr_area_cut
+        ; thickness from the ice left in this band, so exactly q_calv is removed
+        if vcum gt q_calv and area[ii[i]] gt 0 then begin
+          thick[ii[i]] = (vcum - q_calv) / 1000000. / area[ii[i]]
+        endif else begin
+          thick[ii[i]] = 0 & area[ii[i]] = 0
+        endelse
+        elev[ii[i]] = bed_elev[ii[i]] + thick[ii[i]]
         goto, end_calv
       endelse
     endfor
     end_calv:
-    ; report the ice actually removed (the last band's area follows the area-thickness scaling)
-    gr_qcalv = gr_vcut0 - total(thick * area)
+    ; report the ice actually removed (q_calv, up to rounding; never negative)
+    gr_qcalv = (gr_vcut0 - total(thick * area)) > 0
     flux_calv[ye] = flux_calv[ye] + gr_qcalv * dens / ar_gl
   endif
 
