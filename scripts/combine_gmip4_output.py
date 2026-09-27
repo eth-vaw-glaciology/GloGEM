@@ -269,6 +269,24 @@ def hydro_month_time(n_months, first_label_year, start_month, units, calendar):
     return np.round(nc.date2num(dates, units, calendar)).astype(np.int64)
 
 
+def to_calendar_years(time_m, data, first_year, last_year, units, calendar):
+    """place monthly values (true dates in time_m) on Jan first_year .. Dec last_year;
+    months not simulated (end of the last hydrological year) become NaN"""
+    dates = nc.num2date(time_m, units, calendar)
+    pos = {(d.year, d.month): i for i, d in enumerate(dates)}
+    cal = [(y, m) for y in range(first_year, last_year + 1) for m in range(1, 13)]
+    out_t = np.round(nc.date2num([dt.datetime(y, m, 1) for y, m in cal], units, calendar)).astype(np.int64)
+    out = {}
+    for k, v in data.items():
+        a = np.full(len(cal), np.nan)
+        for j, ym in enumerate(cal):
+            i = pos.get(ym)
+            if i is not None:
+                a[j] = v[i]
+        out[k] = a
+    return out_t, out
+
+
 def sum_annual(paths):
     """Sum area/mass/mass_bsl/frontal_abl across batch files. Returns
     (time_array, dict of summed vars, global_attrs_from_first_file)."""
@@ -348,6 +366,7 @@ def combine_batches(region, ann, mon, sle, expected):
     time_m, mdata, mattrs = sum_monthly(mon_paths, per_batch_area, len(time_a))
     start = HYDRO_START_MONTH.get(region, 10)
     time_m = hydro_month_time(len(time_m), years[0], start, units, cal)
+    time_m, mdata = to_calendar_years(time_m, mdata, years[0], years[-1], units, cal)
     for attrs in (aattrs, mattrs):
         attrs.pop("catchment", None)
         attrs["region"] = REGION_DIR[region]
@@ -355,22 +374,44 @@ def combine_batches(region, ann, mon, sle, expected):
         attrs["hydrological_year_start_month"] = start
     aattrs["mass_bsl_source"] = ("per-batch totals; batches written as running totals (runs "
                                  "without the 86e4f4c fix) recovered from the per-glacier file")
-    aattrs["time_note"] = (f"annual values are hydrological years (month {start} to month "
-                           f"{(start - 2) % 12 + 1}) labelled by the calendar year they end in")
-    mattrs["time_note"] = "monthly values stamped with their calendar month"
+    aattrs["time_note"] = (f"area, mass and mass_bsl are the state at the start of the hydrological year "
+                           f"labelled Y (1 {dt.date(2000, start, 1):%b} of Y-1), frontal_abl is the sum over it; "
+                           f"stamped 1 Jan Y as in all GloGEM GMIP4 files")
+    mattrs["time_note"] = ("each value stamped at the start of its calendar month (bounds give the interval); "
+                           "months outside the simulated hydrological years are NaN")
     return dict(time_a=time_a, adata=adata, aattrs=aattrs, time_m=time_m, mdata=mdata,
                 mattrs=mattrs, units=units, calendar=cal, n=len(order), bsl_src=src), None
+
+
+CELL_METHODS = {"area": "time: point", "mass": "time: point", "mass_bsl": "time: point",
+                "frontal_abl": "time: sum", "acc": "time: sum", "melt": "time: sum",
+                "refreeze": "time: sum", "runoff_glac": "time: sum", "precip": "time: sum",
+                "temp": "time: mean"}
+
+
+def _time_with_bounds(ds, time, units, calendar, monthly):
+    """time coordinate plus time_bounds: [1st of the stamp's month or year, 1st of the next]"""
+    ds.createDimension("time", len(time))
+    ds.createDimension("nv", 2)
+    tv = ds.createVariable("time", "i4", ("time",))
+    tv.units = units
+    tv.calendar = calendar
+    tv.long_name = "time"
+    tv.bounds = "time_bounds"
+    tv[:] = time
+    starts = nc.num2date(time, units, calendar)
+    ends = [dt.datetime(d.year + (d.month == 12), d.month % 12 + 1, 1) if monthly
+            else dt.datetime(d.year + 1, 1, 1) for d in starts]
+    bv = ds.createVariable("time_bounds", "i4", ("time", "nv"))
+    bv[:, 0] = np.asarray(time)
+    bv[:, 1] = np.round(nc.date2num(ends, units, calendar)).astype(np.int64)
 
 
 def write_annual(outpath, time, data, attrs, units="days since 1850-01-01", calendar="standard"):
     with nc.Dataset(outpath, "w", format="NETCDF4") as ds:
         for k, v in attrs.items():
             ds.setncattr(k, v)
-        ds.createDimension("time", len(time))
-        tv = ds.createVariable("time", "i4", ("time",))
-        tv.units = units
-        tv.calendar = calendar
-        tv[:] = time
+        _time_with_bounds(ds, time, units, calendar, monthly=False)
         meta = {
             "area": ("Glacier area", "m2"),
             "mass": ("Glacier mass", "kg"),
@@ -381,6 +422,7 @@ def write_annual(outpath, time, data, attrs, units="days since 1850-01-01", cale
             v = ds.createVariable(k, "f4", ("time",), fill_value=np.nan)
             v.long_name = long_name
             v.units = units
+            v.cell_methods = CELL_METHODS[k]
             v[:] = data[k]
 
 
@@ -388,11 +430,7 @@ def write_monthly(outpath, time, data, attrs, units="days since 1850-01-01", cal
     with nc.Dataset(outpath, "w", format="NETCDF4") as ds:
         for k, v in attrs.items():
             ds.setncattr(k, v)
-        ds.createDimension("time", len(time))
-        tv = ds.createVariable("time", "i4", ("time",))
-        tv.units = units
-        tv.calendar = calendar
-        tv[:] = time
+        _time_with_bounds(ds, time, units, calendar, monthly=True)
         meta = {
             "acc": ("Total accumulation", "kg"),
             "melt": ("Total glacier melt (snow, ice, firn)", "kg"),
@@ -405,6 +443,7 @@ def write_monthly(outpath, time, data, attrs, units="days since 1850-01-01", cal
             v = ds.createVariable(k, "f4", ("time",), fill_value=np.nan)
             v.long_name = long_name
             v.units = units
+            v.cell_methods = CELL_METHODS[k]
             v[:] = data[k]
 
 
