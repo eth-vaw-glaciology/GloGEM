@@ -26,7 +26,10 @@ if new eq 'n' then begin
    endfor
 ; Determine from reanalysis grid cel
 endif else begin
-   dtdz=dtdz[1:12]
+   ; per-point file: lapse rate per calendar month (the column repeats a monthly climatology)
+   dtdz_pt=dtdz
+   dtdz=dblarr(12)
+   for m=1,12 do dtdz[m-1]=mean(dtdz_pt[where(rmon eq m)])
 endelse
 
 ; determine sub-monthly T-variability from reanalysis data
