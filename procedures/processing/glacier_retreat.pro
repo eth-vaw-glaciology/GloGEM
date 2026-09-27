@@ -16,6 +16,7 @@ noval = -9999
 ; entry geometry, kept for the mass-conservation guard at the end of this file
 gr_thick0 = thick & gr_area0 = area & gr_elev0 = elev & gr_gl0 = gl
 gr_area_ini0 = area_ini & gr_thick_ini0 = thick_ini
+gr_qcalv = 0d0   ; ice removed by the sea-level cut-off below, mio m3
 
 ; -----------------------------
 ; update surface geometry
@@ -183,10 +184,10 @@ if ci gt 4 then begin
   q_calv = 0
   if ci gt 0 then begin
     q_calv = q_calv + total(thick[ii] * area[ii]) * 1000000.
-    flux_calv[ye] = flux_calv[ye] + q_calv / 1000000. * dens / ar_gl
   endif
 
   if q_calv ne 0 then begin
+    gr_vcut0 = total(thick * area)
     ii = where(thick ne 0, ci)
     vcum = 0
     for i = 0, ci - 1 do begin
@@ -204,6 +205,9 @@ if ci gt 4 then begin
       endelse
     endfor
     end_calv:
+    ; report the ice actually removed (the last band's area follows the area-thickness scaling)
+    gr_qcalv = gr_vcut0 - total(thick * area)
+    flux_calv[ye] = flux_calv[ye] + gr_qcalv * dens / ar_gl
   endif
 
   ii = where(area eq 0, ci)
@@ -257,7 +261,7 @@ endif
 ; redistribution above has gone unstable. Revert and downwaste uniformly
 ; instead, keeping the ice so the glacier can still grow later.
 gr_vreal = total(area * thick) - volumes[ye] * 1000.   ; realised change, mio m3
-gr_vexp = dvol / 1000000.                              ; mass-balance change, mio m3
+gr_vexp = dvol / 1000000. - gr_qcalv                   ; mass-balance change less sea-level calving, mio m3
 gr_tol = (0.1 * abs(gr_vexp)) > (0.05 * volumes[ye] * 1000.) > 0.05
 ; a non-finite result (NaN/Inf geometry) is reverted as well
 gr_bad = ~finite(gr_vreal) or total(~finite(area_ini)) gt 0 or total(~finite(thick_ini)) gt 0
@@ -270,6 +274,7 @@ if gr_bad or abs(gr_vreal - gr_vexp) gt gr_tol then begin
   area = gr_area0
   elev = gr_elev0
   gl = gr_gl0
+  flux_calv[ye] = 0   ; only the surface balance is applied below: no calving this year
   if gr_bad then begin
     ; also undo this year's hypothetical advance bands; zero what is still non-finite
     area_ini = gr_area_ini0 & thick_ini = gr_thick_ini0
