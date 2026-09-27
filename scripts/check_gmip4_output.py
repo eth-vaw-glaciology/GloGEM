@@ -26,7 +26,7 @@ Two checks per region:
      until proven otherwise).
 
 Usage:
-    python3 scripts/check_gmip4_output.py REGION [REGION ...] [--all] [--quiet] [--v2]
+    python3 scripts/check_gmip4_output.py REGION [REGION ...] [--all] [--quiet] [--v2 | --v3]
 
     REGION   lower-case as used in combine_gmip4_output.py, e.g. svalbard,
              arcticcanadan, southasiaeast
@@ -64,6 +64,8 @@ REGION_DIR = {
     "southasiawest": "SouthAsiaWest", "southasiaeast": "SouthAsiaEast",
     "alaska": "Alaska", "westerncanada": "WesternCanada", "southernandes": "SouthernAndes",
     "centralasia": "CentralAsia",
+    "northasia": "NorthAsia", "lowlatitudes": "LowLatitudes", "antarctic": "Antarctic",
+    "greenland": "Greenland",
 }
 # on-disk filename prefix (GloGEM's internal region_n codename), where it
 # differs from the region key
@@ -71,17 +73,21 @@ FILE_PREFIX = {
     "centraleurope": "centraleurope", "arcticcanadan": "arcticcanadaN",
     "arcticcanadas": "arcticcanadaS", "southasiawest": "centralasiaW",
     "southasiaeast": "centralasiaS", "centralasia": "centralasiaN",
+    # climate subregions write <Subregion>_<var>_r1_<catchment>.dat (Altay_, Andes_, ...)
+    "northasia": "*", "lowlatitudes": "*", "antarctic": "*",
 }
 BASE_DIR_OVERRIDE = {"centraleurope": "alps_flow"}
-BATCH_PREFIX_OVERRIDE = {"centraleurope": "alps"}
+BATCH_PREFIX_OVERRIDE = {"centraleurope": "alps", "northasia": "northasia", "lowlatitudes": "lowlatitudes",
+                         "antarctic": "antarctic"}
 RGI_NUM = {
     "svalbard": "07", "iceland": "06", "scandinavia": "08", "russianarctic": "09",
     "caucasus": "12", "centraleurope": "11", "newzealand": "18",
     "arcticcanadan": "03", "arcticcanadas": "04", "southasiawest": "14",
     "southasiaeast": "15", "alaska": "01", "westerncanada": "02", "southernandes": "17",
     "centralasia": "13",
+    "northasia": "10", "lowlatitudes": "16", "antarctic": "19", "greenland": "05",
 }
-RUN = "gmip4"   # campaign directory suffix; --v2 selects gmip4v2
+RUN = "gmip4"   # campaign directory suffix; --v2 / --v3 select gmip4v2 / gmip4v3
 I2020 = 80  # column index for year 2020 (series start 1940)
 
 
@@ -226,6 +232,8 @@ def main(argv):
     quiet = "--quiet" in argv
     if "--v2" in argv:
         RUN = "gmip4v2"
+    if "--v3" in argv:
+        RUN = "gmip4v3"
     regions = [a for a in argv if not a.startswith("--")]
     if "--all" in argv or not regions:
         regions = list(REGION_DIR)

@@ -42,13 +42,14 @@ Aggregation across batches:
     just changed.
 
 Usage:
-    python3 combine_gmip4_output.py REGION METHOD [--verify-only] [--v2]
+    python3 combine_gmip4_output.py REGION METHOD [--verify-only] [--v2 | --v3]
 
     REGION   region_n from region_batch.dat, e.g. svalbard, caucasus
     METHOD   dh | flow
     --verify-only   print per-file glacier/GCM/SSP coverage and sanity
                     stats without writing anything
     --v2            read the v2 campaign (<region>_<method>_rgi7_gmip4v2)
+    --v3            read the v3 campaign (<region>_<method>_rgi7_gmip4v3)
 
 Reused-Δh sources are declared in REUSE_SOURCES below, per region.
 """
@@ -80,9 +81,10 @@ RGI_NUM = {
     "arcticcanadan": "03", "arcticcanadas": "04",
     "southasiawest": "14", "southasiaeast": "15",
     "alaska": "01", "westerncanada": "02", "centralasia": "13", "southernandes": "17",
+    "northasia": "10", "lowlatitudes": "16", "antarctic": "19", "greenland": "05",
 }
 
-# campaign directory suffix: <region>_<method>_rgi7_<RUN>; "--v2" selects gmip4v2
+# campaign directory suffix: <region>_<method>_rgi7_<RUN>; "--v2"/"--v3" select gmip4v2/gmip4v3
 RUN = "gmip4"
 CATCHMENTS = "/itet-stor/jabeer/glogem/data/catchments"
 # first month of the hydrological year (setup_massbalance_year.pro); output index 0
@@ -117,6 +119,8 @@ REGION_DIR = {
     "southasiawest": "SouthAsiaWest", "southasiaeast": "SouthAsiaEast",
     "alaska": "Alaska", "westerncanada": "WesternCanada", "centralasia": "CentralAsia",
     "southernandes": "SouthernAndes",
+    "northasia": "NorthAsia", "lowlatitudes": "LowLatitudes", "antarctic": "Antarctic",
+    "greenland": "Greenland",
 }
 
 # Per-region, per-SSP declaration of which GCMs come from a colleague's
@@ -510,4 +514,6 @@ if __name__ == "__main__":
     verify = "--verify-only" in sys.argv
     if "--v2" in sys.argv:
         RUN = "gmip4v2"
+    if "--v3" in sys.argv:
+        RUN = "gmip4v3"
     process(region_arg, method_arg, verify)
