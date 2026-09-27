@@ -47,4 +47,4 @@ openw,7,dirres+'/'+time_resolution+'/'+dir_region+subpath+long_GCM+sub_region+cc
 printf,7,'Year  vol_<0masl(km3)'
 
 openw,33,dirres+'/'+time_resolution+'/'+dir_region+subpath+long_GCM+sub_region+cc+'_calving_flux.dat'
-printf,33,'ID  frontal ablation (Gt/a)'
+printf,33,'ID  area(km2)  frontal ablation (Gt/a), first model year'
