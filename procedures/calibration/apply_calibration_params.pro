@@ -13,6 +13,11 @@ compile_opt idl2
 
 if read_parameters eq 'y' and cal1 eq 0 then begin
    a=min(abs(double(id[gg[g]])-cali_id),ind)
+   ; no row for this glacier: the nearest ID's parameters are used -- say so
+   if a ne 0 then begin
+      n_cali_nomatch=n_cali_nomatch+1
+      print,'WARNING: glacier '+strtrim(id[gg[g]],2)+' has no row in the calibration file -- using the parameters of glacier '+string(cali_id[ind],fo='(i05)')
+   endif
    case meltmodel of
       '1': begin
          DDFice=cali_ddfice[ind] & DDFsnow=cali_ddfsnow[ind] & C_prec=cali_cprec[ind]

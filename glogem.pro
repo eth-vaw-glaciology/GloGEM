@@ -129,6 +129,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
           count_glaciers=1
           cali_calflux=0
+          n_cali_nomatch=0L   ; glaciers without their own calibration row
           if use_flow_model eq 'y' then begin
             n_flow_ok       = 0L
             n_flow_short    = 0L
@@ -800,6 +801,10 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
           ; output of total calving flux for calibration purposes
           print, '--------- TOTAL CALVING FLUX (Gt/a) (period average):'
           print, string(cali_calflux,fo='(f9.4)')
+          if read_parameters eq 'y' then begin
+            if n_cali_nomatch gt 0 then cali_msg = 'WARNING: ' else cali_msg = ''
+            print, '--------- ' + cali_msg + strtrim(n_cali_nomatch,2) + ' glacier(s) without their own row in the calibration file (nearest glacier ID used)'
+          endif
           if use_flow_model eq 'y' then begin
             n_flow_total = count_glaciers - 1   ; total glaciers the loop visited
             pct_ok      = string(n_flow_ok      * 100. / n_flow_total, fo='(f5.1)')
