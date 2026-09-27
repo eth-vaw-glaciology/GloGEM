@@ -13,7 +13,8 @@ jj=where(area_ini ne 0,cj)
 tt=max([0,fix(cj*adv_terminusfraction)-1]) ; determine indices for terminus region
 ; define amplification of 'hypothetical' initial areas in front of glacier
 adv_iniamplification=dblarr(nb)+1
-for i=jj[0]-1,0,-1 do adv_iniamplification[i]=1+((jj[0]-i)/(adv_addband/2.))^3.
+; no added bands (terminus below adv_calving): amplification stays 1 instead of x/0 = Inf
+if adv_addband gt 0 then for i=jj[0]-1,0,-1 do adv_iniamplification[i]=1+((jj[0]-i)/(adv_addband/2.))^3.
 ; define some more variables
 adv_iniar=mean(area_ini[jj[0:tt]]) & adv_inithi=mean(thick_ini[jj[0:tt]])
 if cj ne nb then width[where(width eq 0)]=mean(width[jj[0:tt]])

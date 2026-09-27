@@ -15,6 +15,7 @@ noval = -9999
 
 ; entry geometry, kept for the mass-conservation guard at the end of this file
 gr_thick0 = thick & gr_area0 = area & gr_elev0 = elev & gr_gl0 = gl
+gr_area_ini0 = area_ini & gr_thick_ini0 = thick_ini
 
 ; -----------------------------
 ; update surface geometry
@@ -250,7 +251,9 @@ endif
 gr_vreal = total(area * thick) - volumes[ye] * 1000.   ; realised change, mio m3
 gr_vexp = dvol / 1000000.                              ; mass-balance change, mio m3
 gr_tol = (0.1 * abs(gr_vexp)) > (0.05 * volumes[ye] * 1000.) > 0.05
-if abs(gr_vreal - gr_vexp) gt gr_tol then begin
+; a non-finite result (NaN/Inf geometry) is reverted as well
+gr_bad = ~finite(gr_vreal) or total(~finite(area_ini)) gt 0 or total(~finite(thick_ini)) gt 0
+if gr_bad or abs(gr_vreal - gr_vexp) gt gr_tol then begin
   print, 'WARNING: glacier_retreat mass check failed for ' + strtrim(id[gg[g]], 2) + $
     ' in ' + strtrim(ye + tran[0], 2) + ': geometry changed by ' + $
     strtrim(gr_vreal, 2) + ' mio m3, mass balance gave ' + strtrim(gr_vexp, 2) + $
@@ -259,6 +262,14 @@ if abs(gr_vreal - gr_vexp) gt gr_tol then begin
   area = gr_area0
   elev = gr_elev0
   gl = gr_gl0
+  if gr_bad then begin
+    ; also undo this year's hypothetical advance bands; zero what is still non-finite
+    area_ini = gr_area_ini0 & thick_ini = gr_thick_ini0
+    gr_nf = where(~finite(area_ini) or ~finite(thick_ini), gr_cnf)
+    if gr_cnf gt 0 then begin
+      area_ini[gr_nf] = 0 & thick_ini[gr_nf] = 0
+    endif
+  endif
   gr_ii = where(thick gt 0, gr_ci)
   if gr_ci gt 0 then begin
     thick[gr_ii] = (thick[gr_ii] + bal[gr_ii] / 0.9) > 0

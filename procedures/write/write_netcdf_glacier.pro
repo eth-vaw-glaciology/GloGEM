@@ -57,6 +57,7 @@ endif else begin
 endelse
 
 nc_ini_area = total(area_ini)   ; total initial area for this glacier [km2]
+if ~finite(nc_ini_area) then nc_ini_area = total(area_ini, /nan)   ; skip non-finite bands
 
 ; Annual [m2] and [kg]
 gl_area = float(areas   * 1e6)
