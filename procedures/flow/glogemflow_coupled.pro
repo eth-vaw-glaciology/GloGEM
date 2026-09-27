@@ -100,7 +100,10 @@ if n_elements(flow_initialised) eq 0 then begin
           width_surface_dx, width_mid_dx, width_base_dx, lambda_dx, $
           file=spinup_cache_file
     print, 'Spin-up cache saved: ' + strtrim(id[gg[g]], 2)
+    dtfactor = spinup_dtfactor   ; as a later cache hit does
   endelse
+  ; same start after a fresh spin-up and a cache hit: no diffusivity carried over, double precision
+  df_dx = dblarr(xnum)
 
   ; Initialise time-stepping state
   t = 0l
