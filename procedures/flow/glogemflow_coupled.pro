@@ -279,6 +279,7 @@ endif
 ; Skip if blown up: volumes[ye]/areas[ye] from finalize_annual_massbalance.pro
 ; (the Δh parameterisation) are then automatically kept in the output.
 if NOT flow_blown_up then begin
+  mb_band_ye = mb[ye]   ; band balance of this year, kept for a fallback to Δh
   w_boy_dx = width_surface_dx   ; start-of-year widths, for report_flowline_budget
   ii_boy = where(thick_dx gt 0, c_boy)
   if c_boy gt 0 then begin
@@ -329,6 +330,7 @@ if NOT flow_blown_up and total(~finite(bal_dx)) gt 0 then begin
     ' --- falling back to Δh parameterisation for remainder of run.'
   flow_blown_up = 1
   @procedures/flow/sync_bands_thickness
+  @procedures/flow/handover_to_dh
   use_flow_model_gl = 'n'
 endif
 
@@ -414,6 +416,7 @@ while (~flow_icefree) and (time_flow lt year_end_flow) and (iter_flow lt max_ite
     ; writes it (only area/gl/width/elev), so without this sync thick[]
     ; would still be the pre-flow-model value, inconsistent with area[]/elev[].
     @procedures/flow/sync_bands_thickness
+    @procedures/flow/handover_to_dh
     use_flow_model_gl = 'n'   ; actually switch this glacier to Δh from here on
     break
   endif

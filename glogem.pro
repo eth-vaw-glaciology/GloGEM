@@ -659,9 +659,11 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                           if use_flow_model_gl eq 'y' and ye + tran[0] ge survey_year[gg[g]] then begin
                             @procedures/flow/glogemflow_coupled
                             @procedures/flow/update_elevation_bands
-                          endif else begin
+                          endif
+                          ; Δh glaciers, and a flow glacier in the year the flow model gives up
+                          if use_flow_model_gl ne 'y' or ye + tran[0] lt survey_year[gg[g]] then begin
                             @procedures/processing/glacier_retreat.pro
-                          endelse
+                          endif
                           ; bound the result whichever path produced it
                           @procedures/processing/limit_glacier_growth.pro
                         endif                           ; glacier retreat
