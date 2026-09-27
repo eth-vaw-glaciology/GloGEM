@@ -252,8 +252,12 @@ mb_srt = mb_srt[uniq(elev[mb_srt])]
 mb_z = (mb_sur_dx > elev[mb_srt[0]]) < elev[mb_srt[-1]]
 if n_elements(mb_srt) ge 2 then begin
   bal_we_interp = interpol(bal[mb_srt], elev[mb_srt], mb_z)
+  acc_we_interp = interpol(acc[mb_srt], elev[mb_srt], mb_z)
+  refr_we_interp = interpol(refreeze[mb_srt], elev[mb_srt], mb_z)
 endif else begin
   bal_we_interp = dblarr(xnum) + bal[mb_srt[0]]
+  acc_we_interp = dblarr(xnum) + acc[mb_srt[0]]
+  refr_we_interp = dblarr(xnum) + refreeze[mb_srt[0]]
 endelse
 ; m w.e. -> m ice with GloGEM's ice density (0.9), the one used for volume -> mass
 ii_ice_mb = where(thick_dx gt 0, c_ice_mb)
@@ -275,6 +279,7 @@ endif
 ; Skip if blown up: volumes[ye]/areas[ye] from finalize_annual_massbalance.pro
 ; (the Δh parameterisation) are then automatically kept in the output.
 if NOT flow_blown_up then begin
+  w_boy_dx = width_surface_dx   ; start-of-year widths, for report_flowline_budget
   ii_boy = where(thick_dx gt 0, c_boy)
   if c_boy gt 0 then begin
     volumes[ye] = total(thick_dx[ii_boy] * width_mid_dx[ii_boy] * dx) / 1d9
@@ -350,6 +355,8 @@ vol_proxy_year_start = total(thick_dx_year_start)
 flow_icefree = max(thick_dx) le 0d0
 if flow_icefree then df_dx[*] = 0
 
+; this year's applied balance and outflow at the downstream end (m3 ice), see ice_thickness.pro
+flow_mb_vol = 0d0 & flow_fa_vol = 0d0 & flow_budget_on = 1
 while (~flow_icefree) and (time_flow lt year_end_flow) and (iter_flow lt max_iter_flow) do begin
   ; ---- Adaptive time step (CFL criterion) ----
   ; Bootstrap case (df_dx still all-zero, before the first diffusivity call):
@@ -411,11 +418,17 @@ while (~flow_icefree) and (time_flow lt year_end_flow) and (iter_flow lt max_ite
     break
   endif
 endwhile
+flow_budget_on = 0
 
 if iter_flow ge max_iter_flow then $
   print, 'WARNING: GloGEMflow hit max iterations for year ' + strtrim(ye + tran[0], 2)
 
 endif  ; NOT flow_blown_up (STEP 3)
+
+; report the balance and outflow the flowline actually had this year
+if NOT flow_blown_up then begin
+  @procedures/flow/report_flowline_budget
+endif
 
 ; ========== STEP 4: UPDATE GEOMETRY ========== ;
 ; No explicit terminus cleanup here — ice_thickness.pro already zeroes

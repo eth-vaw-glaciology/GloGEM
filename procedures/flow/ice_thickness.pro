@@ -22,6 +22,18 @@ for j = 0, 2 do begin
   thick_dx_new[2:xnum-2] = thick_dx[2:xnum-2] + $
                             (1.0d0 / 3.0d0) * dt * (fdiv[2:xnum-2] + bal_dx[2:xnum-2])
 
+  ; Mass bookkeeping of the coupled run (off during the spin-up)
+  if n_elements(flow_budget_on) gt 0 then if flow_budget_on then begin
+    ; ice leaving the flowline at its downstream end (interface of cells 1 and 2)
+    flow_fa_vol = flow_fa_vol + (1.0d0 / 3.0d0) * dt * qfl[2]
+    ; balance actually applied: melt is limited to the ice left after the flux step
+    fb_m = (1.0d0 / 3.0d0) * dt * bal_dx[2:xnum-2]
+    fb_h = thick_dx[2:xnum-2] + (1.0d0 / 3.0d0) * dt * fdiv[2:xnum-2]
+    fb_j = where(fb_h + fb_m lt 0.0d0 and fb_m lt 0.0d0, fb_c)
+    if fb_c gt 0 then fb_m[fb_j] = (-fb_h[fb_j]) < 0.0d0 > fb_m[fb_j]
+    flow_mb_vol = flow_mb_vol + total(fb_m * width_surface_dx[2:xnum-2]) * dx
+  endif
+
   neg = where(thick_dx_new lt 0.0d0, n_neg)
   if n_neg gt 0 then thick_dx_new[neg] = 0.0d0
   thick_dx_new[xnum - 1] = thick_dx_new[xnum - 2]
