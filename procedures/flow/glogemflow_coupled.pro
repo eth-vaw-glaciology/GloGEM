@@ -243,14 +243,21 @@ bal_dx = dblarr(xnum)
 ; Prevents runaway positive feedback when modelled ice temporarily exceeds the observed
 ; profile (inflated geometry → high elevation → positive accumulation-zone MB → more growth).
 mb_sur_dx = sur_dx < obs_sur_dx
+; glacier bands sorted by elevation, one per elevation (interpol needs a monotonic abscissa)
 ii_gl_bands = where(gl ne noval, n_gl_bands)
-if n_gl_bands ge 2 then begin
-  bal_we_interp = interpol(bal[ii_gl_bands], elev[ii_gl_bands], mb_sur_dx)
+if n_gl_bands eq 0 then ii_gl_bands = lindgen(nb)
+mb_srt = ii_gl_bands[sort(elev[ii_gl_bands])]
+mb_srt = mb_srt[uniq(elev[mb_srt])]
+; beyond the lowest/highest glacier band hold that band's value (no linear extrapolation)
+mb_z = (mb_sur_dx > elev[mb_srt[0]]) < elev[mb_srt[-1]]
+if n_elements(mb_srt) ge 2 then begin
+  bal_we_interp = interpol(bal[mb_srt], elev[mb_srt], mb_z)
 endif else begin
-  bal_we_interp = interpol(bal, elev, mb_sur_dx)
+  bal_we_interp = dblarr(xnum) + bal[mb_srt[0]]
 endelse
+; m w.e. -> m ice with GloGEM's ice density (0.9), the one used for volume -> mass
 ii_ice_mb = where(thick_dx gt 0, c_ice_mb)
-if c_ice_mb gt 0 then bal_dx[ii_ice_mb] = bal_we_interp[ii_ice_mb] / 0.917d0
+if c_ice_mb gt 0 then bal_dx[ii_ice_mb] = bal_we_interp[ii_ice_mb] / 0.9d0
 ; Apply NEGATIVE MB to ice-free cells as well — matches MATLAB (massbal.m zeroes
 ; only positive MB in ice-free cells, not negative).  Without this, SIA-advanced
 ; terminus cells see zero ablation for a full year and survive; with it they are
@@ -259,7 +266,7 @@ ii_free_mb = where(thick_dx le 0, c_free_mb)
 if c_free_mb gt 0 then begin
   ii_neg_in_free = where(bal_we_interp[ii_free_mb] lt 0, c_neg)
   if c_neg gt 0 then $
-    bal_dx[ii_free_mb[ii_neg_in_free]] = bal_we_interp[ii_free_mb[ii_neg_in_free]] / 0.917d0
+    bal_dx[ii_free_mb[ii_neg_in_free]] = bal_we_interp[ii_free_mb[ii_neg_in_free]] / 0.9d0
 endif
 
 ; ========== STEP 2b: STORE BEGINNING-OF-YEAR STATE (matching Δh parameterisation timing) ========== ;
@@ -287,14 +294,11 @@ if NOT flow_blown_up then begin
     endif
     areas[ye] = (area_sum_boy > 0d0) / 1d6
 
-    ; mb[ye] specifically depends on bal_dx, which interpol() can leave
-    ; non-finite for some of Iceland's largest, flattest ice caps once enough
-    ; bands have gone ice-free that elev[ii_gl_bands] (STEP 2) stops being
-    ; usefully monotonic -- interpol() assumes monotonic x but never
-    ; validates it. volumes[ye]/areas[ye] above don't depend on bal_dx and
-    ; stay valid regardless; only mb[ye] needs the finite check here.
+    ; mb[ye] needs a finite bal_dx (interpol on unsorted band elevations
+    ; used to leave it non-finite; STEP 2 now sorts them, the check stays).
+    ; volumes[ye]/areas[ye] above don't depend on bal_dx.
     if total(~finite(bal_dx[ii_boy])) eq 0 then begin
-      mb[ye] = total(bal_dx[ii_boy] * width_surface_dx[ii_boy] * dx * 0.917d0) / $
+      mb[ye] = total(bal_dx[ii_boy] * width_surface_dx[ii_boy] * dx * 0.9d0) / $
                total(width_surface_dx[ii_boy] * dx)
     endif else begin
       mb[ye] = 0d0
@@ -450,7 +454,7 @@ if c_ice_dx gt 0 then begin
   endif
   flow_area = (area_sum > 0d0) / 1d6  ; m² → km²
   ; Glacier-wide mass balance (m w.e./yr)
-  flow_mb = total(bal_dx[ii_ice_dx] * width_surface_dx[ii_ice_dx] * dx * 0.917d0) / $
+  flow_mb = total(bal_dx[ii_ice_dx] * width_surface_dx[ii_ice_dx] * dx * 0.9d0) / $
     total(width_surface_dx[ii_ice_dx] * dx)
 endif else begin
   flow_vol = 0d0
@@ -467,7 +471,7 @@ endelse
 ; ========== STEP 6: STORE ANNUAL FLOWLINE HISTORY ========== ;
 flow_thick_hist[*, ye] = thick_dx
 flow_sur_hist[*, ye] = sur_dx
-flow_bal_hist[*, ye] = bal_dx * 0.917d0 ; store as m w.e.
+flow_bal_hist[*, ye] = bal_dx * 0.9d0 ; store as m w.e.
 flow_width_hist[*, ye] = width_surface_dx
 
 ; Print diagnostic (show scaled values for consistency with GloGEM)
