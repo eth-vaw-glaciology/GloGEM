@@ -363,19 +363,14 @@ if flow_icefree then df_dx[*] = 0
 ; this year's applied balance and outflow at the downstream end (m3 ice), see ice_thickness.pro
 flow_mb_vol = 0d0 & flow_fa_vol = 0d0 & flow_budget_on = 1
 while (~flow_icefree) and (time_flow lt year_end_flow) and (iter_flow lt max_iter_flow) do begin
-  ; ---- Adaptive time step (CFL criterion) ----
+  ; ---- Adaptive time step (CFL criterion, width-aware) ----
   ; Bootstrap case (df_dx still all-zero, before the first diffusivity call):
   ; use df_lim as the safe proxy for max diffusivity, matching MATLAB's
   ; constants_counters_initialvalues_sizevariables.m:17 initial dt. A fixed
   ; dt=0.25 here ignores this glacier's own dx/df_lim scale and can be ~1000x
   ; too large, causing the SIA to blow up on the very first sub-step.
-  if max(df_dx) gt 0 then begin
-    dt = dtfactor * (dx ^ 2) / max(df_dx)
-  endif else begin
-    dt = dtfactor * (dx ^ 2) / df_lim
-  endelse
-  dt = dt < 0.25d0 ; cap
-  dt = dt > 1d-4 ; floor
+  dt_fac = dtfactor
+  @procedures/flow/flow_timestep
   if time_flow + dt gt year_end_flow then dt = year_end_flow - time_flow
 
   ; ---- Diffusivity ----
