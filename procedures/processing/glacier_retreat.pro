@@ -153,8 +153,16 @@ if ci gt 4 then begin
   vtt = total(area * thick) - volumes[ye] * 1000.
   ii = where(thick gt 0, ci)
   if ci gt 0 then begin
-    fcorr = (vtt - dvol / 1000000.) / (total(dh[ii] * area[ii]))
-    thick[ii] = thick[ii] - dh[ii] * fcorr
+    gr_den = total(dh[ii] * area[ii])
+    if gr_den ne 0 then begin
+      fcorr = (vtt - dvol / 1000000.) / gr_den
+      thick[ii] = thick[ii] - dh[ii] * fcorr
+    endif else begin
+      ; only dh=0 bands (the glacier top) keep ice: spread the correction evenly;
+      ; if that removes their ice, the glacier melts out below
+      gr_at = total(area[ii])
+      if gr_at gt 0 then thick[ii] = thick[ii] - (vtt - dvol / 1000000.) / gr_at else thick[ii] = 0
+    endelse
     jj = where(thick le 0, cj)
     if cj gt 0 then begin
       thick[jj] = 0

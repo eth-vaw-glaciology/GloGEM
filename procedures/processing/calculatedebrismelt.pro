@@ -54,7 +54,7 @@ compile_opt idl2
       ; Update total ice melt:
       ; - 'total(mel(ii) * area(ii))' sums melt across the affected area
       ; - Normalize by glacier area 'ar_gl' to maintain consistency
-      imelt[ye] = imelt[ye] + total(mel[ii] * area[ii]) / ar_gl
+      if ar_gl ne 0 then imelt[ye] = imelt[ye] + total(mel[ii] * area[ii]) / ar_gl
 
       ; If the model runs on a daily resolution, store daily melt values
       if time_resolution eq 'daily' then icemel[ii] = mel[ii]
