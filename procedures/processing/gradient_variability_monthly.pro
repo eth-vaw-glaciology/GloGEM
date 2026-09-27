@@ -92,8 +92,12 @@ if submonth_variability eq 'y' then begin
          endfor
       endfor
       close,1
-      bb=where(rlat eq rmid[0])
-      cc=where(rlon eq rmid[1])
+   endif
+   ; new path: variability grid cell nearest to the ERA5 point, longitudes compared modulo 360
+   if new eq 'y' then begin
+      mtt=indgen(12)+1
+      dummy=min(abs(rvlat-era5_pt[1]),bb)
+      dummy=min(abs(((rvlon-era5_pt[0]+540d) mod 360d)-180d),cc)
    endif
 
    variab=dblarr(12,31)   
