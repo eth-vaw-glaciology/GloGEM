@@ -182,7 +182,7 @@ if c_obs_ice gt 0 then begin
   mb_obs    = smb_a * (z_obs - z_center)^2 + smb_b * (z_obs - z_center) + smb_c
   mb_mean   = total(mb_obs * w_obs) / total(w_obs)
   z_mean    = total(z_obs * w_obs) / total(w_obs)
-  dsmb_dz   = 2d0 * smb_a * z_mean + smb_b
+  dsmb_dz   = 2d0 * smb_a * (z_mean - z_center) + smb_b   ; slope of the centred polynomial at z_mean
   if abs(dsmb_dz) gt 1d-12 then $
     ela_bias_init = (mb_mean / dsmb_dz) < ela_bias_max > (-ela_bias_max)
   print, 'Mean SMB over observed glacier (ela_bias=0): ', mb_mean, ' m ice/yr'
