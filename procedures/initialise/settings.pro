@@ -229,7 +229,8 @@ spinup_gate_len_min = 0.5d0   ; fraction of observed length
 ;   'melt_if_land' book it as frontal ablation only where the bed of that cell is below
 ;                  0 m, otherwise as ice melt
 ; Either way it is written to *_flow_gridend_outflow.dat and summed in the run log.
-; The default is the behaviour so far; the choice awaits a decision (2026-09-27).
+; Ice now only leaves the grid where that bed is below 0 m (land fronts get a longer
+; grid instead), so both settings give the same result.
 flow_gridend_outflow = 'frontal'
 
 ; --- glacier retreat module (Δh parameterisation option)

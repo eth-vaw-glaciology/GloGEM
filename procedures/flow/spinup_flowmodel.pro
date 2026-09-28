@@ -323,8 +323,9 @@ for len_iter = 0, max_len_iter - 1 do begin
           phase_a_failed = 1
           break
         endif
-        ; ice in the last active cell: the grid is too short for this attempt
-        if thick_dx[2] gt 0d0 then begin
+        ; ice in the last active cell: the grid is too short for this attempt,
+        ; unless the bed there is below sea level, where the ice calves off the end
+        if thick_dx[2] gt 0d0 and bed_dx[2] ge 0d0 then begin
           grid_full = 1
           break
         endif
@@ -426,7 +427,7 @@ for len_iter = 0, max_len_iter - 1 do begin
             phase_b_failed = 1
             break
           endif
-          if thick_dx[2] gt 0d0 then begin
+          if thick_dx[2] gt 0d0 and bed_dx[2] ge 0d0 then begin
             grid_full = 1
             break
           endif
@@ -455,10 +456,10 @@ for len_iter = 0, max_len_iter - 1 do begin
 
     if calib_abandoned then break
 
-    ; Ice reached the end of the grid (Phase A or B): lengthen the ice-free area in
-    ; front of the glacier and redo this attempt from an ice-free bed, as Harry's
-    ; MATLAB volume_calibration.m does (not counted as an attempt). Beyond the
-    ; longest grid the calibration gives up, as it does in MATLAB.
+    ; Ice reached the end of the grid (Phase A or B) on land: lengthen the ice-free
+    ; area in front of the glacier and redo this attempt from an ice-free bed, as
+    ; Harry's MATLAB volume_calibration.m does (not counted as an attempt). Beyond
+    ; the longest grid the calibration gives up, as it does in MATLAB.
     spinup_grid_full:
     if grid_full then begin
       ext_ctx = 'spinup'

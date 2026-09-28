@@ -431,11 +431,12 @@ while (~flow_icefree) and (time_flow lt year_end_flow) and (iter_flow lt max_ite
     break
   endif
 
-  ; Ice reached the last active cell (index 2): lengthen the ice-free area in front
-  ; of the glacier before any ice can leave the grid. Beyond the longest grid the
-  ; flow model stops for this glacier, as Harry's MATLAB future run does, and the
-  ; Δh parameterisation takes this year from its start.
-  if thick_dx[2] gt 0d0 then begin
+  ; Ice reached the last active cell (index 2) on land: lengthen the ice-free area
+  ; in front of the glacier before any ice can leave the grid. Beyond the longest
+  ; grid the flow model stops for this glacier and the Δh parameterisation takes
+  ; this year from its start. Where the bed there is below sea level the grid is
+  ; not lengthened: the ice leaving the end is frontal ablation (ice_thickness.pro).
+  if thick_dx[2] gt 0d0 and bed_dx[2] ge 0d0 then begin
     ext_ctx = 'coupled'
     @procedures/flow/extend_flowline_grid
     if ext_n gt 0 then begin
