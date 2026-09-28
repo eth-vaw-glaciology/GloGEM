@@ -448,9 +448,10 @@ for len_iter = 0, max_len_iter - 1 do begin
     ii_sv = where(thick_dx gt 0, c_sv)
     survey_vol = c_sv gt 0 ? total(thick_dx[ii_sv] * width_mid_dx[ii_sv] * dx) : 0d0
 
-    spinup_vol_tbl[vol_iter, 0] = aflow_guess
-    spinup_vol_tbl[vol_iter, 1] = survey_vol
-    n_vol_done = vol_iter + 1
+    ; only attempts that reached the survey year are recorded (a blown-up one has no volume)
+    spinup_vol_tbl[n_vol_done, 0] = aflow_guess
+    spinup_vol_tbl[n_vol_done, 1] = survey_vol
+    n_vol_done = n_vol_done + 1
 
     vol_err_pct = (survey_vol - vol_target) / vol_target * 100d0
     print, '    Survey vol=', survey_vol/1d9, ' km3  target=', vol_target/1d9, '  err=', vol_err_pct, '%'
@@ -461,17 +462,18 @@ for len_iter = 0, max_len_iter - 1 do begin
       break
     endif
 
-    ; Estimate next A_flow guess
-    if vol_iter eq 0 then begin
+    ; Estimate next A_flow guess: power law from the first recorded attempt,
+    ; then a straight line through the last two recorded attempts
+    if n_vol_done eq 1 then begin
       if survey_vol gt 0 then $
         aflow_guess = aflow_guess * (vol_target / survey_vol)^(-4d0) $
       else $
         aflow_guess = aflow_guess * 0.1d0
     endif else begin
-      a1 = spinup_vol_tbl[vol_iter-1, 0]
-      v1 = spinup_vol_tbl[vol_iter-1, 1]
-      a2 = spinup_vol_tbl[vol_iter, 0]
-      v2 = spinup_vol_tbl[vol_iter, 1]
+      a1 = spinup_vol_tbl[n_vol_done-2, 0]
+      v1 = spinup_vol_tbl[n_vol_done-2, 1]
+      a2 = spinup_vol_tbl[n_vol_done-1, 0]
+      v2 = spinup_vol_tbl[n_vol_done-1, 1]
       if v2 ne v1 then $
         aflow_guess = a1 + (vol_target - v1) * (a2 - a1) / (v2 - v1) $
       else $
