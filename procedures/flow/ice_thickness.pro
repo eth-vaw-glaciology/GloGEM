@@ -17,8 +17,10 @@ for j = 0, 2 do begin
   lim_o[1:xnum-1] = lim_o[1:xnum-1] + (qfl[1:xnum-1] > 0.0d0)
   lim_o[0:xnum-2] = lim_o[0:xnum-2] + ((-qfl[1:xnum-1]) > 0.0d0)
   lim_f = dblarr(xnum) + 1.0d0
-  lim_j = where(lim_o gt 0.0d0, lim_c)
-  if lim_c gt 0 then lim_f[lim_j] = (lim_v[lim_j] / ((1.0d0 / 3.0d0) * dt * lim_o[lim_j])) < 1.0d0
+  ; scale only where the outflow exceeds the ice held (no 0/0 for empty cells)
+  lim_d = (1.0d0 / 3.0d0) * dt * lim_o
+  lim_j = where(lim_v lt lim_d, lim_c)
+  if lim_c gt 0 then lim_f[lim_j] = lim_v[lim_j] / lim_d[lim_j]
   lim_p = qfl[1:xnum-1] gt 0.0d0
   qfl[1:xnum-1] = qfl[1:xnum-1] * (lim_p * lim_f[1:xnum-1] + (1 - lim_p) * lim_f[0:xnum-2])
 
