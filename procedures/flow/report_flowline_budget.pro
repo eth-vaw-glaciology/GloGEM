@@ -65,6 +65,12 @@ if rb_a gt 0d0 then begin
   ; monthly components of this mass-balance year keep their seasonal shape
   if time_resolution eq 'monthly' and outf_names[14] ne '' then begin
     rb_k = ye * 12L + lindgen(12)
+    ; months without an active band (band area 0) have no band melt, refreezing or runoff
+    rb_nb = where(~finite(melmo[rb_k]) or ~finite(refrmo[rb_k]) or ~finite(discharge_gl[rb_k]) or $
+                  discharge_gl[rb_k] eq snoval, c_nb)
+    if c_nb gt 0 then begin
+      melmo[rb_k[rb_nb]] = 0d0 & refrmo[rb_k[rb_nb]] = 0d0 & discharge_gl[rb_k[rb_nb]] = 0d0
+    endif
     rb_mel0 = melmo[rb_k] & rb_ref0 = refrmo[rb_k]
     rb_s = total(accmo[rb_k])
     if rb_s ne 0 and finite(rb_s) then accmo[rb_k] = accmo[rb_k] * rb_acc / rb_s $
