@@ -163,9 +163,9 @@ firnice_spinup_ref_period = [1961, 1990] ; climate reference period for equilibr
 firnice_spinup_max_cycles = 500       ; max equilibrium cycles (convergence usually <200)
 firnice_spinup_tol = 0.05d            ; °C convergence tolerance (max change in deep layers)
 firnice_spinup_min_cycles = 200       ; minimum equilibrium cycles before convergence is checked
-firnice_spinup_solver = 'cycle'       ; 'cycle' = repeat the reference year until the deep layers
-                                      ; stop changing; 'drift' = measure the drift and jump to
-                                      ; equilibrium (spinup_firnicetemp_thermal.pro)
+firnice_spinup_solver = 'drift'       ; 'drift' = measure the drift and jump to equilibrium
+                                      ; (spinup_firnicetemp_thermal.pro); 'cycle' = repeat the
+                                      ; reference year until the deep layers stop changing
 mb_book = 1b                          ; 0b only inside the thermal spin-up's reference forcing:
                                       ; the mass-balance files then skip the climate cursor and annual totals
 fit_lacc_on = 0b                      ; set only by the drift spin-up: firnice_temperature_model
