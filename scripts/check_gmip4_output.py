@@ -26,7 +26,7 @@ Two checks per region:
      until proven otherwise).
 
 Usage:
-    python3 scripts/check_gmip4_output.py REGION [REGION ...] [--all] [--quiet] [--v2]
+    python3 scripts/check_gmip4_output.py REGION [REGION ...] [--all] [--quiet] [--v2 | --v3]
 
     REGION   lower-case as used in combine_gmip4_output.py, e.g. svalbard,
              arcticcanadan, southasiaeast
@@ -64,6 +64,8 @@ REGION_DIR = {
     "southasiawest": "SouthAsiaWest", "southasiaeast": "SouthAsiaEast",
     "alaska": "Alaska", "westerncanada": "WesternCanada", "southernandes": "SouthernAndes",
     "centralasia": "CentralAsia",
+    "northasia": "NorthAsia", "lowlatitudes": "LowLatitudes", "antarctic": "Antarctic",
+    "greenland": "Greenland",
 }
 # on-disk filename prefix (GloGEM's internal region_n codename), where it
 # differs from the region key
@@ -71,22 +73,29 @@ FILE_PREFIX = {
     "centraleurope": "centraleurope", "arcticcanadan": "arcticcanadaN",
     "arcticcanadas": "arcticcanadaS", "southasiawest": "centralasiaW",
     "southasiaeast": "centralasiaS", "centralasia": "centralasiaN",
+    # climate subregions write <Subregion>_<var>_r1_<catchment>.dat (Altay_, Andes_, ...)
+    "northasia": "*", "lowlatitudes": "*", "antarctic": "*",
 }
 BASE_DIR_OVERRIDE = {"centraleurope": "alps_flow"}
-BATCH_PREFIX_OVERRIDE = {"centraleurope": "alps"}
+BATCH_PREFIX_OVERRIDE = {"centraleurope": "alps", "northasia": "northasia", "lowlatitudes": "lowlatitudes",
+                         "antarctic": "antarctic"}
 RGI_NUM = {
     "svalbard": "07", "iceland": "06", "scandinavia": "08", "russianarctic": "09",
     "caucasus": "12", "centraleurope": "11", "newzealand": "18",
     "arcticcanadan": "03", "arcticcanadas": "04", "southasiawest": "14",
     "southasiaeast": "15", "alaska": "01", "westerncanada": "02", "southernandes": "17",
     "centralasia": "13",
+    "northasia": "10", "lowlatitudes": "16", "antarctic": "19", "greenland": "05",
 }
-RUN = "gmip4"   # campaign directory suffix; --v2 selects gmip4v2
+RUN = "gmip4"   # campaign directory suffix; --v2 / --v3 select gmip4v2 / gmip4v3
 I2020 = 80  # column index for year 2020 (series start 1940)
 
 
-def read_rows(path):
-    """Yield (glacier_id, float array) per row; '*' -> 0, NaN -> 0."""
+NAN_KEEP_KM3 = 0.1    # a glacier turning NaN above this volume silently drops out of the sums
+
+
+def read_rows(path, keep_nan=False):
+    """Yield (glacier_id, float array) per row; '*' -> 0, NaN -> 0 unless keep_nan."""
     with open(path) as fh:
         fh.readline()
         for line in fh:
@@ -98,8 +107,8 @@ def read_rows(path):
                 try:
                     v = float(t)
                 except ValueError:
-                    v = 0.0
-                vals.append(0.0 if np.isnan(v) else v)
+                    v = np.nan if keep_nan else 0.0
+                vals.append(v if keep_nan or not np.isnan(v) else 0.0)
             yield q[0], np.array(vals)
 
 
@@ -124,7 +133,16 @@ def check_region_glaciers(region, quiet):
         gcm, ssp, batch = m.groups()
         af = vf.replace("_Volume_r1_", "_Area_r1_")
         areas = dict(read_rows(af)) if os.path.exists(af) else {}
-        for gid, v in read_rows(vf):
+        for gid, vraw in read_rows(vf, keep_nan=True):
+            bad = ~np.isfinite(vraw)
+            if bad.any():
+                i = int(np.argmax(bad))
+                last = vraw[i - 1] if i > 0 else np.nan
+                if i == 0 or last > NAN_KEEP_KM3:
+                    flagged.append((gcm, ssp, batch, gid,
+                                    f"volume turns non-finite in {1940 + i} (last {last:.3f} km3)"))
+                    excess += 1e9   # never tolerable: the glacier is missing from every sum
+            v = np.where(np.isfinite(vraw), vraw, 0.0)
             if len(v) <= I2020:
                 continue
             pk = int(np.argmax(v))
@@ -148,6 +166,23 @@ def check_region_glaciers(region, quiet):
     return flagged, excess, regional
 
 
+def check_nonfinite(path, nc):
+    """non-finite values in a combined file; monthly NaN is allowed only where acc is NaN
+    (months outside the simulated hydrological years)"""
+    out = []
+    with nc.Dataset(path) as f:
+        names = [v for v in f.variables if v not in ("time", "time_bounds")]
+        ref = np.isfinite(np.ma.filled(f.variables["acc"][:], np.nan)) if "acc" in names else None
+        for v in names:
+            a = np.ma.filled(f.variables[v][:], np.nan).astype(float)
+            bad = ~np.isfinite(a)
+            if ref is not None:
+                bad &= ref
+            if bad.any():
+                out.append(f"{v}: {int(bad.sum())} non-finite values")
+    return out
+
+
 def check_region_canonical(region, quiet):
     rdir = REGION_DIR[region]
     rgi = RGI_NUM[region]
@@ -157,6 +192,10 @@ def check_region_canonical(region, quiet):
     except ImportError:
         print(f"[{region}] netCDF4 not available -- regional check skipped")
         return flagged
+    files = sorted(glob.glob(f"{FINAL_BASE}/{rgi}_{rdir}_GloGEMflow/GloGEM*_rgi{rgi}_*.nc"))
+    for p in files:
+        for why in check_nonfinite(p, nc):
+            flagged.append(("-", "-", "-", os.path.basename(p), why))
     for p in sorted(glob.glob(f"{FINAL_BASE}/{rgi}_{rdir}_GloGEMflow/GloGEM*_rgi{rgi}_*_annual.nc")):
         if "indiv" in p:
             continue
@@ -193,6 +232,8 @@ def main(argv):
     quiet = "--quiet" in argv
     if "--v2" in argv:
         RUN = "gmip4v2"
+    if "--v3" in argv:
+        RUN = "gmip4v3"
     regions = [a for a in argv if not a.startswith("--")]
     if "--all" in argv or not regions:
         regions = list(REGION_DIR)

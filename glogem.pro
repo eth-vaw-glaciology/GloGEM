@@ -167,7 +167,8 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
               @procedures/read/read_gcmdata_monthly.pro
             endif
             lat0=[min(rvlat)-0.1,max(rvlat)]
-            if clim_subregion eq 'Atlantic' then lat0[0]=-60.5
+            ; Atlantic starts where the Peninsula domain ends (-60.8), so the South Orkneys are run once
+            if clim_subregion eq 'Atlantic' then lat0[0]=-60.8
             lon0=[min(rvlon)-0.1,max(rvlon)]
           endif
           ; We keep for the moment reading in .mdi files for the CMIP6 models before looping over the grid

@@ -11,7 +11,7 @@ Reuses the summing/writing helpers from combine_gmip4_output.py so the
 hindcast and the projections are aggregated by identical code.
 
 Usage:
-    python3 combine_gmip4_hindcast.py REGION [REGION ...] [--verify-only] [--v2]
+    python3 combine_gmip4_hindcast.py REGION [REGION ...] [--verify-only] [--v2 | --v3]
 """
 import sys
 import re
@@ -98,6 +98,8 @@ if __name__ == "__main__":
     verify = "--verify-only" in sys.argv
     if "--v2" in sys.argv:
         cgo.RUN = "gmip4v2"
+    if "--v3" in sys.argv:
+        cgo.RUN = "gmip4v3"
     if not args:
         print(__doc__)
         sys.exit(1)

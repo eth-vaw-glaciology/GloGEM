@@ -79,7 +79,8 @@ if cg gt 0 then begin
         gxs=strcompress(string(rmid[0],fo='(f7.2)'),/remove_all)
         gys=strcompress(string(rmid[1],fo='(f7.2)'),/remove_all)
         @procedures/read/read_climatepast_monthly_new.pro
-        gcm_start = [mean(lon), mean(lat)]
+        ; GCM series at the ERA5 grid point the past series comes from
+        gcm_start = era5_pt
         @procedures/read/read_gcmdata_monthly.pro
         @procedures/processing/gradient_variability_monthly.pro
         @procedures/processing/downscale_gcmdata_monthly_new.pro
