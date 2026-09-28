@@ -214,6 +214,12 @@ ela_bias        = ela_bias_init
 spinup_len_tbl  = dblarr(max_len_iter, 3)   ; [ela_bias, length_m, aflow]
 n_len_done = 0
 
+; State of the length attempt closest to the observed length; kept when a later
+; attempt fails or the search runs out of iterations (MATLAB length_calibration.m)
+best_len_err = 1d30
+best_thick   = !null
+keep_best    = 0
+
 ; Hard cap on total calibration cost across BOTH loops. Some glaciers (usually
 ; very small / poorly-conditioned target volumes) never converge and would
 ; otherwise retry close to the full 6x15=90 Phase A/B attempts, each a
@@ -520,6 +526,11 @@ for len_iter = 0, max_len_iter - 1 do begin
 
   endfor ; volume calibration loop
 
+  ; a failed 3rd or later length attempt keeps the closest earlier one, as MATLAB does
+  if calib_abandoned and len_iter ge 2 then begin
+    keep_best = 1
+    break
+  endif
   if calib_abandoned then begin
     use_flow_model_gl = 'n'
     goto, spinup_skip
@@ -571,6 +582,10 @@ for len_iter = 0, max_len_iter - 1 do begin
     endelse
   endif
 
+  if calib_abandoned and len_iter ge 2 then begin
+    keep_best = 1
+    break
+  endif
   if calib_abandoned then begin
     use_flow_model_gl = 'n'
     goto, spinup_skip
@@ -590,6 +605,23 @@ for len_iter = 0, max_len_iter - 1 do begin
 
   print, '  Length: mod=', mod_len_m/1000d0, ' km  obs=', obs_len_m/1000d0, ' km  ratio=', len_ratio
 
+  ; closest attempt so far (first one on a tie) whose state STEP 5 would accept:
+  ; finite, not blown up, volume within 100 % of the target
+  kb_ok = total(~finite(thick_dx)) eq 0
+  if kb_ok then kb_ok = max(thick_dx) le 5000d0
+  if kb_ok then begin
+    kb_j = where(thick_dx gt 0, kb_c)
+    kb_vol = kb_c gt 0 ? total(thick_dx[kb_j] * width_mid_dx[kb_j] * dx) : 0d0
+    kb_ok = vol_target le 0d0 or abs(kb_vol - vol_target) le vol_target
+  endif
+  if kb_ok and abs(mod_len_m - obs_len_m) lt best_len_err then begin
+    best_len_err = abs(mod_len_m - obs_len_m)
+    best_thick   = thick_dx
+    best_aflow   = spinup_aflow
+    best_ela     = ela_bias
+    best_iter    = len_iter
+  endif
+
   ; Adaptive precision: must be at least 1.5 grid cells wide so the
   ; discrete length can actually satisfy the criterion.
   len_prec_eff = len_prec > (1.5d0 * dx / (obs_len_m > 1d0))
@@ -601,19 +633,9 @@ for len_iter = 0, max_len_iter - 1 do begin
   endif
 
   if len_iter eq max_len_iter - 1 then begin
-    ; Max iterations reached — pick the best
-    best_err = 1d30
-    best_idx = 0
-    for i = 0, n_len_done - 1 do begin
-      err = abs(spinup_len_tbl[i, 1] - obs_len_m)
-      if err lt best_err then begin
-        best_err = err
-        best_idx = i
-      endif
-    endfor
-    ela_bias    = spinup_len_tbl[best_idx, 0]
-    aflow_guess = spinup_len_tbl[best_idx, 2]
-    print, '  Length max iters --- best ELA_bias=', ela_bias, '  A_flow=', aflow_guess
+    ; Max iterations reached: keep the closest attempt
+    print, '  Length max iters'
+    keep_best = 1
     break
   endif
 
@@ -653,6 +675,33 @@ for len_iter = 0, max_len_iter - 1 do begin
   endif
 
 endfor ; length calibration loop
+
+; ====================================================================
+; STEP 4b: Keep the closest length attempt (MATLAB length_calibration.m)
+; ====================================================================
+; A 3rd or later attempt failed, or the search ran out of iterations: continue
+; with the saved state of the attempt closest to the observed length, as MATLAB
+; does by re-running it. Cells the grid gained since then are ice-free, as on a
+; grid that long from the start. The time-step factor stays at its smallest value.
+if keep_best then begin
+  if n_elements(best_thick) eq 0 then begin
+    print, '  No usable length attempt to keep --- falling back to Δh parameterisation.'
+    use_flow_model_gl = 'n'
+    goto, spinup_skip
+  endif
+  kb_n = xnum - n_elements(best_thick)
+  thick_dx = kb_n gt 0 ? [dblarr(kb_n), best_thick] : best_thick
+  width_base_dx   = double(width_base_dx_init)
+  lambda_dx       = double(lambda_dx_init)
+  spinup_aflow    = best_aflow
+  ela_bias        = best_ela
+  calib_abandoned = 0
+  print, '  Keeping length attempt ' + strtrim(best_iter + 1, 2) + ' of ' + strtrim(len_iter + 1, 2) + $
+    ', the closest to the observed length (' + $
+    strtrim(string(spinup_len_tbl[best_iter, 1] / 1d3, fo='(f9.3)'), 2) + ' vs ' + $
+    strtrim(string(obs_len_m / 1d3, fo='(f9.3)'), 2) + ' km, ELA bias ' + $
+    strtrim(string(best_ela, fo='(f8.1)'), 2) + ' m)'
+endif
 
 ; ====================================================================
 ; STEP 5: Finalise
