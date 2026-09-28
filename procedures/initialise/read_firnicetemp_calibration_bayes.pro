@@ -8,8 +8,8 @@
 ; when firnice_temp_calib_bayes_file ne ''.
 ;
 ; Same additive-residual mechanism as read_firnicetemp_calibration_knn.pro
-; (delta_pf/delta_ds/delta_z0 ADDED to the per-band transfer-model baseline,
-; not overwriting it — see apply_firnicetemp_calibration_bayes.pro), but the
+; (delta_rf/delta_is/delta_av ADDED to the flat per-band settings.pro defaults,
+; not overwriting them — see apply_firnicetemp_calibration_bayes.pro), but the
 ; residuals here come from a proper Bayesian calibration (Python
 ; icetemp.calibration.writeback.ResidualWriter): a Kennedy-O'Hagan model
 ; y = G(x;theta) + delta(x) + epsilon, with theta's posterior sampled by
@@ -21,9 +21,9 @@
 ; apply_firnicetemp_calibration_bayes.pro, which only uses the means).
 ;
 ; Calibration file format (space-separated, one line per glacier):
-;   # glacier_id  delta_pf  delta_ds  delta_z0  std_pf  std_ds  std_z0
-;   00773  0.226  0.069  -6.45  0.110  0.198  6.28
-;   00774  0.226  0.170  -17.38  0.110  0.350  8.69
+;   # glacier_id  delta_rf  delta_is  delta_av  std_rf  std_is  std_av
+;   00773  -0.2748  -0.1763  -0.0135  0.0561  0.4895  0.0000
+;   00774  -0.2975  -0.1335  -0.0135  0.0541  0.4907  0.0000
 ;   ...
 ; Lines starting with '#' are treated as comments and skipped. The three
 ; std_* columns are optional for backward compatibility with a 4-column
@@ -34,9 +34,9 @@
 ;   firnicecalibayes_rf_delta — double array of refreeze_frac residuals
 ;   firnicecalibayes_is_delta — double array of insul_scale residuals
 ;   firnicecalibayes_av_delta — double array of adv_scale residuals
-;   firnicecalibayes_pf_std   — double array of perm_frac posterior std (diagnostic)
-;   firnicecalibayes_ds_std   — double array of dT_scale posterior std (diagnostic)
-;   firnicecalibayes_z0_std   — double array of z0 posterior std [m] (diagnostic)
+;   firnicecalibayes_pf_std   — double array of refreeze_frac residual std (diagnostic)
+;   firnicecalibayes_ds_std   — double array of insul_scale residual std (diagnostic)
+;   firnicecalibayes_z0_std   — double array of adv_scale residual std (diagnostic)
 ; *************************************************************
 
 compile_opt idl2

@@ -9,18 +9,17 @@
 ;
 ; Unlike firnice_temp_calib_file (which OVERWRITES all bands with one flat
 ; glacier-wide value), this file carries per-glacier ADDITIVE residuals —
-; the difference between a glacier's directly calibrated (perm_frac, dT_scale,
-; z0) and what the global transfer model predicts at that glacier's own mean
-; climate. Ungauged glaciers are assigned the residual of their nearest
+; the difference between a glacier's calibrated (refreeze_frac, insul_scale,
+; adv_scale) and the flat settings.pro defaults. Ungauged glaciers are assigned the residual of their nearest
 ; glenglat calibration glacier (05_firnicetemp_calibration.ipynb, ce-knn cell).
 ; apply_firnicetemp_calibration_knn.pro ADDS these residuals to the per-band
 ; transfer-model baseline — regional adaptation (from the residual) composes
 ; with per-band variation (from the baseline), rather than replacing it.
 ;
 ; Calibration file format (space-separated, one line per glacier):
-;   # glacier_id  delta_pf  delta_ds  delta_z0
-;   00773  0.050  -0.30  12.0
-;   00774 -0.120   0.85 -18.0
+;   # glacier_id  delta_rf  delta_is  delta_av
+;   00773  0.050  -0.30  0.10
+;   00774 -0.120   0.85 -0.20
 ;   ...
 ; Lines starting with '#' are treated as comments and skipped.
 ;
