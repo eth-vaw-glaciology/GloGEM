@@ -124,6 +124,16 @@ prefrontal_elev = reverse(prefrontal_elev)
 ; Surface elevation in prefrontal region (set equal to bedrock for zero thickness)
 sur_concat = prefrontal_elev
 
+; Kept for extend_flowline_grid.pro, which lengthens the prefrontal area when the
+; ice reaches its end: another quarter of the glacier length each time, at most
+; 1.5 glacier lengths in all (Harry's MATLAB volume_calibration.m)
+flow_frontal_length     = frontal_length
+flow_frontal_length_max = 1.5
+flow_pf_n     = extra_grids          ; prefrontal cells
+flow_pf_len   = dist_dx_init[-1]     ; glacier part of the grid (m)
+flow_pf_bed0  = lowest_bedrock_elev
+flow_pf_slope = avg_slope
+
 ; Merge arrays: prepend prefrontal region to glacier arrays
 dist_dx_init = [dist_dx_init, x_concat]
 sur_dx_init = [sur_concat, sur_dx_init]

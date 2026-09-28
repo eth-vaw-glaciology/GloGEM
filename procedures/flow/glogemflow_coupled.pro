@@ -69,9 +69,18 @@ if n_elements(flow_initialised) eq 0 then begin
   spinup_fail_file  = spinup_cache_dir + spinup_key + '_spinup_failed.txt'
 
   if file_test(spinup_cache_file) then begin
+    spinup_frontal_length = !null
     restore, spinup_cache_file   ; restores: spinup_aflow, spinup_ela_bias, thick_dx,
                                  ;           sur_dx, width_surface_dx, width_mid_dx,
-                                 ;           width_base_dx, lambda_dx
+                                 ;           width_base_dx, lambda_dx, spinup_frontal_length
+    ; the grid the spin-up ended on: lengthen the prefrontal area to match
+    if n_elements(spinup_frontal_length) gt 0 then begin
+      ext_ctx = 'spinup'
+      while flow_frontal_length lt spinup_frontal_length - 1d-6 do begin
+        @procedures/flow/extend_flowline_grid
+        if ext_n eq 0 then break
+      endwhile
+    endif
     aflow = spinup_aflow
     if n_elements(spinup_dtfactor) gt 0 then begin
       dtfactor = spinup_dtfactor
@@ -97,13 +106,16 @@ if n_elements(flow_initialised) eq 0 then begin
       goto, glogemflow_skip
     endif
     save, spinup_aflow, spinup_ela_bias, spinup_dtfactor, thick_dx, sur_dx, $
-          width_surface_dx, width_mid_dx, width_base_dx, lambda_dx, $
+          width_surface_dx, width_mid_dx, width_base_dx, lambda_dx, spinup_frontal_length, $
           file=spinup_cache_file
     print, 'Spin-up cache saved: ' + strtrim(id[gg[g]], 2)
     dtfactor = spinup_dtfactor   ; as a later cache hit does
   endelse
   ; same start after a fresh spin-up and a cache hit: no diffusivity carried over, double precision
   df_dx = dblarr(xnum)
+  ; grid arrays of the (possibly lengthened) grid
+  dist_dx = horizontal_grid_inputs.dist_dx
+  width_dx = horizontal_grid_inputs.width_dx
 
   ; Initialise time-stepping state
   t = 0l
@@ -417,6 +429,31 @@ while (~flow_icefree) and (time_flow lt year_end_flow) and (iter_flow lt max_ite
     @procedures/flow/handover_to_dh
     use_flow_model_gl = 'n'   ; actually switch this glacier to Δh from here on
     break
+  endif
+
+  ; Ice reached the last active cell (index 2): lengthen the ice-free area in front
+  ; of the glacier before any ice can leave the grid. Beyond the longest grid the
+  ; flow model stops for this glacier, as Harry's MATLAB future run does, and the
+  ; Δh parameterisation takes this year from its start.
+  if thick_dx[2] gt 0d0 then begin
+    ext_ctx = 'coupled'
+    @procedures/flow/extend_flowline_grid
+    if ext_n gt 0 then begin
+      print, 'GloGEMflow: ice reached the end of the flowline grid in ' + strtrim(ye + tran[0], 2) + $
+        ' --- ' + strtrim(ext_n, 2) + ' cells added in front (' + $
+        strtrim(string(flow_frontal_length, fo='(f4.2)'), 2) + ' glacier lengths)'
+    endif else begin
+      print, 'WARNING: GloGEMflow ice reached the end of the longest flowline grid in ' + $
+        strtrim(ye + tran[0], 2) + ' (' + strtrim(string(flow_frontal_length, fo='(f4.2)'), 2) + $
+        ' glacier lengths in front) --- falling back to Δh parameterisation for remainder of run.'
+      flow_blown_up = 1
+      thick_dx      = thick_dx_year_start
+      sur_dx        = sur_dx_year_start
+      @procedures/flow/sync_bands_thickness
+      @procedures/flow/handover_to_dh
+      use_flow_model_gl = 'n'
+      break
+    endelse
   endif
 endwhile
 flow_budget_on = 0

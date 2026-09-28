@@ -286,6 +286,7 @@ for len_iter = 0, max_len_iter - 1 do begin
     spinup_vol_prev  = 0d0
     ss_reached       = 0
     phase_a_failed   = 0
+    grid_full        = 0
 
     for spinup_yr = 0l, spinup_nyears - 1 do begin
       if systime(1) - spinup_t0 gt max_calib_wallclock_sec then begin
@@ -316,8 +317,13 @@ for len_iter = 0, max_len_iter - 1 do begin
           phase_a_failed = 1
           break
         endif
+        ; ice in the last active cell: the grid is too short for this attempt
+        if thick_dx[2] gt 0d0 then begin
+          grid_full = 1
+          break
+        endif
       endwhile
-      if phase_a_failed then break
+      if phase_a_failed or grid_full then break
 
       sur_dx = bed_dx + thick_dx
       width_surface_dx = width_base_dx + lambda_dx * thick_dx
@@ -359,6 +365,7 @@ for len_iter = 0, max_len_iter - 1 do begin
       endelse
       continue
     endif
+    if grid_full then goto, spinup_grid_full
     if ~ss_reached then print, '    WARNING: SS not reached after ', spinup_nyears, ' yr'
 
     ; -------- Phase B: historical transient run --------
@@ -413,15 +420,19 @@ for len_iter = 0, max_len_iter - 1 do begin
             phase_b_failed = 1
             break
           endif
+          if thick_dx[2] gt 0d0 then begin
+            grid_full = 1
+            break
+          endif
         endwhile
-        if phase_b_failed then break
+        if phase_b_failed or grid_full then break
 
         sur_dx = bed_dx + thick_dx
         width_surface_dx = width_base_dx + lambda_dx * thick_dx
         width_mid_dx = (width_base_dx + width_surface_dx) / 2.0
       endfor
 
-      if calib_abandoned then break
+      if calib_abandoned or grid_full then break
 
       if NOT phase_b_failed then begin
         phase_b_passed = 1
@@ -437,6 +448,32 @@ for len_iter = 0, max_len_iter - 1 do begin
     endfor
 
     if calib_abandoned then break
+
+    ; Ice reached the end of the grid (Phase A or B): lengthen the ice-free area in
+    ; front of the glacier and redo this attempt from an ice-free bed, as Harry's
+    ; MATLAB volume_calibration.m does (not counted as an attempt). Beyond the
+    ; longest grid the calibration gives up, as it does in MATLAB.
+    spinup_grid_full:
+    if grid_full then begin
+      ext_ctx = 'spinup'
+      @procedures/flow/extend_flowline_grid
+      if ext_n eq 0 then begin
+        print, '    Ice reaches the end of the longest flowline grid (' + $
+          strtrim(string(flow_frontal_length, fo='(f4.2)'), 2) + ' glacier lengths in front) --- ' + $
+          'abandoning flow model for this glacier, falling back to Δh parameterisation.'
+        calib_abandoned = 1
+        break
+      endif
+      print, '    Ice reached the end of the flowline grid --- ' + strtrim(ext_n, 2) + $
+        ' cells added in front (' + strtrim(string(flow_frontal_length, fo='(f4.2)'), 2) + $
+        ' glacier lengths), redoing this attempt'
+      obs_sur_dx   = double(horizontal_grid_inputs.sur_dx)
+      obs_thick_dx = double(horizontal_grid_inputs.thick_dx)
+      vol_iter = vol_iter - 1
+      total_calib_attempts = total_calib_attempts - 1l
+      prev_aflow_guess = -1d0
+      continue
+    endif
 
     if NOT phase_b_passed then begin
       print, '    Phase B blow-up (dtfactor at min) --- halving A_flow'
@@ -622,6 +659,7 @@ endfor ; length calibration loop
 ; ====================================================================
 aflow = spinup_aflow
 spinup_ela_bias = ela_bias
+spinup_frontal_length = flow_frontal_length
 
 sur_dx = bed_dx + thick_dx
 width_surface_dx = width_base_dx + lambda_dx * thick_dx
