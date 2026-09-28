@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
-"""Feed the GMIP4 v3 campaign (NorthAsia, LowLatitudes, Antarctic, Greenland) into the
-per-host watcher queues of this worktree.
+"""Feed the GMIP4 v3 campaign (NorthAsia, LowLatitudes, Antarctic, Greenland, and the reruns of
+Alaska, SouthernAndes, RussianArctic) into the per-host watcher queues of this worktree.
 
 Same scheme as feed_v2_campaign.py: every batch's ERA5 hindcast first; a batch's ssp126
 once its hindcast has ended; its other three SSPs once ssp126 has finished its first GCM
 (its projection spin-ups are then cached, so the three read them instead of redoing them).
 
-v3 regions run one config per climate subregion, each accepting only its own batches.
+NorthAsia, LowLatitudes and Antarctic run one config per climate subregion, each accepting only
+its own batches; the other regions run one config each.
 
 Run from the worktree root in tmux, with the regions to feed:
     python3 scripts/feed_v3_campaign.py northasia lowlatitudes
     python3 scripts/feed_v3_campaign.py antarctic greenland      (later, or in a 2nd feeder)
+    python3 scripts/feed_v3_campaign.py alaska southernandes russianarctic
 What has been queued is kept in logs/v3_fed.txt, so a restart resumes. A region can be
 fed by one feeder at a time (lock file logs/feed_v3_<region>.lock).
 --check only runs the pre-flight checks and prints the queue entries, queueing nothing.
@@ -23,9 +25,11 @@ REST = ["ssp585", "ssp370", "ssp534over"]      # longest runs first
 STATE = "logs/v3_fed.txt"
 POLL = 60
 CATCHMENTS = "/itet-stor/jabeer/glogem/data/catchments"
-RGI = {"northasia": "10", "lowlatitudes": "16", "antarctic": "19", "greenland": "05"}
+RGI = {"northasia": "10", "lowlatitudes": "16", "antarctic": "19", "greenland": "05",
+       "alaska": "01", "southernandes": "17", "russianarctic": "09"}
 
-# region: [(config key, batch, area km2)] from _notes/heldregions/batch_map.tsv
+# region: [(config key, batch, area km2)] from _notes/heldregions/batch_map.tsv; alaska and
+# southernandes: the v2 batches, russianarctic: the batches of the submitted v1 run (RGI7 areas)
 BATCHES = {
     "northasia": [("northasia_altay", "01", 334.4), ("northasia_altay", "02", 314.1),
                   ("northasia_altay", "03", 308.2), ("northasia_altay", "04", 300.3),
@@ -44,6 +48,14 @@ BATCHES = {
     "greenland": [("greenland", f"{i:02d}", a) for i, a in enumerate(
         [5737.3, 5424.1, 5218.5, 5297.3, 5114.5, 5073.4, 5115.8, 4996.7, 4973.6, 4853.9,
          4827.9, 4854.6, 4779.3, 4759.4, 4715.5, 4713.4, 4652.9, 4634.3, 4618.2, 4580.3], 1)],
+    "alaska": [("alaska", f"{i:02d}", a) for i, a in enumerate(
+        [7226.6, 6873.0, 6662.2, 4975.4, 4808.8, 4757.1, 4707.6, 4617.1, 4559.0, 4431.7,
+         4362.3, 4317.6, 4269.2, 4131.5, 4081.1, 4047.2, 3945.4, 3908.1], 1)],
+    "southernandes": [("southernandes", f"{i:02d}", a) for i, a in enumerate(
+        [2561.3, 2179.0, 2065.2, 2035.8, 2016.9, 1899.4, 1771.9, 1742.0, 1650.1, 1630.9,
+         1600.8, 1585.3, 1456.2, 1441.4, 1403.8, 1394.9, 1360.3, 1324.5], 1)],
+    "russianarctic": [("russianarctic", f"{i:02d}", a) for i, a in enumerate(
+        [9314.2, 9018.5, 8624.1, 8430.8, 8233.1, 8039.8], 1)],
 }
 
 
@@ -122,6 +134,8 @@ def preflight(regions, done):
             continue
         if not glob.glob(f"{d}monthly/*/calibration/calibrate_m1_cID9_*_final_era5.dat"):
             errors.append(f"no staged calibration in {d}monthly/*/calibration/")
+        for p in glob.glob(f"{d}monthly/*/calibration/calibrate_m1_cID9_*_final_era5_*.dat"):
+            errors.append(f"{p} would override the staged calibration for its catchment -- remove it")
         cache = glob.glob(f"{d}spinup_cache/*")
         if cache and not started:
             errors.append(f"{r}: {len(cache)} files in {d}spinup_cache/ before the first job -- clear it")
