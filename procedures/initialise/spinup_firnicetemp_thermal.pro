@@ -133,7 +133,10 @@ if firnice_spinup_solver eq 'drift' then begin
             hx_sp[b_sp, 0, 0:ni_sp-1] = reform(tl_prev_sp[b_sp, 1:tt_sp-2]) & hy_sp[b_sp, 0, 0:ni_sp-1] = Tn_sp
             hn_sp[b_sp] = (hn_sp[b_sp] + 1l) < 3l
             y_mix_sp = Tn_sp
-            if hn_sp[b_sp] ge 2 then begin
+            ; no mixing where ice arrives from the band above: its past years were made under a
+            ; different upstream state, so combining them ignores the coupling
+            inflow_sp = max(lacc_h[b_sp, 1:tt_sp-2]) gt 0.1d
+            if hn_sp[b_sp] ge 2 and not inflow_sp then begin
                 ; differences to the older pairs j = 1 (and 2): f_j in drift, e_j in end state
                 f1_sp = Dn_sp - reform(hy_sp[b_sp, 1, 0:ni_sp-1] - hx_sp[b_sp, 1, 0:ni_sp-1])
                 e1_sp = Tn_sp - reform(hy_sp[b_sp, 1, 0:ni_sp-1])
@@ -222,10 +225,11 @@ if firnice_spinup_solver eq 'drift' then begin
             chg_sp = tl_new_sp - reform(tl_fit[b_sp, 1:tt_sp-2])
             max_jump_sp = max_jump_sp > max(abs(chg_sp))
             tl_fit[b_sp, 1:tt_sp-2] = tl_new_sp
-            ; change on all nodes for the band below: surface 0, bed follows its neighbour unless
-            ; held at the melting point
-            dst_sp[b_sp, 1:tt_sp-2] = chg_sp
-            if not bed_hot_sp then dst_sp[b_sp, tt_sp-1] = chg_sp[ni_sp-1]
+            ; the solved jump on all nodes, for the band below: surface 0, bed follows its neighbour
+            ; unless held at the melting point. Only the solved part: the Anderson displacement is
+            ; this band's own, and passing it on made it grow from band to band down the glacier.
+            dst_sp[b_sp, 1:tt_sp-2] = dl_sp
+            if not bed_hot_sp then dst_sp[b_sp, tt_sp-1] = dl_sp[ni_sp-1]
         endfor
         n_jumps_sp = n_jumps_sp + 1l
         print, '  [thermal spinup] jump ' + strtrim(n_jumps_sp,2) + ' after ' + $
