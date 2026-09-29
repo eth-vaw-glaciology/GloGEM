@@ -231,14 +231,13 @@ max_total_calib_attempts = 20l
 total_calib_attempts     = 0l
 calib_abandoned          = 0
 
-; Wall-clock companion to the attempt cap above. A single Phase A attempt can
-; itself run for hours if the CFL-adaptive dt gets forced very small for a
-; pathological glacier (observed: 1h47m+ and still not converged on ONE
-; attempt) -- the attempt-count cap alone does not bound this. Checked every
-; simulated year inside Phase A/B (cheap: one systime(1) call), not just
-; between attempts, so a single runaway attempt is cut off promptly rather
-; than only after it finishes.
-max_calib_wallclock_sec  = 180d0
+; Work companion to the attempt cap above: flow time steps summed over Phase A and B
+; of all attempts (spinup_max_substeps, settings.pro), checked every simulated year.
+; A single attempt can run for hours when the CFL time step gets very small (observed:
+; 1h47m+ for ONE attempt), which the attempt cap does not bound. Counted in steps, not
+; seconds, so the result is the same on an idle and a busy host. The wall-clock cap
+; (spinup_max_wallclock_sec) is only a safety net.
+spinup_nsub = 0l
 
 ; ====================================================================
 ; OUTER LOOP: ELA-bias / length calibration
@@ -297,8 +296,14 @@ for len_iter = 0, max_len_iter - 1 do begin
     grid_full        = 0
 
     for spinup_yr = 0l, spinup_nyears - 1 do begin
-      if systime(1) - spinup_t0 gt max_calib_wallclock_sec then begin
-        print, '    Calibration wall-clock budget exhausted (' + strtrim(max_calib_wallclock_sec, 2) + $
+      if spinup_nsub ge spinup_max_substeps then begin
+        print, '    Calibration work budget exhausted (' + strtrim(spinup_max_substeps, 2) + $
+          ' flow time steps, Phase A) --- stopping the calibration.'
+        calib_abandoned = 1
+        break
+      endif
+      if systime(1) - spinup_t0 gt spinup_max_wallclock_sec then begin
+        print, '    Calibration wall-clock safety cap hit (' + strtrim(spinup_max_wallclock_sec, 2) + $
           ' s, Phase A) --- stopping the calibration.'
         calib_abandoned = 1
         break
@@ -321,6 +326,7 @@ for len_iter = 0, max_len_iter - 1 do begin
         @procedures/flow/diffusivity
         @procedures/flow/ice_thickness
         spinup_t = spinup_t + dt
+        spinup_nsub = spinup_nsub + 1l
         if max(thick_dx) gt 5000d0 or total(~finite(thick_dx)) gt 0 then begin
           phase_a_failed = 1
           break
@@ -398,8 +404,14 @@ for len_iter = 0, max_len_iter - 1 do begin
       phase_b_failed = 0
 
       for yy = 0, hist_n - 1 do begin
-        if systime(1) - spinup_t0 gt max_calib_wallclock_sec then begin
-          print, '    Calibration wall-clock budget exhausted (' + strtrim(max_calib_wallclock_sec, 2) + $
+        if spinup_nsub ge spinup_max_substeps then begin
+          print, '    Calibration work budget exhausted (' + strtrim(spinup_max_substeps, 2) + $
+            ' flow time steps, Phase B) --- stopping the calibration.'
+          calib_abandoned = 1
+          break
+        endif
+        if systime(1) - spinup_t0 gt spinup_max_wallclock_sec then begin
+          print, '    Calibration wall-clock safety cap hit (' + strtrim(spinup_max_wallclock_sec, 2) + $
             ' s, Phase B) --- stopping the calibration.'
           calib_abandoned = 1
           break
@@ -425,6 +437,7 @@ for len_iter = 0, max_len_iter - 1 do begin
           @procedures/flow/diffusivity
           @procedures/flow/ice_thickness
           hist_t = hist_t + dt
+          spinup_nsub = spinup_nsub + 1l
           if max(thick_dx) gt 5000d0 or total(~finite(thick_dx)) gt 0 then begin
             phase_b_failed = 1
             break
@@ -751,6 +764,7 @@ endif
 print, ''
 print, '=== Spin-up complete ==='
 print, 'Spin-up wall time   : ', systime(1) - spinup_t0, ' s'
+print, 'Spin-up work        : ', spinup_nsub, ' flow time steps'
 print, 'Calibrated A_flow   : ', spinup_aflow, ' Pa^-3 yr^-1'
 print, 'ELA bias            : ', spinup_ela_bias, ' m'
 print, 'Effective dtfactor  : ', spinup_dtfactor
