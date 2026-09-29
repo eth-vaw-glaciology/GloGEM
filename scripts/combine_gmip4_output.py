@@ -316,7 +316,8 @@ def sum_annual(paths):
 
 def sum_monthly(paths, annual_area_by_batch, n_years):
     """Sum acc/melt/refreeze/runoff_glac/precip; area-weight temp using
-    each batch's own annual area (broadcast to 12 months/year)."""
+    each batch's own annual area (broadcast to 12 months/year). Months in
+    which no batch has ice left weight by each batch's first-year area."""
     time = None
     attrs = None
     sums = None
@@ -332,12 +333,22 @@ def sum_monthly(paths, annual_area_by_batch, n_years):
                         for v in ("acc", "melt", "refreeze", "runoff_glac", "precip")}
                 temp_weighted_sum = np.zeros(n_months, dtype=np.float64)
                 weight_sum = np.zeros(n_months, dtype=np.float64)
+                temp_w0_sum = np.zeros(n_months, dtype=np.float64)
+                w0_sum = 0.0
             for v in sums:
                 sums[v] += np.asarray(ds.variables[v][:], dtype=np.float64)
             w = np.repeat(np.asarray(area, dtype=np.float64), 12)[:n_months]
-            temp_weighted_sum += np.asarray(ds.variables["temp"][:], dtype=np.float64) * w
+            t = np.asarray(ds.variables["temp"][:], dtype=np.float64)
+            temp_weighted_sum += t * w
             weight_sum += w
+            w0 = float(np.asarray(area, dtype=np.float64)[0])
+            temp_w0_sum += t * w0
+            w0_sum += w0
     temp = np.where(weight_sum > 0, temp_weighted_sum / np.maximum(weight_sum, 1e-30), np.nan)
+    # temp is over the initial glacier area, so it stays defined after all ice is gone
+    gone = weight_sum <= 0
+    if w0_sum > 0:
+        temp[gone] = temp_w0_sum[gone] / w0_sum
     sums["temp"] = temp
     return time, sums, attrs
 
