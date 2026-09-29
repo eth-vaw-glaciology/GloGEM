@@ -255,6 +255,8 @@ for len_iter = 0, max_len_iter - 1 do begin
   ; ----------------------------------------------------------------
   spinup_vol_tbl  = dblarr(max_vol_iter, 2)   ; [aflow, vol_at_survey]
   n_vol_done = 0
+  vb_err   = 1d30   ; state of the recorded attempt closest to the target volume
+  vb_thick = !null
   vol_converged = 0
   prev_aflow_guess = -1d0   ; sentinel; aflow_guess is always positive
 
@@ -498,6 +500,11 @@ for len_iter = 0, max_len_iter - 1 do begin
     n_vol_done = n_vol_done + 1
 
     vol_err_pct = (survey_vol - vol_target) / vol_target * 100d0
+    ; keep the state of the closest attempt so far (the first one on a tie, as below)
+    if abs(survey_vol - vol_target) lt vb_err then begin
+      vb_err   = abs(survey_vol - vol_target)
+      vb_thick = thick_dx
+    endif
     print, '    Survey vol=', survey_vol/1d9, ' km3  target=', vol_target/1d9, '  err=', vol_err_pct, '%'
 
     if abs(survey_vol - vol_target) / vol_target lt vol_prec then begin
@@ -566,6 +573,13 @@ for len_iter = 0, max_len_iter - 1 do begin
       endfor
       print, '  Best A_flow=', spinup_vol_tbl[best_idx, 0], '  vol=', spinup_vol_tbl[best_idx, 1]/1d9, ' km3'
       aflow_guess = spinup_vol_tbl[best_idx, 0]
+      ; continue with the ice this A_flow produced, as MATLAB re-runs it (volume_calibration.m);
+      ; cells the grid gained since then are ice-free
+      vb_n = xnum - n_elements(vb_thick)
+      thick_dx = vb_n gt 0 ? [dblarr(vb_n), vb_thick] : vb_thick
+      sur_dx = bed_dx + thick_dx
+      width_surface_dx = width_base_dx + lambda_dx * thick_dx
+      width_mid_dx = (width_base_dx + width_surface_dx) / 2.0
 
       ; Even a *recorded* best attempt can be degenerate: A_flow pinned at its
       ; 1e-20 floor (near-zero ice deformation) while still missing the target
@@ -720,18 +734,10 @@ ii_fin = where(thick_dx gt 0, c_fin)
 final_vol  = c_fin gt 0 ? total(thick_dx[ii_fin] * width_mid_dx[ii_fin] * dx) : 0d0
 final_area = c_fin gt 0 ? total(width_surface_dx[ii_fin] * dx) / 1d6 : 0d0
 
-; Final sanity check on the ACTUAL geometry state about to be cached/used --
-; distinct from the n_vol_done/best-result checks above, which only inspect
-; spinup_vol_tbl's RECORDED volume for a given attempt, not the live thick_dx.
-; "Best result" only remembers the winning A_flow *value*; it does not re-run
-; Phase A/B to restore thick_dx to the state that value actually produced. If
-; a LATER vol_iter attempt in the same length-iteration then blows up, that
-; corrupted thick_dx is what final_vol (and the cached geometry) reflects --
-; not the earlier, correctly-converged attempt the search table remembers.
-; Confirmed for glacier 02280: search recorded a converged 0.064 km3 (1.65%
-; error) at vol_iter 5, but vol_iter 6's subsequent blow-up left thick_dx
-; corrupted, and final_vol came out as 1406.8 km3 (2,227,413% error) --
-; passing the checks above (which only look at the table) undetected.
+; Final sanity check on the geometry state about to be cached/used. The state
+; now always belongs to the kept A_flow; this stays as a safety net (it caught
+; glacier 02280: 1406.8 km3 left by a later blown-up attempt before the state
+; of the best attempt was kept).
 final_vol_err_pct = vol_target gt 0 ? abs(final_vol - vol_target) / vol_target * 100d0 : 0d0
 if final_vol_err_pct gt 100d0 then begin
   print, ''
