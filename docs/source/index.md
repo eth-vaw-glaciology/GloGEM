@@ -113,3 +113,11 @@ calibration/snowline
 contributing/index
 contributing/git-workflow
 ```
+
+```{toctree}
+:maxdepth: 2
+:titlesonly:
+:caption: Development
+
+development/model-changes-2026
+```
