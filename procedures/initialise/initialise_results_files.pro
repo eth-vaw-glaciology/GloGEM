@@ -53,4 +53,7 @@ printf,33,'ID  area(km2)  frontal ablation (Gt/a), first model year'
 if use_flow_model eq 'y' then begin
     openw,36,dirres+'/'+time_resolution+'/'+dir_region+subpath+long_GCM+sub_region+cc+'_flow_gridend_outflow.dat'
     printf,36,'ID  bed_end(m)  booked_as  '+string(y,fo='('+strcompress(string(years),/remove_all)+'i10)')
+    ; flowline ice calved at the front below sea level per glacier and year (same writer)
+    openw,37,dirres+'/'+time_resolution+'/'+dir_region+subpath+long_GCM+sub_region+cc+'_flow_front_calving.dat'
+    printf,37,'ID  '+string(y,fo='('+strcompress(string(years),/remove_all)+'i10)')
 endif

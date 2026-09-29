@@ -224,13 +224,23 @@ growth_max_rel   = 20.0d0   ; x the inventory volume
 spinup_gate_vol_tol = 0.5d0   ; fraction of observed volume
 spinup_gate_len_min = 0.5d0   ; fraction of observed length
 
+; Spin-up cost limit (spinup_flowmodel.pro): the calibration of one glacier stops after
+; spinup_max_substeps flow time steps (Phase A and B, all attempts). That is the work the
+; former 180 s wall-clock limit allowed on an idle vierzack for a flowline of typical size
+; (about 120 cells), and it gives the same result on an idle and a busy host. The
+; wall-clock cap is only a safety net, about 3x what the budget takes on the largest grids;
+; it should never bind at normal load, and the run log says when it does.
+spinup_max_substeps      = 2500000l
+spinup_max_wallclock_sec = 900d0
+
 ; Ice that flows out of the last active flowline cell (the downstream end of the grid):
 ;   'frontal'      book it as frontal ablation
 ;   'melt_if_land' book it as frontal ablation only where the bed of that cell is below
 ;                  0 m, otherwise as ice melt
 ; Either way it is written to *_flow_gridend_outflow.dat and summed in the run log.
-; Ice now only leaves the grid where that bed is below 0 m (land fronts get a longer
-; grid instead), so both settings give the same result.
+; Ice now only leaves the grid of a glacier whose inventory front is on a bed below
+; 0 m, where that bed is below 0 m too (other fronts get a longer grid instead), so
+; both settings give the same result.
 flow_gridend_outflow = 'frontal'
 
 ; --- glacier retreat module (Δh parameterisation option)

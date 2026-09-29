@@ -137,6 +137,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
             n_flow_gated    = 0L
             flow_ge_fa_gt   = 0d0   ; grid-end outflow booked as frontal ablation, Gt
             flow_ge_melt_gt = 0d0   ; grid-end outflow booked as melt, Gt
+            flow_fc_gt      = 0d0   ; flowline ice calved at the front below sea level, Gt
           endif
 
           ; Define start of mass balance year and clean stale t_offset
@@ -441,6 +442,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                       areas=dblarr(years) & volumes=areas
                       flux_calv=areas
                       flow_gridend=areas & flow_ge_bed=-9999d0   ; flowline grid-end outflow (m w.e.), bed there (m)
+                      flow_fcalv=areas   ; flowline ice calved at the front below sea level (m w.e.)
 
                       sur=dblarr(nb) & sno=sur & snostor=sur
                       firn=sur & ff=where(elev gt hmed[gg[g]],ci) & if ci gt 0 then firn[ff]=1
@@ -833,6 +835,9 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
               strtrim(string(flow_ge_gt / years, fo='(f10.4)'), 2) + ' Gt/a averaged over ' + strtrim(years, 2) + ' model years): ' + $
               strtrim(string(flow_ge_fa_gt, fo='(f12.4)'), 2) + ' Gt booked as frontal ablation, ' + $
               strtrim(string(flow_ge_melt_gt, fo='(f12.4)'), 2) + ' Gt as melt'
+            print, '--------- FLOWLINE CALVING BELOW SEA LEVEL (frontal ablation):'
+            print, '  ' + strtrim(string(flow_fc_gt, fo='(f12.4)'), 2) + ' Gt over the run (' + $
+              strtrim(string(flow_fc_gt / years, fo='(f10.4)'), 2) + ' Gt/a averaged over ' + strtrim(years, 2) + ' model years)'
           endif
         endif
 

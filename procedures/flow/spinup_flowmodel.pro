@@ -231,14 +231,13 @@ max_total_calib_attempts = 20l
 total_calib_attempts     = 0l
 calib_abandoned          = 0
 
-; Wall-clock companion to the attempt cap above. A single Phase A attempt can
-; itself run for hours if the CFL-adaptive dt gets forced very small for a
-; pathological glacier (observed: 1h47m+ and still not converged on ONE
-; attempt) -- the attempt-count cap alone does not bound this. Checked every
-; simulated year inside Phase A/B (cheap: one systime(1) call), not just
-; between attempts, so a single runaway attempt is cut off promptly rather
-; than only after it finishes.
-max_calib_wallclock_sec  = 180d0
+; Work companion to the attempt cap above: flow time steps summed over Phase A and B
+; of all attempts (spinup_max_substeps, settings.pro), checked every simulated year.
+; A single attempt can run for hours when the CFL time step gets very small (observed:
+; 1h47m+ for ONE attempt), which the attempt cap does not bound. Counted in steps, not
+; seconds, so the result is the same on an idle and a busy host. The wall-clock cap
+; (spinup_max_wallclock_sec) is only a safety net.
+spinup_nsub = 0l
 
 ; ====================================================================
 ; OUTER LOOP: ELA-bias / length calibration
@@ -255,6 +254,8 @@ for len_iter = 0, max_len_iter - 1 do begin
   ; ----------------------------------------------------------------
   spinup_vol_tbl  = dblarr(max_vol_iter, 2)   ; [aflow, vol_at_survey]
   n_vol_done = 0
+  vb_err   = 1d30   ; state of the recorded attempt closest to the target volume
+  vb_thick = !null
   vol_converged = 0
   prev_aflow_guess = -1d0   ; sentinel; aflow_guess is always positive
 
@@ -272,7 +273,7 @@ for len_iter = 0, max_len_iter - 1 do begin
     total_calib_attempts = total_calib_attempts + 1l
     if total_calib_attempts gt max_total_calib_attempts then begin
       print, '  Calibration attempt budget exhausted (' + strtrim(max_total_calib_attempts, 2) + $
-        ') --- abandoning flow model for this glacier, falling back to Δh parameterisation.'
+        ') --- stopping the calibration.'
       calib_abandoned = 1
       break
     endif
@@ -295,9 +296,15 @@ for len_iter = 0, max_len_iter - 1 do begin
     grid_full        = 0
 
     for spinup_yr = 0l, spinup_nyears - 1 do begin
-      if systime(1) - spinup_t0 gt max_calib_wallclock_sec then begin
-        print, '    Calibration wall-clock budget exhausted (' + strtrim(max_calib_wallclock_sec, 2) + $
-          ' s, Phase A) --- abandoning flow model for this glacier, falling back to Δh parameterisation.'
+      if spinup_nsub ge spinup_max_substeps then begin
+        print, '    Calibration work budget exhausted (' + strtrim(spinup_max_substeps, 2) + $
+          ' flow time steps, Phase A) --- stopping the calibration.'
+        calib_abandoned = 1
+        break
+      endif
+      if systime(1) - spinup_t0 gt spinup_max_wallclock_sec then begin
+        print, '    Calibration wall-clock safety cap hit (' + strtrim(spinup_max_wallclock_sec, 2) + $
+          ' s, Phase A) --- stopping the calibration.'
         calib_abandoned = 1
         break
       endif
@@ -319,13 +326,14 @@ for len_iter = 0, max_len_iter - 1 do begin
         @procedures/flow/diffusivity
         @procedures/flow/ice_thickness
         spinup_t = spinup_t + dt
+        spinup_nsub = spinup_nsub + 1l
         if max(thick_dx) gt 5000d0 or total(~finite(thick_dx)) gt 0 then begin
           phase_a_failed = 1
           break
         endif
-        ; ice in the last active cell: the grid is too short for this attempt,
-        ; unless the bed there is below sea level, where the ice calves off the end
-        if thick_dx[2] gt 0d0 and bed_dx[2] ge 0d0 then begin
+        ; ice in the last active cell: the grid is too short for this attempt, unless
+        ; a sea front's grid end is below sea level, where the ice calves off the end
+        if thick_dx[2] gt 0d0 and (flow_sea_front eq 0 or bed_dx[2] ge 0d0) then begin
           grid_full = 1
           break
         endif
@@ -396,9 +404,15 @@ for len_iter = 0, max_len_iter - 1 do begin
       phase_b_failed = 0
 
       for yy = 0, hist_n - 1 do begin
-        if systime(1) - spinup_t0 gt max_calib_wallclock_sec then begin
-          print, '    Calibration wall-clock budget exhausted (' + strtrim(max_calib_wallclock_sec, 2) + $
-            ' s, Phase B) --- abandoning flow model for this glacier, falling back to Δh parameterisation.'
+        if spinup_nsub ge spinup_max_substeps then begin
+          print, '    Calibration work budget exhausted (' + strtrim(spinup_max_substeps, 2) + $
+            ' flow time steps, Phase B) --- stopping the calibration.'
+          calib_abandoned = 1
+          break
+        endif
+        if systime(1) - spinup_t0 gt spinup_max_wallclock_sec then begin
+          print, '    Calibration wall-clock safety cap hit (' + strtrim(spinup_max_wallclock_sec, 2) + $
+            ' s, Phase B) --- stopping the calibration.'
           calib_abandoned = 1
           break
         endif
@@ -423,11 +437,12 @@ for len_iter = 0, max_len_iter - 1 do begin
           @procedures/flow/diffusivity
           @procedures/flow/ice_thickness
           hist_t = hist_t + dt
+          spinup_nsub = spinup_nsub + 1l
           if max(thick_dx) gt 5000d0 or total(~finite(thick_dx)) gt 0 then begin
             phase_b_failed = 1
             break
           endif
-          if thick_dx[2] gt 0d0 and bed_dx[2] ge 0d0 then begin
+          if thick_dx[2] gt 0d0 and (flow_sea_front eq 0 or bed_dx[2] ge 0d0) then begin
             grid_full = 1
             break
           endif
@@ -456,7 +471,7 @@ for len_iter = 0, max_len_iter - 1 do begin
 
     if calib_abandoned then break
 
-    ; Ice reached the end of the grid (Phase A or B) on land: lengthen the ice-free
+    ; Ice reached the end of the grid (Phase A or B), not at sea: lengthen the ice-free
     ; area in front of the glacier and redo this attempt from an ice-free bed, as
     ; Harry's MATLAB volume_calibration.m does (not counted as an attempt). Beyond
     ; the longest grid the calibration gives up, as it does in MATLAB.
@@ -467,7 +482,7 @@ for len_iter = 0, max_len_iter - 1 do begin
       if ext_n eq 0 then begin
         print, '    Ice reaches the end of the longest flowline grid (' + $
           strtrim(string(flow_frontal_length, fo='(f4.2)'), 2) + ' glacier lengths in front) --- ' + $
-          'abandoning flow model for this glacier, falling back to Δh parameterisation.'
+          'stopping the calibration.'
         calib_abandoned = 1
         break
       endif
@@ -498,6 +513,11 @@ for len_iter = 0, max_len_iter - 1 do begin
     n_vol_done = n_vol_done + 1
 
     vol_err_pct = (survey_vol - vol_target) / vol_target * 100d0
+    ; keep the state of the closest attempt so far (the first one on a tie, as below)
+    if abs(survey_vol - vol_target) lt vb_err then begin
+      vb_err   = abs(survey_vol - vol_target)
+      vb_thick = thick_dx
+    endif
     print, '    Survey vol=', survey_vol/1d9, ' km3  target=', vol_target/1d9, '  err=', vol_err_pct, '%'
 
     if abs(survey_vol - vol_target) / vol_target lt vol_prec then begin
@@ -533,6 +553,7 @@ for len_iter = 0, max_len_iter - 1 do begin
     break
   endif
   if calib_abandoned then begin
+    print, '  Spin-up failed --- falling back to Δh parameterisation.'
     use_flow_model_gl = 'n'
     goto, spinup_skip
   endif
@@ -550,8 +571,7 @@ for len_iter = 0, max_len_iter - 1 do begin
       ; other unrecoverable calibration failures above: abandon the flow model
       ; for this glacier and fall back to the Δh parameterisation.
       print, '  No A_flow attempt reached a valid volume this length-iteration ' + $
-        '(all blew up or stalled) --- abandoning flow model for this glacier, ' + $
-        'falling back to Δh parameterisation.'
+        '(all blew up or stalled) --- stopping the calibration.'
       calib_abandoned = 1
     endif else begin
       print, '  Volume did not converge --- using best result'
@@ -566,6 +586,13 @@ for len_iter = 0, max_len_iter - 1 do begin
       endfor
       print, '  Best A_flow=', spinup_vol_tbl[best_idx, 0], '  vol=', spinup_vol_tbl[best_idx, 1]/1d9, ' km3'
       aflow_guess = spinup_vol_tbl[best_idx, 0]
+      ; continue with the ice this A_flow produced, as MATLAB re-runs it (volume_calibration.m);
+      ; cells the grid gained since then are ice-free
+      vb_n = xnum - n_elements(vb_thick)
+      thick_dx = vb_n gt 0 ? [dblarr(vb_n), vb_thick] : vb_thick
+      sur_dx = bed_dx + thick_dx
+      width_surface_dx = width_base_dx + lambda_dx * thick_dx
+      width_mid_dx = (width_base_dx + width_surface_dx) / 2.0
 
       ; Even a *recorded* best attempt can be degenerate: A_flow pinned at its
       ; 1e-20 floor (near-zero ice deformation) while still missing the target
@@ -577,7 +604,7 @@ for len_iter = 0, max_len_iter - 1 do begin
       best_vol_err_pct = abs(spinup_vol_tbl[best_idx, 1] - vol_target) / vol_target * 100d0
       if best_vol_err_pct gt 100d0 then begin
         print, '  Best result still off by ', best_vol_err_pct, '% --- treating as calibration failure, ' + $
-          'falling back to Δh parameterisation.'
+          'stopping the calibration.'
         calib_abandoned = 1
       endif
     endelse
@@ -588,6 +615,7 @@ for len_iter = 0, max_len_iter - 1 do begin
     break
   endif
   if calib_abandoned then begin
+    print, '  Spin-up failed --- falling back to Δh parameterisation.'
     use_flow_model_gl = 'n'
     goto, spinup_skip
   endif
@@ -719,18 +747,10 @@ ii_fin = where(thick_dx gt 0, c_fin)
 final_vol  = c_fin gt 0 ? total(thick_dx[ii_fin] * width_mid_dx[ii_fin] * dx) : 0d0
 final_area = c_fin gt 0 ? total(width_surface_dx[ii_fin] * dx) / 1d6 : 0d0
 
-; Final sanity check on the ACTUAL geometry state about to be cached/used --
-; distinct from the n_vol_done/best-result checks above, which only inspect
-; spinup_vol_tbl's RECORDED volume for a given attempt, not the live thick_dx.
-; "Best result" only remembers the winning A_flow *value*; it does not re-run
-; Phase A/B to restore thick_dx to the state that value actually produced. If
-; a LATER vol_iter attempt in the same length-iteration then blows up, that
-; corrupted thick_dx is what final_vol (and the cached geometry) reflects --
-; not the earlier, correctly-converged attempt the search table remembers.
-; Confirmed for glacier 02280: search recorded a converged 0.064 km3 (1.65%
-; error) at vol_iter 5, but vol_iter 6's subsequent blow-up left thick_dx
-; corrupted, and final_vol came out as 1406.8 km3 (2,227,413% error) --
-; passing the checks above (which only look at the table) undetected.
+; Final sanity check on the geometry state about to be cached/used. The state
+; now always belongs to the kept A_flow; this stays as a safety net (it caught
+; glacier 02280: 1406.8 km3 left by a later blown-up attempt before the state
+; of the best attempt was kept).
 final_vol_err_pct = vol_target gt 0 ? abs(final_vol - vol_target) / vol_target * 100d0 : 0d0
 if final_vol_err_pct gt 100d0 then begin
   print, ''
@@ -744,6 +764,7 @@ endif
 print, ''
 print, '=== Spin-up complete ==='
 print, 'Spin-up wall time   : ', systime(1) - spinup_t0, ' s'
+print, 'Spin-up work        : ', spinup_nsub, ' flow time steps'
 print, 'Calibrated A_flow   : ', spinup_aflow, ' Pa^-3 yr^-1'
 print, 'ELA bias            : ', spinup_ela_bias, ' m'
 print, 'Effective dtfactor  : ', spinup_dtfactor
