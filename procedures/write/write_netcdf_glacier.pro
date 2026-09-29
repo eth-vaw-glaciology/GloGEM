@@ -63,7 +63,8 @@ if ~finite(nc_ini_area) then nc_ini_area = total(area_ini, /nan)   ; skip non-fi
 gl_area = float(areas   * 1e6)
 ; ice density 900 kg/m3 for volume->mass (matches GloGEM's internal dens=0.9)
 gl_mass = float(volumes * 900d9)
-gl_mbsl = float((vol_bz - nc_volbz_prev) * 900d9)   ; vol_bz is a regional running total -> this glacier's part
+nc_s_mbsl = vol_bz - nc_volbz_prev   ; vol_bz is a regional running total -> this glacier's part
+gl_mbsl = float(nc_s_mbsl * 900d9)
 nc_volbz_prev = vol_bz
 gl_fabl = float(flux_calv * areas * 1e9)   ; m w.e. x area -> kg (verify flux_calv units)
 
@@ -77,6 +78,9 @@ if time_resolution eq 'monthly' then begin
     gl_temp = tempmo_ini                             ; already in K
     gl_rbas = float(discharge    * area_cat * 1e9)   ; basin runoff over initial area -> kg
     gl_snowline = float(snowlinemon)                 ; monthly transient snowline [m a.s.l.]
+    ; values in the model's own units, to find its fill value (snoval) below
+    nc_s_acc = accmo & nc_s_melt = melmo & nc_s_refr = refrmo & nc_s_run = discharge_gl
+    nc_s_prec = precmo_ini
 endif else if nc_aggregate then begin
     ; Daily run aggregated to monthly NetCDF: sum daily values within each
     ; calendar month; mean for temperature. Fixed month lengths (sum to 365);
@@ -111,6 +115,8 @@ endif else if nc_aggregate then begin
     gl_temp = temp_m
     gl_rbas = float(rbas_m * area_cat * 1e9)
     gl_snowline = float(snln_m)                      ; monthly transient snowline [m a.s.l.]
+    nc_s_acc = acc_m & nc_s_melt = melt_m & nc_s_refr = refr_m & nc_s_run = run_m
+    nc_s_prec = prec_m
 endif else begin
     ; acc/melt/refr: divided by total(area_ini) in store step
     gl_acc  = float(accday                        * nc_ini_area * 1e9)
@@ -121,23 +127,26 @@ endif else begin
     gl_temp = tempday_ini
     gl_rbas = float(discharge    * area_cat * 1e9)   ; basin runoff over initial area -> kg
     gl_snowline = float(snowlineday)                 ; daily transient snowline [m a.s.l.]
+    nc_s_acc = accday & nc_s_melt = snowmeltday + icemeltday & nc_s_refr = refrday & nc_s_run = discharge_gl
+    nc_s_prec = precday_ini
 endelse
 
 ; GlacierMIP4 Table 5 optional individual-glacier annual variables
 gl_ela  = float(ela)                          ; annual ELA [m a.s.l.]
 gl_aar  = float(aar) / 100.                   ; annual AAR [fraction 0-1] (aar stored as percent)
 
-; Replace snoval with NaN
+; Replace snoval with NaN: only where the value in the model's own units is the
+; fill value, so a real negative value (e.g. runoff) that is below -98 in kg is kept
 nc_sv = snoval + 1.
-ii = where(gl_area lt nc_sv, ci) & if ci gt 0 then gl_area[ii] = nc_fv
-ii = where(gl_mass lt nc_sv, ci) & if ci gt 0 then gl_mass[ii] = nc_fv
-ii = where(gl_mbsl lt nc_sv, ci) & if ci gt 0 then gl_mbsl[ii] = nc_fv
-ii = where(gl_fabl lt nc_sv, ci) & if ci gt 0 then gl_fabl[ii] = nc_fv
-ii = where(gl_acc  lt nc_sv, ci) & if ci gt 0 then gl_acc[ii]  = nc_fv
-ii = where(gl_melt lt nc_sv, ci) & if ci gt 0 then gl_melt[ii] = nc_fv
-ii = where(gl_refr lt nc_sv, ci) & if ci gt 0 then gl_refr[ii] = nc_fv
-ii = where(gl_run  lt nc_sv, ci) & if ci gt 0 then gl_run[ii]  = nc_fv
-ii = where(gl_prec lt nc_sv, ci) & if ci gt 0 then gl_prec[ii] = nc_fv
+ii = where(gl_area lt nc_sv and areas lt nc_sv, ci) & if ci gt 0 then gl_area[ii] = nc_fv
+ii = where(gl_mass lt nc_sv and volumes lt nc_sv, ci) & if ci gt 0 then gl_mass[ii] = nc_fv
+ii = where(gl_mbsl lt nc_sv and nc_s_mbsl lt nc_sv, ci) & if ci gt 0 then gl_mbsl[ii] = nc_fv
+ii = where(gl_fabl lt nc_sv and flux_calv lt nc_sv, ci) & if ci gt 0 then gl_fabl[ii] = nc_fv
+ii = where(gl_acc  lt nc_sv and nc_s_acc lt nc_sv, ci) & if ci gt 0 then gl_acc[ii]  = nc_fv
+ii = where(gl_melt lt nc_sv and nc_s_melt lt nc_sv, ci) & if ci gt 0 then gl_melt[ii] = nc_fv
+ii = where(gl_refr lt nc_sv and nc_s_refr lt nc_sv, ci) & if ci gt 0 then gl_refr[ii] = nc_fv
+ii = where(gl_run  lt nc_sv and nc_s_run lt nc_sv, ci) & if ci gt 0 then gl_run[ii]  = nc_fv
+ii = where(gl_prec lt nc_sv and nc_s_prec lt nc_sv, ci) & if ci gt 0 then gl_prec[ii] = nc_fv
 ii = where(gl_temp lt nc_sv, ci) & if ci gt 0 then gl_temp[ii] = nc_fv
 ii = where(gl_ela  lt nc_sv, ci) & if ci gt 0 then gl_ela[ii]  = nc_fv
 ii = where(gl_aar  lt nc_sv/100., ci) & if ci gt 0 then gl_aar[ii]  = nc_fv   ; threshold scaled (AAR now fraction)
