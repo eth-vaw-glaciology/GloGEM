@@ -16,6 +16,12 @@ Run from the worktree root in tmux, with the regions to feed:
 What has been queued is kept in logs/v3_fed.txt, so a restart resumes. A region can be
 fed by one feeder at a time (lock file logs/feed_v3_<region>.lock).
 --check only runs the pre-flight checks and prints the queue entries, queueing nothing.
+
+Once everything is fed, the feeder waits for every job to end and then reports each batch
+without its 5 .done markers: a queue line can be lost when the feeder appends while a watcher
+rewrites that queue file. A fed job that is in no queue, never started and has no marker is
+reported as LOST as soon as it is seen twice in a row, with the line to re-queue.
+--verify only prints that completeness report for the given regions (exit code 1 if incomplete).
 """
 import fcntl, glob, os, re, sys, time
 
@@ -24,6 +30,9 @@ FIRST = "ssp126"                              # builds the batch's projection sp
 REST = ["ssp585", "ssp370", "ssp534over"]      # longest runs first
 STATE = "logs/v3_fed.txt"
 POLL = 60
+SSPS = ["hindcast", FIRST] + REST
+LOST_POLLS = 2      # a job seen this many polls in a row as neither queued, started nor ended is lost
+STALE_H = 6         # a started job whose logs have not changed for this long is counted as dead
 CATCHMENTS = "/itet-stor/jabeer/glogem/data/catchments"
 RGI = {"northasia": "10", "lowlatitudes": "16", "antarctic": "19", "greenland": "05",
        "alaska": "01", "southernandes": "17", "russianarctic": "09"}
@@ -172,13 +181,105 @@ def first_gcm_done(key, b):
     return False
 
 
+def queued():
+    """queue entries of every host, deferred ones included (first four fields)"""
+    out = set()
+    for p in glob.glob("logs/launch_queue_*.txt*"):
+        try:
+            for ln in open(p):
+                ln = ln.strip()
+                if ln and not ln.startswith("#"):
+                    out.add("|".join(ln.split("|")[:4]))
+        except OSError:
+            pass
+    return out
+
+
+def last_change(logs):
+    """newest change of a job's batch logs and of the journal each one names"""
+    t = 0.0
+    for p in logs:
+        try:
+            t = max(t, os.path.getmtime(p))
+            for ln in open(p, errors="ignore"):
+                if ln.startswith("Log file:"):
+                    t = max(t, os.path.getmtime(ln.split(":", 1)[1].strip()))
+        except OSError:
+            pass
+    return t
+
+
+def job_status(key, b, ssp, fed_now, queue):
+    """done | failed | queued | running | stalled | lost | not fed"""
+    if f"{key}|{b}|{ssp if ssp in ('hindcast', FIRST) else 'rest'}" not in fed_now:
+        return "not fed"
+    d = f"{done_dir(key, ssp)}/batch{b}"
+    if os.path.exists(d + ".done"):
+        return "done"
+    if os.path.exists(d + ".failed"):
+        return "failed"
+    if entry(key, b, ssp) in queue:
+        return "queued"
+    logs = glob.glob(f"logs/v3_{key}_{ssp}_batch{b}_*.log")
+    if logs:
+        return "running" if time.time() - last_change(logs) < STALE_H * 3600 else "stalled"
+    return "lost"
+
+
+def completeness(regions):
+    """{(key, batch, ssp): status} for every job of the regions"""
+    fed_now, queue = fed(), queued()
+    return {(k, b, s): job_status(k, b, s, fed_now, queue) for r in regions for k, b, _ in BATCHES[r] for s in SSPS}
+
+
+def report(regions, st):
+    """print every batch without its 5 .done markers; True if all are there"""
+    n = {}
+    for v in st.values():
+        n[v] = n.get(v, 0) + 1
+    nb = sum(len(BATCHES[r]) for r in regions)
+    print(time.strftime("%F %T"), f"completeness ({', '.join(regions)}): {nb} batches, {len(st)} jobs: " +
+          ", ".join(f"{c} {v}" for v, c in sorted(n.items())), flush=True)
+    for r in regions:
+        for k, b, _ in BATCHES[r]:
+            bad = [(s, st[(k, b, s)]) for s in SSPS if st[(k, b, s)] != "done"]
+            if bad:
+                print(f"  {k} batch{b}: " + ", ".join(f"{s} {v}" for s, v in bad), flush=True)
+                for s, v in bad:
+                    if v == "lost":
+                        print(f"    re-queue: {entry(k, b, s)}", flush=True)
+    ok = all(v == "done" for v in st.values())
+    if ok:
+        print(f"  every batch has its {len(SSPS)} .done markers", flush=True)
+    return ok
+
+
+def wait_and_report(regions):
+    """after the last feed: flag lost jobs as they appear, report once every job has ended"""
+    seen, told = {}, set()
+    while True:
+        st = completeness(regions)
+        for j, v in st.items():
+            seen[j] = seen.get(j, 0) + 1 if v == "lost" else 0
+            if seen[j] >= LOST_POLLS and j not in told:
+                print(time.strftime("%F %T"), f"LOST: {j[0]} batch{j[1]} {j[2]} was fed but is in no queue, never "
+                      f"started and has no marker -- re-queue: {entry(*j)}", flush=True)
+                told.add(j)
+        busy = [j for j, v in st.items() if v in ("queued", "running", "not fed") or (v == "lost" and seen[j] < LOST_POLLS)]
+        if not busy:
+            return report(regions, st)
+        time.sleep(POLL)
+
+
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     check = "--check" in sys.argv
     bad = [a for a in args if a not in BATCHES]
     if not args or bad:
-        sys.exit(f"usage: feed_v3_campaign.py [--check] REGION... (from {', '.join(BATCHES)}); unknown: {bad}")
+        sys.exit(f"usage: feed_v3_campaign.py [--check | --verify] REGION... (from {', '.join(BATCHES)}); unknown: {bad}")
     regions = list(dict.fromkeys(args))
+    if "--verify" in sys.argv:
+        sys.exit(0 if report(regions, completeness(regions)) else 1)
     os.makedirs("logs", exist_ok=True)
     done = fed()
     errors = preflight(regions, done)
@@ -199,6 +300,9 @@ def main():
         print(f"pre-flight ok: {len(order)} batches, {5 * len(order)} jobs")
         return
     regions = lock(regions)
+    if not regions:
+        print(time.strftime("%F %T"), "no region left to feed -- exiting", flush=True)
+        return
     order = [(k, b) for k, b in order if any(k == kk for r in regions for kk, _, _ in BATCHES[r])]
     # phase 1
     new = [(k, b) for k, b in order if f"{k}|{b}|hindcast" not in done]
@@ -227,7 +331,8 @@ def main():
                 mark(f"{k}|{b}|rest")
                 print(time.strftime("%F %T"), f"{k} batch{b}: {FIRST} past its first GCM; queued {', '.join(REST)}", flush=True)
         if todo == 0:
-            print(time.strftime("%F %T"), "all batches fed -- exiting", flush=True)
+            print(time.strftime("%F %T"), "all batches fed -- waiting for every job to end, then checking the .done markers", flush=True)
+            wait_and_report(regions)
             return
         time.sleep(POLL)
 
