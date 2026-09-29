@@ -353,9 +353,9 @@ endelse
                 if aflow[0] gt 0 then A_sh = aflow[0] / 3.15576d7   ; yr^-1 -> s^-1
           sh_exp = double(n) + 1.0d   ; = 4 for Glen n=3
           for j = 1, tt-2 do begin
-              tau_j = tau_d_sh * (fit_dz[1,j] / (thick[ii[i]] > 1.0d))
+              tau_j = tau_d_sh * ((fit_dz[1,j] / (thick[ii[i]] > 1.0d)) < 1.0d)
               Q_j   = 2.0d * A_sh * tau_j^sh_exp       ; W m⁻³
-              dT_j  = Q_j * rf_dt / (dens_fit[j] * cap_fit[j])  ; K per substep
+              dT_j  = Q_j * rf_dt / cap_fit[j]         ; K per substep (cap_fit is J m⁻³ K⁻¹)
               tl_fit[ii[i],j] = (tl_fit[ii[i],j] + dT_j) < pmp_profile[j]
           endfor
       endif
