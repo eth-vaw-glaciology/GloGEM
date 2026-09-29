@@ -272,7 +272,7 @@ for len_iter = 0, max_len_iter - 1 do begin
     total_calib_attempts = total_calib_attempts + 1l
     if total_calib_attempts gt max_total_calib_attempts then begin
       print, '  Calibration attempt budget exhausted (' + strtrim(max_total_calib_attempts, 2) + $
-        ') --- abandoning flow model for this glacier, falling back to Δh parameterisation.'
+        ') --- stopping the calibration.'
       calib_abandoned = 1
       break
     endif
@@ -297,7 +297,7 @@ for len_iter = 0, max_len_iter - 1 do begin
     for spinup_yr = 0l, spinup_nyears - 1 do begin
       if systime(1) - spinup_t0 gt max_calib_wallclock_sec then begin
         print, '    Calibration wall-clock budget exhausted (' + strtrim(max_calib_wallclock_sec, 2) + $
-          ' s, Phase A) --- abandoning flow model for this glacier, falling back to Δh parameterisation.'
+          ' s, Phase A) --- stopping the calibration.'
         calib_abandoned = 1
         break
       endif
@@ -398,7 +398,7 @@ for len_iter = 0, max_len_iter - 1 do begin
       for yy = 0, hist_n - 1 do begin
         if systime(1) - spinup_t0 gt max_calib_wallclock_sec then begin
           print, '    Calibration wall-clock budget exhausted (' + strtrim(max_calib_wallclock_sec, 2) + $
-            ' s, Phase B) --- abandoning flow model for this glacier, falling back to Δh parameterisation.'
+            ' s, Phase B) --- stopping the calibration.'
           calib_abandoned = 1
           break
         endif
@@ -467,7 +467,7 @@ for len_iter = 0, max_len_iter - 1 do begin
       if ext_n eq 0 then begin
         print, '    Ice reaches the end of the longest flowline grid (' + $
           strtrim(string(flow_frontal_length, fo='(f4.2)'), 2) + ' glacier lengths in front) --- ' + $
-          'abandoning flow model for this glacier, falling back to Δh parameterisation.'
+          'stopping the calibration.'
         calib_abandoned = 1
         break
       endif
@@ -533,6 +533,7 @@ for len_iter = 0, max_len_iter - 1 do begin
     break
   endif
   if calib_abandoned then begin
+    print, '  Spin-up failed --- falling back to Δh parameterisation.'
     use_flow_model_gl = 'n'
     goto, spinup_skip
   endif
@@ -550,8 +551,7 @@ for len_iter = 0, max_len_iter - 1 do begin
       ; other unrecoverable calibration failures above: abandon the flow model
       ; for this glacier and fall back to the Δh parameterisation.
       print, '  No A_flow attempt reached a valid volume this length-iteration ' + $
-        '(all blew up or stalled) --- abandoning flow model for this glacier, ' + $
-        'falling back to Δh parameterisation.'
+        '(all blew up or stalled) --- stopping the calibration.'
       calib_abandoned = 1
     endif else begin
       print, '  Volume did not converge --- using best result'
@@ -577,7 +577,7 @@ for len_iter = 0, max_len_iter - 1 do begin
       best_vol_err_pct = abs(spinup_vol_tbl[best_idx, 1] - vol_target) / vol_target * 100d0
       if best_vol_err_pct gt 100d0 then begin
         print, '  Best result still off by ', best_vol_err_pct, '% --- treating as calibration failure, ' + $
-          'falling back to Δh parameterisation.'
+          'stopping the calibration.'
         calib_abandoned = 1
       endif
     endelse
@@ -588,6 +588,7 @@ for len_iter = 0, max_len_iter - 1 do begin
     break
   endif
   if calib_abandoned then begin
+    print, '  Spin-up failed --- falling back to Δh parameterisation.'
     use_flow_model_gl = 'n'
     goto, spinup_skip
   endif
