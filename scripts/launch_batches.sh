@@ -66,6 +66,7 @@ GLOGEM_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
 # GloGEM's own verbose journal (tens of MB per run) goes to net_scratch, not the
 # home quota. Override by exporting GLOGEM_LOGDIR before calling this script.
+# Each job writes its journal into its own folder there (see JOB_LOGDIR below).
 : "${GLOGEM_LOGDIR:=/itet-stor/jabeer/net_scratch/glogem_logs/runlogs}"
 mkdir -p "$GLOGEM_LOGDIR" 2>/dev/null || true
 N="${1:-16}"
@@ -120,7 +121,13 @@ for i in $BATCH_NUMS; do
     i="${i#0}"; i="${i#0}"
     BATCH=$(printf "%02d" "$i")
     SESSION="${PREFIX}_batch${BATCH}"
-    LOGFILE="${LOG_DIR}/${PREFIX}_batch${BATCH}_$(date +%Y%m%d_%H%M%S).log"
+    STAMP="$(date +%Y%m%d_%H%M%S)"
+    LOGFILE="${LOG_DIR}/${PREFIX}_batch${BATCH}_${STAMP}.log"
+    # glogem.pro names its journal glogem_<launch second>.log: one folder per job
+    # (session, host, second, launcher PID) so jobs started in the same second
+    # on any host never share a journal
+    JOB_LOGDIR="${GLOGEM_LOGDIR}/${SESSION}_$(hostname -s)_${STAMP}_$$"
+    mkdir -p "$JOB_LOGDIR" 2>/dev/null || true
 
     DONE_CMD=":"
     if [[ -n "${DONE_DIR:-}" ]]; then
@@ -171,10 +178,10 @@ for i in $BATCH_NUMS; do
     # 2026-08-31: 888,640 -> 6,569 lines with it, -> 3,503 without, on the
     # same real log). Capitalized Error/ERROR plus Illegal/Undefined variable/
     # WARNING/etc. still catch every genuine error class seen this project.
-    KEEP_PATTERN='Loaded user config|Catchment selection|Reanalysis product selected|MIP scenario selected|FINISHED region|WARNING|Error|ERROR|Illegal|Undefined variable|Permission denied|Failed to acquire|No licenses|Execution halted|Parameter-File.*not available|^License:|^IDL [0-9]'
+    KEEP_PATTERN='Log file:|GROWTH LIMIT|Loaded user config|Catchment selection|Reanalysis product selected|MIP scenario selected|FINISHED region|WARNING|Error|ERROR|Illegal|Undefined variable|Permission denied|Failed to acquire|No licenses|Execution halted|Parameter-File.*not available|^License:|^IDL [0-9]'
 
     tmux new-session -d -s "$SESSION" \
-        "cd '${GLOGEM_DIR}' && echo '.r glogem' | ${CONFIG_ENV}GLOGEM_LOGDIR='${GLOGEM_LOGDIR}' GLOGEM_BATCH=${BATCH} idl 2>&1 | grep --line-buffered -E -A10 '${KEEP_PATTERN}' | tee '${LOGFILE}'; EC=\${PIPESTATUS[1]}; echo \"Batch ${BATCH} finished (exit \$EC)\"; ${DONE_CMD}; read -r -t 86400 _"
+        "cd '${GLOGEM_DIR}' && echo '.r glogem' | ${CONFIG_ENV}GLOGEM_LOGDIR='${JOB_LOGDIR}' GLOGEM_BATCH=${BATCH} idl 2>&1 | grep --line-buffered -E -A10 '${KEEP_PATTERN}' | tee '${LOGFILE}'; EC=\${PIPESTATUS[1]}; echo \"Batch ${BATCH} finished (exit \$EC)\"; ${DONE_CMD}; read -r -t 86400 _"
 
     echo "  Started: $SESSION  (GLOGEM_BATCH=$BATCH)"
 done
