@@ -1,16 +1,21 @@
 ; -----------------------------------------------------------------------
-; Append one row of spin-up calibration statistics to the run CSV.
+; Append one row of spin-up calibration statistics to the spin-up table.
 ;
 ; Called from spinup_flowmodel.pro at the end of STEP 5.
 ; All variables are inherited from the GloGEM/spinup scope.
 ;
-; Output: <base_dir>/logs/spinup_stats.csv
+; Output: <dircali>/<time_resolution>/<region>/calibration/
+;   flow_spinup_stats_<catchment_selection>.dat, one table per batch, so
+;   the batches of a region never append to the same file;
+;   flow_spinup_stats.dat when no catchment is selected.
 ;   Header is written only when the file does not yet exist, so
-;   successive glacier runs accumulate in a single file per session.
+;   successive glacier runs accumulate in a single file per batch.
 ; -----------------------------------------------------------------------
 compile_opt idl2
 
-spinup_stats_file = dircali + '/' + time_resolution + '/' + dir_region + '/calibration/flow_spinup_stats.dat'
+spinup_stats_tag = catchment_selection ne '' ? '_' + catchment_selection : ''
+spinup_stats_file = dircali + '/' + time_resolution + '/' + dir_region + '/calibration/flow_spinup_stats' + $
+  spinup_stats_tag + '.dat'
 spinup_stats_new  = ~file_test(spinup_stats_file)
 openw, _stats_lun, spinup_stats_file, /get_lun, /append
 if spinup_stats_new then $
