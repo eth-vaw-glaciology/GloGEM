@@ -37,6 +37,11 @@ if n_elements(flow_initialised) eq 0 then begin
   width_dx = horizontal_grid_inputs.width_dx
   bed_dx = bed_dx_init
 
+  ; Sea or land front, from the bed under the inventory front (first ice cell of the
+  ; inventory profile). Only a sea front lets ice leave the grid end as frontal ablation.
+  ii_sf = where(horizontal_grid_inputs.thick_dx gt 0, c_sf)
+  flow_sea_front = c_sf gt 0 ? (bed_dx[ii_sf[0]] lt 0) : 0b
+
   ; Initialise cross-section geometry from initial_geometry.pro
   width_surface_dx = width_surface_dx_init
   width_mid_dx = width_mid_dx_init
@@ -454,12 +459,12 @@ while (~flow_icefree) and (time_flow lt year_end_flow) and (iter_flow lt max_ite
     break
   endif
 
-  ; Ice reached the last active cell (index 2) on land: lengthen the ice-free area
-  ; in front of the glacier before any ice can leave the grid. Beyond the longest
-  ; grid the flow model stops for this glacier and the Δh parameterisation takes
-  ; this year from its start. Where the bed there is below sea level the grid is
-  ; not lengthened: the ice leaving the end is frontal ablation (ice_thickness.pro).
-  if thick_dx[2] gt 0d0 and bed_dx[2] ge 0d0 then begin
+  ; Ice reached the last active cell (index 2): lengthen the ice-free area in front
+  ; of the glacier before any ice can leave the grid. Beyond the longest grid the
+  ; flow model stops for this glacier and the Δh parameterisation takes this year
+  ; from its start. A sea front whose grid end is below sea level is not lengthened:
+  ; the ice leaving the end is frontal ablation (ice_thickness.pro).
+  if thick_dx[2] gt 0d0 and (flow_sea_front eq 0 or bed_dx[2] ge 0d0) then begin
     ext_ctx = 'coupled'
     @procedures/flow/extend_flowline_grid
     if ext_n gt 0 then begin
