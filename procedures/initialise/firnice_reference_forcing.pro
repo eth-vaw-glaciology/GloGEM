@@ -104,7 +104,9 @@ hl_tk   = (hl_tk + 273.15d) > 220.d
 jg = where(gl ne noval, cg)
 if cg gt 0 then begin
     jf = where(firn_th[jg] eq 1, cf) & jm = where(firn[jg] eq 1, cm)
+    aar_ref = (cf gt 0) ? 100d * total(area[jg[jf]]) / total(area[jg]) : 0d
     print, '  [thermal spinup] firn mask from the reference balance: ' + strtrim(cf,2) + ' of ' + $
            strtrim(cg,2) + ' bands, lowest ' + (cf gt 0 ? strtrim(round(min(elev[jg[jf]])),2) : '-') + $
-           ' m (mass-balance mask: ' + strtrim(cm,2) + ', lowest ' + (cm gt 0 ? strtrim(round(min(elev[jg[jm]])),2) : '-') + ' m)'
+           ' m, AAR ' + strtrim(round(aar_ref),2) + ' %' + $
+           ' (mass-balance mask: ' + strtrim(cm,2) + ', lowest ' + (cm gt 0 ? strtrim(round(min(elev[jg[jm]])),2) : '-') + ' m)'
 endif

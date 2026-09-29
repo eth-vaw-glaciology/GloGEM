@@ -32,7 +32,16 @@ if ye gt 4 then begin
    balm=dblarr(nb)
    for i=0,nb-1 do balm[i]=mean(baly[ye-4:ye,i])
    firn=dblarr(nb) & ii=where(balm gt 0 and gl ne noval,ci) & if ci gt 0 then firn[ii]=1
+   if firnice_temperature eq 'y' then begin
+      nflip_ice[ye]  = total(firn_th eq 1 and firn eq 0 and gl ne noval)
+      nflip_firn[ye] = total(firn_th eq 0 and firn eq 1 and gl ne noval)
+   endif
    firn_th = firn   ; the thermal model follows the modelled mask from here on
+endif
+; lowest thermal firn band this year
+if firnice_temperature eq 'y' then begin
+   ii=where(firn_th eq 1 and gl ne noval,ci)
+   if ci gt 0 then firnline_th[ye]=min(elev[ii]) else firnline_th[ye]=max(elev)
 endif
 
 ; statistics (area and volume stored BEFORE surface updating)

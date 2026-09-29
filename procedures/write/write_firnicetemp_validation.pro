@@ -13,7 +13,8 @@
 ; Uses variables from glogem.pro scope:
 ;   melt_rf_sum[nb], refr_rf_sum[nb]  — from finalize_annual_massbalance
 ;   t_amp_band[nb], dT_firn_band[nb]  — from initialise_firnicetemp_spinup
-;   elev[nb], firn[nb], gl[nb], tl_fit[nb,*]
+;   elev[nb], firn_th[nb], gl[nb], tl_fit[nb,*]
+;   ela, aar, firnline_th, nflip_ice, nflip_firn [years]  — firn line log
 ;   firnice_dir, id[gg[g]], nb, noval
 ; *************************************************************
 
@@ -80,7 +81,7 @@ printf, 99, '# elev  firn  t_amp  dT_init  f_rf  dT_model  residual  T_sfc  refr
 for i = 0, nb-1 do begin
     if gl[i] ne noval then begin
         residual = dT_model[i] - dT_firn_band[i]
-        printf, 99, elev[i], fix(firn[i]), t_amp_band[i], dT_firn_band[i], $
+        printf, 99, elev[i], fix(firn_th[i]), t_amp_band[i], dT_firn_band[i], $
                     f_rf_band[i], dT_model[i], residual, tl_fit[i, 0], $
                     refr_ann[i], z_perm_v[i], $
                 fo='(i5, i3, 8f9.3)'
@@ -88,3 +89,13 @@ for i = 0, nb-1 do begin
 endfor
 close, 99
 print, 'Firn temp validation: ' + outfile
+
+; firn line per year: modelled ELA and AAR, lowest thermal firn band, bands switching firn<->ice
+outfile = firnice_dir + '/firnice_firnline_' + id[gg[g]] + '.dat'
+openw, 99, outfile
+printf, 99, '# GloGEM firn line log  glacier: ' + id[gg[g]] + '  (year = hydrological year label)'
+printf, 99, '# year   ela   aar  firnline_th  n_firn_to_ice  n_ice_to_firn'
+for ifl_y = 0, years-1 do if ela[ifl_y] ne snoval then $
+    printf, 99, ifl_y+tran[0], ela[ifl_y], aar[ifl_y], firnline_th[ifl_y], nflip_ice[ifl_y], nflip_firn[ifl_y], $
+            fo='(i5, f7.0, f6.1, f9.0, 2i8)'
+close, 99
