@@ -28,18 +28,9 @@ Aggregation across batches:
     summed.
   - acc, melt, refreeze, runoff_glac, precip (monthly, extensive: kg):
     summed.
-  - temp (monthly, intensive: K): area-weighted mean, NOT summed --
-    averaging temperatures requires weighting, and each batch's own
-    file only stores the already-divided value (weighted-sum and
-    area-denominator aren't kept separately), so this script
-    re-weights across batches using that batch's own ANNUAL area
-    (broadcast across the 12 months of its year) as the weight -- an
-    approximation, since the true per-batch monthly weight
-    (nc_reg_temp_a in write_netcdf_projections.pro) isn't recoverable
-    from the output file, but area only updates annually in this
-    model (see retreat-model.md), so the approximation is exact
-    within a year and only approximate at year boundaries where area
-    just changed.
+  - temp (monthly, intensive: K): mean over the initial (inventory)
+    glacier area, NOT summed -- each batch's temp is weighted by that
+    batch's first-year area, constant in time.
 
 Usage:
     python3 combine_gmip4_output.py REGION METHOD [--verify-only] [--v2 | --v3]
@@ -315,9 +306,8 @@ def sum_annual(paths):
 
 
 def sum_monthly(paths, annual_area_by_batch, n_years):
-    """Sum acc/melt/refreeze/runoff_glac/precip; area-weight temp using
-    each batch's own annual area (broadcast to 12 months/year). Months in
-    which no batch has ice left weight by each batch's first-year area."""
+    """Sum acc/melt/refreeze/runoff_glac/precip; temp is the mean of the
+    batches' temp weighted by each batch's first-year (initial) area."""
     time = None
     attrs = None
     sums = None
@@ -333,23 +323,15 @@ def sum_monthly(paths, annual_area_by_batch, n_years):
                         for v in ("acc", "melt", "refreeze", "runoff_glac", "precip")}
                 temp_weighted_sum = np.zeros(n_months, dtype=np.float64)
                 weight_sum = np.zeros(n_months, dtype=np.float64)
-                temp_w0_sum = np.zeros(n_months, dtype=np.float64)
-                w0_sum = 0.0
             for v in sums:
                 sums[v] += np.asarray(ds.variables[v][:], dtype=np.float64)
-            w = np.repeat(np.asarray(area, dtype=np.float64), 12)[:n_months]
-            t = np.asarray(ds.variables["temp"][:], dtype=np.float64)
-            temp_weighted_sum += t * w
-            weight_sum += w
+            t = np.ma.filled(ds.variables["temp"][:], np.nan).astype(np.float64)
             w0 = float(np.asarray(area, dtype=np.float64)[0])
-            temp_w0_sum += t * w0
-            w0_sum += w0
-    temp = np.where(weight_sum > 0, temp_weighted_sum / np.maximum(weight_sum, 1e-30), np.nan)
-    # temp is over the initial glacier area, so it stays defined after all ice is gone
-    gone = weight_sum <= 0
-    if w0_sum > 0:
-        temp[gone] = temp_w0_sum[gone] / w0_sum
-    sums["temp"] = temp
+            # a batch without a temperature in a month drops out of that month, as in the IDL writer
+            ok = np.isfinite(t) & (w0 > 0)
+            temp_weighted_sum[ok] += t[ok] * w0
+            weight_sum[ok] += w0
+    sums["temp"] = np.where(weight_sum > 0, temp_weighted_sum / np.maximum(weight_sum, 1e-30), np.nan)
     return time, sums, attrs
 
 
