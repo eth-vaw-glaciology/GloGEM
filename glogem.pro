@@ -130,6 +130,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
           count_glaciers=1
           cali_calflux=0
           n_cali_nomatch=0L   ; glaciers without their own calibration row
+          n_growth_clamped=0L & growth_removed_gt=0d0   ; growth limit: clamps, ice removed (Gt)
           if use_flow_model eq 'y' then begin
             n_flow_ok       = 0L
             n_flow_short    = 0L
@@ -371,7 +372,6 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                     if use_flow_model eq 'y' then flow_initialised = !NULL
                     use_flow_model_gl = use_flow_model  ; per-glacier, may be overridden below
                     flow_gated_gl = 0   ; set by the spin-up quality gate in glogemflow_coupled.pro
-                    if n_elements(n_growth_clamped) eq 0 then n_growth_clamped = 0
 
                     for cal1=0,cal1max do begin
 
@@ -661,14 +661,17 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                         if glacier_retreat eq 'y' then begin
                           if use_flow_model_gl eq 'y' and ye + tran[0] ge survey_year[gg[g]] then begin
                             @procedures/flow/glogemflow_coupled
+                            ; bound the flowline before the bands are rebuilt from it
+                            if use_flow_model_gl eq 'y' then begin
+                              @procedures/processing/limit_glacier_growth.pro
+                            endif
                             @procedures/flow/update_elevation_bands
                           endif
                           ; Δh glaciers, and a flow glacier in the year the flow model gives up
                           if use_flow_model_gl ne 'y' or ye + tran[0] lt survey_year[gg[g]] then begin
                             @procedures/processing/glacier_retreat.pro
+                            @procedures/processing/limit_glacier_growth.pro
                           endif
-                          ; bound the result whichever path produced it
-                          @procedures/processing/limit_glacier_growth.pro
                         endif                           ; glacier retreat
 
                         ; save per-glacier geometry and flowline grid history (.sav)
@@ -811,6 +814,8 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
           ; output of total calving flux for calibration purposes
           print, '--------- TOTAL CALVING FLUX (Gt/a) (period average):'
           print, string(cali_calflux,fo='(f9.4)')
+          print, '--------- GROWTH LIMIT: ' + strtrim(n_growth_clamped, 2) + ' glacier-years clamped, ' + $
+            strtrim(string(growth_removed_gt, fo='(e10.3)'), 2) + ' Gt removed and booked as ice melt'
           if read_parameters eq 'y' then begin
             if n_cali_nomatch gt 0 then cali_msg = 'WARNING: ' else cali_msg = ''
             print, '--------- ' + cali_msg + strtrim(n_cali_nomatch,2) + ' glacier(s) without their own row in the calibration file (nearest glacier ID used)'
