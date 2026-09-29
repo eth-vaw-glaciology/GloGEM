@@ -113,6 +113,17 @@ if n_elements(flow_initialised) eq 0 then begin
   endelse
   ; same start after a fresh spin-up and a cache hit: no diffusivity carried over, double precision
   df_dx = dblarr(xnum)
+  ; the spin-up has no calving: front ice of its survey-year state whose surface is below sea
+  ; level is removed before the run starts (not frontal ablation; the rescale below restores
+  ; the observed volume)
+  @procedures/flow/calve_below_sea_level
+  if fc_n gt 0 then begin
+    sur_dx = bed_dx + thick_dx
+    width_surface_dx = width_base_dx + lambda_dx * thick_dx
+    width_mid_dx = (width_base_dx + width_surface_dx) / 2.0
+    print, 'Spin-up state: ' + strtrim(fc_n, 2) + ' front cells below sea level removed (' + $
+      strtrim(string(fc_vol / 1d9, fo='(f10.4)'), 2) + ' km3) before the run starts'
+  endif
   ; grid arrays of the (possibly lengthened) grid
   dist_dx = horizontal_grid_inputs.dist_dx
   width_dx = horizontal_grid_inputs.width_dx
@@ -225,20 +236,32 @@ if n_elements(flow_initialised) eq 0 then begin
   flow_blown_up = 0
   if flow_vol_init_m3 gt 0d0 and volumes[ye] gt 0d0 then begin
     target_vol_m3 = volumes[ye] * 1d9
-    coefA = dx * total(thick_dx[ii_init] * width_base_dx[ii_init])
-    coefB = dx * total(lambda_dx[ii_init] * thick_dx[ii_init] ^ 2) / 2d0
-    if coefB gt 0d0 then begin
-      f_scale = (-coefA + sqrt(coefA ^ 2 + 4d0 * coefB * target_vol_m3)) / (2d0 * coefB)
-    endif else begin
-      f_scale = target_vol_m3 / flow_vol_init_m3   ; no width-thickness coupling: linear is exact
-    endelse
-    thick_dx         = thick_dx * f_scale
-    sur_dx           = bed_dx + thick_dx
-    width_surface_dx = width_base_dx + lambda_dx * thick_dx
-    width_mid_dx     = (width_base_dx + width_surface_dx) / 2d0
-    if abs(f_scale - 1d0) gt 0.01d0 then $
-      print, 'INFO: Rescaled thick_dx by factor ' + strtrim(f_scale, 2) + $
-        ' to match GloGEM survey vol (was ' + strtrim(flow_vol_init_m3/1d9, 2) + ' km3)'
+    ; a thinning scale can put front ice below sea level again: remove it and scale
+    ; the rest once more (that second scale only thickens)
+    for i_rs = 0, 1 do begin
+      if i_rs eq 1 then begin
+        @procedures/flow/calve_below_sea_level
+        if fc_n eq 0 then break
+        ii_init = where(thick_dx gt 0, c_init)
+        if c_init eq 0 then break
+        flow_vol_init_m3 = total(thick_dx[ii_init] * (width_base_dx[ii_init] + lambda_dx[ii_init] * thick_dx[ii_init] / 2d0) * dx)
+      endif
+      coefA = dx * total(thick_dx[ii_init] * width_base_dx[ii_init])
+      coefB = dx * total(lambda_dx[ii_init] * thick_dx[ii_init] ^ 2) / 2d0
+      if coefB gt 0d0 then begin
+        f_scale = (-coefA + sqrt(coefA ^ 2 + 4d0 * coefB * target_vol_m3)) / (2d0 * coefB)
+      endif else begin
+        f_scale = target_vol_m3 / flow_vol_init_m3   ; no width-thickness coupling: linear is exact
+      endelse
+      thick_dx         = thick_dx * f_scale
+      sur_dx           = bed_dx + thick_dx
+      width_surface_dx = width_base_dx + lambda_dx * thick_dx
+      width_mid_dx     = (width_base_dx + width_surface_dx) / 2d0
+      if abs(f_scale - 1d0) gt 0.01d0 then $
+        print, 'INFO: Rescaled thick_dx by factor ' + strtrim(f_scale, 2) + $
+          ' to match GloGEM survey vol (was ' + strtrim(flow_vol_init_m3/1d9, 2) + ' km3)'
+      if f_scale ge 1d0 then break
+    endfor
   endif
 
   ; Reference surface frozen at inventory-date state (after scaling).
@@ -464,8 +487,11 @@ if iter_flow ge max_iter_flow then $
 
 endif  ; NOT flow_blown_up (STEP 3)
 
-; report the balance and outflow the flowline actually had this year
+; ice at the front with its surface below sea level calves off (frontal ablation),
+; then report the balance, outflow and calving the flowline actually had this year
 if NOT flow_blown_up then begin
+  @procedures/flow/calve_below_sea_level
+  flow_fc_vol = fc_vol
   @procedures/flow/report_flowline_budget
 endif
 

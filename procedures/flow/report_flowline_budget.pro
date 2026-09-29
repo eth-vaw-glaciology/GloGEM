@@ -9,11 +9,13 @@
 ;                  melt only where there was ice, including ice that
 ;                  flowed onto an ice-free cell during the year
 ;   flux_calv[ye]  + ice that left the flowline at its downstream end (unless booked as melt)
+;                  + ice calved at the front below sea level (calve_below_sea_level)
 ;   flow_gridend[ye]  that outflow again, as a diagnostic. With
 ;                  flow_gridend_outflow = 'melt_if_land' it is booked as
 ;                  ice melt instead of frontal ablation (in mb, imelt and
 ;                  the monthly melt) where the bed of the last active cell
 ;                  (index 2) is at or above 0 m
+;   flow_fcalv[ye] the sea-level calving again, as a diagnostic
 ;   accum, refre   band profiles mapped onto the flowline cells that held
 ;                  ice at the start of the year, like the balance (STEP 2)
 ;   smelt, imelt   scaled together so the components add up to mb[ye]
@@ -45,8 +47,13 @@ if rb_a gt 0d0 then begin
     flow_ge_melt_gt = flow_ge_melt_gt + flow_fa_vol * 0.9d0 / 1d9
   endif else flow_ge_fa_gt = flow_ge_fa_gt + flow_fa_vol * 0.9d0 / 1d9
 
+  ; ice calved at the front below sea level: frontal ablation
+  rb_fc = flow_fc_vol * 0.9d0 / rb_a
+  flow_fcalv[ye] = rb_fc
+  flow_fc_gt = flow_fc_gt + flow_fc_vol * 0.9d0 / 1d9
+
   mb[ye] = rb_mb - rb_ge_melt
-  flux_calv[ye] = flux_calv[ye] + rb_fa
+  flux_calv[ye] = flux_calv[ye] + rb_fa + rb_fc
 
   ; annual components (snow and ice melt keep their ratio; grid-end melt is ice melt)
   rb_m0 = smelt[ye] + imelt[ye]
