@@ -62,7 +62,8 @@ nc_ini_area = total(area_ini)   ; total initial area for this glacier [km2]
 gl_area = float(areas   * 1e6)
 ; ice density 900 kg/m3 for volume->mass (matches GloGEM's internal dens=0.9)
 gl_mass = float(volumes * 900d9)
-gl_mbsl = float(vol_bz  * 900d9)
+gl_mbsl = float((vol_bz - nc_volbz_prev) * 900d9)   ; vol_bz is a regional running total -> this glacier's part
+nc_volbz_prev = vol_bz
 gl_fabl = float(flux_calv * areas * 1e9)   ; m w.e. x area -> kg (verify flux_calv units)
 
 ; Sub-annual [kg]

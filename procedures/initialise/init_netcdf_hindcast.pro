@@ -330,6 +330,7 @@ ncdf_varput, nc_sub_i, nc_vid_i_t_sub, nc_time_sub
 nc_reg_area = fltarr(nc_years)
 nc_reg_mass = fltarr(nc_years)
 nc_reg_mbsl = fltarr(nc_years)
+nc_volbz_prev = dblarr(nc_years)   ; vol_bz running total after previous glacier
 nc_reg_fabl = fltarr(nc_years)
 nc_reg_acc  = fltarr(nc_n_sub)
 nc_reg_melt = fltarr(nc_n_sub)
