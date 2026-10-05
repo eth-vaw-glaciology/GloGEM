@@ -177,9 +177,9 @@ add = gl_melt & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[j
 add = gl_refr & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_refr += add
 add = gl_run  & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_run  += add
 add = gl_prec & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_prec += add
-; Temperature: area-weighted accumulation (skip snoval entries)
+; Temperature: area-weighted accumulation (skip snoval/NaN entries)
 if nc_ini_area gt 0 then begin
-    ii = where(gl_temp gt nc_sv, ci)
+    ii = where(gl_temp gt nc_sv and finite(gl_temp), ci)
     if ci gt 0 then begin
         nc_reg_temp_w[ii] += gl_temp[ii] * nc_ini_area
         nc_reg_temp_a[ii] += nc_ini_area
@@ -237,7 +237,7 @@ add = gl_refr_p & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add
 add = gl_run_p  & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_sp_run  += add
 add = gl_prec_p & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_sp_prec += add
 if nc_ini_area gt 0 then begin
-    ii = where(gl_temp_p gt nc_sv, ci)
+    ii = where(gl_temp_p gt nc_sv and finite(gl_temp_p), ci)
     if ci gt 0 then begin
         nc_reg_sp_temp_w[ii] += gl_temp_p[ii] * nc_ini_area
         nc_reg_sp_temp_a[ii] += nc_ini_area
@@ -289,7 +289,7 @@ add = gl_refr_f & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add
 add = gl_run_f  & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_sf_run  += add
 add = gl_prec_f & jj = where(~finite(add) or add le 0, cj) & if cj gt 0 then add[jj] = 0 & nc_reg_sf_prec += add
 if nc_ini_area gt 0 then begin
-    ii = where(gl_temp_f gt nc_sv, ci)
+    ii = where(gl_temp_f gt nc_sv and finite(gl_temp_f), ci)
     if ci gt 0 then begin
         nc_reg_sf_temp_w[ii] += gl_temp_f[ii] * nc_ini_area
         nc_reg_sf_temp_a[ii] += nc_ini_area
