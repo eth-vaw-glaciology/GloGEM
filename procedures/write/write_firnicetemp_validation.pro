@@ -99,3 +99,45 @@ for ifl_y = 0, years-1 do if ela[ifl_y] ne snoval then $
     printf, 99, ifl_y+tran[0], ela[ifl_y], aar[ifl_y], firnline_th[ifl_y], nflip_ice[ifl_y], nflip_firn[ifl_y], $
             fo='(i5, f7.0, f6.1, f9.0, 2i8)'
 close, 99
+
+; snow logbook
+if n_elements(snl_sum) gt 0 then begin
+    outfile = firnice_dir + '/firnice_snowclim_' + id[gg[g]] + '.dat'
+    openw, 99, outfile
+    printf, 99, '# GloGEM snow logbook  glacier: ' + id[gg[g]] + '  (means over the run per calendar month; snow at the start of the month, temperatures at its end)'
+    printf, 99, '# R: resistance from the surface to the first node under the snow [m2 K/W], as the solver uses it (R_used) and for layered snow and ice (R_series)'
+    printf, 99, '#  elev month firn_frac sno_mwe z_snow z_mass  T_surf   T_ice    T_1m    T_2m  R_used R_series'
+    for snl_b = 0, nb-1 do begin
+        for snl_mo = 0, 11 do begin
+            if snl_cnt[snl_mo,snl_b] gt 0 then begin
+                snl_q = snl_sum[*,snl_mo,snl_b] / snl_cnt[snl_mo,snl_b]
+                printf, 99, elev[snl_b], snl_mo+1, snl_q[9], snl_q[0:2], snl_q[3:6], snl_q[7:8], $
+                        fo='(i6, i6, f10.2, 3f7.3, 4f8.2, 2f8.3)'
+            endif
+        endfor
+    endfor
+    close, 99
+    outfile = firnice_dir + '/firnice_snowmay_' + id[gg[g]] + '.dat'
+    openw, 99, outfile
+    printf, 99, '# GloGEM snow on 1 May [m w.e.]  glacier: ' + id[gg[g]] + '  rows: band elevation, then one column per year from ' + strtrim(tran[0],2)
+    for snl_b = 0, nb-1 do begin
+        if gl[snl_b] ne noval then printf, 99, elev[snl_b], snl_may[*,snl_b], fo='(i6,' + strtrim(years,2) + 'f8.3)'
+    endfor
+    close, 99
+    if n_elements(snl_bh) gt 0 then begin
+        outfile = firnice_dir + '/firnice_snowbh_' + id[gg[g]] + '.dat'
+        openw, 99, outfile
+        printf, 99, '# GloGEM snow at the start of each month at the profile bands [m w.e.]  glacier: ' + id[gg[g]]
+        printf, 99, '# profile  band_elev  year  month  sno'
+        for snl_p = 0, n_prof-1 do begin
+            for snl_y = 0, years-1 do begin
+                for snl_mo = 0, 11 do begin
+                    if snl_bh[snl_y,snl_mo,snl_p] ne snoval then $
+                        printf, 99, firnice_profile_ID[snl_p], firnice_profile_ind[1,snl_p], snl_y+tran[0], $
+                                snl_mo+1, snl_bh[snl_y,snl_mo,snl_p], fo='(a8, i8, i6, i6, f8.3)'
+                endfor
+            endfor
+        endfor
+        close, 99
+    endif
+endif

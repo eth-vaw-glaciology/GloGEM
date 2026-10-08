@@ -595,6 +595,36 @@ if firnice_write[0] eq 'y' then begin
    elev_firnicetemp[3,ye,ii[i]]=max([elev_firnicetemp[3,ye,ii[i]],tl_fit[ii[i],total(fit_layers)]]) ; bedrock (last slot; was hardcoded 30)
 endif
 
+; snow logbook: snow, temperatures and the resistance from the surface to the first node under
+; the snow, as the solver uses it (R_used) and as layered snow and ice give it (R_series)
+if firnice_write[0] eq 'y' then begin
+   snl_rest = sno[ii[i]] & snl_zm = 0d & snl_rs = 0d & snl_n = 0
+   for snl_j = 1, n_elements(dens_fit)-1 do begin
+      if snl_rest le 0d then break
+      snl_rho = fit_dens[(snl_j-1) < (n_fd-1)]
+      snl_dz  = (snl_rest / (snl_rho/1000d)) < fit_dz[0,snl_j]
+      snl_ks  = (poly(snl_rho,k_ca)*firnice_insul_scale_b[ii[i]]) < k_ice_l[snl_j]
+      snl_rs  = snl_rs + snl_dz/snl_ks + (fit_dz[0,snl_j]-snl_dz)/k_ice_l[snl_j]
+      snl_rest = snl_rest - snl_dz*snl_rho/1000d
+      snl_zm  = snl_zm + snl_dz
+      snl_n   = snl_j
+   endfor
+   snl_k  = (snl_n > n_snow_lay) > 1
+   snl_ru = 0d
+   for snl_j = 1, snl_k do begin
+      snl_ru = snl_ru + fit_dz[0,snl_j] / (0.5d*(cond_fit[snl_j-1] + cond_fit[snl_j]))
+      if snl_j gt snl_n then snl_rs = snl_rs + fit_dz[0,snl_j]/k_ice_l[snl_j]
+   endfor
+   snl_sum[*,m-1,ii[i]] = snl_sum[*,m-1,ii[i]] + [sno[ii[i]], z_snow, snl_zm, tl_fit[ii[i],0], $
+      tl_fit[ii[i],snl_k], tl_fit[ii[i],1], tl_fit[ii[i],2], snl_ru, snl_rs, double(firn_th[ii[i]])]
+   snl_cnt[m-1,ii[i]] = snl_cnt[m-1,ii[i]] + 1d
+   if m eq 5 then snl_may[ye,ii[i]] = sno[ii[i]]
+   if n_elements(snl_bh) gt 0 then begin
+      snl_p = where(firnice_profile_ind[0,*] eq ii[i], c_snl_p)
+      if c_snl_p gt 0 then snl_bh[ye,m-1,snl_p] = sno[ii[i]]
+   endif
+endif
+
 if firnice_write[2] eq 'y' then begin
          ; full column, accumulated over the months of this year (annual MEAN at write
          ; time). Layers at or below tt-1 are the bed node and the below-bed fill, so

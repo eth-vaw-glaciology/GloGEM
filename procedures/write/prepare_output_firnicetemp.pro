@@ -130,3 +130,11 @@ if firnice_write[1] eq 'y' then begin
         printf,fit_prof_lun[j],'Year  Month '+a
     endfor
 endif
+
+; snow logbook (filled in firnice_temperature_model.pro, written in write_firnicetemp_validation.pro)
+if firnice_write[0] eq 'y' then begin
+    snl_sum = dblarr(10, 12, nb)          ; per calendar month, see the file header
+    snl_cnt = dblarr(12, nb)
+    snl_may = dblarr(years, nb) + snoval  ; snow on 1 May [m w.e.]
+    if firnice_write[1] eq 'y' then snl_bh = dblarr(years, 12, n_prof) + snoval   ; snow at the profile bands
+endif
