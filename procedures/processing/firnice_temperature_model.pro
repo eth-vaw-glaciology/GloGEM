@@ -115,21 +115,15 @@ dens_fit=dblarr(total(fit_layers))+900
 ; firn column first, so the snow blend below mixes against the right material underneath
 if firn_th[ii[i]] eq 1 then dens_fit[0:n_elements(fit_dens)-1]=fit_dens ; to be verified...
 
-; Snow cover: walk the real layer thicknesses fit_dz[0,*] down to the snow depth, blending the
-; last partial layer. sno is water equivalent and fit_dens[1]/1000 is a specific gravity, so
-; sno/(fit_dens[1]/1000) is a DEPTH IN METRES -- the previous code used it as a layer COUNT,
-; which only holds for layers 0-9 (1 m); layers 10-19 are 5 m, so it over-assigned by
-; 4*(count-10) m, up to +32 m. fix() also discarded the partial layer and hid any snow below
-; 0.3 m w.e. entirely. On firn bands the blend is a no-op (snow and firn share fit_dens), so
-; snow depth stays inert there exactly as before.
+; Snow depth at 300 kg/m3 and the number of layers it reaches (snow logbook). The snow itself
+; enters through the gap conductances below; on firn bands it is inert (snow and firn share
+; fit_dens).
 z_snow     = sno[ii[i]] / (fit_dens[1]/1000.d)
 n_fd       = n_elements(fit_dens)
 z_top      = 0.d
 n_snow_lay = 0
 for j=0, n_elements(dens_fit)-1 do begin
    if z_top ge z_snow then break
-   f = ((z_snow - z_top) / fit_dz[0,j]) < 1.0d
-   dens_fit[j] = f*fit_dens[j < (n_fd-1)] + (1.d - f)*dens_fit[j]
    z_top = z_top + fit_dz[0,j]
    n_snow_lay = j + 1
 endfor
@@ -146,6 +140,36 @@ k_ice_l=k_ice_a*exp(k_ice_b*(reform(tl_fit[ii[i],0:n_elements(dens_fit)-1])+273.
 cond_fit=(poly(dens_fit,k_ca)*firnice_insul_scale_b[ii[i]]) < k_ice_l
 jj_ice=where(dens_fit ge rho_ice_k,n_ice)
 if n_ice gt 0 then cond_fit[jj_ice]=k_ice_l[jj_ice]
+
+; Gap conductances: kgap[j] for the gap between node j-1 and node j. Inside firn or ice the
+; mean of the two nodes. On ice bands the seasonal snow fills the gaps from the surface down,
+; each at the firn-curve density of the node above it; in a gap holding snow and ice the two
+; resistances add, and each node's heat capacity is that of what its slice holds.
+n_cond = n_elements(cond_fit)
+kgap = dblarr(n_cond)
+kgap[1:n_cond-1] = 0.5d*(cond_fit[0:n_cond-2] + cond_fit[1:n_cond-1])
+if firn_th[ii[i]] eq 0 and sno[ii[i]] gt 0d then begin
+   s_rest = sno[ii[i]]
+   v_snow = dblarr(n_cond) & c_snow = dblarr(n_cond)   ; snow volume and heat capacity per node slice
+   for j=1, n_cond-1 do begin
+      if s_rest le 0d then break
+      rho_s = fit_dens[(j-1) < (n_fd-1)]
+      s_gap = (s_rest / (rho_s/1000.d)) < fit_dz[0,j]
+      k_s   = (poly(rho_s,k_ca)*firnice_insul_scale_b[ii[i]]) < k_ice_l[j]
+      k_i   = 0.5d*(k_ice_l[j-1] + k_ice_l[j])
+      kgap[j] = fit_dz[0,j] / (s_gap/k_s + (fit_dz[0,j]-s_gap)/k_i)
+      cap_s = (1-rho_s/1000.)*cair + rho_s/1000.*cice
+      v_up  = s_gap < (0.5d*fit_dz[0,j])                 ; upper half of the gap: node j-1
+      v_snow[j-1] = v_snow[j-1] + v_up        & c_snow[j-1] = c_snow[j-1] + v_up*cap_s
+      v_snow[j]   = v_snow[j] + (s_gap-v_up)  & c_snow[j]   = c_snow[j] + (s_gap-v_up)*cap_s
+      s_rest = s_rest - s_gap*rho_s/1000.d
+   endfor
+   for j=1, n_cond-1 do begin
+      if v_snow[j] le 0d then continue
+      dz_sl = 0.5d*(fit_dz[0,j] + fit_dz[0,(j+1) < (n_cond-1)])
+      cap_fit[j] = (c_snow[j] + (dz_sl - v_snow[j])*cap_fit[j]) / dz_sl
+   endfor
+endif
 
 tt=tt_col[i]  ; column depth, set for all bands before the band loop
 
@@ -260,7 +284,6 @@ endelse
       ; finite-volume form with interface conductivities, correct across the 1/5/20 m block
       ; edges. The previous fit_dz[0,j]^2 form assumed a uniform grid and made the steady
       ; profile linear in layer INDEX rather than in depth.
-      n_cond = n_elements(cond_fit)
       if firnice_implicit eq 'n' then begin
 
          ; Explicit forward-difference. The /2. below is NOT cosmetic: explicit stability needs
@@ -271,8 +294,8 @@ endelse
             dzm = fit_dz[0,j]
             dzp = fit_dz[0,(j+1) < (n_cond-1)]
             dzc = 0.5d*(dzm + dzp)
-            km  = 0.5d*(cond_fit[j-1] + cond_fit[j])
-            kp  = 0.5d*(cond_fit[j] + cond_fit[(j+1) < (n_cond-1)])
+            km  = kgap[j]
+            kp  = kgap[(j+1) < (n_cond-1)]
             if fit_lacc_on then begin   ; yearly sums of the coupling, halved as below
                lacc_a[ii[i],j] += 0.5d*rf_dt*km/(cap_fit[j]*dzc*dzm)
                lacc_c[ii[i],j] += 0.5d*rf_dt*kp/(cap_fit[j]*dzc*dzp)
@@ -300,8 +323,8 @@ endelse
                dzm = fit_dz[0,j]
                dzp = fit_dz[0,(j+1) < (n_cond-1)]
                dzc = 0.5d*(dzm + dzp)
-               km  = 0.5d*(cond_fit[j-1] + cond_fit[j])
-               kp  = 0.5d*(cond_fit[j] + cond_fit[(j+1) < (n_cond-1)])
+               km  = kgap[j]
+               kp  = kgap[(j+1) < (n_cond-1)]
                ra  = rf_dt * km / (cap_fit[j] * dzc * dzm)
                rc  = rf_dt * kp / (cap_fit[j] * dzc * dzp)
                if fit_lacc_on then begin   ; yearly sums of the coupling for the drift correction
@@ -612,7 +635,7 @@ if firnice_write[0] eq 'y' then begin
    snl_k  = (snl_n > n_snow_lay) > 1
    snl_ru = 0d
    for snl_j = 1, snl_k do begin
-      snl_ru = snl_ru + fit_dz[0,snl_j] / (0.5d*(cond_fit[snl_j-1] + cond_fit[snl_j]))
+      snl_ru = snl_ru + fit_dz[0,snl_j] / kgap[snl_j]
       if snl_j gt snl_n then snl_rs = snl_rs + fit_dz[0,snl_j]/k_ice_l[snl_j]
    endfor
    snl_sum[*,m-1,ii[i]] = snl_sum[*,m-1,ii[i]] + [sno[ii[i]], z_snow, snl_zm, tl_fit[ii[i],0], $
