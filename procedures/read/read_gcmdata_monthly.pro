@@ -104,5 +104,93 @@ endif else begin
 endelse
 
 
+if AMOC eq 'y' then begin
+; ============================================================
+; EXTEND GCM TO 3000 BY RANDOMLY REPEATING LAST 50 YEARS
+; AMOC / 1-D monthly climate data
+; ============================================================
 
+extend_to_year = 3000
+
+last_year = fix(max(gcm_year))
+
+if last_year lt extend_to_year then begin
+
+   ; ---------------------------------------------------------
+   ; Last 50 years used as sampling pool
+   ; ---------------------------------------------------------
+
+   first_pool_year = last_year - 49
+   pool_years = lindgen(50) + first_pool_year
+
+   ; ---------------------------------------------------------
+   ; Number of additional years required
+   ; ---------------------------------------------------------
+
+   n_add_years = extend_to_year - last_year
+
+   ; ---------------------------------------------------------
+   ; Randomly select complete years with replacement
+   ; ---------------------------------------------------------
+
+   seed = 12345L
+
+   random_years = $
+      pool_years[fix(randomu(seed, n_add_years) * 50)]
+
+   ; ---------------------------------------------------------
+   ; Create arrays for extended period
+   ; ---------------------------------------------------------
+
+   temp_add = dblarr(n_add_years * 12L)
+   prec_add = dblarr(n_add_years * 12L)
+   year_add = lonarr(n_add_years * 12L)
+   mon_add  = lonarr(n_add_years * 12L)
+
+   ; ---------------------------------------------------------
+   ; Fill extension year by year
+   ; ---------------------------------------------------------
+
+   for yy = 0L, n_add_years-1L do begin
+
+      src_year = random_years[yy]
+      new_year = last_year + yy + 1L
+
+      idx = where(gcm_year eq src_year, nidx)
+
+      if nidx ne 12 then begin
+         print, 'ERROR: source year ', src_year, $
+                ' contains ', nidx, ' months instead of 12.'
+         stop
+      endif
+
+      out_idx = yy * 12L + lindgen(12)
+
+      temp_add[out_idx] = gcm_temp[idx]
+      prec_add[out_idx] = gcm_prec[idx]
+
+      year_add[out_idx] = new_year
+      mon_add[out_idx]  = gcm_mon[idx]
+
+   endfor
+
+   ; ---------------------------------------------------------
+   ; Append extension to original climate series
+   ; ---------------------------------------------------------
+
+   gcm_temp = [reform(gcm_temp), temp_add]
+   gcm_prec = [reform(gcm_prec), prec_add]
+   gcm_year = [reform(gcm_year), year_add]
+   gcm_mon  = [reform(gcm_mon),  mon_add]
+
+   ; ---------------------------------------------------------
+   ; Check
+   ; ---------------------------------------------------------
+
+;   print, 'GCM extended from ', first_pool_year, '-', last_year
+;   print, 'Extended until: ', max(gcm_year)
+;   print, 'Total months: ', n_elements(gcm_year)
+
+endif
+endif 
 
