@@ -179,6 +179,11 @@ tt=tt_col[i]  ; column depth, set for all bands before the band loop
 ; rather than the fixed 30 m that the constant fit_dens profile would give.
 ; Heat conduction still runs to bedrock (tt-2); only the latent-heat loop is capped.
 z_perm_b  = firnice_perm_depth[ii[i]] * firnice_perm_frac_b[ii[i]]
+if firnice_perm_limit eq 'profile' then begin
+   ; diagnostic: where the thermal model's own density profile reaches 830 kg/m3
+   pd_830 = where(fit_dens ge 830.d, n_830)
+   if n_830 gt 0 then z_perm_b = fit_dz[1, pd_830[0]]
+endif
 pdidx_arr = where(fit_dz[1,*] ge z_perm_b, n_pdi)
 perm_limit = (n_pdi gt 0) ? ((pdidx_arr[0] - 1l) > 1l) : (tt - 2l)
 perm_limit = perm_limit < (tt - 2l)
@@ -203,11 +208,13 @@ if firn_permeability eq 'n' then fit_water = 0  ; check if permeability is disab
 ; cold ice below that depth is not reachable by annual meltwater
 if firn_th[ii[i]] eq 1 then begin
 
+wd_j = 0l   ; deepest node the water brings to the melting point (wet-depth log)
 for j=1,perm_limit do begin ; percolate to firn-ice transition only
    dz_cv = 0.5d*(fit_dz[0,j] + fit_dz[0,(j+1) < (n_fitdz-1)])  ; node's slice, as in conduction
-   c=(-1)*(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*cap_fit[j]*dz_cv/Lh_rf ; cold content in layer below pressure melting point
+   c=(-1)*(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*cap_fit[j]*dz_cv/Lh_fit ; cold content in layer below pressure melting point
    if fit_water gt c then begin   ; temperate layer if cold reservoir used, remaining water being transferred
       tl_fit[ii[i],j]=(fit_dz[1,j]*0.9/10.)*(-0.00742) & fit_water=fit_water-c
+      wd_j = j
       if fit_lacc_on then lacc_wet[ii[i],j] = 1b   ; drift spin-up: meltwater sets this layer
    endif else begin
       if c gt 0 and fit_water gt 0 then tl_fit[ii[i],j]=tl_fit[ii[i],j]-(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*(fit_water/c)
@@ -215,6 +222,11 @@ for j=1,perm_limit do begin ; percolate to firn-ice transition only
    endelse
  ;  if j eq 10 and ii(i) eq 245 then print, m,c,fit_water,tl_fit(ii(i),10)
 endfor
+; wet-depth log: deepest wetted node this year, and water left at the limit (discarded)
+if firnice_write[0] eq 'y' then begin
+   if wd_j gt 0 then wdl_depth[ye,ii[i]] = wdl_depth[ye,ii[i]] > fit_dz[1,wd_j]
+   wdl_lost[ye,ii[i]] = wdl_lost[ye,ii[i]] + (fit_water > 0d)
+endif
 
 endif else begin
 

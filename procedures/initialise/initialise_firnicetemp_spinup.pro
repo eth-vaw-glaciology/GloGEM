@@ -104,6 +104,16 @@ HL_R  = 0.00832d                   ; gas constant [kJ/(mol K)]
 ; Avoids arithmetic inside alog() which confuses IDL's parser with .d literals
 HL_ln1 = alog(517.d / 367.d)      ; ln((917-400)/(917-550)) ≈ 0.343
 HL_ln2 = alog(367.d / 87.d)       ; ln((917-550)/(917-830)) ≈ 1.439
+; Herron & Langway (1980), closed form (firnice_hl1980 = 'y'): density rho in Mg/m3, depth h in m,
+; accumulation A in m w.e./a; ln[rho/(rhoi-rho)] grows by rhoi*k0 per m in stage 1 and by
+; rhoi*k1/sqrt(A) per m in stage 2
+HL80_k0 = 11.d  & HL80_E0 = 10160.d   ; stage 1, E [J/mol]
+HL80_k1 = 575.d & HL80_E1 = 21400.d   ; stage 2
+HL80_R  = 8.314d                       ; [J/(mol K)]
+HL80_rhoi = 0.917d
+HL80_g0  = alog(400.d / 517.d)        ; ln[rho/(rhoi-rho)] at the surface density, 400 kg/m3
+HL80_g55 = alog(550.d / 367.d)        ; at 550 kg/m3
+HL80_g83 = alog(830.d / 87.d)         ; at 830 kg/m3 (pore close-off)
 
 firnice_perm_depth = dblarr(nb) + 30.d   ; default fallback (matches old fixed value)
 

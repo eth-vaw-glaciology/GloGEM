@@ -117,6 +117,17 @@ if n_elements(snl_sum) gt 0 then begin
         endfor
     endfor
     close, 99
+    outfile = firnice_dir + '/firnice_wetdepth_' + id[gg[g]] + '.dat'
+    openw, 99, outfile
+    printf, 99, '# GloGEM wet-depth log  glacier: ' + id[gg[g]] + '  per firn band and year: deepest node the percolating water brought to 0 C [m] and water left at the percolation limit [m w.e.]'
+    printf, 99, '#  elev  year  wet_depth  water_lost'
+    for snl_b = 0, nb-1 do begin
+        if gl[snl_b] eq noval then continue
+        for snl_y = 0, years-1 do $
+            if wdl_depth[snl_y,snl_b] gt 0d or wdl_lost[snl_y,snl_b] gt 0d then $
+                printf, 99, elev[snl_b], snl_y+tran[0], wdl_depth[snl_y,snl_b], wdl_lost[snl_y,snl_b], fo='(i6, i6, f11.1, f12.3)'
+    endfor
+    close, 99
     outfile = firnice_dir + '/firnice_snowmay_' + id[gg[g]] + '.dat'
     openw, 99, outfile
     printf, 99, '# GloGEM snow on 1 May [m w.e.]  glacier: ' + id[gg[g]] + '  rows: band elevation, then one column per year from ' + strtrim(tran[0],2)

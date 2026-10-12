@@ -194,6 +194,11 @@ firnice_forcing_toff    = 'y'   ; 'n' = the thermal model's energy inputs (surfa
                                 ; melt and rain that refreeze, Herron-Langway temperature, initial
                                 ; profile, spin-up forcing) without the mass-balance t_offset; its
                                 ; mass inputs (snow, firn mask, accumulation) keep it
+firnice_hl1980          = 'n'   ; 'y' = firn-ice transition depth from the closed form of Herron &
+                                ; Langway (1980), stage 1 independent of the accumulation rate
+firnice_lh_water        = 'n'   ; 'y' = latent heat per m of percolating water (1000 kg/m3)
+firnice_perm_limit      = 'hl'  ; 'profile' = water stops where the thermal model's density
+                                ; profile reaches 830 kg/m3 (diagnostic); 'hl' = Herron-Langway depth
 firnice_temp_calib      = 'n'   ; 'y' = apply per-band transfer-model calibration
 firnice_temp_calib_file = ''    ; path to per-glacier override file; '' = use transfer model or defaults
 firnice_temp_calib_knn_file = '' ; path to per-glacier k-NN residual-correction file (band-aware);
@@ -511,6 +516,10 @@ if debris_supraglacial eq 'n' then eval_mbelevsensitivity = 'n'
 
 if firnice_temperature eq 'n' then firnice_batch = 'n'
 
+; latent heat released when percolating water refreezes in the thermal model [J m-3]: per m of ice
+; (Lh_rf, as before) or per m of water
+Lh_fit = Lh_rf
+if firnice_lh_water eq 'y' then Lh_fit = lhf * 1000.d
 if firnice_temperature eq 'y' and firnice_forcing_toff eq 'n' then $
   if meltmodel ne '1' or time_resolution ne 'monthly' or debris_supraglacial ne 'n' then $
     message, "firnice_forcing_toff = 'n' needs meltmodel '1', monthly steps and no supraglacial debris"

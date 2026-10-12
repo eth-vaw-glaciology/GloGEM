@@ -137,4 +137,6 @@ if firnice_write[0] eq 'y' then begin
     snl_cnt = dblarr(12, nb)
     snl_may = dblarr(years, nb) + snoval  ; snow on 1 May [m w.e.]
     if firnice_write[1] eq 'y' then snl_bh = dblarr(years, 12, n_prof) + snoval   ; snow at the profile bands
+    wdl_depth = dblarr(years, nb)         ; wet-depth log: deepest node meltwater brought to 0 C [m]
+    wdl_lost  = dblarr(years, nb)         ; water left at the percolation limit, discarded [m w.e.]
 endif
