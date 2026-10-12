@@ -145,7 +145,8 @@ volume_Huss_1d = total((glacier_geom[*, 3] * 1e6) * glacier_geom[*, 4])
 print, 'volume_Huss_1d = ', volume_Huss_1d
 volume_Huss_1d_fixeddistance = total(width_dx_init * thick_dx_init * dx)
 print, 'volume_Huss_1d_fixeddistance = ', volume_Huss_1d_fixeddistance
-area_Huss_1d = total(glacier_geom[*, 3] * 1e6)
+; band area after the RGI7 area correction, as read_hypsometryfile.pro applies it to the bands
+area_Huss_1d = total(glacier_geom[*, 3] * 1e6) * area_correction_factor[gg[g]]
 print, 'area_Huss_1d = ', area_Huss_1d
 area_Huss_1d_fixeddistance = total(width_dx_init * dx)
 print, 'area_Huss_1d_fixeddistance = ', area_Huss_1d_fixeddistance
