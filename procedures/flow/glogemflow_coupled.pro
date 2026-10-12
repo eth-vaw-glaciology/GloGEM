@@ -279,8 +279,7 @@ endif
 ; ========== STEP 2: MAP GloGEM'S MB ONTO FLOWLINE GRID ========== ;
 ; Interpolate GloGEM's elevation-band MB (bal, m w.e./yr) at each
 ; flowline cell's current surface elevation (sur_dx), then convert
-; to m ice. Replaces the duplicate T-index recalculation in
-; flowline_massbal.pro — GloGEM's calibrated MB is the single source.
+; to m ice. GloGEM's calibrated MB is the single source.
 bal_dx = dblarr(xnum)
 ; Cap surface elevation used for MB interpolation at the inventory-date reference surface.
 ; Prevents runaway positive feedback when modelled ice temporarily exceeds the observed
@@ -547,9 +546,6 @@ endelse
 
 ; Volume/area/mb are now stored BEFORE the SIA advance (STEP 2b above).
 ; Post-SIA values retained here for internal diagnostics only.
-; volumes[ye] = flow_vol / 1d9
-; areas[ye] = flow_area
-; mb[ye] = flow_mb
 
 ; ========== STEP 6: STORE ANNUAL FLOWLINE HISTORY ========== ;
 flow_thick_hist[*, ye] = thick_dx

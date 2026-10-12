@@ -1,5 +1,4 @@
 compile_opt idl2
-; print, 'TEST'
 
 ; Import glacier geometry data
 glacier_geom = import_glacier_geometry(fn)
@@ -153,10 +152,6 @@ print, 'area_Huss_1d_fixeddistance = ', area_Huss_1d_fixeddistance
 i = where(thick_dx_init gt 1, count)
 length_fixeddistance = count * dx
 
-difference_volume = volume_Huss_1d_fixeddistance - volume_Huss_1d
-; print, 'difference_volume = ', difference_volume
-; print, 'difference_in_percentage = ', (difference_volume / volume_Huss_1d) * 100, '%'
-
 ; Normalize flowline widths to match the elevation-band (RGI) area.
 ; Corrects for interpolation error when converting from non-uniform
 ; elevation-band grid to equidistant flowline grid.
@@ -170,4 +165,3 @@ if area_Huss_1d_fixeddistance gt 0 then begin
 endif
 
 horizontal_grid_inputs = {dist_dx: dist_dx_init, sur_dx: sur_dx_init, width_dx: width_dx_init, thick_dx: thick_dx_init, bed_dx: bed_dx_init}
-save, horizontal_grid_inputs, file = 'horizontal_grid_inputs.sav'
