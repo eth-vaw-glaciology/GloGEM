@@ -3,15 +3,13 @@
 create_region_batches.py — split a region's glacier IDs into N catchment
 files for parallel batch processing, for any RGI region (not just Alps).
 
-Unlike create_batches.py (Alps-specific, sources areas from a completed
-Δh run's Area output), this reads glacier ID + area directly from the
-"Area (km2): ..." header line of each per-glacier file in the region's
-geometricdata bands/ directory — so it works before any run has been done.
+It reads glacier ID + area directly from the "Area (km2): ..." header
+line of each per-glacier file in the region's geometricdata bands/
+directory, so it works before any run has been done.
 
 Glaciers are sorted by area (largest first) and assigned round-robin
 across N batches so each batch gets a balanced mix of large and small
-glaciers (same rationale as create_batches.py: avoids one batch holding
-all the largest, slowest glaciers).
+glaciers (no batch holds all the largest, slowest glaciers).
 
 Output: /itet-stor/jabeer/glogem/data/catchments/RGI{rginum}_{name}_batch{NN}.dat
 Catchment IDs are written with the same 'RGI60-{rginum}.{gid}' prefix used

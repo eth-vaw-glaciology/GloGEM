@@ -2,8 +2,7 @@
 # auto_relaunch_watcher.sh — runs as its own detached tmux session on
 # vierzack04. Polls the number of live IDL sessions every POLL_SECONDS;
 # whenever there's headroom under LICENSE_CEILING, pops the next queued
-# batch launch from QUEUE_FILE and starts it. Keeps going indefinitely
-# (unlike watch_and_launch_subregions.sh, which is one-shot).
+# batch launch from QUEUE_FILE and starts it. Keeps going indefinitely.
 #
 # QUEUE_FILE format: one pending batch launch per line,
 #   CONFIG_FILE|BATCH_NUMBER|SESSION_PREFIX|DONE_DIR
