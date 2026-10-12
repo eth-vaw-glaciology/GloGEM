@@ -403,8 +403,9 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
                       ; prepare output of ice temperature model
                       if firnice_temperature eq 'y' then begin
-                        if firnice_glenglat_lookup ne '' then $
+                        if firnice_glenglat_lookup ne '' then begin
                           @procedures/initialise/setup_firnice_profile_from_glenglat.pro
+                        endif
                         @procedures/write/prepare_output_firnicetemp.pro
                       endif
 
