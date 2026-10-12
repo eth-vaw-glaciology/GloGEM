@@ -3,10 +3,20 @@
 This page keeps track of every major problem found in GloGEM and GloGEMflow during the 2026 GloGEMflow integration and the GlacierMIP4 (GMIP4) campaign, and of what was changed. Many of the items are in **core GloGEM code that is also on `main`**, not only in the flow model. The page is written for the GloGEM developers who will review the merge of these branches into `main` (Matthias Huss, Lander Van Tricht, Alexandra von der Esch) and for the MATLAB GloGEMflow side (Harry Zekollari's code, from which the IDL flow model was ported).
 
 ```{note}
-Status: 2026-09-29, about 18:00 (round 5 merged on `glogemflow-v3r5`). "Main" means `origin/main` at `4e5d5a1` (2026-09-24). The local `main` ref in our clone is out of date (`51bae41`, 2026-07-01); all "in main" statements below were checked against `origin/main`. Commit hashes are short hashes.
-
-What is on GitHub: `main`, `GloGEMflow` at `dac9fa4` (2026-09-23) and an old `IDL_GloGEMflow` branch (2025-07). `origin/GloGEMflow` lacks the last 9 commits of the `gmip4-v1` tag (among them `f129fc5`, `a6037e2` and `bb4744e`) and the 13 commits after the tag, and the tag itself is not pushed. The branches `glogemflow-stability`, `glogemflow-fixes`, `glogemflow-fixes-b`, `glogemflow-newpath`, `glogemflow-v3` and `glogemflow-v3r5` exist only in the local clone. Until Janosch pushes, nobody outside can see the v1 code as submitted, or any later code.
+Status: 2026-10-12, branch `glogemflow-v3` after its clean-up for the merge ({ref}`S10 <mc-s10>`). "Main" means `origin/main` at `6ee55bc` (2026-10-09); the "in main" statements were checked against `4e5d5a1` (2026-09-24), and none of the four main commits since then fixes one of them (section 8). Commit hashes are short hashes. The code of every GMIP4 submission is tagged and on GitHub ({ref}`Tags <mc-tags>`).
 ```
+
+## What changed, in short
+
+For users of GloGEM; the details and the evidence are in the entries below.
+
+- **New: GloGEMflow.** `use_flow_model='y'` runs a flowline ice-flow model, an IDL port of Zekollari et al. (2019), for every glacier whose present-day state it can reproduce; the other glaciers run on the Δh parameterisation in the same run. See [Flowline Model](../model-description/glacier-dynamics/flow-model.md) and the new settings in the [Settings Reference](../running-glogem/settings-reference.md).
+- **New: growth limit.** Every glacier is bounded once a year, on both geometry paths ({ref}`G12 <mc-g12>`).
+- **New: the GMIP4 ERA5 hindcast runs with changing geometry** ({ref}`G13 <mc-g13>`). Flow runs write `GloGEMflow_*` netCDF files.
+- **Fixed, climate input:** GMIP4 projections read the climate months late ({ref}`G1 <mc-g1>`); ERA5 and GCM came from neighbouring grid points ({ref}`G3 <mc-g3>`); the climate point depended on the batching ({ref}`G4 <mc-g4>`); lapse rate and variability on the per-point climate path ({ref}`G5 <mc-g5>`); lost longitudes ({ref}`G6 <mc-g6>`); speed ({ref}`G7 <mc-g7>`).
+- **Fixed, elsewhere:** glaciers never simulated ({ref}`G8 <mc-g8>`); glaciers turning NaN in the Δh parameterisation ({ref}`G9 <mc-g9>`, {ref}`G10 <mc-g10>`); Δh mass check and sea-level calving ({ref}`G11 <mc-g11>`); the calving-flux file ({ref}`G15 <mc-g15>`); `mass_bsl` ({ref}`G18 <mc-g18>`); negative netCDF values ({ref}`G19 <mc-g19>`); the flowline now uses the RGI 7.0 area correction ({ref}`F15 <mc-f15>`).
+- **Running:** the environment variables `GLOGEM_CONFIG` and `GLOGEM_LOGDIR`; the GMIP4 campaign scripts in `scripts/gmip4/` with a README ({ref}`S10 <mc-s10>`).
+- **Still open:** the month shift of the CMIP6 projections ({ref}`G2 <mc-g2>`), the monthly netCDF time labels ({ref}`G20 <mc-g20>`), the swapped ice-melt and snow-melt files ({ref}`K12 <mc-k12>`) and the other items of section 6.
 
 ```{admonition} If you read nothing else: bugs that are still in main
 :class: important
@@ -52,7 +62,7 @@ Each detailed entry says what was wrong, how it was found, its effect (with numb
 - **Survey year.** The year of a glacier's inventory outline and thickness (RGI7). The flow model's spin-up has to reproduce the glacier as observed in this year, and the model changes a glacier's geometry only from about this year on (K4, K5).
 - **Spin-up, Phase A and Phase B.** The flow model's spin-up (`spinup_flowmodel.pro`, after Zekollari et al. 2019) builds the survey-year glacier in two phases. Phase A runs the flowline to a steady state under the 1961–1990 mean balance, shifted by an ELA bias. Phase B then runs year by year with the modelled balances from 1990 to the survey year. Both phases are repeated while the flow factor A_flow is fitted to the observed volume and the ELA bias to the observed length.
 - **Spin-up quality gate.** The test after the spin-up that decides whether a glacier runs on the flow model: its survey-year volume must be within 50 % of the observed volume and its length at least half the observed length (F3). A glacier that fails the gate, or whose spin-up fails, runs on the Δh parameterisation.
-- **Output gate.** The script `scripts/check_gmip4_output.py`, run on the finished output of a region before it is submitted. It flags runaway glaciers, missing batches and non-finite values (S5). "Gate findings" are its flags.
+- **Output gate.** The script `scripts/gmip4/check_gmip4_output.py`, run on the finished output of a region before it is submitted. It flags runaway glaciers, missing batches and non-finite values (S5). "Gate findings" are its flags.
 - **Old and new climate path.** The two ways GloGEM reads monthly ERA5 and GCM data. The old path (`read_climatepast_monthly.pro`, `downscale_gcmdata_monthly.pro`) reads regional grid files and is used for most regions. The new path (`new='y'`, set automatically for NorthAsia, LowLatitudes and Antarctic; the files ending in `_new.pro`) reads one file per ERA5 grid point, per subregion (Lander's `b5aa086`, `8eeef31`, `eb035d5`).
 
 ### How to maintain this page
@@ -80,37 +90,50 @@ A new entry can start from this template:
 
 | Name used here | Branch or tag | What it is |
 |---|---|---|
-| main | `origin/main` at `4e5d5a1` | The shared GloGEM branch. Lander's GMIP4 Δh submissions (file prefix `GloGEM_`) were made with `main` code. All our branches split from it at `eb035d5` (2026-09-15). |
-| v1 | tag `gmip4-v1` (`bb4744e`, 2026-09-24), branch `GloGEMflow` | Code of the first GloGEMflow GMIP4 campaign. The v1 runs were made from the live tree while commits were landing, so the tag is not the exact code of every v1 region. `GloGEMflow` has 13 more commits, all englacial temperature work. |
-| v2 | `glogemflow-stability` (post-processing `cc70ff7`) | The tag plus 10 commits: the climate fixes G1 and G3, the speed fixes G7 and F12, main's `mass_bsl` fix (G18), the spin-up cache key (F5), the feeder (two commits) and the post-processing fixes S2 and S3. The v2 projections ran with model code `560ec9e`, fed by `b57eb3c` (a script). The 84 v2 hindcasts were launched earlier, at `8d9d040`, which has neither the `mass_bsl` fix nor the year-keyed cache; their `mass_bsl` was repaired in the combine step (`8993a0d`, S2). |
-| fix rounds | `glogemflow-fixes` (rounds 1 to 5), `glogemflow-fixes-b` (second half of round 5) | Five rounds of flow-model and Δh fixes, each checked by independent reviewers (round 5: a physics and an integration review, 2026-09-29, both ready to launch). |
-| newpath | `glogemflow-newpath` | Climate fixes for the regions that use the per-point climate path ("new path": NorthAsia, LowLatitudes, Antarctic). |
-| v3 | `glogemflow-v3` (production) | Merge `4007872` of `glogemflow-fixes` at `bdecf06` (rounds 1 to 4) and `glogemflow-newpath` at `04a3c33`, plus script commits. NorthAsia and LowLatitudes ran with model code `4007872`. |
-| v3r5 | `glogemflow-v3r5` | `glogemflow-v3` at `7a9a617` plus round 5: merges `7a41170` (`glogemflow-fixes` at `43f3584`) and `b2ed084` (`glogemflow-fixes-b` at `66e181f`), and this page. Model tree `fffbae9`, the tree both round-5 reviewers tested. Production takes it by fast-forward before Alaska, SouthernAndes, RussianArctic, Greenland and Antarctic are launched. |
+| main | `origin/main` at `6ee55bc` | The shared GloGEM branch. Lander's GMIP4 Δh submissions (file prefix `GloGEM_`) were made with `main` code. All our branches split from it at `eb035d5` (2026-09-15). |
+| v1 | tag `gmip4-v1` (`bb4744e`, 2026-09-24) | Code of the first GloGEMflow GMIP4 campaign. The v1 runs were made from the live tree while commits were landing, so the tag is not the exact code of every v1 region. The branch `GloGEMflow` continues from it with the englacial temperature work (G24). |
+| v2 | tag `gmip4-v2` (`cc70ff7`; former branch `glogemflow-stability`) | The v1 tag plus 10 commits: the climate fixes G1 and G3, the speed fixes G7 and F12, main's `mass_bsl` fix (G18), the spin-up cache key (F5), the feeder (two commits) and the post-processing fixes S2 and S3. The v2 projections ran with model code `560ec9e`, fed by `b57eb3c` (a script). The 84 v2 hindcasts were launched earlier, at `8d9d040`, which has neither the `mass_bsl` fix nor the year-keyed cache; their `mass_bsl` was repaired in the combine step (`8993a0d`, S2). |
+| fix rounds | former branches `glogemflow-fixes` (rounds 1 to 5) and `glogemflow-fixes-b` (second half of round 5), merged into v3 | Five rounds of flow-model and Δh fixes, each checked by independent reviewers (round 5: a physics and an integration review, 2026-09-29). |
+| newpath | former branch `glogemflow-newpath`, merged into v3 | Climate fixes for the regions that use the per-point climate path ("new path": NorthAsia, LowLatitudes, Antarctic). |
+| v3 | tag `gmip4-v3-early` (`e5629c2`) | Branch `glogemflow-v3` before round 5: merge `4007872` of the fix rounds 1 to 4 and newpath, plus script commits. NorthAsia and LowLatitudes ran with model code `4007872`. |
+| v3r5 | tag `gmip4-v3` (`981219d`) | v3 plus round 5 (merges `7a41170` and `b2ed084`, model tree `fffbae9`, the tree both round-5 reviewers tested) and this page. The five sea-ending regions ran with it. |
+| clean-up | branch `glogemflow-v3` after `gmip4-v3` | The clean-up for the merge and the area-correction fix F15 ({ref}`S10 <mc-s10>`). |
+
+(mc-tags)=
+### Tags
+
+Every submitted version has a tag; all four are on GitHub. Files removed from the branch tip in the clean-up (S10) are still in the tags: `git checkout gmip4-v3` gives the code and the scripts of those runs.
+
+| Tag | Commit | RGI regions submitted with it |
+|---|---|---|
+| `gmip4-v1` | `bb4744e` | 03, 04, 06, 07, 08, 09, 11, 12, 14, 18 (approximate: the v1 runs were made from the live tree) |
+| `gmip4-v2` | `cc70ff7` | 02, 13, 15 (the hindcasts compiled `8d9d040`, see the tag message) |
+| `gmip4-v3-early` | `e5629c2` | 10, 16 |
+| `gmip4-v3` | `981219d` | 01, 05, 17; 19 combined but not submitted |
 
 ### Where each region stands
 
-| RGI | Region | Code | Status on 2026-09-29 | Known issues carried |
+| RGI | Region | Code | Status on 2026-10-12 | Known issues carried |
 |---|---|---|---|---|
-| 01 | Alaska | v3r5 | Not submitted. Rerun prepared with Lander's no-calving calibration; to run on v3r5 (not launched yet). | v3r5 set |
+| 01 | Alaska | v3r5 | Submitted 2026-09-30, with Lander's no-calving calibration. | v3r5 set |
 | 02 | WesternCanada | v2 | Submitted 2026-09-28. Glacier 08538 recalibrated without calving before submission. | v2 set; G12 (1 clamped glacier) |
 | 03 | ArcticCanadaN | v1 | Submitted 2026-09-17 (renamed to `GloGEMflow_` 2026-09-19). Climate point from the old batch-dependent method (G4). | v1 set; G4, G11, G18 |
-| 04 | ArcticCanadaS | v1 | Submitted 2026-09-23 (no marker, see below). Partly rerun after the climate-point fix (28 of 48 jobs), spin-up cache not cleared. | v1 set; G4 (partly), G18 |
-| 05 | Greenland | v3r5 | Not submitted. Prepared with Lander's no-calving calibration of 23 September (frozen copy); to run on v3r5 (not launched yet). | v3r5 set |
+| 04 | ArcticCanadaS | v1 | Submitted 2026-09-23. Partly rerun after the climate-point fix (28 of 48 jobs), spin-up cache not cleared. | v1 set; G4 (partly), G18 |
+| 05 | Greenland | v3r5 | Submitted 2026-09-30, with Lander's no-calving calibration of 23 September. | v3r5 set |
 | 06 | Iceland | v1 | Submitted 2026-09-19, corrected climate point, cleared spin-up cache. | v1 set; G18 |
 | 07 | Svalbard | v1 | Submitted 2026-09-17, old climate point. At 2100 (MRI-ESM2-0 ssp585) its glaciers that run on Δh in both models hold 25.4 % less ice than in Lander's run (G4); unexplained. | v1 set; G4, G18 |
 | 08 | Scandinavia | v1 | Submitted 2026-09-17, old climate point. | v1 set; G4, G18 |
-| 09 | RussianArctic | v1 | Submitted 2026-09-23 (no marker, see below) with a per-batch calibration made with calving on (G16). Resubmission on v3r5 with a no-calving calibration prepared (not launched yet). | v1 set; G16, G18; G4 not recorded |
-| 10 | NorthAsia | v3 | Complete and combined, output gate 0 findings. Not yet submitted. | v3 set; G3 (1 glacier), F9 (0.03 Gt of frontal ablation on land) |
+| 09 | RussianArctic | v1 | Submitted 2026-09-23 with a per-batch calibration made with calving on (G16). A rerun on v3r5 with a no-calving calibration was made but not submitted (Janosch, 2026-09-30: no further resubmissions). | v1 set; G16, G18; G4 not recorded |
+| 10 | NorthAsia | v3 | Submitted 2026-09-30. Output gate 0 findings. | v3 set; G3 (1 glacier), F9 (0.03 Gt of frontal ablation on land) |
 | 11 | CentralEurope | v1 | Submitted 2026-09-19, corrected climate point, cleared spin-up cache. | v1 set |
 | 12 | Caucasus | v1 | Submitted 2026-09-17, old climate point. | v1 set; G4 |
 | 13 | CentralAsia | v2 | Submitted 2026-09-28. | v2 set; G3 (3 glaciers) |
 | 14 | SouthAsiaWest | v1 | Submitted 2026-09-21, resubmitted 2026-09-23 after the combine fix S1. Corrected climate point, but partly rerun (51 of 80 jobs) with the cache not cleared; per-batch calibration. | v1 set; G4 (partly; calibration tuned to the old point) |
 | 15 | SouthAsiaEast | v2 | Submitted 2026-09-28, with Lander's region-wide calibration. | v2 set |
-| 16 | LowLatitudes | v3 | Complete and combined; to be submitted as is (Janosch, 2026-09-29). | v3 set; G12 (about 0.9 Gt of ice created after 2230) |
-| 17 | SouthernAndes | v3r5 | Not submitted. Prepared with our own no-calving calibration merged into Matthias's file; to run on v3r5 (not launched yet). | v3r5 set |
+| 16 | LowLatitudes | v3 | Submitted 2026-09-30, as is (Janosch, 2026-09-29). | v3 set; G12 (about 0.9 Gt of ice created after 2230) |
+| 17 | SouthernAndes | v3r5 | Submitted 2026-09-30, with our own no-calving calibration merged into Matthias's file. | v3r5 set |
 | 18 | NewZealand | v1 | Submitted 2026-09-19, corrected climate point. 18 gate findings accepted (4 glaciers, 0.5 % of the 2300 volume, Δh regrowth, K1). | v1 set; G4 (calibration tuned to the old point) |
-| 19 | Antarctic | v3r5 | Not submitted. Prepared with a full no-calving recalibration; to run on v3r5 (not launched yet). | v3r5 set |
+| 19 | Antarctic | v3r5 | Combined (output gate passed), with a full no-calving recalibration. Not submitted as of 2026-10-12: its ERA5 hindcast loses far more ice than observed (K20). | v3r5 set; K20 |
 
 The sets in the last column, taken from the tables at the start of sections 3 and 4:
 
@@ -118,15 +141,15 @@ The sets in the last column, taken from the tables at the start of sections 3 an
 - **v2 set:** G10 (negligible), G11 (undone sea-level calving, where cuts occur), F2 (lost survey year), F6, F7, F10.
 - **v3 set:** F10, F11, K19.
 - **v3r5 set** (the five sea-ending regions): K19. F9 (front calving), F10, F11, the ice created by G12 and G19 are fixed there.
-- K1 (Δh regrowth) is in every region, ours and Lander's.
+- K1 (Δh regrowth) is in every region, ours and Lander's. F15 (flowline without the RGI 7.0 area correction) is in every flow submission.
 
-The result folders of 04 and 09 have no `SUBMITTED_GMIP4.txt` marker, although the notes say both were submitted on 2026-09-23. Janosch decided on 2026-09-25 not to rerun the submitted v1 regions, and on 2026-09-28 not to send a disclosure note about them to GlacierMIP4.
+Janosch decided on 2026-09-25 not to rerun the submitted v1 regions, and on 2026-09-28 not to send a disclosure note about them to GlacierMIP4.
 
 ---
 
 ## 2. Overview
 
-"In main?" says whether `origin/main` (`4e5d5a1`) still has the problem. "—" means the item is not a bug (a feature, tooling or a data choice).
+"In main?" says whether `origin/main` (`6ee55bc`) still has the problem. "—" means the item is not a bug (a feature, tooling or a data choice).
 
 | ID | Title | Part | Status | Changes results? | In main? | Commit(s) |
 |---|---|---|---|---|---|---|
@@ -168,6 +191,7 @@ The result folders of 04 and 09 have no `SUBMITTED_GMIP4.txt` marker, although t
 | {ref}`F12 <mc-f12>` | Speed: skip ice-free flowlines; vectorised SIA | flow | done | bit-identical | not in main | `0d44bad`, `07d306a` |
 | {ref}`F13 <mc-f13>` | Flowline velocity for the temperature model | flow | done | temperature only | not in main | `a9cb358`, `5b1aa21`, `4b80a07` |
 | {ref}`F14 <mc-f14>` | Log says "falling back to Δh" when the glacier stays on flow | flow | fixed (round 5, v3r5) | no (log only) | not in main | `b4589c2` |
+| {ref}`F15 <mc-f15>` | The flowline ignored the RGI 7.0 area correction | flow | fixed after the campaign | yes | not in main | `4808988` |
 | {ref}`S1 <mc-s1>` | Combine counted batches twice (`GloGEM_` and `GloGEMflow_` files) | scripts | fixed | submission files | — | `a6037e2` |
 | {ref}`S2 <mc-s2>` | Combine and gate for v2: completeness, `mass_bsl` repair, month restamp | scripts | fixed | submission files | — | `8993a0d` |
 | {ref}`S3 <mc-s3>` | GMIP4 format: time bounds, whole calendar years, NaN-aware gate | scripts | fixed | submission files | — | `cc70ff7` |
@@ -177,6 +201,7 @@ The result folders of 04 and 09 have no `SUBMITTED_GMIP4.txt` marker, although t
 | {ref}`S7 <mc-s7>` | Launchers and watchers: lost, killed and overwritten jobs | scripts | fixed | — | — | `24d6a06`, `de63c36`, `f44e013`, `ae1a1e6` |
 | {ref}`S8 <mc-s8>` | Campaign feeders: order, stagger, pre-flight, `.done` check | scripts | done | — | — | `61209b3`, `b57eb3c`, `e5629c2`, `44b6099`, `309ce36` |
 | {ref}`S9 <mc-s9>` | Run logs off the home quota (`GLOGEM_LOGDIR`) | scripts, `glogem.pro` | done | no | — | `2196916` |
+| {ref}`S10 <mc-s10>` | Clean-up of the branch for the merge | scripts, flow, docs | done | no | — | `7ced973`, `756bbf7`, `d16e290`, `95a87ec`, `736a770` |
 | {ref}`K1 <mc-k1>` | Δh advance scheme can regrow glaciers without bound | core | known, accepted | — | yes | none |
 | {ref}`K2 <mc-k2>` | GMIP4 GCM files are bias-corrected on the annual mean only | input data | open | — | yes | none |
 | {ref}`K3 <mc-k3>` | The 1939 months: zeros in the hindcast, GCM values in projections | core | known, accepted | — | yes | none |
@@ -196,6 +221,7 @@ The result folders of 04 and 09 have no `SUBMITTED_GMIP4.txt` marker, although t
 | {ref}`K17 <mc-k17>` | Smaller output issues (model attribute, stale band elevations) | output | open | — | partly | none |
 | {ref}`K18 <mc-k18>` | Debug `stop` and editor backup files on main | main only | open | — | yes | `70c5af5` |
 | {ref}`K19 <mc-k19>` | Kept spin-ups lean towards too-short glaciers; A_flow floor; no upper length limit in the gate | flow | open, to be disclosed | — | — | none |
+| {ref}`K20 <mc-k20>` | Antarctic flow hindcast loses about twice the observed mass | flow, calibration | open | — | — | none |
 
 ---
 
@@ -358,7 +384,7 @@ GMIP4 asks for an ERA5 hindcast (2000–2025) next to the projections. The dynam
 - the folder `PAST_original/dyn` was never created;
 - the hindcast file name used `nc_gcm_tag`, which only projection runs define.
 
-`8cb4ad7` (all branches, 2026-09-22) sets `hindcast_dynamic='y'` for GMIP4, keeps a reanalysis run's own `tran`, moves the guard to `tran[1] > 2025` and creates the folder. `b71eeca` drops the GCM tag from hindcast file names and names flow runs `GloGEMflow_*` (derived from `use_flow_model`). The hindcast runs from 1940, because firn starts at zero and needs the first years to build up. All our submitted regions now include the hindcast. On main all four blockers are still there (`check_tran.pro:9-25`, `settings.pro:417`, `setup_output_folders.pro:32`, `init_netcdf_hindcast.pro:102-105`); the file-name switch of `b71eeca` reads `use_flow_model`, which main does not have.
+`8cb4ad7` (all branches, 2026-09-22) sets `hindcast_dynamic='y'` for GMIP4, keeps a reanalysis run's own `tran`, moves the guard to `tran[1] > 2025` and creates the folder. `b71eeca` drops the GCM tag from hindcast file names and names flow runs `GloGEMflow_*` (derived from `use_flow_model`). The hindcast runs from 1940, because firn starts at zero and needs the first years to build up. All our submitted regions now include the hindcast. On main all four blockers are still there (`check_tran.pro:12-28`, `settings.pro:417`, `setup_output_folders.pro:32`, `init_netcdf_hindcast.pro:102-105`); the file-name switch of `b71eeca` reads `use_flow_model`, which main does not have.
 
 (mc-g14)=
 ### G14. GMIP4 crashes with several GCMs per run or with subregions
@@ -460,7 +486,7 @@ The main fixes on our branches:
 
 GloGEMflow is not on `main`, so everything here is new code for main. In short, for our submissions:
 
-| ID | v1 submissions | v2 submissions (02 13 15) | v3 (10 16) | v3r5 (01 05 09 17 19) |
+| ID | v1 submissions | v2 submissions (02 13 15) | v3 (10 16) | v3r5 (01 05 17 19) |
 |---|---|---|---|---|
 | F2 resurrected inventory hypsometry | fixed (all regions rerun after 2026-09-08) | fixed | fixed | fixed |
 | F2 lost survey year, volume jump at handover | carry it | carry it | fixed | fixed |
@@ -476,7 +502,7 @@ GloGEMflow is not on `main`, so everything here is new code for main. In short, 
 
 - **History.** April to July 2025: translation of Harry Zekollari's MATLAB GloGEMflow to IDL (about 190 commits, including notebooks and grid-conversion experiments). `baa5c7b` (2026-03-20): flowline mass balance, the Zekollari et al. (2019) spin-up and the coupled driver `glogemflow_coupled.pro`; refined in `0f53b2f`. `020e81e` and `009a688` (2026-06-09): integration into main's modular `glogem.pro`, with the settings `use_flow_model` and `write_geometry_output`.
 - **Current design.**
-  - GloGEM's calibrated band mass balance is mapped onto the flowline each year (`flowline_massbal.pro` is kept but not called).
+  - GloGEM's calibrated band mass balance is mapped onto the flowline each year (an earlier routine that recomputed the balance on the flowline, `flowline_massbal.pro`, was never called and was deleted in the clean-up, S10).
   - Shallow-ice approximation with a third-order Runge–Kutta step (`ice_thickness.pro`, `diffusivity.pro`) on a trapezoidal channel.
   - The elevation bands are rebuilt from the flowline every year (`update_elevation_bands.pro`), and the band elevation feeds back into the mass balance (`0ce7fa7`). The mass-balance elevation is capped at the inventory surface, as MATLAB's `massbal.m` does (`0ad3e88`).
   - The spin-up (`spinup_flowmodel.pro`) runs the glacier to steady state under the 1961–1990 balance and fits the flow factor A_flow to the observed volume and an ELA bias to the observed length.
@@ -594,7 +620,7 @@ Differences to MATLAB that remain on purpose: MATLAB lengthens the grid only in 
 - **Integration test of `glogemflow-v3r5`** (2026-09-29; fresh spin-ups; ERA5 hindcast and MRI-ESM2-0 ssp126 to 2300 for six sea samples, and the production config of Antarctic batch 03 with ACCESS-ESM1-5 ssp126): no crash, no NaN, budget residual at most 0.007 Gt per run (the RussianArctic projection +0.12 Gt, from its Δh ice cap 00643 as in v3), and every `.dat` byte and netCDF value equal to the round-5 reviewers' runs of the same code. A copy with added print lines only (identical output) found no flowline ice with its surface below sea level at any of 32,422 flow glacier-year ends, and the frontal ablation booked equals the calved plus grid-end ice in every glacier-year. Frontal ablation over the projection, v3 → v3r5: Alaska top 10 0 → 80.7 Gt (16798), SouthernAndes 46 0 → 12.0 Gt, Greenland 20 3.55 → 3.81 Gt, Victoria 25 8.8 → 9.8 Gt (5.0 calved at fronts, 4.0 out of the grid end of the sea-front glacier 01488, 0.8 cut from Δh glaciers; the 0.14 Gt the land glacier 01641 lost through its grid end in v3 is gone), Antarctic batch 03 10.3 → 8.8 Gt (its positive-balance glacier 00005 now calves at the front instead of leaving the grid end).
 - **To disclose** (round-5 physics review): calving removes whole flowline cells, so yearly frontal ablation is spiky (Alaska 16798 loses 0.53–0.65 Gt in single years every 10–12 years), as the Δh parameterisation loses whole bands. The spin-up has no calving and its tongue below sea level is cut before the run; in Victoria that ice (about 0.5 Gt in the sample) calves over the first ten years instead of in year one. 10–40 % of the inventory cells of each Victoria tidewater glacier have their surface below sea level; the quality gate still counts them in the observed length, so after the cut several of these glaciers start at 0.51–0.89 of it and go to the Δh parameterisation (Victoria sample flow share 90.6 → 82.0 % with F9 to F11). A land glacier that re-advances over the made-up bed beyond its front can also calve when its surface drops below sea level (NorthAsia 04452/04465, 0.006 Gt after 2200). Calving adds to the loss of the no-calving calibrated balance, as the Δh cut does.
 - **Open point for Janosch** (builder, round 5): the cut acts once before the run and every year after the flow year, not inside the spin-up. Cutting inside every spin-up year leaves tidewater glaciers too short (Alaska 16798 at 0.75 of its length) and shifts regional 2100 mass by −4 to +14 % in the samples.
-- **Submissions.** NorthAsia and LowLatitudes (v3) are land regions and ran without round 5; the sea-ending regions 01, 05, 09, 17 and 19 run with it (v3r5).
+- **Submissions.** NorthAsia and LowLatitudes (v3) are land regions and ran without round 5; the sea-ending regions 01, 05, 17 and 19 ran with it (v3r5), and so did the RussianArctic rerun, which was not submitted.
 
 (mc-f10)=
 ### F10. The spin-up verdict depends on host load
@@ -627,6 +653,24 @@ When the volume search does not converge, the kept ice state and the A_flow used
 ### F14. Log said "falling back to Δh" when the glacier stayed on flow
 
 Since `b0287ce`, a spin-up that stops in its 3rd or later length attempt keeps its closest attempt and stays on the flow model, but the log still printed "abandoning flow model ..., falling back to Δh parameterisation". `b4589c2` (round 5, v3r5) prints "stopping the calibration" there and one "Spin-up failed --- falling back to Δh parameterisation." line where the glacier really falls back. Log only.
+
+
+(mc-f15)=
+### F15. The flowline ignored the RGI 7.0 area correction
+
+- **What was wrong.** For RGI 7.0, `read_glacier_inventory_batchfile.pro` computes a factor per glacier, the RGI 7.0 area divided by the area of the thickness product (`area_correction_factor`), and `read_hypsometryfile.pro` multiplies the band areas by it (in NewZealand it also divides the band thickness by it, to keep the volume). `vertical_to_horizontal_grid.pro` reads the band file again for the flowline and scaled the flowline widths to the uncorrected area. A flow glacier therefore started with another area than the same glacier on the Δh parameterisation, and than the band volume its spin-up is fitted to.
+- **Effect.** The factor, area-weighted per region: LowLatitudes 0.83, NewZealand 0.81, SouthernAndes 0.89, Greenland 0.91, Antarctic 0.97, all other regions 0.997–1.001. Single glaciers range from 0.16 to 3.9 in every region, so every region's flow glaciers are affected. In a test on `e5629c2` (LowLatitudes Andes batch 01, SSP1-2.6, mean of 8 GCMs, fresh spin-ups), the fix changed the 2026 area from 435.1 to 393.4 km² and the volume left in 2100 from 46.8 to 44.8 % of 2026 (flow off: 36.0 %; Lander's Δh run: 35.8 %).
+- **Fix.** `4808988` (`glogemflow-v3`, after the campaign; agreed with Janosch on 2026-10-01): the flowline widths are scaled to the corrected band area. The same one-line expression as the test above.
+- **Test** (2026-10-12, fresh spin-ups, MRI-ESM2-0 ssp126 to 2300 unless noted; before → after the fix):
+
+  | Sample | Area 2026 (km²) | Volume 2026 (km³) | Volume left in 2100 (% of 2026) | Glaciers on the flow model |
+  |---|---|---|---|---|
+  | SouthernAndes, 26 glaciers | 104.6 → 93.4 | 8.25 → 8.60 | 62.1 → 61.5 | 16 → 15 |
+  | LowLatitudes Andes, 20 glaciers | 59.0 → 53.1 | 2.20 → 2.37 | 39.5 → 37.7 | 19 → 18 |
+
+  The flowline now starts with about 10 % less area and the same volume, so it is thicker and loses less ice in the first decades, but by 2100 it has lost a slightly larger share of its 2026 ice. In the SouthernAndes ERA5 hindcast the regional area no longer jumps when the glaciers switch to the flow model at their survey year (2000 → 2010: 101.1 → 111.2 km² before, 101.0 → 99.0 km² after; compare K5), and the 2025 volume is 3.0 % higher. The flowline front calving of the sample's sea fronts grows from 0.018 to 0.036 Gt over the projection. The 9 glaciers on the Δh parameterisation are unchanged.
+- **Left.** Glaciers below 0.25 km² read the fallback band file without the correction (`read_hypsometryfile.pro`, RGI 7.0 checks), while their flowline would now be scaled by the factor. Such glaciers are nearly always shorter than 1 km and run on the Δh parameterisation.
+- **Submissions.** Every GMIP4 flow submission carries it (all tags).
 
 ---
 
@@ -662,7 +706,7 @@ Created in `5dfd530` after the runaway glaciers of F2: it flags a glacier with a
 (mc-s6)=
 ### S6. Combine scripts, hindcast combiner, config generator, v3 regions
 
-`combine_gmip4_output.py` (`de63c36`); `combine_gmip4_hindcast.py`, which refuses partial regions (`3bae19c`); `make_gmip4_configs.py` (`5bf98de`); `requeue_incomplete.py` (`5dfd530`); NorthAsia, LowLatitudes, Antarctic and Greenland with subregion file prefixes and `--v3` (`ca74f02`).
+`combine_gmip4_output.py` (`de63c36`); `combine_gmip4_hindcast.py`, which refuses partial regions (`3bae19c`); `make_gmip4_configs.py` (`5bf98de`); `requeue_incomplete.py` (`5dfd530`); NorthAsia, LowLatitudes, Antarctic and Greenland with subregion file prefixes and `--v3` (`ca74f02`). Since the clean-up all of them are in `scripts/gmip4/` (S10).
 
 (mc-s7)=
 ### S7. Launchers and watchers: lost, killed and overwritten jobs
@@ -675,12 +719,32 @@ Created in `5dfd530` after the runaway glaciers of F2: it flags a glacier with a
 (mc-s8)=
 ### S8. Campaign feeders
 
-`feed_v2_campaign.py` queues each batch's hindcast first (`61209b3`) and the SSP runs staggered behind ssp126 (`b57eb3c`), so the spin-ups are computed once and never written by two jobs at the same time. `feed_v3_campaign.py` adds region locks and a pre-flight check of configs, catchments, staged calibration and empty caches (`e5629c2`, `44b6099`), and after feeding waits and reports every batch without its 5 `.done` markers (`309ce36`; a queue line can be lost when the feeder appends while a watcher rewrites the file).
+`feed_v2_campaign.py` queues each batch's hindcast first (`61209b3`) and the SSP runs staggered behind ssp126 (`b57eb3c`), so the spin-ups are computed once and never written by two jobs at the same time. `feed_v3_campaign.py` adds region locks and a pre-flight check of configs, catchments, staged calibration and empty caches (`e5629c2`, `44b6099`), and after feeding waits and reports every batch without its 5 `.done` markers (`309ce36`; a queue line can be lost when the feeder appends while a watcher rewrites the file). Both feeders were written for these campaigns and are no longer on the branch tip (S10); they are in the tags `gmip4-v2` and `gmip4-v3`.
 
 (mc-s9)=
 ### S9. Run logs off the home quota
 
-`2196916`: `glogem.pro` writes its journal to `GLOGEM_LOGDIR` if set (default unchanged); `prune_home_logs.sh` compresses leftovers. Campaign journals had filled the 9.8 GB home quota twice.
+`2196916`: `glogem.pro` writes its journal to `GLOGEM_LOGDIR` if set (default unchanged); `prune_home_logs.sh` compressed leftovers (in the tags; removed from the tip in S10). Campaign journals had filled the 9.8 GB home quota twice.
+
+
+(mc-s10)=
+### S10. Clean-up of the branch for the merge (2026-10-12)
+
+After the campaign, `glogemflow-v3` was cleaned so that it can be merged into `GloGEMflow` and `main` later (the merge is not done yet). Everything removed is still in the tags.
+
+| Commit | What |
+|---|---|
+| `7ced973` | Removed the one-off campaign scripts (`campaign_keeper.sh`, `enable_vierzack05_when_ready.sh`, `restart_watchers_after_reboot.sh`, `watch_and_launch_subregions.sh`, `feed_v2_campaign.py`, `feed_v3_campaign.py`, `prune_home_logs.sh`), the July Alps chain (`overnight_chain.sh`, six `run_*.sh`, `create_batches.py`, and the configs `config_cali_rgi6.pro` and `config_{dh,flow}_rgi{6,7}_fwd.pro`), the flow comparison notebooks `flow_analysis/comparison_*.ipynb`, and `.vscode/settings.json` from git. Added the flow example `test/configs/config_aletsch_flow_monthly_projection.pro`. |
+| `756bbf7` | The nine reusable GMIP4 scripts moved to `scripts/gmip4/`, with a README: what each script does, the order of a campaign, the environment variables. Their folders come from `GMIP4_RUN_DIR`, `GMIP4_RESULTS_DIR`, `GLOGEM_DATA_DIR` and `GMIP4_REUSE_DIR`, whose defaults are the 2026 folders; `--help` on every script, `DRY_RUN=1` for the launcher. |
+| `d16e290` | Dead flow code removed: `flowline_massbal.pro` (never called); the `save` of `horizontal_grid_inputs.sav`, a stray file written into the working folder for every flow glacier and never read; nine unused MATLAB switches in `set_flow_model_parameters.pro`; unused variables and arrays and two per-glacier prints in `constants_counters_initialvalues_sizevariables.pro`; commented-out debug prints. |
+| `4808988` | F15, the only commit of the clean-up that changes results. |
+| `95a87ec` | `.gitignore`: figures ignored only at the repository root, `*.idlnb` added, 13 entries of the 2025 set-up and a duplicate removed. |
+| `736a770` | `config.pro.example`: "Δh parameterisation" instead of "dhdt"; the flow settings and the growth limit listed. |
+| the commit of this page | This page curated for the merge; new page [Flowline Model](../model-description/glacier-dynamics/flow-model.md); the flow settings and environment variables in the [Settings Reference](../running-glogem/settings-reference.md). |
+
+- **Test.** A SouthernAndes catchment of 26 glaciers (16–17 on the flow model, 5 sea fronts, 4 failed spin-ups, 5 shorter than 1 km) with the GMIP4 v3 settings and fresh spin-ups: an ERA5 hindcast 1940–2025 and an MRI-ESM2-0 ssp126 projection to 2300, each run with `981219d` and with `d16e290` (every clean-up commit except F15; the later commits change no IDL file). In both runs every `.dat` file (23) is byte-identical, and every netCDF variable (4 files) and every spin-up `.sav` value (17 files) is identical. Only time stamps differ: the netCDF `creation_date`, the date line of the copied settings, the date in the 4 spin-up failure markers and the wall-clock column of the spin-up table.
+- **Scripts.** On the submitted SouthernAndes v3 output, `combine_gmip4_output.py` and `combine_gmip4_hindcast.py` (`--verify-only`) and `check_gmip4_output.py` print the same as their `981219d` versions. `make_gmip4_configs.py` writes the same 31 configs apart from its "Generated by" comment line, `create_region_batches.py` the same catchment files, and `launch_batches.sh` (`DRY_RUN=1`, started from another folder) finds the repository root. The new Aletsch flow example runs both glaciers on the flow model.
+- **Left to the englacial temperature work:** `flow_analysis/advection_cross_section.ipynb` and `firn_offset_handoff.md`, the root copy of `icetemperature_batch.dat`, the unreferenced `test/data/firnicetemp_calibration_CentralEurope*.dat`, the Bayesian-calibration and advection-field scripts and configs in `scripts/`, and the `@` include of K14. Two comments there still name removed files (`config_icetemp_advfield_aletsch*.pro` name `overnight_chain.sh`; the notebook names `comparison_aletsch_morteratsch.ipynb`).
 
 ---
 
@@ -689,7 +753,7 @@ Created in `5dfd530` after the runaway glaciers of F2: it flags a glacier with a
 (mc-k1)=
 ### K1. The Δh advance scheme can regrow glaciers without bound (accepted)
 
-`glacier_retreat.pro:49` switches the advance scheme on once a glacier's volume exceeds its initial volume, and the area–thickness rescaling then feeds itself without a bound. Code bugs in it (line numbers as in the v1 code): a stale index `ci` (lines 111/144), `dh=-9999` on new bands (155), wrong-sign `redistribute_vplus` for a volume gain (55–63), `areas[ye-1]` (107), and new bands only 100 m below the terminus. Found 2026-09-15: in CentralEurope under MRI ssp534-over, glaciers above 5× their volume at 2300 hold 8.3 % of the ice in Lander's run (50 glaciers) and 37.3 % in ours (134 glaciers; the extra ones tipped over by G4); 03473 runs away identically in both. Later: NorthAsia small Δh glaciers get 3–4× thicker (13 % of MRI 2300 ice), Kilimanjaro reaches 660–1,010 m, LowLatitudes has 3–11 % of its 2300 ice more than 300 m thick; Lander's files show the same or more. Janosch accepted it on 2026-09-15 (no rerun; Lander to be told it is in his runs); on 2026-09-24 he asked for the bugs to be fixed and a physical bound to be added, which is not done. A patch that refreshes the stale index and sets dh = 1 on new bands (`/scratch_net/vierzack04_fourth/jabeer/GloGEM/glogemflow_development/_stab_tests/_notes/A2_glacier_retreat.patch`; ask Janosch for it) was tested on one SouthernAndes batch but not analysed, and is on no branch.
+`glacier_retreat.pro:49` switches the advance scheme on once a glacier's volume exceeds its initial volume, and the area–thickness rescaling then feeds itself without a bound. Code bugs in it (line numbers as in the v1 code): a stale index `ci` (lines 111/144), `dh=-9999` on new bands (155), wrong-sign `redistribute_vplus` for a volume gain (55–63), `areas[ye-1]` (107), and new bands only 100 m below the terminus. Found 2026-09-15: in CentralEurope under MRI ssp534-over, glaciers above 5× their volume at 2300 hold 8.3 % of the ice in Lander's run (50 glaciers) and 37.3 % in ours (134 glaciers; the extra ones tipped over by G4); 03473 runs away identically in both. Later: NorthAsia small Δh glaciers get 3–4× thicker (13 % of MRI 2300 ice), Kilimanjaro reaches 660–1,010 m, LowLatitudes has 3–11 % of its 2300 ice more than 300 m thick; Lander's files show the same or more. Janosch accepted it on 2026-09-15 (no rerun; Lander to be told it is in his runs); on 2026-09-24 he asked for the bugs to be fixed and a physical bound to be added, which is not done. A patch that refreshes the stale index and sets dh = 1 on new bands (kept with the campaign notes; ask Janosch for it) was tested on one SouthernAndes batch but not analysed, and is on no branch.
 
 (mc-k2)=
 ### K2. GMIP4 GCM files are bias-corrected on the annual mean only (open)
@@ -788,6 +852,12 @@ From the round-4 physics review of the v3 production (item 4, marked "disclose")
 - 116 kept glaciers sit at the A_flow floor of 1e-20 (almost rigid ice), against 4 of the 3,383 glaciers whose search converged.
 - The spin-up quality gate has no upper length limit: 16 glaciers longer than 1.5× their observed length pass it.
 
+
+(mc-k20)=
+### K20. Antarctic: the flow hindcast loses about twice the observed mass (open)
+
+The combined Antarctic (RGI 19) ERA5 hindcast at `gmip4-v3` changes by −39.0 Gt/yr over 2000–2020 (frontal ablation −40.5, surface +1.5) against an observed −20.5 Gt/yr (Lander's Δh run: −32). A test on 2026-10-01 with the flowline front calving of F9 switched off gave −8.7 Gt/yr (calving −5.5 from the grid end and the Δh sea-level cut, surface −3.2). Neither matches. The surface balance of the flow glaciers is about 0 instead of the calibrated about −16 Gt/yr, probably because the steady-state spin-up geometry differs from the geometry the balance was calibrated on, and the front calving then adds to a calibration made without calving. RGI 19 is not submitted; how to go on is Janosch's decision.
+
 ---
 
 (mc-decisions)=
@@ -821,6 +891,10 @@ All decisions below were taken by Janosch Beer.
 | 2026-09-29 | Hindcast survey-year convention left as is. | K4 |
 | 2026-09-29 | Spin-up limit: a fixed amount of work instead of 180 s wall clock, in its own commit. | F10 |
 | 2026-09-29 | Keep this document for the merge into main. | this page |
+| 2026-09-30 | RussianArctic (09) is not resubmitted; the v1 submission stands. | section 1 |
+| 2026-10-01 | Fix the flowline's missing RGI 7.0 area correction on the branch (not in any submission). | F15 |
+| 2026-10-12 | Push the four GMIP4 tags to GitHub. | Tags |
+| 2026-10-12 | Clean the branch for the merge: reusable GMIP4 scripts to `scripts/gmip4/`, one-off scripts removed from the tip (kept in the tags); the merge itself later. | S10 |
 
 ---
 
@@ -828,33 +902,23 @@ All decisions below were taken by Janosch Beer.
 
 ### Where the branches stand against main
 
-- `origin/main` is at `4e5d5a1` (2026-09-24). All our branches split from it at `eb035d5` (2026-09-15); the last merges of main into our work were `635a888` and `e45574a` on that day.
-- Commits ahead of `origin/main` (`git rev-list --count`, 2026-09-29 about 15:10): `glogemflow-v3` 345 at `ae936f2`, plus the commits of this page; `glogemflow-v3r5` 357 at `b2ed084` (counted about 17:30); `glogemflow-fixes` 334; `glogemflow-fixes-b` 333; `glogemflow-newpath` 315; `GloGEMflow` 310; `glogemflow-stability` 307; tag `gmip4-v1` 297.
-- From the merge base to `glogemflow-v3` at `ae936f2` (without this page): 117 files, +22,094 / −379 lines. Added lines by folder: test data 8,221, analysis notebooks (`flow_analysis/`) 4,637, `scripts/` 3,956, `procedures/flow/` 2,692, `procedures/initialise/` 1,142, `procedures/processing/` 650, `procedures/write/` 413, `glogem.pro` 188. `settings.pro` grows by 141 lines.
-- **Files that are not model code.** v3 also adds `.vscode/settings.json` (editor settings), `icetemperature_batch.dat` at the repository root (the glenglat borehole list of the temperature module; the model reads its copy from the data folder `dir`, not this one), the `flow_analysis/` notebooks and notes (4,637 lines) and `test/` data (8,221 lines: glenglat borehole elevations and temperature calibration tables, two of them 4,080-line kNN tables). Suggested: leave `.vscode/`, the root copy of `icetemperature_batch.dat` and `flow_analysis/` out of main, and take the `test/` data only together with the temperature module. `config.pro.example` (+19 lines: the batch switch, `use_flow_model`, `write_geometry_output`) can go with the flow model; its comments still use the old name of the Δh parameterisation, which G23 changed elsewhere.
+- `origin/main` is at `6ee55bc` (2026-10-09). All our branches split from it at `eb035d5` (2026-09-15); the last merges of main into our work were `635a888` and `e45574a` on that day.
+- **Main since the last check (`4e5d5a1`):** `5cbbbed` comments out a `print` in `read_gcmdata_monthly.pro`; `749e36f` makes the regional netCDF temperature skip NaN glacier values (`write_netcdf_glacier.pro`); `3d2d89c` is a merge; `6ee55bc` (Lander, "AMOC untill 3000 for 7 options") touches `check_tran.pro`, `settings.pro`, `read_gcmdata_monthly.pro`, `initialise_glaciermip4_vars.pro` and `initialise_netcdf_vars.pro`, for the AMOC runs only, and adds two debug `print` lines at the top of `check_tran.pro`. None of them fixes an item of this page; `749e36f` removes one symptom of G9 on main (a NaN regional temperature).
+- `glogemflow-v3` is 364 commits ahead of `origin/main` at `736a770` (the clean-up, before the commit of this page). `GloGEMflow` (`c400a50`) has 15 englacial temperature commits that are not in `glogemflow-v3` (G24).
+- From the merge base to `736a770`: 98 files, +18,927 / −390 lines. Added lines by folder: `test/` 8,285 (data of the temperature module), `procedures/flow/` 2,537, `flow_analysis/` 2,033 (the temperature notebook and notes), `scripts/gmip4/` 1,784, `procedures/initialise/` 1,155, `docs/` 912, `procedures/processing/` 706, `scripts/` outside `gmip4/` about 690 (temperature calibration and advection-field configs and scripts), `procedures/write/` 436, `glogem.pro` 198. `settings.pro` grows by 132 lines.
+- **Files that are not model code.** After the clean-up (S10) the branch still adds, for the temperature work: `icetemperature_batch.dat` at the repository root (the glenglat borehole list; the model reads its copy from the data folder `dir`, not this one), `flow_analysis/advection_cross_section.ipynb` and `firn_offset_handoff.md`, the temperature scripts and configs in `scripts/`, and `test/` data (glenglat borehole elevations and calibration tables, two of them 4,080-line kNN tables). Suggested: leave the root copy of `icetemperature_batch.dat` and `flow_analysis/` out of main, and take the `test/` data only together with the temperature module. `config.pro.example` (the batch switch and the flow settings) and `scripts/gmip4/` go with the flow model.
 - **Main-only commits.** `86e4f4c` (Alexandra, the `mass_bsl` fix) is on our branches as the identical `811cd41`. `70c5af5` (Lander, "Minor updates") changes only whitespace in the monthly path and adds three files nothing calls yet (`downscale_gcmdata_daily_new.pro`, `downscale_gcmdata_daily_old.pro`, `refreezing_parametrised_new.pro`) plus the backup files of K18. Our branches lack nothing from main that changes model results.
 
-### Committed, but not in production (v3)
+### Merge order and conflicts
 
-- Round 5 (`glogemflow-fixes`: `cc23e6e` G19, `b4589c2` F14, `fee563e` and `b7ac6c5` F9, `9a4b047` F11, `43f3584` F10; `glogemflow-fixes-b`: `5c03128` G12, `66e181f` F5) is merged on `glogemflow-v3r5` (`7a41170`, `b2ed084`); production takes it by fast-forward.
-- On `GloGEMflow` only: the 13 englacial temperature commits `cea254f` to `e9c0cca` (G24).
-- The branch `fix7-v3tmp` (`452223a`) is a test merge of `b4589c2` onto v3 and has no new content; it can be deleted.
+Planned: first merge `GloGEMflow` (the temperature work) and `glogemflow-v3` into one branch, then merge `origin/main` into it, then open the pull request into main. A dry run with `git merge-tree` (2026-10-12, no merge made) gives:
 
-### Whole-branch merge
-
-A test with `git merge-tree` gave:
-
-| Branch merged into main | Conflicts |
+| Merge | Conflicts and how to resolve them |
 |---|---|
-| `glogemflow-v3` | 1: `read_climatepast_monthly_new.pro:53`. Keep main's `;print, fn` and add our `era5_pt` line after it. |
-| `glogemflow-fixes` or `glogemflow-fixes-b` | 1: `write_netcdf_glacier.pro:66`. Keep ours (`nc_s_mbsl`). |
-| `glogemflow-v3` and `glogemflow-fixes-b` together | the same 2 |
-| `glogemflow-v3r5` | the same 2 |
-| `glogemflow-stability`, `GloGEMflow` | none |
+| `GloGEMflow` (`c400a50`) with `glogemflow-v3` | `meltmodel.pro` (6 places) and `calculatedebrismelt.pro` (1): the temperature work (`cea254f`) wraps each melt booking in `if mb_book then`, v3 (`d62db11`, G10) in `if ar_gl ne 0 then`. Keep both, `if mb_book then if ar_gl ne 0 then ...`, as the code already does for the snow line and refreezing. Everything else, including the files moved or removed in S10, merges automatically. |
+| `origin/main` (`6ee55bc`) with `glogemflow-v3` | `check_tran.pro` (2 places): our skip for reanalysis hindcasts (G13, `goto, check_tran_done`) against Lander's two debug `print` lines and his AMOC block. Keep both, with the label `check_tran_done:` after the AMOC block; ask Lander whether the prints stay. `read_climatepast_monthly_new.pro` (1): keep main's `;print, fn` and add our `era5_pt` line after it. `write_netcdf_glacier.pro` (1): keep ours (`nc_s_mbsl`); Lander's NaN fix for the temperature (`749e36f`) merges next to it. |
 
-Everything else merges automatically; main has not touched `glogem.pro` since the split. The hard part is not git: a whole-branch merge brings the flow model, the temperature model and the campaign scripts into main.
-
-Bringing the 13 temperature commits into v3 first (merging `GloGEMflow` into `glogemflow-v3`) conflicts in exactly `meltmodel.pro` and `calculatedebrismelt.pro` (`cea254f` against `d62db11`, G24). `glogemflow-fixes` and `glogemflow-fixes-b` each merge into `glogemflow-v3` without conflict.
+Main has not touched `glogem.pro` since the split. The hard part is not git: a whole-branch merge brings the flow model, the temperature model and the GMIP4 scripts into main.
 
 ### Core-only port
 
@@ -888,16 +952,19 @@ These need new work before or after the merge:
 - G2: the month shift and `gt min_ryear` in the CMIP6 projection branch;
 - G20: the monthly time labels in the IDL netCDF writers;
 - K1: the Δh advance-scheme runaway;
-- K13, K14, K16, K12: the settings rule, the `@`-include pattern (only in our temperature code), the ring-search hang and the swapped melt labels.
+- K13, K14, K16, K12: the settings rule, the `@`-include pattern (only in our temperature code), the ring-search hang and the swapped melt labels;
+- K20: the Antarctic flow hindcast;
+- the growth-limit thresholds in `settings.pro` sit inside the comment block of the spin-up quality gate and should be moved (G12).
 
 ### Other things to do at merge time
 
-- Delete the two `~` backup files and tell Lander about the `stop` in `refreezing_parametrised_new.pro` (K18).
+- Delete the two `~` backup files and tell Lander about the `stop` in `refreezing_parametrised_new.pro` (K18) and the two debug `print` lines at the top of `check_tran.pro` (`6ee55bc`).
 - Tell Lander which of his runs carry G1, G3 and K1; that his LowLatitudes and Antarctic ERA5 hindcast files do not match his projections (G5); and that in every GloGEM `.dat` output, his included, the `Icemelt_sfc` file holds snow melt and the `Snowmelt_sfc` file ice melt (K12).
 - Tell the users of main that `settings.pro` defaults to `frontal_ablation='y'` (G16).
 - Check main-code runs and calibrations made after 2026-09-15 on the old monthly climate path with MIP other than GMIP4 or AMOC (G6).
 - Clear every spin-up cache after merging: any change to climate, calibration or flow code invalidates it (F5).
-- `cea254f` (only on `GloGEMflow`) conflicts with `d62db11` in `meltmodel.pro` and `calculatedebrismelt.pro` (G24).
+- `cea254f` (only on `GloGEMflow`) conflicts with `d62db11` in `meltmodel.pro` and `calculatedebrismelt.pro` (G24; see "Merge order and conflicts").
+- After the merge, run the Aletsch test configs (including the flow example), one small GMIP4 flow batch and one temperature design point, and compare them with this branch and with `GloGEMflow`.
 
 ### Notes for the MATLAB GloGEMflow side
 
