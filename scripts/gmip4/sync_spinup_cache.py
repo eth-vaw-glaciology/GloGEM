@@ -19,7 +19,10 @@ weren't yet cached, so this is meant to be re-run (cheap, incremental)
 rather than treated as a single final snapshot.
 
 Usage:
-    python3 sync_spinup_cache.py [REGION ...]     # default: all known regions
+    python3 scripts/gmip4/sync_spinup_cache.py [REGION ...] [--dry-run]   # default: all known regions
+
+--dry-run lists what rsync would copy and writes nothing. Folders come from
+gmip4_paths.py (GMIP4_RUN_DIR, GMIP4_RESULTS_DIR).
 """
 
 import sys
@@ -32,7 +35,7 @@ from combine_gmip4_output import GLOGEM_BASE, FINAL_BASE, REGION_DIR, BASE_DIR_O
 DEST_ROOT = FINAL_BASE / "spinup_cache"
 
 
-def sync_region(region):
+def sync_region(region, dry_run=False):
     base_dir = BASE_DIR_OVERRIDE.get((region, "flow"), f"{region}_flow")
     src = GLOGEM_BASE / f"{base_dir}_rgi7_gmip4" / "spinup_cache"
     dst = DEST_ROOT / REGION_DIR[region]
@@ -41,13 +44,15 @@ def sync_region(region):
         print(f"  [MISSING] {region}: no spinup_cache at {src}")
         return
 
-    dst.mkdir(parents=True, exist_ok=True)
+    if not dry_run:
+        dst.mkdir(parents=True, exist_ok=True)
     # Some regions' spinup_cache/ still holds old backup_* subdirectories
     # from pre-fix debugging (e.g. backup_buggy_20260805, seen under
     # newzealand/iceland/centraleurope) -- exclude all subdirectories so
     # only the live, flat, per-glacier *_spinup.sav files get synced.
     result = subprocess.run(
-        ["rsync", "-a", "--stats", "--include=*.sav", "--exclude=*/", f"{src}/", f"{dst}/"],
+        ["rsync", "-a"] + (["-n"] if dry_run else []) +
+        ["--stats", "--include=*.sav", "--exclude=*/", f"{src}/", f"{dst}/"],
         capture_output=True, text=True,
     )
     n_files = len(list(dst.glob("*.sav")))
@@ -61,6 +66,10 @@ def sync_region(region):
 
 
 if __name__ == "__main__":
-    regions = sys.argv[1:] or list(REGION_DIR.keys())
+    if "-h" in sys.argv or "--help" in sys.argv:
+        print(__doc__)
+        sys.exit(0)
+    dry = "--dry-run" in sys.argv
+    regions = [a for a in sys.argv[1:] if not a.startswith("--")] or list(REGION_DIR.keys())
     for r in regions:
-        sync_region(r)
+        sync_region(r, dry)

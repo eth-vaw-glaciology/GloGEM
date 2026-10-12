@@ -11,7 +11,7 @@ Reuses the summing/writing helpers from combine_gmip4_output.py so the
 hindcast and the projections are aggregated by identical code.
 
 Usage:
-    python3 combine_gmip4_hindcast.py REGION [REGION ...] [--verify-only] [--v2 | --v3]
+    python3 scripts/gmip4/combine_gmip4_hindcast.py REGION [REGION ...] [--verify-only] [--v2 | --v3]
 """
 import sys
 import re

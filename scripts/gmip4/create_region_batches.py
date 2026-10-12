@@ -11,24 +11,26 @@ Glaciers are sorted by area (largest first) and assigned round-robin
 across N batches so each batch gets a balanced mix of large and small
 glaciers (no batch holds all the largest, slowest glaciers).
 
-Output: /itet-stor/jabeer/glogem/data/catchments/RGI{rginum}_{name}_batch{NN}.dat
+Output: <catchment dir>/RGI{rginum}_{name}_batch{NN}.dat, by default
+GLOGEM_DATA_DIR/data/catchments (see gmip4_paths.py).
 Catchment IDs are written with the same 'RGI60-{rginum}.{gid}' prefix used
 throughout the existing catchment files — this is a fixed template consumed
 by catchment_selection.pro via strmid(s,9,5) and is independent of which
 RGI version the run itself uses.
 
 Usage:
-    python scripts/create_region_batches.py --region iceland    --rgi-num 06 --rgi-version 7 --n 4
-    python scripts/create_region_batches.py --region newzealand --rgi-num 18 --rgi-version 7 --n 16
+    python scripts/gmip4/create_region_batches.py --region iceland    --rgi-num 06 --rgi-version 7 --n 4
+    python scripts/gmip4/create_region_batches.py --region newzealand --rgi-num 18 --rgi-version 7 --n 16
 """
 
 import os
 import re
+import sys
 import glob
 import argparse
 
-GEOM_BASE = '/itet-stor/jabeer/glogem/geometricdata'
-CATCHMENT_DIR = '/itet-stor/jabeer/glogem/data/catchments'
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from gmip4_paths import GEOMETRY_DIR, CATCHMENT_DIR  # noqa: E402
 
 AREA_RE = re.compile(r'Area \(km2\):\s*([\d.]+)')
 
@@ -53,10 +55,14 @@ def main():
                          help="RGI version subdir to read geometry from (default: 7)")
     parser.add_argument('--n', type=int, default=8, metavar='N_BATCHES',
                          help='Number of parallel batches (default: 8)')
+    parser.add_argument('--geometry-dir', default=str(GEOMETRY_DIR),
+                         help='geometricdata folder (default: %(default)s)')
+    parser.add_argument('--catchment-dir', default=str(CATCHMENT_DIR),
+                         help='folder the catchment files are written to (default: %(default)s)')
     args = parser.parse_args()
     n = args.n
 
-    bands_dir = os.path.join(GEOM_BASE, f'rgiv{args.rgi_version}', 'bands', args.region)
+    bands_dir = os.path.join(args.geometry_dir, f'rgiv{args.rgi_version}', 'bands', args.region)
     files = sorted(glob.glob(os.path.join(bands_dir, '*.dat')))
     if not files:
         raise SystemExit(f'No glacier files found in {bands_dir}')
@@ -80,14 +86,14 @@ def main():
 
     for i, batch in enumerate(batches, 1):
         name = f'{args.region}_batch{i:02d}'
-        fpath = os.path.join(CATCHMENT_DIR, f'RGI{args.rgi_num}_{name}.dat')
+        fpath = os.path.join(args.catchment_dir, f'RGI{args.rgi_num}_{name}.dat')
         with open(fpath, 'w') as fh:
             fh.write(f'RGI_ID, {args.region}\n')
             for gid in batch:
                 fh.write(f'RGI60-{args.rgi_num}.{gid}\n')
         print(f'  {fpath}  ({len(batch)} glaciers)')
 
-    print(f'\nDone — {n} catchment files in {CATCHMENT_DIR}/')
+    print(f'\nDone — {n} catchment files in {args.catchment_dir}/')
     print(f'Smallest batch: {min(len(b) for b in batches)}  '
           f'Largest batch: {max(len(b) for b in batches)}')
 

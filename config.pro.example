@@ -34,7 +34,7 @@
 ;single_glacier = '01450'        ; single glacier RGI ID ('' to disable)
 ;catchment_selection = ''        ; catchment name ('' for single glacier or full region)
 ;
-; Parallel-batch mode — splits a region across N IDL processes (see scripts/launch_batches.sh):
+; Parallel-batch mode — splits a region across N IDL processes (see scripts/gmip4/launch_batches.sh):
 ;   Set GLOGEM_BATCH=01..16 before calling IDL; omit for a full-region run.
 ;_batch = getenv('GLOGEM_BATCH')
 ;if _batch ne '' then catchment_selection = 'alps_batch' + _batch $

@@ -26,7 +26,7 @@ Two checks per region:
      until proven otherwise).
 
 Usage:
-    python3 scripts/check_gmip4_output.py REGION [REGION ...] [--all] [--quiet] [--v2 | --v3]
+    python3 scripts/gmip4/check_gmip4_output.py REGION [REGION ...] [--all] [--quiet] [--v2 | --v3]
 
     REGION   lower-case as used in combine_gmip4_output.py, e.g. svalbard,
              arcticcanadan, southasiaeast
@@ -34,6 +34,8 @@ Usage:
 Thresholds were set against the 2026-09-08 findings and against what
 healthy runs look like (largest legitimate single glacier: an ArcticCanadaN
 ice cap at ~1007 km3 and ~330 m mean thickness).
+
+Read-only. Folders come from gmip4_paths.py (GMIP4_RUN_DIR, GMIP4_RESULTS_DIR).
 """
 
 import sys
@@ -41,6 +43,9 @@ import glob
 import re
 import os
 import numpy as np
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from gmip4_paths import RUN_DIR, RESULTS_DIR  # noqa: E402
 
 VOL_ABS_KM3 = 50.0     # never legitimately reached by regrowth (< 1 km3 in pure dh)
 VOL_REL_X   = 20.0     # ...and far beyond anything a glacier had in 2020
@@ -51,8 +56,8 @@ EXCESS_TOL  = 0.01     # flagged glaciers worth <1 % of regional ice pass: the
                        # fails above it, so a correctly clamped glacier always
                        # lands a hair over. Judge the volume, not the boundary.
 
-GLOGEM_BASE = "/scratch_net/vierzack04_fourth/jabeer/GloGEM/glogemflow_development"
-FINAL_BASE  = "/scratch_net/vierzack04_fourth/jabeer/GloGEM/r7spec_global_results/flow"
+GLOGEM_BASE = str(RUN_DIR)
+FINAL_BASE  = str(RESULTS_DIR / "flow")
 
 # Kept in sync by hand with combine_gmip4_output.py (which cannot be imported:
 # it runs process() at module level).
@@ -229,6 +234,9 @@ def check_region_canonical(region, quiet):
 
 def main(argv):
     global RUN
+    if "-h" in argv or "--help" in argv:
+        print(__doc__)
+        return 0
     quiet = "--quiet" in argv
     if "--v2" in argv:
         RUN = "gmip4v2"

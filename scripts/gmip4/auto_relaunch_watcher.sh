@@ -1,6 +1,6 @@
 #!/bin/bash
 # auto_relaunch_watcher.sh — runs as its own detached tmux session on
-# vierzack04. Polls the number of live IDL sessions every POLL_SECONDS;
+# one host. Polls the number of live IDL sessions every POLL_SECONDS;
 # whenever there's headroom under LICENSE_CEILING, pops the next queued
 # batch launch from QUEUE_FILE and starts it. Keeps going indefinitely.
 #
@@ -10,9 +10,8 @@
 # to QUEUE_FILE at any time (e.g. from a live Claude Code session) --
 # the watcher re-reads it every loop, so new work picked up automatically.
 #
-# Launch (from this host, vierzack04):
-#   cd ~/projects/glogemflow_development/GloGEM
-#   tmux new-session -d -s gmip4_auto_relaunch "bash scripts/auto_relaunch_watcher.sh"
+# Launch (on the host that should run the jobs, from the repository root):
+#   tmux new-session -d -s gmip4_auto_relaunch "bash scripts/gmip4/auto_relaunch_watcher.sh"
 #
 # Check on it later:
 #   tmux capture-pane -p -t gmip4_auto_relaunch -S -40
@@ -23,12 +22,18 @@
 set -uo pipefail   # deliberately NOT -e: this must survive a single bad
                     # launch attempt and keep polling, not die.
 
-GLOGEM_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+    sed -n '2,/^set -uo/p' "$0" | sed -n '/^#/s/^# \{0,1\}//p'
+    exit 0
+fi
+
+# repository root: this file is scripts/gmip4/auto_relaunch_watcher.sh
+GLOGEM_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$GLOGEM_DIR"
 
 # Both overridable from the environment so one watcher can run per host, each
 # with its own queue and ceiling (2026-09-08):
-#   QUEUE_FILE=logs/launch_queue_vierzack06.txt LICENSE_CEILING=26 bash scripts/auto_relaunch_watcher.sh
+#   QUEUE_FILE=logs/launch_queue_vierzack06.txt LICENSE_CEILING=26 bash scripts/gmip4/auto_relaunch_watcher.sh
 QUEUE_FILE="${QUEUE_FILE:-$GLOGEM_DIR/logs/launch_queue.txt}"
 LOGFILE="$GLOGEM_DIR/logs/auto_relaunch_watcher_$(hostname)_$(date +%Y%m%d_%H%M%S).log"
 LICENSE_CEILING="${LICENSE_CEILING:-55}"
@@ -113,7 +118,7 @@ while true; do
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] Free slot ($n/$LICENSE_CEILING) -- launching batch $batch of $cfg"
         mkdir -p "$done_dir"
         CONFIG_FILE="$cfg" DONE_DIR="$done_dir" BATCH_LIST="$batch" \
-            bash scripts/launch_batches.sh 1 "$prefix" >> "$LOGFILE" 2>&1
+            bash scripts/gmip4/launch_batches.sh 1 "$prefix" >> "$LOGFILE" 2>&1
         sleep 5
         n=$(live_sessions)
     done

@@ -33,7 +33,7 @@ Aggregation across batches:
     batch's first-year area, constant in time.
 
 Usage:
-    python3 combine_gmip4_output.py REGION METHOD [--verify-only] [--v2 | --v3]
+    python3 scripts/gmip4/combine_gmip4_output.py REGION METHOD [--verify-only] [--v2 | --v3]
 
     REGION   region_n from region_batch.dat, e.g. svalbard, caucasus
     METHOD   dh | flow
@@ -43,6 +43,10 @@ Usage:
     --v3            read the v3 campaign (<region>_<method>_rgi7_gmip4v3)
 
 Reused-Δh sources are declared in REUSE_SOURCES below, per region.
+
+Folders come from gmip4_paths.py: GMIP4_RUN_DIR (campaign runs),
+GMIP4_RESULTS_DIR (where the combined files go), GLOGEM_DATA_DIR
+(catchment files) and GMIP4_REUSE_DIR (reused Δh files).
 """
 
 import sys
@@ -55,8 +59,8 @@ from pathlib import Path
 import numpy as np
 import netCDF4 as nc
 
-GLOGEM_BASE = Path("/scratch_net/vierzack04_fourth/jabeer/GloGEM/glogemflow_development")
-FINAL_BASE = Path("/scratch_net/vierzack04_fourth/jabeer/GloGEM/r7spec_global_results")
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from gmip4_paths import RUN_DIR as GLOGEM_BASE, RESULTS_DIR as FINAL_BASE, CATCHMENT_DIR, REUSE_DIR  # noqa: E402
 
 ALL_GCMS = [
     "ACCESS-ESM1-5", "BCC-CSM2-MR", "CESM2-WACCM", "IPSL-CM6A-LR",
@@ -77,7 +81,7 @@ RGI_NUM = {
 
 # campaign directory suffix: <region>_<method>_rgi7_<RUN>; "--v2"/"--v3" select gmip4v2/gmip4v3
 RUN = "gmip4"
-CATCHMENTS = "/itet-stor/jabeer/glogem/data/catchments"
+CATCHMENTS = str(CATCHMENT_DIR)
 # first month of the hydrological year (setup_massbalance_year.pro); output index 0
 # is this month of the year before the first annual label
 HYDRO_START_MONTH = {"southernandes": 4, "newzealand": 4, "lowlatitudes": 4, "antarctic": 4}
@@ -118,7 +122,7 @@ REGION_DIR = {
 # already-combined file instead of our own batches. Path is the source
 # directory (files_netcdf/full-equivalent) containing
 # GloGEM_rgi{XX}_{GCM}_{ssp}_{annual,monthly}.nc already summed.
-LVT_BASE = "/scratch_net/vierzack05_fourth/lvantrich/GloGEM/r7spec_global_results/monthly"
+LVT_BASE = str(REUSE_DIR)
 
 REUSE_SOURCES = {
     # Svalbard ssp370/585: our own dh waves for these SSPs were never

@@ -6,8 +6,8 @@ A job is lost whenever its session dies without writing a .done marker: a host r
 killed tmux session, a launch that failed at once. The queue entry was already popped, so
 without this sweep the work silently never happens.
 
-  python3 scripts/requeue_incomplete.py                 # dry run: just report
-  python3 scripts/requeue_incomplete.py --to vierzack04 # append the lost ones to that queue
+  python3 scripts/gmip4/requeue_incomplete.py                 # dry run: just report
+  python3 scripts/gmip4/requeue_incomplete.py --to vierzack04 # append the lost ones to that queue
 
 A job counts as lost only if it is not done, not queued, not running on any host we could
 reach, AND its log has been silent for --stale-min minutes. That last test is what makes this
@@ -17,7 +17,8 @@ re-queue a job that is still running, and two sessions would write the same outp
 """
 import glob, os, re, subprocess, sys, collections, datetime as dt
 
-P = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# repository root (this file is scripts/gmip4/requeue_incomplete.py)
+P = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 LOGS = f"{P}/logs"
 HOSTS = ["vierzack03", "vierzack04", "vierzack05", "vierzack06", "iceberg"]
 NB = {"caucasus": 12, "svalbard": 8, "centraleurope": 24, "southasiaeast": 12,
@@ -39,6 +40,9 @@ def entry(reg, ssp, b):
 
 
 def main(argv):
+    if "-h" in argv or "--help" in argv:
+        print(__doc__)
+        return 0
     target = argv[argv.index("--to") + 1] if "--to" in argv else None
     stale_min = int(argv[argv.index("--stale-min") + 1]) if "--stale-min" in argv else 90
     now = dt.datetime.now().timestamp()

@@ -5,12 +5,15 @@
 # config.pro (or CONFIG_FILE, see below) reads GLOGEM_BATCH and sets
 # catchment_selection = '<name>_batchNN'.
 #
-# Usage:
-#   cd /home/jabeer/projects/glogemflow_development/GloGEM
-#   bash scripts/launch_batches.sh [N_BATCHES] [SESSION_PREFIX]
-#   bash scripts/launch_batches.sh 16 alps_flow_rgi7
+# Usage (from anywhere; the jobs run in the repository root):
+#   bash scripts/gmip4/launch_batches.sh [N_BATCHES] [SESSION_PREFIX]
+#   bash scripts/gmip4/launch_batches.sh 16 alps_flow_rgi7
+#   bash scripts/gmip4/launch_batches.sh --help
 #
 # Environment variables:
+#   GLOGEM_LOGDIR — where each job's GloGEM journal goes (one folder per job);
+#                  default /itet-stor/jabeer/net_scratch/glogem_logs/runlogs.
+#   DRY_RUN      — if 1, print what would be launched and start nothing.
 #   DONE_DIR     — if set, touch $DONE_DIR/batchNN.done once the batch log
 #                  contains glogem.pro's own "FINISHED region !!!" marker
 #                  once per expected GCM (see EXPECTED_GCMS below), or
@@ -62,7 +65,13 @@
 
 set -euo pipefail
 
-GLOGEM_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+    sed -n '2,/^set -euo/p' "$0" | sed -n '/^#/s/^# \{0,1\}//p'
+    exit 0
+fi
+
+# repository root: this file is scripts/gmip4/launch_batches.sh
+GLOGEM_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 
 # GloGEM's own verbose journal (tens of MB per run) goes to net_scratch, not the
 # home quota. Override by exporting GLOGEM_LOGDIR before calling this script.
@@ -74,7 +83,7 @@ PREFIX="${2:-alps_flow}"
 LOG_DIR="${GLOGEM_DIR}/logs"
 
 cd "$GLOGEM_DIR"
-mkdir -p "$LOG_DIR"
+[[ "${DRY_RUN:-0}" == "1" ]] || mkdir -p "$LOG_DIR"
 
 # Determine how many "FINISHED region" markers a genuinely complete batch
 # should produce -- see EXPECTED_GCMS note above.
@@ -127,6 +136,10 @@ for i in $BATCH_NUMS; do
     # (session, host, second, launcher PID) so jobs started in the same second
     # on any host never share a journal
     JOB_LOGDIR="${GLOGEM_LOGDIR}/${SESSION}_$(hostname -s)_${STAMP}_$$"
+    if [[ "${DRY_RUN:-0}" == "1" ]]; then
+        echo "  DRY RUN: would start $SESSION (GLOGEM_BATCH=$BATCH, log $LOGFILE)"
+        continue
+    fi
     mkdir -p "$JOB_LOGDIR" 2>/dev/null || true
 
     DONE_CMD=":"
@@ -187,6 +200,7 @@ for i in $BATCH_NUMS; do
 done
 
 echo ""
+if [[ "${DRY_RUN:-0}" == "1" ]]; then echo "Dry run: nothing launched."; exit 0; fi
 echo "All $N sessions launched."
 echo ""
 echo "Useful commands:"
