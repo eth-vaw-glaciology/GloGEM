@@ -109,7 +109,7 @@ Every submitted version has a tag; all four are on GitHub. Files removed from th
 | `gmip4-v1` | `bb4744e` | 03, 04, 06, 07, 08, 09, 11, 12, 14, 18 (approximate: the v1 runs were made from the live tree) |
 | `gmip4-v2` | `cc70ff7` | 02, 13, 15 (the hindcasts compiled `8d9d040`, see the tag message) |
 | `gmip4-v3-early` | `e5629c2` | 10, 16 |
-| `gmip4-v3` | `981219d` | 01, 05, 17; 19 combined but not submitted |
+| `gmip4-v3` | `981219d` | 01, 05, 17, 19 |
 
 ### Where each region stands
 
@@ -133,7 +133,7 @@ Every submitted version has a tag; all four are on GitHub. Files removed from th
 | 16 | LowLatitudes | v3 | Submitted 2026-09-30, as is (Janosch, 2026-09-29). | v3 set; G12 (about 0.9 Gt of ice created after 2230) |
 | 17 | SouthernAndes | v3r5 | Submitted 2026-09-30, with our own no-calving calibration merged into Matthias's file. | v3r5 set |
 | 18 | NewZealand | v1 | Submitted 2026-09-19, corrected climate point. 18 gate findings accepted (4 glaciers, 0.5 % of the 2300 volume, Δh regrowth, K1). | v1 set; G4 (calibration tuned to the old point) |
-| 19 | Antarctic | v3r5 | Combined (output gate passed), with a full no-calving recalibration. Not submitted as of 2026-10-12: its ERA5 hindcast loses far more ice than observed (K20). | v3r5 set; K20 |
+| 19 | Antarctic | v3r5 | Submitted (by 2026-10-12), with a full no-calving recalibration; output gate passed. Known issue disclosed: its ERA5 hindcast loses about twice the observed mass (K20). | v3r5 set; K20 |
 
 The sets in the last column, taken from the tables at the start of sections 3 and 4:
 
@@ -856,7 +856,7 @@ From the round-4 physics review of the v3 production (item 4, marked "disclose")
 (mc-k20)=
 ### K20. Antarctic: the flow hindcast loses about twice the observed mass (open)
 
-The combined Antarctic (RGI 19) ERA5 hindcast at `gmip4-v3` changes by −39.0 Gt/yr over 2000–2020 (frontal ablation −40.5, surface +1.5) against an observed −20.5 Gt/yr (Lander's Δh run: −32). A test on 2026-10-01 with the flowline front calving of F9 switched off gave −8.7 Gt/yr (calving −5.5 from the grid end and the Δh sea-level cut, surface −3.2). Neither matches. The surface balance of the flow glaciers is about 0 instead of the calibrated about −16 Gt/yr, probably because the steady-state spin-up geometry differs from the geometry the balance was calibrated on, and the front calving then adds to a calibration made without calving. RGI 19 is not submitted; how to go on is Janosch's decision.
+The combined Antarctic (RGI 19) ERA5 hindcast at `gmip4-v3` changes by −39.0 Gt/yr over 2000–2020 (frontal ablation −40.5, surface +1.5) against an observed −20.5 Gt/yr (Lander's Δh run: −32). A test on 2026-10-01 with the flowline front calving of F9 switched off gave −8.7 Gt/yr (calving −5.5 from the grid end and the Δh sea-level cut, surface −3.2). Neither matches. The surface balance of the flow glaciers is about 0 instead of the calibrated about −16 Gt/yr, probably because the steady-state spin-up geometry differs from the geometry the balance was calibrated on, and the front calving then adds to a calibration made without calving. RGI 19 was submitted as is, with this issue disclosed (Janosch); a proper fix (a calibration or spin-up that accounts for the calving) is open.
 
 ---
 
