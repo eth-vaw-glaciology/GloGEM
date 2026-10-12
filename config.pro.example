@@ -96,16 +96,33 @@
 ;refreezing_full = 'n'           ; 'y' to activate full refreezing model (slow)
 ;refreezing_parametrised = 'y'   ; 'y' to activate parametrised refreezing
 ;firnice_temperature = 'n'       ; 'y' to activate englacial ice/firn temperature model
-;frontal_ablation = 'y'          ; 'y' to activate frontal ablation / calving model
+;frontal_ablation = 'y'          ; 'y' to activate frontal ablation / calving model (the default)
+;                                ;   the GMIP4 flow runs used 'n', with a calibration made without calving
 
 ; -----------------------------------------------------------------------
 ; GEOMETRY EVOLUTION MODEL
 ; Two mutually exclusive options:
-;   option 1 — dhdt parameterisation (Huss et al., 2010): glacier_retreat='y', use_flow_model='n'
+;   option 1 — Δh parameterisation (Huss et al., 2010): glacier_retreat='y', use_flow_model='n'
 ;   option 2 — coupled flowline model GloGEMflow (Zekollari et al., 2019): use_flow_model='y'
+; With option 2, glaciers shorter than 1 km and glaciers whose flow spin-up fails or does
+; not reproduce the observed glacier use the Δh parameterisation. The flow model changes
+; the geometry from each glacier's survey year on, and only in runs that end after 2025
+; or set hindcast_dynamic='y' (the GMIP4 default for ERA5 hindcasts).
 ; -----------------------------------------------------------------------
-;glacier_retreat = 'y'           ; 'y' to activate dhdt geometry change (option 1)
-;use_flow_model = 'n'            ; 'y' to activate GloGEMflow instead of dhdt (option 2)
+;glacier_retreat = 'y'           ; 'y' to activate the Δh parameterisation (option 1)
+;use_flow_model = 'n'            ; 'y' to activate GloGEMflow instead (option 2; sets advance='y')
+;
+; GloGEMflow settings (defaults in settings.pro):
+;spinup_gate_vol_tol = 0.5d0     ; spin-up quality gate: largest volume error (fraction of observed)
+;spinup_gate_len_min = 0.5d0     ; spin-up quality gate: smallest length (fraction of observed)
+;spinup_max_substeps = 2500000l  ; work limit of one glacier's spin-up (flow time steps)
+;spinup_max_wallclock_sec = 900d0 ; safety cap of one glacier's spin-up (s); should never bind
+;flow_gridend_outflow = 'frontal' ; ice leaving the flowline grid end: 'frontal' or 'melt_if_land'
+;
+; Runtime growth limit, both options (limit_glacier_growth.pro):
+;growth_max_thick = 2000.0d0     ; [m] largest mean thickness of a glacier
+;growth_max_vol   = 50.0d0       ; [km3] together with growth_max_rel: largest volume ...
+;growth_max_rel   = 20.0d0       ; ... as a multiple of the inventory volume
 
 ; -----------------------------------------------------------------------
 ; OUTPUT OPTIONS
