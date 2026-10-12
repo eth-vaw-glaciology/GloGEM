@@ -193,7 +193,7 @@ perm_limit = perm_limit < (tt - 2l)
 ; Surface meltwater+rain reaching the column, scaled by the calibrated percolating
 ; fraction. This is the binding constraint on the latent-heat loop below.
 ; Energy only: the mass balance's refr still comes from refreezing_parametrised/_full.
-fit_water=(mel[ii[i]]+plg[ii[i]])*firnice_refreeze_frac_b[ii[i]]
+fit_water=(mel_th[ii[i]]+plg_th[ii[i]])*firnice_refreeze_frac_b[ii[i]]
 n_fitdz = n_elements(fit_dz[0,*])
 
 if firn_permeability eq 'n' then fit_water = 0  ; check if permeability is disabled, if yes then set infiltrating water to zero
@@ -234,7 +234,7 @@ endelse
       ; insulation offset that used to be added here came from a decision tree; it
       ; is now carried by the seasonally varying snow conductivity instead
       ; (firnice_insul_scale_b, see the cond_fit block above).
-      tl_fit[ii[i],0] = min([0d, tgs[ii[i]] + ((elev[ii[i]]-hclim) > 0d)*(dtdz_icetemp[m-1]-dtdz[m-1])])
+      tl_fit[ii[i],0] = min([0d, tgs_th[ii[i]] + ((elev[ii[i]]-hclim) > 0d)*(dtdz_icetemp[m-1]-dtdz[m-1])])
 
       ; ── melting-surface clamp (experimental, firnice_melt_surface eq 'y') ─────
       ; A surface that is melting is AT the melting point, by definition; it cannot be
@@ -251,7 +251,7 @@ endelse
       ; summers pinned at 0 C and winters at air temperature give an annual mean warmer
       ; than the air temperature, with no fitted constant.
       if firnice_melt_surface eq 'y' then $
-          if mel[ii[i]] gt 0d then tl_fit[ii[i],0] = 0d
+          if mel_th[ii[i]] gt 0d then tl_fit[ii[i],0] = 0d
       ; Basal boundary condition: prescribed geothermal GRADIENT (Neumann), from Fourier's law
       ;     G = -k dT/dz_up   ->   dT/dz = G / k   (z measured downward, T warming with depth)
       ; so the bed node sits one layer-spacing below its neighbour at that gradient:

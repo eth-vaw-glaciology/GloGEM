@@ -13,6 +13,7 @@ for mo_sp = 0, 11 do begin
     sno = reform(forc_sno[mo_sp, *])
     mel = reform(forc_mel[mo_sp, *])
     plg = reform(forc_plg[mo_sp, *])
+    tgs_th = tgs & mel_th = mel & plg_th = plg   ; the thermal model reads these
     m   = ms
 
     @procedures/processing/firnice_temperature_model.pro

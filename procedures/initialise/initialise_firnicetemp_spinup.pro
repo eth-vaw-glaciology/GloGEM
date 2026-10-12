@@ -28,11 +28,13 @@ te_rf=dblarr(nb,rf_layers) & tl_rf=te_rf
 dtdz_icetemp = (dtdz < (-0.0065d))
 
 ; ── Long-term annual mean T_maat per band (reference period: cyear < 2020) ───
+; an energy input of the thermal model: without t_offset if firnice_forcing_toff = 'n'
+t_off_th = (firnice_forcing_toff eq 'n') ? 0d : t_offset
 t_maat_band=dblarr(nb) & ii=where(cyear lt 2020,ci)
 for i=0,nb-1 do begin
    dlap = (elev[i]-hclim)*mean(dtdz) + ((elev[i]-hclim) > 0d)*(mean(dtdz_icetemp)-mean(dtdz))
-   if ci gt 0 then a=temp[ii]+dlap+t_offset $
-     else a=temp+dlap+t_offset
+   if ci gt 0 then a=temp[ii]+dlap+t_off_th $
+     else a=temp+dlap+t_off_th
    t_maat_band[i]=mean(a)
 endfor
 

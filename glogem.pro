@@ -562,6 +562,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
                             if firnice_temperature eq 'y' and $
                                (use_flow_model_gl ne 'y' or n_elements(flow_initialised) gt 0) then begin
+                              @procedures/processing/firnice_thermal_forcing.pro
                               @procedures/processing/firnice_temperature_model.pro
                             endif    ; firn-ice temperature model
 

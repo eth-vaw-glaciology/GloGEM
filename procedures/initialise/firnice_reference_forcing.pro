@@ -48,10 +48,13 @@ if sp_y1 ne tran[0]-1l then $
 ; Sets per month (hydrological order) and band: forc_sno (start of month, after the
 ; January reset), forc_mel, forc_plg, forc_tgs (air temperature, reanalysis lapse rate), and b_ref [m w.e./yr] = psg - mel + refr of that year;
 ; then the thermal firn mask firn_th (b_ref > 0) and its firnice_perm_depth.
+; forc_mel, forc_plg and forc_tgs are the thermal model's energy inputs (firnice_thermal_forcing.pro,
+; without t_offset if firnice_forcing_toff = 'n'); b_ref, forc_sno and firn_th stay the mass balance's.
 sno_keep = sno & sur_keep = sur & snostor_keep = snostor
 sno = dblarr(nb) & sur = dblarr(nb) & snostor = dblarr(nb)
 forc_sno = dblarr(12, nb) & forc_mel = dblarr(12, nb) & forc_plg = dblarr(12, nb) & forc_tgs = dblarr(12, nb)
 b_ref = dblarr(nb)
+rfw_mb = 0d & rfw_th = 0d   ; firn-band melt + rain of the kept year, mass balance and thermal
 mb_book = 0b
 for yr_rf = 0, 2 do begin
     rf_ind = dblarr(nb) & rf_cold = rf_ind
@@ -74,7 +77,15 @@ for yr_rf = 0, 2 do begin
                 @procedures/processing/refreezing_parametrised.pro
             endif
         endelse
-        forc_mel[mo_rf, *] = mel & forc_plg[mo_rf, *] = plg & forc_tgs[mo_rf, *] = tgs
+        @procedures/processing/firnice_thermal_forcing.pro
+        forc_mel[mo_rf, *] = mel_th & forc_plg[mo_rf, *] = plg_th & forc_tgs[mo_rf, *] = tgs_th
+        if yr_rf eq 2 then begin
+            jw = where(firn eq 1 and gl ne noval, cw)
+            if cw gt 0 then begin
+                rfw_mb = rfw_mb + total((mel[jw] + plg[jw]) * area[jw]) / total(area[jw])
+                rfw_th = rfw_th + total((mel_th[jw] + plg_th[jw]) * area[jw]) / total(area[jw])
+            endif
+        endif
         ; snow reservoir and surface type, as in the glogem.pro month loop
         sno = sno + psg - mel
         jj = where(sno gt 0, cj) & if cj gt 0 then sur[jj] = 1
@@ -98,7 +109,8 @@ jj = where(b_ref gt 0 and gl ne noval, cj) & if cj gt 0 then firn_th[jj] = 1
 hl_mask = (firn_th eq 1)
 hl_acc  = b_ref
 hl_tk   = dblarr(nb)
-for i = 0, nb-1 do hl_tk[i] = mean(tclim_sp + (elev[i] - hclim) * dtdz + ((elev[i] - hclim) > 0d) * (dtdz_icetemp - dtdz) + t_offset)
+t_off_th = (firnice_forcing_toff eq 'n') ? 0d : t_offset
+for i = 0, nb-1 do hl_tk[i] = mean(tclim_sp + (elev[i] - hclim) * dtdz + ((elev[i] - hclim) > 0d) * (dtdz_icetemp - dtdz) + t_off_th)
 hl_tk   = (hl_tk + 273.15d) > 220.d
 @procedures/initialise/firnice_perm_depth.pro
 jg = where(gl ne noval, cg)
@@ -110,3 +122,6 @@ if cg gt 0 then begin
            ' m, AAR ' + strtrim(round(aar_ref),2) + ' %' + $
            ' (mass-balance mask: ' + strtrim(cm,2) + ', lowest ' + (cm gt 0 ? strtrim(round(min(elev[jg[jm]])),2) : '-') + ' m)'
 endif
+if firnice_forcing_toff eq 'n' then $
+    print, '  [thermal forcing] t_offset ' + string(t_offset, fo='(f6.2)') + ' K left out: firn-band melt + rain ' + $
+           string(rfw_th, fo='(f7.3)') + ' m w.e./a (mass balance ' + string(rfw_mb, fo='(f7.3)') + ')'

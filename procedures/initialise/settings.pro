@@ -190,6 +190,10 @@ firnice_insul_scale     = 1.0d  ; snow/firn insulation: multiplies the Calonne (
                                 ; snow-to-ice contrast rather than the overall conduction rate.
                                 ; 1.0 = Calonne as published; the other standard relations sit at
                                 ; Sturm 1997 0.59 and Yen 1981 1.09, giving a defensible range.
+firnice_forcing_toff    = 'y'   ; 'n' = the thermal model's energy inputs (surface temperature, the
+                                ; melt and rain that refreeze, Herron-Langway temperature, initial
+                                ; profile, spin-up forcing) without the mass-balance t_offset; its
+                                ; mass inputs (snow, firn mask, accumulation) keep it
 firnice_temp_calib      = 'n'   ; 'y' = apply per-band transfer-model calibration
 firnice_temp_calib_file = ''    ; path to per-glacier override file; '' = use transfer model or defaults
 firnice_temp_calib_knn_file = '' ; path to per-glacier k-NN residual-correction file (band-aware);
@@ -506,6 +510,10 @@ if meltmodel eq '3' then c2_tolerance = c2m3_tolerance
 if debris_supraglacial eq 'n' then eval_mbelevsensitivity = 'n'
 
 if firnice_temperature eq 'n' then firnice_batch = 'n'
+
+if firnice_temperature eq 'y' and firnice_forcing_toff eq 'n' then $
+  if meltmodel ne '1' or time_resolution ne 'monthly' or debris_supraglacial ne 'n' then $
+    message, "firnice_forcing_toff = 'n' needs meltmodel '1', monthly steps and no supraglacial debris"
 
 ; reduced output for 2300 runs (Discharge not available)
 if long_GCM ne '' then outf_names = ['Area', 'Volume', 'Annual_Balance_sfc', 'Winter_balance_sfc', 'Icemelt_sfc', $
