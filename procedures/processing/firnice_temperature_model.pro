@@ -211,6 +211,27 @@ if firn_th[ii[i]] eq 1 then begin
 
 wd_j = 0l   ; deepest node the water brings to the melting point (wet-depth log)
 z_cold0 = -1d   ; firnice_perm_limit 'cold': depth where the water first met cold firn this month
+; firnice_perm_limit 'front': at the first wet month of the hydrological year the season's limit is
+; set from the profile: firnice_perm_cold_depth below the bottom of a temperate layer whose top lies
+; within firnice_perm_skin_depth, or below the surface if there is none
+if firnice_perm_limit eq 'front' then begin
+   if m eq bal_month then wf_set[ii[i]] = 0b
+   if fit_water gt 0d and wf_set[ii[i]] eq 0b then begin
+      j_top = -1l & j_bot = -1l
+      for j = 1, tt-2 do begin
+         warm_j = tl_fit[ii[i],j] ge (fit_dz[1,j]*0.9/10.)*(-0.00742) - 0.01d
+         if j_top lt 0 then begin
+            if fit_dz[1,j] gt firnice_perm_skin_depth then break
+            if warm_j then j_top = j
+         endif
+         if j_top ge 0 then begin
+            if warm_j then j_bot = j else break
+         endif
+      endfor
+      wf_lim[ii[i]] = ((j_bot ge 0) ? fit_dz[1,j_bot] : 0d) + firnice_perm_cold_depth
+      wf_set[ii[i]] = 1b
+   endif
+endif
 for j=1,perm_limit do begin ; percolate to firn-ice transition only
    dz_cv = 0.5d*(fit_dz[0,j] + fit_dz[0,(j+1) < (n_fitdz-1)])  ; node's slice, as in conduction
    c=(-1)*(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*cap_fit[j]*dz_cv/Lh_fit ; cold content in layer below pressure melting point
@@ -218,6 +239,7 @@ for j=1,perm_limit do begin ; percolate to firn-ice transition only
       if z_cold0 lt 0d and tl_fit[ii[i],j] lt (fit_dz[1,j]*0.9/10.)*(-0.00742) - 0.01d then z_cold0 = fit_dz[1,j]
       if z_cold0 ge 0d and fit_dz[1,j] - z_cold0 ge firnice_perm_cold_depth then break
    endif
+   if firnice_perm_limit eq 'front' and fit_dz[1,j] gt wf_lim[ii[i]] then break
    if fit_water gt c then begin   ; temperate layer if cold reservoir used, remaining water being transferred
       tl_fit[ii[i],j]=(fit_dz[1,j]*0.9/10.)*(-0.00742) & fit_water=fit_water-c
       wd_j = j

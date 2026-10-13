@@ -149,6 +149,11 @@ endfor
 ; from modelled balances (finalize_annual_massbalance.pro)
 firn_th = firn
 
+; firnice_perm_limit 'front': this season's percolation limit per band, set at the first wet month of
+; each hydrological year (firnice_temperature_model.pro)
+wf_lim = dblarr(nb) + firnice_perm_cold_depth
+wf_set = bytarr(nb)
+
 ; ── Per-band calibration parameter arrays ────────────────────────────────────
 ; Initialized to scalar defaults from settings.pro (or config.pro overrides).
 ; A per-glacier file override (apply_firnicetemp_calibration.pro, called after

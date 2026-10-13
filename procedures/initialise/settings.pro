@@ -199,10 +199,15 @@ firnice_hl1980          = 'n'   ; 'y' = firn-ice transition depth from the close
 firnice_lh_water        = 'n'   ; 'y' = latent heat per m of percolating water (1000 kg/m3)
 firnice_perm_limit      = 'hl'  ; 'profile' = water stops where the thermal model's density
                                 ; profile reaches 830 kg/m3 (diagnostic); 'hl' = Herron-Langway depth;
-                                ; 'cold' = water passes firn at the melting point, but reaches at most
-                                ; firnice_perm_cold_depth into cold firn; the rest runs off
+                                ; 'cold' = superseded (a fixed cap below the surface in practice: it cools
+                                ; temperate firn); 'front' = in each melt season the water passes a
+                                ; temperate layer that starts within firnice_perm_skin_depth and reaches
+                                ; firnice_perm_cold_depth below its bottom, or, without one, that far below
+                                ; the surface; the rest runs off
 firnice_perm_cold_depth = 4.d   ; m, meltwater penetration into cold firn (Mattea et al. 2021, z_lim;
                                 ; Gilbert et al. 2014, 4-5 m at Col du Dome in 2012)
+firnice_perm_skin_depth = 15.d  ; m, depth of zero annual amplitude: a temperate layer starting shallower
+                                ; is reached by the season's meltwater ('front')
 firnice_thermal_lapse   = 'floor' ; lapse rate of the thermal surface above the climate cell:
                                 ; 'floor' = at least 6.5 K/km; 'reanalysis' = ERA5's own (as the
                                 ; mass balance; better at Jungfraujoch and Corvatsch 1981-2020);
@@ -537,8 +542,8 @@ if firnice_temperature eq 'n' then firnice_batch = 'n'
 ; (Lh_rf, as before) or per m of water
 Lh_fit = Lh_rf
 if firnice_lh_water eq 'y' then Lh_fit = lhf * 1000.d
-if total(firnice_perm_limit eq ['hl', 'profile', 'cold']) eq 0 then $
-    message, "firnice_perm_limit must be 'hl', 'profile' or 'cold'"
+if total(firnice_perm_limit eq ['hl', 'profile', 'cold', 'front']) eq 0 then $
+    message, "firnice_perm_limit must be 'hl', 'profile', 'cold' or 'front'"
 if total(firnice_thermal_lapse eq ['floor', 'reanalysis', 'stations']) eq 0 then $
     message, "firnice_thermal_lapse must be 'floor', 'reanalysis' or 'stations'"
 if total(firnice_deepen_to_obs eq ['y', 'n']) eq 0 then message, "firnice_deepen_to_obs must be 'y' or 'n'"
