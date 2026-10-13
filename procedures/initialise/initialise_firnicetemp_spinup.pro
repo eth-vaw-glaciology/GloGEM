@@ -27,13 +27,17 @@ te_rf=dblarr(nb,rf_layers) & tl_rf=te_rf
 ; keeps dtdz. Above hclim the thermal surface is shifted by (elev-hclim)*(dtdz_icetemp-dtdz).
 dtdz_icetemp = (dtdz < (-0.0065d))
 if firnice_thermal_lapse eq 'reanalysis' then dtdz_icetemp = dtdz
+if firnice_thermal_lapse eq 'stations' then dtdz_icetemp = firnice_lapse_stations
+; height above the climate cell over which dtdz_icetemp replaces dtdz: all of it, or for 'stations' only up
+; to the stations' height (the winter inversion does not reach the summits)
+zth_cap = (firnice_thermal_lapse eq 'stations') ? firnice_lapse_stations_dz : 1d10
 
 ; ── Long-term annual mean T_maat per band (reference period: cyear < 2020) ───
 ; an energy input of the thermal model: without t_offset if firnice_forcing_toff = 'n'
 t_off_th = (firnice_forcing_toff eq 'n') ? 0d : t_offset
 t_maat_band=dblarr(nb) & ii=where(cyear lt 2020,ci)
 for i=0,nb-1 do begin
-   dlap = (elev[i]-hclim)*mean(dtdz) + ((elev[i]-hclim) > 0d)*(mean(dtdz_icetemp)-mean(dtdz))
+   dlap = (elev[i]-hclim)*mean(dtdz) + (((elev[i]-hclim) > 0d) < zth_cap)*(mean(dtdz_icetemp)-mean(dtdz))
    if ci gt 0 then a=temp[ii]+dlap+t_off_th $
      else a=temp+dlap+t_off_th
    t_maat_band[i]=mean(a)

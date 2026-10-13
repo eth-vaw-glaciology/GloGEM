@@ -130,14 +130,15 @@ if n_elements(snl_sum) gt 0 then begin
     close, 99
     outfile = firnice_dir + '/firnice_bed_' + id[gg[g]] + '.dat'
     openw, 99, outfile
-    printf, 99, '# GloGEM bed log  glacier: ' + id[gg[g]] + '  per glacierized band and year: depth of the node at the band ice thickness [m], its annual mean temperature [C] and its pressure melting point [C]'
-    printf, 99, '#  elev  year  bed_depth  T_bed  T_pmp'
+    printf, 99, '# GloGEM bed log  glacier: ' + id[gg[g]] + '  per band and year it was glacierized: the node at the band ice thickness (depth [m], annual mean, minimum and maximum [C], pressure melting point [C]) and the column bottom (depth [m], annual mean [C]; deeper than the bed where the column runs to a borehole reading)'
+    printf, 99, '#  elev  year  bed_depth   T_mean   T_min   T_max   T_pmp  bottom_depth  T_bottom'
     for snl_b = 0, nb-1 do begin
-        if gl[snl_b] eq noval then continue
         for snl_y = 0, years-1 do $
             if bed_cnt[snl_y,snl_b] gt 0d then $
                 printf, 99, elev[snl_b], snl_y+tran[0], bed_z[snl_y,snl_b], bed_sum[snl_y,snl_b]/bed_cnt[snl_y,snl_b], $
-                        (bed_z[snl_y,snl_b]*0.9d/10d)*(-0.00742d), fo='(i6, i6, f11.1, f9.3, f8.3)'
+                        bed_min[snl_y,snl_b], bed_max[snl_y,snl_b], (bed_z[snl_y,snl_b]*0.9d/10d)*(-0.00742d), $
+                        bed_zb[snl_y,snl_b], bed_bot[snl_y,snl_b]/bed_cnt[snl_y,snl_b], $
+                        fo='(i6, i6, f11.1, 3f8.3, f8.3, f14.1, f10.3)'
     endfor
     close, 99
     outfile = firnice_dir + '/firnice_snowmay_' + id[gg[g]] + '.dat'

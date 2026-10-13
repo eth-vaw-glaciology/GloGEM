@@ -92,7 +92,8 @@ for i=0,ci-1 do begin
    ; to the observed depth instead. thick[] is a width-averaged inventory value and underestimates
    ; small glaciers badly (Tete Rousse: 19 m modelled against a 70 m borehole), which truncated the
    ; column above most of the data. Only ever deepens -- a shallow borehole on thick ice is ignored.
-   if n_elements(firnice_profile_maxdepth) gt 0 and n_elements(firnice_profile_ind) gt 0 then begin
+   if firnice_deepen_to_obs eq 'y' and n_elements(firnice_profile_maxdepth) gt 0 and $
+      n_elements(firnice_profile_ind) gt 0 then begin
       if n_elements(firnice_profile_maxdepth) eq n_elements(firnice_profile) then begin
          for jp = 0l, n_elements(firnice_profile)-1l do begin
             if ii[i] eq firnice_profile_ind[0,jp] and $
@@ -251,7 +252,7 @@ endelse
       ; insulation offset that used to be added here came from a decision tree; it
       ; is now carried by the seasonally varying snow conductivity instead
       ; (firnice_insul_scale_b, see the cond_fit block above).
-      tl_fit[ii[i],0] = min([0d, tgs_th[ii[i]] + ((elev[ii[i]]-hclim) > 0d)*(dtdz_icetemp[m-1]-dtdz[m-1])])
+      tl_fit[ii[i],0] = min([0d, tgs_th[ii[i]] + (((elev[ii[i]]-hclim) > 0d) < zth_cap)*(dtdz_icetemp[m-1]-dtdz[m-1])])
 
       ; ── melting-surface clamp (experimental, firnice_melt_surface eq 'y') ─────
       ; A surface that is melting is AT the melting point, by definition; it cannot be
@@ -626,12 +627,17 @@ if tt le total(fit_layers) then tl_fit[ii[i],tt:total(fit_layers)]=tl_fit[ii[i],
 ; universal PMP safety clamp -- see pmp_profile note above
 tl_fit[ii[i],*] = tl_fit[ii[i],*] < pmp_profile
 
-; bed log: the node at the band's ice thickness (the column can run deeper at borehole bands)
+; bed log: the node at the band's ice thickness and the column's bottom node (deeper where the
+; column runs to a borehole's deepest reading)
 if firnice_write[0] eq 'y' then begin
    dummy_bed = min(abs(thick[ii[i]] - fit_dz[1,0:tt-1]), j_bed)
    bed_sum[ye,ii[i]] = bed_sum[ye,ii[i]] + tl_fit[ii[i],j_bed]
    bed_cnt[ye,ii[i]] = bed_cnt[ye,ii[i]] + 1d
    bed_z[ye,ii[i]]   = fit_dz[1,j_bed]
+   bed_min[ye,ii[i]] = bed_min[ye,ii[i]] < tl_fit[ii[i],j_bed]
+   bed_max[ye,ii[i]] = bed_max[ye,ii[i]] > tl_fit[ii[i],j_bed]
+   bed_bot[ye,ii[i]] = bed_bot[ye,ii[i]] + tl_fit[ii[i],tt-1]
+   bed_zb[ye,ii[i]]  = fit_dz[1,tt-1]
 endif
 
 ; prepare for output

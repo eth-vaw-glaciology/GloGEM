@@ -205,7 +205,17 @@ firnice_perm_cold_depth = 4.d   ; m, meltwater penetration into cold firn (Matte
                                 ; Gilbert et al. 2014, 4-5 m at Col du Dome in 2012)
 firnice_thermal_lapse   = 'floor' ; lapse rate of the thermal surface above the climate cell:
                                 ; 'floor' = at least 6.5 K/km; 'reanalysis' = ERA5's own (as the
-                                ; mass balance; better at Jungfraujoch and Corvatsch 1981-2020)
+                                ; mass balance; better at Jungfraujoch and Corvatsch 1981-2020);
+                                ; 'stations' = firnice_lapse_stations, also for the refreezing melt
+                                ; when firnice_forcing_toff = 'n'
+; monthly lapse rate between the ERA5 grid point and Jungfraujoch / Corvatsch (mean of the two,
+; MeteoSwiss monthly means 1981-2020), K/m, January to December: winter inversions above the grid
+firnice_lapse_stations  = [-0.000833d, -0.002520d, -0.004709d, -0.005872d, -0.005987d, -0.006658d, $
+                           -0.006854d, -0.006397d, -0.005681d, -0.004061d, -0.002689d, -0.001051d]
+firnice_lapse_stations_dz = 1170.d ; m above the climate cell up to which the station rates hold (the two
+                                ; stations' mean height above their grid points); above it ERA5's own rate
+firnice_deepen_to_obs   = 'y'   ; 'y' = at borehole bands the column runs at least to the deepest
+                                ; reading; 'n' = to the band's ice thickness, as elsewhere
 firnice_temp_calib      = 'n'   ; 'y' = apply per-band transfer-model calibration
 firnice_temp_calib_file = ''    ; path to per-glacier override file; '' = use transfer model or defaults
 firnice_temp_calib_knn_file = '' ; path to per-glacier k-NN residual-correction file (band-aware);
@@ -529,8 +539,9 @@ Lh_fit = Lh_rf
 if firnice_lh_water eq 'y' then Lh_fit = lhf * 1000.d
 if total(firnice_perm_limit eq ['hl', 'profile', 'cold']) eq 0 then $
     message, "firnice_perm_limit must be 'hl', 'profile' or 'cold'"
-if total(firnice_thermal_lapse eq ['floor', 'reanalysis']) eq 0 then $
-    message, "firnice_thermal_lapse must be 'floor' or 'reanalysis'"
+if total(firnice_thermal_lapse eq ['floor', 'reanalysis', 'stations']) eq 0 then $
+    message, "firnice_thermal_lapse must be 'floor', 'reanalysis' or 'stations'"
+if total(firnice_deepen_to_obs eq ['y', 'n']) eq 0 then message, "firnice_deepen_to_obs must be 'y' or 'n'"
 if firnice_temperature eq 'y' and firnice_forcing_toff eq 'n' then $
   if meltmodel ne '1' or time_resolution ne 'monthly' or debris_supraglacial ne 'n' then $
     message, "firnice_forcing_toff = 'n' needs meltmodel '1', monthly steps and no supraglacial debris"

@@ -142,4 +142,8 @@ if firnice_write[0] eq 'y' then begin
     bed_sum = dblarr(years, nb)           ; bed log: monthly bed temperatures summed per year [C]
     bed_cnt = dblarr(years, nb)           ;          months summed
     bed_z   = dblarr(years, nb)           ;          depth of the bed node [m]
+    bed_min = dblarr(years, nb) + 99d     ;          annual minimum and maximum at the bed node [C]
+    bed_max = dblarr(years, nb) - 99d
+    bed_bot = dblarr(years, nb)           ;          bottom node of the column, summed [C]
+    bed_zb  = dblarr(years, nb)           ;          its depth [m]
 endif

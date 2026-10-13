@@ -110,7 +110,7 @@ hl_mask = (firn_th eq 1)
 hl_acc  = b_ref
 hl_tk   = dblarr(nb)
 t_off_th = (firnice_forcing_toff eq 'n') ? 0d : t_offset
-for i = 0, nb-1 do hl_tk[i] = mean(tclim_sp + (elev[i] - hclim) * dtdz + ((elev[i] - hclim) > 0d) * (dtdz_icetemp - dtdz) + t_off_th)
+for i = 0, nb-1 do hl_tk[i] = mean(tclim_sp + (elev[i] - hclim) * dtdz + (((elev[i] - hclim) > 0d) < zth_cap) * (dtdz_icetemp - dtdz) + t_off_th)
 hl_tk   = (hl_tk + 273.15d) > 220.d
 @procedures/initialise/firnice_perm_depth.pro
 jg = where(gl ne noval, cg)
