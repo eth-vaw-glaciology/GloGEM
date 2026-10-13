@@ -198,7 +198,14 @@ firnice_hl1980          = 'n'   ; 'y' = firn-ice transition depth from the close
                                 ; Langway (1980), stage 1 independent of the accumulation rate
 firnice_lh_water        = 'n'   ; 'y' = latent heat per m of percolating water (1000 kg/m3)
 firnice_perm_limit      = 'hl'  ; 'profile' = water stops where the thermal model's density
-                                ; profile reaches 830 kg/m3 (diagnostic); 'hl' = Herron-Langway depth
+                                ; profile reaches 830 kg/m3 (diagnostic); 'hl' = Herron-Langway depth;
+                                ; 'cold' = water passes firn at the melting point, but reaches at most
+                                ; firnice_perm_cold_depth into cold firn; the rest runs off
+firnice_perm_cold_depth = 4.d   ; m, meltwater penetration into cold firn (Mattea et al. 2021, z_lim;
+                                ; Gilbert et al. 2014, 4-5 m at Col du Dome in 2012)
+firnice_thermal_lapse   = 'floor' ; lapse rate of the thermal surface above the climate cell:
+                                ; 'floor' = at least 6.5 K/km; 'reanalysis' = ERA5's own (as the
+                                ; mass balance; better at Jungfraujoch and Corvatsch 1981-2020)
 firnice_temp_calib      = 'n'   ; 'y' = apply per-band transfer-model calibration
 firnice_temp_calib_file = ''    ; path to per-glacier override file; '' = use transfer model or defaults
 firnice_temp_calib_knn_file = '' ; path to per-glacier k-NN residual-correction file (band-aware);
@@ -520,6 +527,10 @@ if firnice_temperature eq 'n' then firnice_batch = 'n'
 ; (Lh_rf, as before) or per m of water
 Lh_fit = Lh_rf
 if firnice_lh_water eq 'y' then Lh_fit = lhf * 1000.d
+if total(firnice_perm_limit eq ['hl', 'profile', 'cold']) eq 0 then $
+    message, "firnice_perm_limit must be 'hl', 'profile' or 'cold'"
+if total(firnice_thermal_lapse eq ['floor', 'reanalysis']) eq 0 then $
+    message, "firnice_thermal_lapse must be 'floor' or 'reanalysis'"
 if firnice_temperature eq 'y' and firnice_forcing_toff eq 'n' then $
   if meltmodel ne '1' or time_resolution ne 'monthly' or debris_supraglacial ne 'n' then $
     message, "firnice_forcing_toff = 'n' needs meltmodel '1', monthly steps and no supraglacial debris"

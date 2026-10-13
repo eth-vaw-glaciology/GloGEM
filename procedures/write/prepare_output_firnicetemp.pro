@@ -139,4 +139,7 @@ if firnice_write[0] eq 'y' then begin
     if firnice_write[1] eq 'y' then snl_bh = dblarr(years, 12, n_prof) + snoval   ; snow at the profile bands
     wdl_depth = dblarr(years, nb)         ; wet-depth log: deepest node meltwater brought to 0 C [m]
     wdl_lost  = dblarr(years, nb)         ; water left at the percolation limit, discarded [m w.e.]
+    bed_sum = dblarr(years, nb)           ; bed log: monthly bed temperatures summed per year [C]
+    bed_cnt = dblarr(years, nb)           ;          months summed
+    bed_z   = dblarr(years, nb)           ;          depth of the bed node [m]
 endif

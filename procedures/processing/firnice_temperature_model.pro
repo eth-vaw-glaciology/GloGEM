@@ -209,9 +209,14 @@ if firn_permeability eq 'n' then fit_water = 0  ; check if permeability is disab
 if firn_th[ii[i]] eq 1 then begin
 
 wd_j = 0l   ; deepest node the water brings to the melting point (wet-depth log)
+z_cold0 = -1d   ; firnice_perm_limit 'cold': depth where the water first met cold firn this month
 for j=1,perm_limit do begin ; percolate to firn-ice transition only
    dz_cv = 0.5d*(fit_dz[0,j] + fit_dz[0,(j+1) < (n_fitdz-1)])  ; node's slice, as in conduction
    c=(-1)*(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*cap_fit[j]*dz_cv/Lh_fit ; cold content in layer below pressure melting point
+   if firnice_perm_limit eq 'cold' then begin
+      if z_cold0 lt 0d and tl_fit[ii[i],j] lt (fit_dz[1,j]*0.9/10.)*(-0.00742) - 0.01d then z_cold0 = fit_dz[1,j]
+      if z_cold0 ge 0d and fit_dz[1,j] - z_cold0 ge firnice_perm_cold_depth then break
+   endif
    if fit_water gt c then begin   ; temperate layer if cold reservoir used, remaining water being transferred
       tl_fit[ii[i],j]=(fit_dz[1,j]*0.9/10.)*(-0.00742) & fit_water=fit_water-c
       wd_j = j
@@ -620,6 +625,14 @@ if tt le total(fit_layers) then tl_fit[ii[i],tt:total(fit_layers)]=tl_fit[ii[i],
 
 ; universal PMP safety clamp -- see pmp_profile note above
 tl_fit[ii[i],*] = tl_fit[ii[i],*] < pmp_profile
+
+; bed log: the node at the band's ice thickness (the column can run deeper at borehole bands)
+if firnice_write[0] eq 'y' then begin
+   dummy_bed = min(abs(thick[ii[i]] - fit_dz[1,0:tt-1]), j_bed)
+   bed_sum[ye,ii[i]] = bed_sum[ye,ii[i]] + tl_fit[ii[i],j_bed]
+   bed_cnt[ye,ii[i]] = bed_cnt[ye,ii[i]] + 1d
+   bed_z[ye,ii[i]]   = fit_dz[1,j_bed]
+endif
 
 ; prepare for output
 if firnice_write[0] eq 'y' then begin

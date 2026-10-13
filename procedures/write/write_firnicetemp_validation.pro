@@ -128,6 +128,18 @@ if n_elements(snl_sum) gt 0 then begin
                 printf, 99, elev[snl_b], snl_y+tran[0], wdl_depth[snl_y,snl_b], wdl_lost[snl_y,snl_b], fo='(i6, i6, f11.1, f12.3)'
     endfor
     close, 99
+    outfile = firnice_dir + '/firnice_bed_' + id[gg[g]] + '.dat'
+    openw, 99, outfile
+    printf, 99, '# GloGEM bed log  glacier: ' + id[gg[g]] + '  per glacierized band and year: depth of the node at the band ice thickness [m], its annual mean temperature [C] and its pressure melting point [C]'
+    printf, 99, '#  elev  year  bed_depth  T_bed  T_pmp'
+    for snl_b = 0, nb-1 do begin
+        if gl[snl_b] eq noval then continue
+        for snl_y = 0, years-1 do $
+            if bed_cnt[snl_y,snl_b] gt 0d then $
+                printf, 99, elev[snl_b], snl_y+tran[0], bed_z[snl_y,snl_b], bed_sum[snl_y,snl_b]/bed_cnt[snl_y,snl_b], $
+                        (bed_z[snl_y,snl_b]*0.9d/10d)*(-0.00742d), fo='(i6, i6, f11.1, f9.3, f8.3)'
+    endfor
+    close, 99
     outfile = firnice_dir + '/firnice_snowmay_' + id[gg[g]] + '.dat'
     openw, 99, outfile
     printf, 99, '# GloGEM snow on 1 May [m w.e.]  glacier: ' + id[gg[g]] + '  rows: band elevation, then one column per year from ' + strtrim(tran[0],2)

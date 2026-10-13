@@ -26,6 +26,7 @@ te_rf=dblarr(nb,rf_layers) & tl_rf=te_rf
 ; cell and is too shallow when extrapolated upwards). Thermal surface only; the mass balance
 ; keeps dtdz. Above hclim the thermal surface is shifted by (elev-hclim)*(dtdz_icetemp-dtdz).
 dtdz_icetemp = (dtdz < (-0.0065d))
+if firnice_thermal_lapse eq 'reanalysis' then dtdz_icetemp = dtdz
 
 ; ── Long-term annual mean T_maat per band (reference period: cyear < 2020) ───
 ; an energy input of the thermal model: without t_offset if firnice_forcing_toff = 'n'
