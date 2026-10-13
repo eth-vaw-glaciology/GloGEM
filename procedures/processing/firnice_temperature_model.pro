@@ -695,7 +695,11 @@ if firnice_write[1] eq 'y' then begin
          ; prof_out[k] = tl_fit[k+1], so prof_out[tt-2] IS the bed node. Masking from tt-2
          ; discarded it; mask from tt-1 so the deepest resolved node reaches the output.
          prof_out=tl_fit[firnice_profile_ind[0,j],1:total(fit_layers)] & prof_out[tt-1:total(fit_layers)-1]=snoval
-         printf,fit_prof_lun[j],ye+tran[0],m,prof_out,fo='(2i4,'+string(total(fit_layers),fo='(i2)')+'f8.3)'
+         r_prof = fit_prof_n[j]
+         if r_prof ge 12l*years then message, 'more profile rows than months in the run'
+         fit_prof_val[j,r_prof,*] = prof_out
+         fit_prof_ym[j,r_prof,0] = ye+tran[0] & fit_prof_ym[j,r_prof,1] = m
+         fit_prof_n[j] = r_prof + 1
       endif
    endfor
 endif

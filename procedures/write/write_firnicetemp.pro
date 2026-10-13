@@ -15,5 +15,14 @@ if firnice_write[0] eq 'y' then begin
 endif
 
 if firnice_write[1] eq 'y' then begin
-   for i=0,n_elements(firnice_profile)-1 do free_lun,fit_prof_lun[i]
+   fo_prof = '(2i4,'+string(total(fit_layers),fo='(i2)')+'f8.3)'
+   for j=0,n_elements(firnice_profile)-1 do begin
+      get_lun, _plun
+      openw, _plun, firnice_dir + '/temp_ID' + firnice_profile_ID[j] + '_' + id[gg[g]] + '.dat'
+      printf, _plun, fit_prof_hdr[j,0]
+      printf, _plun, fit_prof_hdr[j,1]
+      for r_prof=0l, fit_prof_n[j]-1 do $
+         printf, _plun, fit_prof_ym[j,r_prof,0], fit_prof_ym[j,r_prof,1], reform(fit_prof_val[j,r_prof,*]), fo=fo_prof
+      free_lun, _plun
+   endfor
 endif

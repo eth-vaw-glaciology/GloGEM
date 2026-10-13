@@ -114,21 +114,19 @@ if firnice_write[1] eq 'y' then begin
         endfor
     endelse
 
-    ; Borehole profile files get dynamically allocated logical units. No fixed base is
-    ; safe: the original 51+j ran into adv_vertical's unit 71 at 21 profiles -- exactly
-    ; what the glenglat lookup holds for Gornergletscher (01225) -- and 10+j collides with
-    ; the main results files, which initialise_results_files.pro opens across 10..10+N-1
-    ; (up to unit 30 with full_output='y'). get_lun allocates from 100 upward, clear of
-    ; every hard-coded unit in the model, and imposes no ceiling on the profile count.
+    ; Borehole profile rows are kept in memory and each temp_ID file is written in one go at
+    ; the end of the glacier (write_firnicetemp_file.pro). Keeping one file open per profile
+    ; ran out of logical units: get_lun has 29 (100-128), and 01225 holds 30 borehole bands.
     n_prof = n_elements(firnice_profile)
-    fit_prof_lun = lonarr(n_prof)
+    fit_prof_hdr = strarr(n_prof, 2)
+    a='' & for i=1,total(fit_layers)-1 do a=a+string(fit_dz[1,i],fo='(i4)')+'  '
     for j=0,n_prof-1 do begin
-        get_lun, _plun & fit_prof_lun[j] = _plun
-        openw,fit_prof_lun[j], firnice_dir + '/temp_ID' + firnice_profile_ID[j] + '_' + id[gg[g]] + '.dat'
-        printf,fit_prof_lun[j],'Point elevation  '+string(firnice_profile_ind[1,j],fo='(i4)')+' masl: Depth in m'
-        a='' & for i=1,total(fit_layers)-1 do a=a+string(fit_dz[1,i],fo='(i4)')+'  '
-        printf,fit_prof_lun[j],'Year  Month '+a
+        fit_prof_hdr[j,0] = 'Point elevation  '+string(firnice_profile_ind[1,j],fo='(i4)')+' masl: Depth in m'
+        fit_prof_hdr[j,1] = 'Year  Month '+a
     endfor
+    fit_prof_val = dblarr(n_prof, 12l*years, total(fit_layers))
+    fit_prof_ym  = lonarr(n_prof, 12l*years, 2)
+    fit_prof_n   = lonarr(n_prof)
 endif
 
 ; snow logbook (filled in firnice_temperature_model.pro, written in write_firnicetemp_validation.pro)
