@@ -226,6 +226,7 @@ Janosch decided on 2026-09-25 not to rerun the submitted v1 regions, and on 2026
 | {ref}`K22 <mc-k22>` | RGI7 band aspect classes coded 0..4, the code expects 1..5 | core (preprocessing) | open, low | only with meltmodel '3' | yes | none |
 | {ref}`K23 <mc-k23>` | Small high glaciers: too much winter snow, the snow line too low; spring snow too persistent | calibration | open (finding) | — | yes | none |
 | {ref}`K24 <mc-k24>` | Regional table overrides the c_prec bounds of a config; band winter balance never written | core | open, low | no | yes | none |
+| {ref}`K25 <mc-k25>` | Calibration tolerance used one-sidedly (+0.05 m w.e. a⁻¹ on 94 % of glaciers); small glaciers' targets about +0.25 too positive | calibration | open (finding) | yes (small) | yes | none |
 
 ---
 
@@ -905,6 +906,13 @@ Found 2026-10-14 (ice-temperature diagnostics; `glogemflow_icetemp/development_h
 
 - `read_regionalparams.pro:38/47` sets `c1_tolerance` from `regional_parameters_<rea>_<res>.dat` (CentralEurope: 1.3–2.3), after the config is read, so a `c1_tolerance` in a config has no effect.
 - `store_elevationband_massbalance.pro` fills the band winter balance `elev_bwb`, but `write_elevationband_file.pro` never writes it out.
+
+(mc-k25)=
+### K25. Calibration: the tolerance is used one-sidedly; small glaciers' targets (open, finding)
+
+- **Found 2026-10-14** (ice-temperature diagnostics): the calibrated balance (`Ba` in `calibrate_m1_cID9_*_final_era5.dat`) lies above the raw geodetic target for 94 % of the 4073 CentralEurope glaciers, by a median of +0.05 m w.e. a⁻¹, at every glacier size. The search stops as soon as it is inside the tolerance (`cal_crit`, `calibrate_single_glacier.pro`), approaching from one side.
+- **Against GLAMOS** (34 series, 2000–2019): the Hugonnet targets of glaciers under 1 km² are about +0.25 m w.e. a⁻¹ too positive (median). Larger glaciers show no bias (+0.04 for measured series). Where GLAMOS measures only part of a larger RGI7 outline (Corvatsch 02103, Hohsaas 01112, Felskinn 01161), the gap is +0.6 to +1.0.
+- **Effect:** small high glaciers keep too much firn (K23). No change made.
 
 ## 7. Decisions log
 
