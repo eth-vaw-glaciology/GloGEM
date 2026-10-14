@@ -149,6 +149,16 @@ endfor
 ; from modelled balances (finalize_annual_massbalance.pro)
 firn_th = firn
 
+; firnice_perm_limit 'firn': annual firn layers per band [m w.e.] and their years, newest first
+; (firnice_firn_ledger.pro; started from the reference balance in firnice_reference_forcing.pro),
+; and the water equivalent of the thermal density profile down to each node, to turn them into depth
+n_fl = long(firnice_firn_age) + 1l
+fl_we = dblarr(nb, n_fl) & fl_yr = lonarr(nb, n_fl)
+fl_znode = reform(fit_dz[1,0:n_elements(fit_dens)-1])
+fl_cumwe = dblarr(n_elements(fl_znode))
+for fl_k = 1l, n_elements(fl_znode)-1 do $
+   fl_cumwe[fl_k] = fl_cumwe[fl_k-1] + 0.5d*(fit_dens[fl_k-1] + fit_dens[fl_k])/1000.d*(fl_znode[fl_k] - fl_znode[fl_k-1])
+
 ; ── Per-band calibration parameter arrays ────────────────────────────────────
 ; Initialized to scalar defaults from settings.pro (or config.pro overrides).
 ; A per-glacier file override (apply_firnicetemp_calibration.pro, called after

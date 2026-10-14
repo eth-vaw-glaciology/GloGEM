@@ -128,6 +128,19 @@ if n_elements(snl_sum) gt 0 then begin
                 printf, 99, elev[snl_b], snl_y+tran[0], wdl_depth[snl_y,snl_b], wdl_lost[snl_y,snl_b], fo='(i6, i6, f11.1, f12.3)'
     endfor
     close, 99
+    if firnice_perm_limit eq 'firn' then begin
+       outfile = firnice_dir + '/firnice_firnledger_' + id[gg[g]] + '.dat'
+       openw, 99, outfile
+       printf, 99, '# GloGEM firn ledger  glacier: ' + id[gg[g]] + '  per band and year, after that year''s balance: firn [m w.e.], its depth on the thermal density profile [m], number of annual layers, year of the oldest (firnice_perm_limit ''firn'')'
+       printf, 99, '#  elev  year  firn_we  firn_depth  n_layers  oldest'
+       for snl_b = 0, nb-1 do begin
+          if gl[snl_b] eq noval then continue
+          for snl_y = 0, years-1 do $
+             printf, 99, elev[snl_b], snl_y+tran[0], fll_we[snl_y,snl_b], fll_z[snl_y,snl_b], $
+                     fll_n[snl_y,snl_b], fll_old[snl_y,snl_b], fo='(i6, i6, f9.3, f12.2, i10, i8)'
+       endfor
+       close, 99
+    endif
     outfile = firnice_dir + '/firnice_bed_' + id[gg[g]] + '.dat'
     openw, 99, outfile
     printf, 99, '# GloGEM bed log  glacier: ' + id[gg[g]] + '  per band and year it was glacierized: the node at the band ice thickness (depth [m], annual mean, minimum and maximum [C], pressure melting point [C]) and the column bottom (depth [m], annual mean [C]; deeper than the bed where the column runs to a borehole reading)'
