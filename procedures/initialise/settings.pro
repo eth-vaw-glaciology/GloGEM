@@ -543,6 +543,7 @@ Lh_fit = Lh_rf
 if firnice_lh_water eq 'y' then Lh_fit = lhf * 1000.d
 if total(firnice_perm_limit eq ['hl', 'profile', 'cold', 'firn']) eq 0 then $
     message, "firnice_perm_limit must be 'hl', 'profile', 'cold' or 'firn'"
+if firnice_perm_limit eq 'firn' and firnice_firn_age lt 1 then message, "firnice_firn_age must be at least 1 year"
 if firnice_perm_limit eq 'firn' and time_resolution ne 'monthly' then $
     message, "firnice_perm_limit 'firn' needs time_resolution 'monthly' (the ledger starts from b_ref)"
 if total(firnice_thermal_lapse eq ['floor', 'reanalysis', 'stations']) eq 0 then $
