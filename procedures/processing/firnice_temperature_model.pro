@@ -184,6 +184,9 @@ if firnice_perm_limit eq 'profile' then begin
    pd_830 = where(fit_dens ge 830.d, n_830)
    if n_830 gt 0 then z_perm_b = fit_dz[1, pd_830[0]]
 endif
+; 'firn': no deeper than the band's firn layers plus this winter's snow (firnice_firn_ledger.pro)
+if firnice_perm_limit eq 'firn' then $
+   z_perm_b = z_perm_b < interpol(fl_znode, fl_cumwe, (total(fl_we[ii[i],*]) + sno[ii[i]]) < max(fl_cumwe))
 pdidx_arr = where(fit_dz[1,*] ge z_perm_b, n_pdi)
 perm_limit = (n_pdi gt 0) ? ((pdidx_arr[0] - 1l) > 1l) : (tt - 2l)
 perm_limit = perm_limit < (tt - 2l)
