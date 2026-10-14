@@ -38,6 +38,10 @@ if ye gt 4 then begin
    endif
    firn_th = firn   ; the thermal model follows the modelled mask from here on
 endif
+; firnice_perm_limit 'firn': this year's balance enters the annual firn layers
+if firnice_temperature eq 'y' && firnice_perm_limit eq 'firn' then begin
+   @procedures/processing/firnice_firn_ledger.pro
+endif
 ; lowest thermal firn band this year
 if firnice_temperature eq 'y' then begin
    ii=where(firn_th eq 1 and gl ne noval,ci)

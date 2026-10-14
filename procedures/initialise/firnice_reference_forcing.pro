@@ -102,6 +102,16 @@ endfor
 mb_book = 1b
 sno = sno_keep & sur = sur_keep & snostor = snostor_keep
 
+; firnice_perm_limit 'firn': the firn layers start in the steady state of the reference balance,
+; one layer of b_ref for each of the n_fl years before the run where b_ref > 0
+if firnice_perm_limit eq 'firn' then begin
+   fl_we[*] = 0d & fl_yr[*] = 0l
+   jj = where(b_ref gt 0 and gl ne noval, cj)
+   if cj gt 0 then for fl_k = 0l, n_fl-1 do begin
+      fl_we[jj,fl_k] = b_ref[jj] & fl_yr[jj,fl_k] = long(tran[0]) - 1l - fl_k
+   endfor
+endif
+
 ; Thermal firn mask from the reference balance, and its firn-ice transition depth from the same
 ; balance and the band's reference-period mean temperature
 firn_th = dblarr(nb)

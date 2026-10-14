@@ -200,7 +200,11 @@ firnice_lh_water        = 'n'   ; 'y' = latent heat per m of percolating water (
 firnice_perm_limit      = 'hl'  ; 'profile' = water stops where the thermal model's density
                                 ; profile reaches 830 kg/m3 (diagnostic); 'hl' = Herron-Langway depth;
                                 ; 'cold' = water passes firn at the melting point, but reaches at most
-                                ; firnice_perm_cold_depth into cold firn; the rest runs off
+                                ; firnice_perm_cold_depth into cold firn; the rest runs off; 'firn' = water
+                                ; reaches at most the firn the band's mass balance built (annual layers,
+                                ; firnice_firn_ledger.pro) plus this winter's snow, never past 'hl'
+firnice_firn_age        = 20    ; years a firn layer stays firn in the 'firn' ledger (Ambach & Eisner 1966;
+                                ; as in the firn model of Beer et al. 2026)
 firnice_perm_cold_depth = 4.d   ; m, meltwater penetration into cold firn (Mattea et al. 2021, z_lim;
                                 ; Gilbert et al. 2014, 4-5 m at Col du Dome in 2012)
 firnice_thermal_lapse   = 'floor' ; lapse rate of the thermal surface above the climate cell:
@@ -537,8 +541,10 @@ if firnice_temperature eq 'n' then firnice_batch = 'n'
 ; (Lh_rf, as before) or per m of water
 Lh_fit = Lh_rf
 if firnice_lh_water eq 'y' then Lh_fit = lhf * 1000.d
-if total(firnice_perm_limit eq ['hl', 'profile', 'cold']) eq 0 then $
-    message, "firnice_perm_limit must be 'hl', 'profile' or 'cold'"
+if total(firnice_perm_limit eq ['hl', 'profile', 'cold', 'firn']) eq 0 then $
+    message, "firnice_perm_limit must be 'hl', 'profile', 'cold' or 'firn'"
+if firnice_perm_limit eq 'firn' and time_resolution ne 'monthly' then $
+    message, "firnice_perm_limit 'firn' needs time_resolution 'monthly' (the ledger starts from b_ref)"
 if total(firnice_thermal_lapse eq ['floor', 'reanalysis', 'stations']) eq 0 then $
     message, "firnice_thermal_lapse must be 'floor', 'reanalysis' or 'stations'"
 if total(firnice_deepen_to_obs eq ['y', 'n']) eq 0 then message, "firnice_deepen_to_obs must be 'y' or 'n'"
