@@ -75,10 +75,9 @@ ii=where(gl ne noval,ci)
 ; ── Advection velocity scaling (Tier-3 Bayesian calibration parameter) ──────
 ; Scales the depth-averaged velocity u[i] per elevation band by a calibrated
 ; factor (default 1.0 = unscaled baseline; see firnice_adv_scale_b in
-; initialise_firnicetemp_spinup.pro). Applied once here, before the horizontal
-; and vertical advection transport steps below -- both read u[i] (directly,
-; and via emergence_vel in the vertical fallback) -- so both pathways see the
-; scaled velocity.
+; initialise_firnicetemp_spinup.pro). Only the horizontal advection reads u[i];
+; the vertical velocity comes from the reference balance (or GloGEMflow's
+; kinematic velocity), so f_adv does not scale it.
 for i=0,ci-1 do u[i] = u[i] * firnice_adv_scale_b[ii[i]]
 
 ; column depth of every band first: horizontal advection maps from the band above
