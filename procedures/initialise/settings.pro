@@ -200,10 +200,10 @@ firnice_lh_water        = 'n'   ; 'y' = latent heat per m of percolating water (
 firnice_perm_limit      = 'hl'  ; 'profile' = water stops where the thermal model's density
                                 ; profile reaches 830 kg/m3 (diagnostic); 'hl' = Herron-Langway depth;
                                 ; 'cold' = superseded (a fixed cap below the surface in practice: it cools
-                                ; temperate firn); 'front' = in each melt season the water passes a
-                                ; temperate layer that starts within firnice_perm_skin_depth and reaches
-                                ; firnice_perm_cold_depth below its bottom, or, without one, that far below
-                                ; the surface; the rest runs off
+                                ; temperate firn); 'front' = in each hydrological year the water passes a
+                                ; temperate layer that the last melt season left within firnice_perm_skin_depth
+                                ; and reaches firnice_perm_cold_depth below its bottom, or, without one, that
+                                ; far below the surface; the rest runs off
 firnice_perm_cold_depth = 4.d   ; m, meltwater penetration into cold firn (Mattea et al. 2021, z_lim;
                                 ; Gilbert et al. 2014, 4-5 m at Col du Dome in 2012)
 firnice_perm_skin_depth = 15.d  ; m, depth of zero annual amplitude: a temperate layer starting shallower
