@@ -149,5 +149,7 @@ if firnice_write[0] eq 'y' then begin
        fll_z   = dblarr(years, nb)        ;              its depth on the thermal density profile [m]
        fll_n   = lonarr(years, nb)        ;              number of annual layers
        fll_old = lonarr(years, nb)        ;              year of the oldest layer
+       fll_b   = dblarr(years, nb)        ;              the year's band balance [m w.e.]
+       fll_lim = dblarr(years, nb)        ;              deepest meltwater limit used in the year [m]
     endif
 endif
