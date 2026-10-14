@@ -222,6 +222,10 @@ Janosch decided on 2026-09-25 not to rerun the submitted v1 regions, and on 2026
 | {ref}`K18 <mc-k18>` | Debug `stop` and editor backup files on main | main only | open | — | yes | `70c5af5` |
 | {ref}`K19 <mc-k19>` | Kept spin-ups lean towards too-short glaciers; A_flow floor; no upper length limit in the gate | flow | open, to be disclosed | — | — | none |
 | {ref}`K20 <mc-k20>` | Antarctic flow hindcast loses about twice the observed mass | flow, calibration | open | — | — | none |
+| {ref}`K21 <mc-k21>` | The temperature offset grows with height (a budget term, not air temperature) | calibration | open (finding) | — | yes | none |
+| {ref}`K22 <mc-k22>` | RGI7 band aspect classes coded 0..4, the code expects 1..5 | core (preprocessing) | open, low | only with meltmodel '3' | yes | none |
+| {ref}`K23 <mc-k23>` | Small high glaciers: too much winter snow, the snow line too low; spring snow too persistent | calibration | open (finding) | — | yes | none |
+| {ref}`K24 <mc-k24>` | Regional table overrides the c_prec bounds of a config; band winter balance never written | core | open, low | no | yes | none |
 
 ---
 
@@ -477,6 +481,16 @@ The main fixes on our branches:
 - snow and firn had the thermal properties of ice, so snow insulation had no effect (`1aef7f6`, then calibratable `insul_scale` and `refreeze_frac`, `154dc6c`);
 - the thermal spin-up ran with default parameters before the calibration was applied (fixed in the live tree on 2026-09-18, committed on 2026-09-22 in `bb981b7`) and on one year of climate; it now uses the real 1961–1990 climate (`672a1fc`) and can use a drift correction (`ab7cab3`), which is the default only on `GloGEMflow` (`108025c`; within 0.002 °C of 3,000 spin-up cycles);
 - the column did not reach the borehole depth, which dropped 31 % of the observations (`6d05a87`).
+
+October 2026, on `GloGEMflow` only. Every switch defaults to the earlier behaviour, and each was gate-tested byte-identical with the default:
+- the thermal energy inputs without the mass-balance temperature offset (`firnice_forcing_toff`), the Herron & Langway (1980) close-off depth as published (`firnice_hl1980`) and the latent heat per m of water (`firnice_lh_water`) (`8d10930`, `f6c1453`);
+- the thermal lapse rate: 'floor', 'reanalysis' or 'stations' (`4a5e962`, `b17fcfe`); a bed log, `firnice_bed_<id>.dat`; `firnice_deepen_to_obs`;
+- borehole profiles buffered and written once per glacier, because 30 open files exceeded IDL's 29 units (`8c38120`);
+- a comment correcting what f_adv scales (`161dcdd`).
+
+The ice-temperature runs now use FRH: no offset, ERA5's lapse rate, the HL and latent-heat fixes. Two candidate rules failed their pre-registered tests and stay on unmerged branches:
+- a depth limit for meltwater in cold firn (`perc-wetting-front`);
+- meltwater refreezing in the winter snow on ice (`snow-refreeze`).
 
 13 commits of this work (`cea254f` to `e9c0cca`) are only on `GloGEMflow` and not in v3. `cea254f` adds bookkeeping lines to the core mass-balance files (`accumulation.pro`, `meltmodel.pro`, `refreezing_*.pro`, `calculatedebrismelt.pro`; claimed bit-identical on Iceland) and conflicts with `d62db11`: a test merge (`git merge-tree`) of `GloGEMflow` into `glogemflow-v3` conflicts in exactly `meltmodel.pro` and `calculatedebrismelt.pro`. The history of this work is kept in the separate `glogemflow_icetemp/development_history/` book.
 
@@ -861,6 +875,37 @@ The combined Antarctic (RGI 19) ERA5 hindcast at `gmip4-v3` changes by −39.0 G
 ---
 
 (mc-decisions)=
+(mc-k21)=
+### K21. The temperature offset grows with height (open, finding)
+
+The third calibration factor, T_off, is unbounded and closes each glacier's budget after c_prec and DDF hit their bounds. In CentralEurope, 93 % of the 181 glaciers above 3400 m mean elevation with their own measured target sit at both bounds, at a median T_off of +3.1 °C; below 3000 m the median is about 0. So T_off acts as a budget term that is largest where cold firn lives, not as an air-temperature correction. Mont Blanc's target is a real measurement (−0.06 ± 0.18 m w.e. a⁻¹). Found by the ice-temperature work (2026-10-12/13); no change to the mass balance.
+
+(mc-k22)=
+### K22. RGI7 band aspect classes are coded 0 = N … 4 = S (open, low)
+
+The RGI7 band files count aspect classes from 0, while `potential_solarradiation.pro` (`asp_class[aspect-1]`, class 0 set to 1) expects 1 = N … 5 = S. Read with the code, every RGI7 band except the north-facing ones is taken one class (45°) too far north, and "south" never occurs (checked against DEM aspects: 12 RGI7 glaciers, 1948 bands). This is GloGEM's own RGI7 preprocessing, not RGI. Only melt model '3' reads the class, so no run is affected. `potential_solarradiation.pro` also smooths `slope` in place, which would change the SIA flow if model '3' were switched on.
+
+(mc-k23)=
+### K23. Small high glaciers: too much winter snow, the snow line too low; spring snow too persistent everywhere (open, finding)
+
+Found 2026-10-14 (ice-temperature diagnostics; `glogemflow_icetemp/development_history/09_snow_and_firn_from_data.md`):
+- **GLAMOS:**
+  - the model's winter balance is too high on most glaciers (Aletsch +0.34, Corvatsch +0.38, Hohsaas +0.54, Alphubel +0.96 m w.e.);
+  - the ELA is 120–150 m too low on Corvatsch and Hohsaas;
+  - the precipitation factor sits at its 1.3 lower bound at 5 of 6 small zone glaciers.
+- **Snow lines** (Sommer et al., ESSD preprint essd-2026-35):
+  - the May–June snow line is 140–460 m too low on all 12 glaciers covered;
+  - by late summer, big valley glaciers are right, while small or steep high glaciers are 80–420 m too low.
+- **Lowering the c_prec bound to 0.8** (diagnostic) brings the winter balance to GLAMOS but moves the ELA by only 10–50 m. With one glacier-wide target, less snow is given back as less melt.
+- **The geodetic target of small glaciers can disagree with GLAMOS:** Corvatsch −0.25 m w.e. a⁻¹ (Hugonnet et al., 2000–2019) against about −1.3 (GLAMOS 2013–19).
+- **Planned:** Alexandra von der Esch's snowline calibration, ported from her branch into `procedures/calibration/`.
+
+(mc-k24)=
+### K24. Calibration: the regional parameter table overrides the c_prec bounds of a config; band winter balance never written (open, low)
+
+- `read_regionalparams.pro:38/47` sets `c1_tolerance` from `regional_parameters_<rea>_<res>.dat` (CentralEurope: 1.3–2.3), after the config is read, so a `c1_tolerance` in a config has no effect.
+- `store_elevationband_massbalance.pro` fills the band winter balance `elev_bwb`, but `write_elevationband_file.pro` never writes it out.
+
 ## 7. Decisions log
 
 All decisions below were taken by Janosch Beer.
