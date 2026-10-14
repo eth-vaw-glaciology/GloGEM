@@ -238,6 +238,28 @@ endif else begin
 ; ice bands: meltwater runs off the impermeable ice. The seasonal snow shares the top nodes
 ; of the ice column (it enters only through conductivity), so no latent heat goes into them.
 fit_water=0d
+; firnice_snow_refreeze 'y': the month's water refreezes in the seasonal snow and as superimposed
+; ice on the ice surface: it warms the nodes holding snow, down to the node whose slice holds the
+; snow-ice interface; the rest runs off
+if firnice_snow_refreeze eq 'y' && sno[ii[i]] gt 0d then begin
+   fit_water = (mel_th[ii[i]]+plg_th[ii[i]])*firnice_refreeze_frac_b[ii[i]]
+   if firn_permeability eq 'n' then fit_water = 0d
+   jsn = where(v_snow gt 0d, n_sn)
+   j_snow = (n_sn gt 0) ? (max(jsn) < (tt-2)) : 0l
+   for j = 1, j_snow do begin
+      if fit_water le 0d then break
+      dz_cv = 0.5d*(fit_dz[0,j] + fit_dz[0,(j+1) < (n_fitdz-1)])
+      c = (-1)*(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*cap_fit[j]*dz_cv/Lh_fit
+      if fit_water gt c then begin
+         tl_fit[ii[i],j] = (fit_dz[1,j]*0.9/10.)*(-0.00742) & fit_water = fit_water - c
+         if fit_lacc_on then lacc_wet[ii[i],j] = 1b   ; drift spin-up: meltwater sets this layer
+      endif else begin
+         if c gt 0 then tl_fit[ii[i],j] = tl_fit[ii[i],j]-(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*(fit_water/c)
+         fit_water = fit_water - c
+      endelse
+   endfor
+   fit_water = 0d
+endif
 
 endelse
 
