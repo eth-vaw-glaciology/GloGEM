@@ -35,6 +35,7 @@ for fl_i = 0l, nb-1 do begin
    endif
    fl_we[fl_i,*] = fl_w & fl_yr[fl_i,*] = fl_y
    if firnice_write[0] eq 'y' then begin
+      fll_b[ye,fl_i]  = fl_b
       fll_we[ye,fl_i] = total(fl_w)
       fll_z[ye,fl_i]  = interpol(fl_znode, fl_cumwe, total(fl_w) < max(fl_cumwe))
       fll_n[ye,fl_i]  = fl_nk

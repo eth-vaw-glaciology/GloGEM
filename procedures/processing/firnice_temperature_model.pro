@@ -212,6 +212,8 @@ if firn_permeability eq 'n' then fit_water = 0  ; check if permeability is disab
 if firn_th[ii[i]] eq 1 then begin
 
 wd_j = 0l   ; deepest node the water brings to the melting point (wet-depth log)
+if firnice_perm_limit eq 'firn' && firnice_write[0] eq 'y' then $
+   fll_lim[ye,ii[i]] = fll_lim[ye,ii[i]] > fit_dz[1,perm_limit]   ; firn ledger log: deepest limit this year
 z_cold0 = -1d   ; firnice_perm_limit 'cold': depth where the water first met cold firn this month
 for j=1,perm_limit do begin ; percolate to firn-ice transition only
    dz_cv = 0.5d*(fit_dz[0,j] + fit_dz[0,(j+1) < (n_fitdz-1)])  ; node's slice, as in conduction
