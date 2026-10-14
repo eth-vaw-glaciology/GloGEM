@@ -245,7 +245,7 @@ fit_water=0d
 if firnice_snow_refreeze eq 'y' && sno[ii[i]] gt 0d then begin
    fit_water = (mel_th[ii[i]]+plg_th[ii[i]])*firnice_refreeze_frac_b[ii[i]]
    if firn_permeability eq 'n' then fit_water = 0d
-   jsn = where(v_snow gt 0d, n_sn)
+   jsn = where(v_snow gt 1d-6, n_sn)   ; ignores the rounding residue of the snow loop
    j_snow = (n_sn gt 0) ? (max(jsn) < (tt-2)) : 0l
    for j = 1, j_snow do begin
       if fit_water le 0d then break
