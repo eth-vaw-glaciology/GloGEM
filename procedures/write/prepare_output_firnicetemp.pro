@@ -144,4 +144,10 @@ if firnice_write[0] eq 'y' then begin
     bed_max = dblarr(years, nb) - 99d
     bed_bot = dblarr(years, nb)           ;          bottom node of the column, summed [C]
     bed_zb  = dblarr(years, nb)           ;          its depth [m]
+    if firnice_perm_limit eq 'firn' then begin
+       fll_we  = dblarr(years, nb)        ; firn ledger: firn at the end of the year [m w.e.]
+       fll_z   = dblarr(years, nb)        ;              its depth on the thermal density profile [m]
+       fll_n   = lonarr(years, nb)        ;              number of annual layers
+       fll_old = lonarr(years, nb)        ;              year of the oldest layer
+    endif
 endif
