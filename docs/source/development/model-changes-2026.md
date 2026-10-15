@@ -225,7 +225,7 @@ Janosch decided on 2026-09-25 not to rerun the submitted v1 regions, and on 2026
 | {ref}`K21 <mc-k21>` | The temperature offset grows with height (a budget term, not air temperature) | calibration | open (finding) | — | yes | none |
 | {ref}`K22 <mc-k22>` | RGI7 band aspect classes coded 0..4, the code expects 1..5 | core (preprocessing) | open, low | only with meltmodel '3' | yes | none |
 | {ref}`K23 <mc-k23>` | Small high glaciers: too much winter snow, the snow line too low; spring snow too persistent | calibration | open (finding) | — | yes | none |
-| {ref}`K24 <mc-k24>` | Regional table overrides the c_prec bounds of a config; band winter balance never written | core | open, low | no | yes | none |
+| {ref}`K24 <mc-k24>` | Regional table overrides the c_prec bounds of a config; band winter balance never written | core | bounds open, low; band winter balance fixed | no | yes | `26e6fbe` (band winter balance) |
 | {ref}`K25 <mc-k25>` | Calibration tolerance used one-sidedly (+0.05 m w.e. a⁻¹ on 94 % of glaciers); small glaciers' targets about +0.25 too positive | calibration | open (finding) | yes (small) | yes | none |
 
 ---
@@ -905,7 +905,7 @@ Found 2026-10-14 (ice-temperature diagnostics; `glogemflow_icetemp/development_h
 ### K24. Calibration: the regional parameter table overrides the c_prec bounds of a config; band winter balance never written (open, low)
 
 - `read_regionalparams.pro:38/47` sets `c1_tolerance` from `regional_parameters_<rea>_<res>.dat` (CentralEurope: 1.3–2.3), after the config is read, so a `c1_tolerance` in a config has no effect.
-- `store_elevationband_massbalance.pro` fills the band winter balance `elev_bwb`, but `write_elevationband_file.pro` never writes it out.
+- `store_elevationband_massbalance.pro` fills the band winter balance `elev_bwb`, but `write_elevationband_file.pro` never wrote it out. Fixed on `GloGEMflow` in `26e6fbe`: `bwelev_<id>.dat` is written beside `belev` when `write_mb_elevationbands = 'y'`. With the band output off, the run is byte-identical; with it on, the existing files are identical, and the area-weighted band values equal the glacier-wide winter balance to 0.001 m w.e.
 
 (mc-k25)=
 ### K25. Calibration: the tolerance is used one-sidedly; small glaciers' targets (open, finding)
