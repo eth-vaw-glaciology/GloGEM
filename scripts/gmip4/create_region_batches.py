@@ -18,9 +18,17 @@ throughout the existing catchment files — this is a fixed template consumed
 by catchment_selection.pro via strmid(s,9,5) and is independent of which
 RGI version the run itself uses.
 
+--tag adds a name part (RGI{rginum}_{name}_{tag}_batch{NN}.dat), so batches of
+another glacier set (e.g. RGI6) never overwrite existing ones; existing files
+are not overwritten unless --force is given. --ids-from keeps only the glaciers
+listed in a file whose first column is the 5-digit ID (e.g. a calibration file,
+so that no batch holds a glacier without calibration parameters).
+
 Usage:
     python scripts/gmip4/create_region_batches.py --region iceland    --rgi-num 06 --rgi-version 7 --n 4
     python scripts/gmip4/create_region_batches.py --region newzealand --rgi-num 18 --rgi-version 7 --n 16
+    python scripts/gmip4/create_region_batches.py --region centraleurope --rgi-num 11 --rgi-version 6 --n 24 \
+        --tag amocr6 --ids-from <dirres>/monthly/CentralEurope/calibration/calibrate_m1_cID9_centraleurope_final_era5.dat
 """
 
 import os
@@ -59,6 +67,11 @@ def main():
                          help='geometricdata folder (default: %(default)s)')
     parser.add_argument('--catchment-dir', default=str(CATCHMENT_DIR),
                          help='folder the catchment files are written to (default: %(default)s)')
+    parser.add_argument('--tag', default='',
+                         help='extra name part: RGI{rginum}_{region}_{tag}_batchNN.dat')
+    parser.add_argument('--ids-from', default='',
+                         help='keep only glaciers whose 5-digit ID is the first column of this file')
+    parser.add_argument('--force', action='store_true', help='overwrite existing catchment files')
     args = parser.parse_args()
     n = args.n
 
@@ -72,6 +85,18 @@ def main():
         gid = os.path.splitext(os.path.basename(fn))[0]  # e.g. '00001'
         glaciers.append((gid, read_glacier_area(fn)))
 
+    if args.ids_from:
+        keep = set()
+        with open(args.ids_from) as fh:
+            for line in fh:
+                first = line.split()[0] if line.split() else ''
+                if first.isdigit():
+                    keep.add(f'{int(first):05d}')
+        missing = [g for g, _ in glaciers if g not in keep]
+        glaciers = [(g, a) for g, a in glaciers if g in keep]
+        print(f'--ids-from {args.ids_from}: {len(keep)} IDs; {len(missing)} glaciers of the band folder left out'
+              + (f' (e.g. {", ".join(missing[:8])})' if missing else ''))
+
     total = len(glaciers)
     print(f'Region: {args.region} (RGI{args.rgi_num}, geometry from rgiv{args.rgi_version})')
     print(f'Total glaciers: {total}')
@@ -84,9 +109,14 @@ def main():
     for i, (gid, _) in enumerate(glaciers):
         batches[i % n].append(gid)
 
+    tag = f'_{args.tag}' if args.tag else ''
+    paths = [os.path.join(args.catchment_dir, f'RGI{args.rgi_num}_{args.region}{tag}_batch{i:02d}.dat')
+             for i in range(1, n + 1)]
+    exist = [p for p in paths if os.path.exists(p)]
+    if exist and not args.force:
+        raise SystemExit(f'{len(exist)} catchment files exist already (e.g. {exist[0]}); use --tag or --force')
     for i, batch in enumerate(batches, 1):
-        name = f'{args.region}_batch{i:02d}'
-        fpath = os.path.join(args.catchment_dir, f'RGI{args.rgi_num}_{name}.dat')
+        fpath = paths[i - 1]
         with open(fpath, 'w') as fh:
             fh.write(f'RGI_ID, {args.region}\n')
             for gid in batch:
