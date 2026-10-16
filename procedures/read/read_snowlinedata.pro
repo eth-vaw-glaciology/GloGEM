@@ -6,11 +6,14 @@
 ;
 ; File: one header line, then one observation per line:
 ;   <RGI id> <snow line [m a.s.l.]> <stdev [m]> <year> <day of year>
-; The day of year is on GloGEM's daily calendar (365 days, no 29 Feb).
+; The day of year is on GloGEM's daily calendar (365 days, no 29 Feb);
+; a day 366 (calendar-day files, e.g. hers) falls on 1 January of the
+; next year, as in her code.
 ; The glacier number is the last five characters of the RGI id
 ; (RGI60-11.01450, RGI70-11.01450 or RGI2000-v7.0-G-11-01450).
-; Blank lines are skipped; stdev <= 0 or a day of year outside
-; 1-365 stops the run.
+; Blank lines are skipped; observations with stdev <= 0 are left out
+; (their weight 1/stdev would be infinite); a day of year outside
+; 1-366 stops the run.
 ; *************************************************************
 
 PRO read_snowlinedata, fn, calisnow_gid, year_obs, doy_obs, snowlineday_obs, snowline_stdev_obs
@@ -35,11 +38,14 @@ PRO read_snowlinedata, fn, calisnow_gid, year_obs, doy_obs, snowlineday_obs, sno
     calisnow_gid[i] = strmid(a[0], strlen(a[0]) - 5, 5)
     for j = 0, 3 do tt2[j, i] = double(a[1 + j])
   endfor
-  snowlineday_obs = reform(tt2[0, *])
-  snowline_stdev_obs = reform(tt2[1, *])
-  year_obs = reform(tt2[2, *])
-  doy_obs = reform(tt2[3, *])
-  if min(snowline_stdev_obs) le 0 then message, 'snowline observations: stdev <= 0 in ' + fn
-  if min(doy_obs) lt 1 or max(doy_obs) gt 365 then message, 'snowline observations: day of year outside 1-365 in ' + fn
+  ok = where(tt2[1, *] gt 0, nok)
+  if nok lt anz then print, '   Snowline observations: ' + strtrim(anz - nok, 2) + ' with stdev <= 0 left out'
+  if nok eq 0 then message, 'no snowline observations with stdev > 0 in ' + fn
+  calisnow_gid = calisnow_gid[ok]
+  snowlineday_obs = reform(tt2[0, ok])
+  snowline_stdev_obs = reform(tt2[1, ok])
+  year_obs = reform(tt2[2, ok])
+  doy_obs = reform(tt2[3, ok])
+  if min(doy_obs) lt 1 or max(doy_obs) gt 366 then message, 'snowline observations: day of year outside 1-366 in ' + fn
 
 end
