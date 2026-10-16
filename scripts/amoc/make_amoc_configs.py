@@ -29,8 +29,10 @@ SCENARIOS = [  # (GCM index, scenario index, name)
     (2, 6, 'GFDL_ENS1_2degC_hos_Eref'), (2, 7, 'GFDL_ENS1_2degC_ref'),
 ]
 KINDS = {
-    'igmforcing': ("glacier_retreat = 'n'\nuse_flow_model = 'n'\nband_extension = 'y'\n"
-                   "write_mb_elevationbands = 'y'\nfull_output = 'n'\nwrite_netcdf = 'n'\n"),
+    # fixed geometry needs find_startyear='n' too: otherwise glogem.pro switches glacier_retreat
+    # on after each glacier's survey year
+    'igmforcing': ("glacier_retreat = 'n'\nfind_startyear = 'n'\nuse_flow_model = 'n'\nband_extension = 'y'\n"
+                   "frontal_ablation = 'n'\nwrite_mb_elevationbands = 'y'\nfull_output = 'n'\nwrite_netcdf = 'n'\n"),
 }
 
 
