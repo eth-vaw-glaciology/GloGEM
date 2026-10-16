@@ -90,7 +90,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 ; automatically setting end of modelling period for future runs
   if reanalysis_direct ne 'y' then tran[1]=2100
   if long_GCM ne '' then tran[1]=2300
-  if AMOC eq 'y' then tran[1]=2499
+  if AMOC eq 'y' and reanalysis_direct ne 'y' then tran[1]=2499
   
   ; === LOOP OVER DIFFERENT RCPs/SSPs
   if rcp_batch[0] ne 0 then ne_GCM_rcp=rcp_batch[gcms] else ne_GCM_rcp=n_elements(GCM_rcp)
