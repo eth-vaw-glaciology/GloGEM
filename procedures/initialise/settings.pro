@@ -258,6 +258,7 @@ band_extension = 'n' ; 'y': mass balance on bands down to band_ext_depth below t
 band_ext_depth = 1500. ; [m] depth of the band extension below the lowest band
 band_blend_depth = 300. ; [m] below the front over which the extension bands blend from the glacier's own parameters into the regional medians (at least)
 band_blend_dtdz = 0.003 ; [degC/m] largest change of the temperature offset per metre in that blend (about half a lapse rate)
+band_blend_dlnp = 5e-4 ; [1/m] largest relative change of a degree-day factor or c_prec per metre in that blend
 amoc_end_year = 3000 ; last year of AMOC projections; the GCM series are extended to it by repeating their last 50 years
 
 ; --- calving (Oerlemans & Nick, 2005; marine-terminating only)
@@ -517,7 +518,6 @@ if use_flow_model eq 'y' then advance = 'y' ; flow model requires advance bands
 if flow_gridend_outflow ne 'frontal' and flow_gridend_outflow ne 'melt_if_land' then $
   message, 'flow_gridend_outflow must be ''frontal'' or ''melt_if_land'', not ''' + strtrim(flow_gridend_outflow, 2) + ''''
 if glacier_retreat eq 'n' and hindcast_dynamic ne 'y' and use_flow_model eq 'n' then advance = 'n'
-if band_extension eq 'y' and meltmodel ne '1' then message, 'band_extension needs meltmodel ''1'''
 if AMOC eq 'y' and amoc_end_year lt 2026 then message, 'amoc_end_year must be 2026 or later (an earlier end makes the run an ERA5 hindcast, K13)'
 
 if read_parameters eq 'y' then calibrate = 'n'
@@ -531,12 +531,16 @@ if tran[1] gt 2025 then hindcast_dynamic = 'n'
 ; when find_startyear or hindcast_dynamic is 'y'), and only with the parts it reproduces
 if calibrate eq 'y' then band_extension = 'n'
 if band_extension eq 'y' then begin
+  if meltmodel ne '1' then message, 'band_extension needs meltmodel ''1'''
+  if read_parameters ne 'y' then message, 'band_extension needs read_parameters=''y'' (regional parameters from the calibration file)'
   if glacier_retreat eq 'y' or find_startyear eq 'y' or hindcast_dynamic eq 'y' then $
-    message, 'band_extension needs fixed geometry: glacier_retreat=''n'' and find_startyear=''n'''
+    message, 'band_extension needs fixed geometry: glacier_retreat=''n'', find_startyear=''n'', hindcast_dynamic=''n'''
   if debris_supraglacial eq 'y' or firnice_temperature eq 'y' or refreezing_full eq 'y' then $
     message, 'band_extension does not support debris_supraglacial, firnice_temperature or refreezing_full'
   if band_ext_depth lt adv_addband0 * 10. then message, 'band_ext_depth must be at least adv_addband0*10 m'
-  if band_blend_depth le 0 or band_blend_dtdz le 0 then message, 'band_blend_depth and band_blend_dtdz must be positive'
+  if band_blend_depth le 0 or band_blend_dtdz le 0 or band_blend_dlnp le 0 then $
+    message, 'band_blend_depth, band_blend_dtdz and band_blend_dlnp must be positive'
+  if write_mb_elevationbands ne 'y' then print, 'NOTE: band_extension without write_mb_elevationbands: the extension is computed but not written'
 endif
 
 if meltmodel eq '3' then c2_tolerance = c2m3_tolerance

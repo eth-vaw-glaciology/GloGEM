@@ -49,13 +49,13 @@ endelse
    
 ; add bands at glacier tongue
 nb_mbref=nb
-if (advance eq 'y' or band_extension eq 'y') and nb gt 3 then begin
+if (advance eq 'y' and nb gt 3) or band_extension eq 'y' then begin
     adv_addband=adv_addband0
    if adv_calving lt 0 then adv_hmin=adv_calving else adv_hmin=10.
    if hmin[gg[g]]-adv_addband*10. lt adv_hmin then adv_addband=fix((hmin[gg[g]]-adv_hmin)/10)
    adv_addband=max([0,adv_addband])
-   ; bands the refreezing scaling averages over: the advance bands the calibration had (K26)
-   nb_mbref=nb+adv_addband
+   ; bands the refreezing scaling averages over: the advance bands the calibration had (K26; none below 4 bands)
+   if nb gt 3 then nb_mbref=nb+adv_addband
    ; band_extension: bands down to band_ext_depth below the glacier instead
    if band_extension eq 'y' then begin
       ; down to band_ext_depth below the glacier, but not below sea level

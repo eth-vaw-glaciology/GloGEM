@@ -458,11 +458,13 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                         sno_v=dblarr(nb) & sur_v=dblarr(nb) & snostor_v=dblarr(nb) & firn_v=firn & bal_v5=dblarr(5,nb)
                         ; parameters per band: the glacier's own down to its front, blending linearly into the
                         ; regional medians below it (w_v = 0 at and above the front), over band_blend_depth or
-                        ; more: the offset changes by at most band_blend_dtdz per metre, so air temperature still
-                        ; rises going down
+                        ; more: the offset changes by at most band_blend_dtdz per metre, the degree-day factors and
+                        ; c_prec by at most band_blend_dlnp (relative) per metre, so the balance still falls going down
                         v_ii=where(gl ne noval,v_ci) & if v_ci gt 0 then z_front_v=min(elev[v_ii]) else z_front_v=min(elev)
                         if v_ci gt 0 then i_front_v=min(v_ii) else i_front_v=0   ; lowest band with ice
                         blend_d_v=band_blend_depth > abs(t_offset-toff_reg)/band_blend_dtdz
+                        blend_d_v=blend_d_v > abs(alog(DDFice/ddfi_reg))/band_blend_dlnp > abs(alog(DDFsnow/ddfs_reg))/band_blend_dlnp
+                        blend_d_v=blend_d_v > abs(alog(c_prec/cprec_reg))/band_blend_dlnp
                         w_v=((z_front_v-elev)/blend_d_v > 0d) < 1d
                         toff_v=t_offset+w_v*(toff_reg-t_offset) & cprec_v=c_prec+w_v*(cprec_reg-c_prec)
                         ddfs_v=DDFsnow+w_v*(ddfs_reg-DDFsnow) & ddfi_v=DDFice+w_v*(ddfi_reg-DDFice)
