@@ -13,16 +13,15 @@ For users of GloGEM; the details and the evidence are in the entries below.
 - **New: GloGEMflow.** `use_flow_model='y'` runs a flowline ice-flow model, an IDL port of Zekollari et al. (2019), for every glacier whose present-day state it can reproduce; the other glaciers run on the Δh parameterisation in the same run. See [Flowline Model](../model-description/glacier-dynamics/flow-model.md) and the new settings in the [Settings Reference](../running-glogem/settings-reference.md).
 - **New: growth limit.** Every glacier is bounded once a year, on both geometry paths ({ref}`G12 <mc-g12>`).
 - **New: the GMIP4 ERA5 hindcast runs with changing geometry** ({ref}`G13 <mc-g13>`). Flow runs write `GloGEMflow_*` netCDF files.
-- **Fixed, climate input:** GMIP4 projections read the climate months late ({ref}`G1 <mc-g1>`); ERA5 and GCM came from neighbouring grid points ({ref}`G3 <mc-g3>`); the climate point depended on the batching ({ref}`G4 <mc-g4>`); lapse rate and variability on the per-point climate path ({ref}`G5 <mc-g5>`); lost longitudes ({ref}`G6 <mc-g6>`); speed ({ref}`G7 <mc-g7>`).
-- **Fixed, elsewhere:** glaciers never simulated ({ref}`G8 <mc-g8>`); glaciers turning NaN in the Δh parameterisation ({ref}`G9 <mc-g9>`, {ref}`G10 <mc-g10>`); Δh mass check and sea-level calving ({ref}`G11 <mc-g11>`); the calving-flux file ({ref}`G15 <mc-g15>`); `mass_bsl` ({ref}`G18 <mc-g18>`); negative netCDF values ({ref}`G19 <mc-g19>`); the flowline now uses the RGI 7.0 area correction ({ref}`F15 <mc-f15>`).
+- **Fixed, climate input:** projections read the climate months late, in GMIP4 ({ref}`G1 <mc-g1>`) and in CMIP6 and AMOC ({ref}`G2 <mc-g2>`; both also fixed on main since 2026-10-16); ERA5 and GCM came from neighbouring grid points ({ref}`G3 <mc-g3>`); the climate point depended on the batching ({ref}`G4 <mc-g4>`); lapse rate and variability on the per-point climate path ({ref}`G5 <mc-g5>`); lost longitudes ({ref}`G6 <mc-g6>`); speed ({ref}`G7 <mc-g7>`).
+- **Fixed, elsewhere:** glaciers never simulated ({ref}`G8 <mc-g8>`); glaciers turning NaN in the Δh parameterisation ({ref}`G9 <mc-g9>`, {ref}`G10 <mc-g10>`); Δh mass check and sea-level calving ({ref}`G11 <mc-g11>`); the calving-flux file ({ref}`G15 <mc-g15>`); `mass_bsl` ({ref}`G18 <mc-g18>`); negative netCDF values ({ref}`G19 <mc-g19>`); monthly netCDF time labels ({ref}`G20 <mc-g20>`, also on main); the flowline now uses the RGI 7.0 area correction ({ref}`F15 <mc-f15>`).
 - **Running:** the environment variables `GLOGEM_CONFIG` and `GLOGEM_LOGDIR`; the GMIP4 campaign scripts in `scripts/gmip4/` with a README ({ref}`S10 <mc-s10>`).
-- **Still open:** the month shift of the CMIP6 projections ({ref}`G2 <mc-g2>`), the monthly netCDF time labels ({ref}`G20 <mc-g20>`), the swapped ice-melt and snow-melt files ({ref}`K12 <mc-k12>`) and the other items of section 6.
+- **Still open:** the swapped ice-melt and snow-melt files ({ref}`K12 <mc-k12>`), refreezing that depends on the number of elevation bands ({ref}`K26 <mc-k26>`) and the other items of section 6.
 
 ```{admonition} If you read nothing else: bugs that are still in main
 :class: important
 
-- {ref}`G1 <mc-g1>`: GMIP4 projections read the climate 2 (NH) or 8 (SH) months late.
-- {ref}`G2 <mc-g2>`: the same shift in the CMIP6 projection branch (not fixed on any branch).
+- Fixed on main since 2026-10-16 (`fb7f9c0`): the month shift of all projections ({ref}`G1 <mc-g1>`, {ref}`G2 <mc-g2>`) and the monthly netCDF time labels ({ref}`G20 <mc-g20>`).
 - {ref}`G3 <mc-g3>`: the ERA5 and GCM series can come from neighbouring grid points, so the temperature jumps at 2025/2026 (single glaciers by up to 12.6 °C).
 - {ref}`G5 <mc-g5>`: new climate path (NorthAsia, LowLatitudes, Antarctic): the lapse rate is one month late, and the sub-monthly variability comes from the wrong cell and month.
 - {ref}`G6 <mc-g6>`: since 2026-09-15, monthly runs on the old climate path with a MIP other than GMIP4 or AMOC (the CMIP6 default and every calibration config) give glaciers west of 0° the climate of the region's westernmost ERA5 column.
@@ -153,8 +152,8 @@ Janosch decided on 2026-09-25 not to rerun the submitted v1 regions, and on 2026
 
 | ID | Title | Part | Status | Changes results? | In main? | Commit(s) |
 |---|---|---|---|---|---|---|
-| {ref}`G1 <mc-g1>` | GMIP4 projections read the climate 2 (NH) or 8 (SH) months late | core | fixed | yes, large | yes | `723a862`, `dac2343` |
-| {ref}`G2 <mc-g2>` | The same month shift in the CMIP6 projection branch | core | open | yes (CMIP6 runs) | yes | none |
+| {ref}`G1 <mc-g1>` | GMIP4 projections read the climate 2 (NH) or 8 (SH) months late | core | fixed, also on main | yes, large | no (since `fb7f9c0`) | `723a862`, `dac2343` |
+| {ref}`G2 <mc-g2>` | The same month shift in the CMIP6 and AMOC projection branch | core | fixed, also on main | yes (CMIP6 and AMOC runs) | no (since `fb7f9c0`) | `00756b7` |
 | {ref}`G3 <mc-g3>` | ERA5 and GCM series from neighbouring grid points: step at 2025/2026 | core | fixed | yes | yes | `8d9d040`, `4b4e9e8` |
 | {ref}`G4 <mc-g4>` | Climate grid point depends on how the region is split into batches | core | fixed | yes (batched runs) | yes | `78ffb9d` |
 | {ref}`G5 <mc-g5>` | New climate path: lapse rate one month off; sub-monthly variability from the wrong cell and month | core | fixed | yes, large (RGI 10, 16, 19) | yes | `ba586cf`, `04a3c33`, `9f7314a` |
@@ -172,7 +171,7 @@ Janosch decided on 2026-09-25 not to rerun the submitted v1 regions, and on 2026
 | {ref}`G17 <mc-g17>` | Calibration: silent nearest-ID fallback; region-wide fallback; SSP loop | core | fixed / warning added | no (log only) | yes (silent fallback) | `cc5a13f`, `9b11fff`, `f73a7c2` |
 | {ref}`G18 <mc-g18>` | `mass_bsl` written as a running total | core | fixed | yes (one output variable) | no (fixed in `86e4f4c`) | `86e4f4c` = `811cd41` |
 | {ref}`G19 <mc-g19>` | netCDF drops real negative values below −98 kg as missing | core | fixed (round 5, v3r5) | yes (per-glacier values) | yes | `cc23e6e` |
-| {ref}`G20 <mc-g20>` | Monthly netCDF time labels 3 (NH) or 9 (SH) months late | core | open in IDL; corrected in post-processing | no (labels only) | yes | `8993a0d`, `cc70ff7` (scripts) |
+| {ref}`G20 <mc-g20>` | Monthly netCDF time labels 3 (NH) or 9 (SH) months late | core | fixed for monthly runs, also on main | no (labels only) | no (since `fb7f9c0`) | `fb7f9c0`; `8993a0d`, `cc70ff7` (scripts) |
 | {ref}`G21 <mc-g21>` | Buffered per-glacier netCDF writes | core | done | bit-identical | — | `748dc8d` |
 | {ref}`G22 <mc-g22>` | Start year of the Δh geometry change | core | fixed | no for standard configs | edge case differs | `780520a`, `ae75e1e` |
 | {ref}`G23 <mc-g23>` | "dhdt" renamed "Δh parameterisation" | core | done | no | — | `1661cac` |
@@ -227,6 +226,7 @@ Janosch decided on 2026-09-25 not to rerun the submitted v1 regions, and on 2026
 | {ref}`K23 <mc-k23>` | Small high glaciers: too much winter snow, the snow line too low; spring snow too persistent | calibration | open (finding) | — | yes | none |
 | {ref}`K24 <mc-k24>` | Regional table overrides the c_prec bounds of a config; band winter balance never written | core | bounds open, low; band winter balance fixed | no | yes | `26e6fbe` (band winter balance) |
 | {ref}`K25 <mc-k25>` | Calibration tolerance used one-sidedly (+0.05 m w.e. a⁻¹ on 94 % of glaciers); small glaciers' targets about +0.25 too positive | calibration | open (finding) | yes (small) | yes | none |
+| {ref}`K26 <mc-k26>` | Refreezing depends on the number of elevation bands | core | open, to be fixed with the AMOC band extension | yes (small) | yes | none |
 
 ---
 
@@ -268,14 +268,15 @@ v3r5, with which the five sea-ending regions run, has every fix of v3 and in add
 - **Fix.** `723a862` (v2, v3; old climate path): the series starts at `tran[0]-1`, and ERA5 is used from its first year on (`ge min_ryear`). `dac2343` (v3; new climate path, `downscale_gcmdata_monthly_new.pro`): the same fix. Changing only the start year would not have worked on the new path: without the lower bound, 1939 found no ERA5 row and the series still began in January 1940.
 - **Test.** Old path: the runoff seasonal cycles of projection and hindcast now agree (offset 0.00 percentage points, against 20.6 and 30.9 before), and an independent review found an offset of 0 months in both hemispheres over 1940–2300. New path, flow off, projection against hindcast 1942–1995: NorthAsia Altay (74 glaciers) seasonal cycle identical (old code 34.66 percentage points off), balance −0.1311 (old −0.1672) m w.e./yr; LowLatitudes Andes (64 glaciers) −0.4138 (old −0.2954); 6 Andes glaciers differ only in 1946, by at most 0.040 m w.e., from snow carried over from the 1939 months (K3).
 - **Submissions.** All v1 regions carry it. v2 and v3 are fixed. Lander's Δh projections carry it (the same shift is visible in his submitted files). Hindcasts and calibrations are not affected. Janosch informed Lander on 2026-09-24; on 2026-09-25 he decided that the Δh submissions and our v1 submissions are not rerun.
-- **Main.** Still wrong: `downscale_gcmdata_monthly.pro:221/226/234` (GMIP4, old path) and `downscale_gcmdata_monthly_new.pro:224/229/237` (new path).
+- **Main.** Fixed on 2026-10-16: both commits copied unchanged onto main (`a03c189`, `760bb36`) and pushed with G2 and G20 (`fb7f9c0`), at Janosch's request directly, without a pull request.
 
 (mc-g2)=
-### G2. The same month shift in the CMIP6 projection branch (open)
+### G2. The same month shift in the CMIP6 and AMOC projection branch
 
-- **What is wrong.** The CMIP6 branch of both downscaling files labels the series from `tran[0]` and takes 1940 from the GCM (`gt min_ryear`): `downscale_gcmdata_monthly.pro:126/138` and `downscale_gcmdata_monthly_new.pro:130/142` in v3 (`:125/130/137` and `:130/135/142` on main). It came with Lander's `fafda41` (2026-06-25, "Similar implementation as for GMIP4 now for CMIP6").
-- **Status.** Deliberately left unchanged by `723a862` because GMIP4 does not use it and it was not tested. It is wrong on every branch and on main, and affects every CMIP6 projection run, including the CMIP6 runs of the englacial temperature work.
-- **What is needed.** A fix of the same kind as `723a862` in both files, tested by comparing projection and hindcast over the ERA5 period.
+- **What was wrong.** The CMIP6 branch of both downscaling files, which AMOC runs also take, labelled the series from `tran[0]` and took 1939/1940 from the GCM (`gt min_ryear`), so every month read the climate two months late (NH) or eight (SH), as in G1. It came with Lander's `fafda41` (2026-06-25, "Similar implementation as for GMIP4 now for CMIP6"). It was in every CMIP6 and AMOC projection made with main, including Lander's AMOC runs behind the IGM forcing of the AMOC study, and in the CMIP6 runs of the englacial temperature work.
+- **Fix.** `00756b7` (2026-10-16, on main and here): the same three changes as G1 in both files, and the series sized `(years+1)*12` for AMOC too (the AMOC-only `years*12` matched the shifted loop and would have been one year short).
+- **Test.** Geometry fixed, projection against the ERA5 hindcast of the same glaciers. Before: AMOC CESM RCP45_045sv, 59 CentralEurope glaciers, seasonal cycle 2 months early, annual balance off by up to 1.5 m w.e. in single years. After: started in 1950 and with the same number of bands as the hindcast, the AMOC, CMIP6 and GMIP4 projections are bit-identical to it over 1950–2025, in CentralEurope (0 of 53,808 glacier-months differ, each) and NewZealand (CMIP6 and GMIP4, 0 of 170,544). A 1940 start differs in 1940–1946 through the 1939 months (K3); a projection with the 10 advance bands differs slightly in refreezing (K26).
+- **Main.** The fix was made on main itself, as Janosch asked (2026-10-16): G1 copied unchanged, G2 and G20 on top, pushed as `fb7f9c0` without a pull request, and merged into `glogemflow-v3` (`769534d`).
 
 (mc-g3)=
 ### G3. ERA5 and GCM series from neighbouring grid points: a step at 2025/2026
@@ -445,9 +446,11 @@ Two things remain after `cc23e6e`:
 - Real negative monthly runoff does not only come from the flowline. Core GloGEM produces it too, when refreezing exceeds melt plus rain in a month: 107 glacier-months in the NorthAsia v3 output, for example 10.03490 under CESM2-WACCM ssp126 in July 2078 (tens of tonnes each).
 
 (mc-g20)=
-### G20. Monthly netCDF time labels are 3 (NH) or 9 (SH) months late (open in IDL)
+### G20. Monthly netCDF time labels were 3 (NH) or 9 (SH) months late
 
-The monthly series are stored in hydrological order (index 0 = October, or April in the southern hemisphere, of `tran[0]-1`), but `init_netcdf_projections.pro:102` (also `:342,361`) and `init_netcdf_hindcast.pro:83` stamp index 0 as January of `tran[0]`. **No IDL fix exists on any branch.** It is corrected only in post-processing: `8993a0d` gives every month its true date and `cc70ff7` adds `time_bounds`, `cell_methods`, whole calendar years (NaN for months the model does not simulate, October–December 1939 dropped) and a corrected time note (area and mass are the state at the start of hydrological year Y). The submitted v1 regions keep the labels as combined then (1 month off), so the submission contains two time conventions. Lander's files not checked. Main needs an IDL fix, or users of main need our combine script.
+The monthly series are stored in hydrological order (index 0 = October, or April in the southern hemisphere, of `tran[0]-1`), but `init_netcdf_projections.pro` (full, past and future files) and `init_netcdf_hindcast.pro` stamped index 0 as January of `tran[0]`. Our combine scripts rebuild the axis (`8993a0d` gives every month its true date; `cc70ff7` adds `time_bounds`, `cell_methods`, whole calendar years, NaN for months the model does not simulate with October–December 1939 dropped, and a time note: area and mass are the state at the start of hydrological year Y). The submitted v1 regions keep the labels as combined then (1 month off), so the submission contains two time conventions.
+
+**Fixed in IDL** by `fb7f9c0` (2026-10-16, on main and here) for monthly runs: one function, `nc_hydro_month_time`, builds all four axes. Checked on CMIP6 runs: CentralEurope 1939-10-01 … 2100-09-01, NewZealand 1939-04-01 … 2100-03-01, the dates the combine script assigns, so combining stays correct. Daily runs, and daily runs aggregated to monthly, keep their old labels: the aggregation sums calendar-month lengths from index 0, which has not been checked against the hydrological start.
 
 (mc-g21)=
 ### G21. Buffered per-glacier netCDF writes
@@ -914,6 +917,11 @@ Found 2026-10-14 (ice-temperature diagnostics; `glogemflow_icetemp/development_h
 - **Against GLAMOS** (34 series, 2000–2019): the Hugonnet targets of glaciers under 1 km² are about +0.25 m w.e. a⁻¹ too positive (median). Larger glaciers show no bias (+0.04 for measured series). Where GLAMOS measures only part of a larger RGI7 outline (Corvatsch 02103, Hohsaas 01112, Felskinn 01161), the gap is +0.6 to +1.0.
 - **Effect:** small high glaciers keep too much firn (K23). No change made.
 
+(mc-k26)=
+### K26. Refreezing depends on the number of elevation bands (open)
+
+`refreezing_parametrised.pro:27` scales the refreezing cap by `abs(mean(rf_cold))/30`, the mean over all `nb` bands. Bands without ice keep `rf_cold = 0` and pull the mean towards zero, so the 10 advance bands of a run with `advance='y'` lower the refreezing on the glacier, and any change in the number of bands changes the mass balance. Found 2026-10-16 in the G2 test: a projection with the advance bands and the ERA5 hindcast without them (`glacier_retreat='n'` switches `advance` off in `settings.pro`) differ in monthly refreezing by up to 0.05 mm w.e. d⁻¹, in 8 % of glacier-months, mostly May–June (59 CentralEurope glaciers); with the same bands they are bit-identical. `rf_cold` itself is reset every year (`glogem.pro`, inside the year loop). Planned fix, with the band extension of the AMOC work: divide by the number of bands the calibration saw.
+
 ## 7. Decisions log
 
 All decisions below were taken by Janosch Beer.
@@ -955,7 +963,7 @@ All decisions below were taken by Janosch Beer.
 
 ### Where the branches stand against main
 
-- `origin/main` is at `6ee55bc` (2026-10-09). All our branches split from it at `eb035d5` (2026-09-15); the last merges of main into our work were `635a888` and `e45574a` on that day.
+- `origin/main` is at `fb7f9c0` (2026-10-16): Lander's `6ee55bc` (2026-10-09) plus the month-shift fix (G1 copied from here, G2, G20). `glogemflow-v3` took all of main in `769534d` (2026-10-16), so it lacks nothing from main; `GloGEMflow` and the temperature worktrees split from main at `eb035d5` (2026-09-15).
 - **Main since the last check (`4e5d5a1`):** `5cbbbed` comments out a `print` in `read_gcmdata_monthly.pro`; `749e36f` makes the regional netCDF temperature skip NaN glacier values (`write_netcdf_glacier.pro`); `3d2d89c` is a merge; `6ee55bc` (Lander, "AMOC untill 3000 for 7 options") touches `check_tran.pro`, `settings.pro`, `read_gcmdata_monthly.pro`, `initialise_glaciermip4_vars.pro` and `initialise_netcdf_vars.pro`, for the AMOC runs only, and adds two debug `print` lines at the top of `check_tran.pro`. None of them fixes an item of this page; `749e36f` removes one symptom of G9 on main (a NaN regional temperature).
 - `glogemflow-v3` is 364 commits ahead of `origin/main` at `736a770` (the clean-up, before the commit of this page). `GloGEMflow` (`c400a50`) has 15 englacial temperature commits that are not in `glogemflow-v3` (G24).
 - From the merge base to `736a770`: 98 files, +18,927 / −390 lines. Added lines by folder: `test/` 8,285 (data of the temperature module), `procedures/flow/` 2,537, `flow_analysis/` 2,033 (the temperature notebook and notes), `scripts/gmip4/` 1,784, `procedures/initialise/` 1,155, `docs/` 912, `procedures/processing/` 706, `scripts/` outside `gmip4/` about 690 (temperature calibration and advection-field configs and scripts), `procedures/write/` 436, `glogem.pro` 198. `settings.pro` grows by 132 lines.
@@ -969,7 +977,7 @@ Planned: first merge `GloGEMflow` (the temperature work) and `glogemflow-v3` int
 | Merge | Conflicts and how to resolve them |
 |---|---|
 | `GloGEMflow` (`c400a50`) with `glogemflow-v3` | `meltmodel.pro` (6 places) and `calculatedebrismelt.pro` (1): the temperature work (`cea254f`) wraps each melt booking in `if mb_book then`, v3 (`d62db11`, G10) in `if ar_gl ne 0 then`. Keep both, `if mb_book then if ar_gl ne 0 then ...`, as the code already does for the snow line and refreezing. Everything else, including the files moved or removed in S10, merges automatically. |
-| `origin/main` (`6ee55bc`) with `glogemflow-v3` | `check_tran.pro` (2 places): our skip for reanalysis hindcasts (G13, `goto, check_tran_done`) against Lander's two debug `print` lines and his AMOC block. Keep both, with the label `check_tran_done:` after the AMOC block; ask Lander whether the prints stay. `read_climatepast_monthly_new.pro` (1): keep main's `;print, fn` and add our `era5_pt` line after it. `write_netcdf_glacier.pro` (1): keep ours (`nc_s_mbsl`); Lander's NaN fix for the temperature (`749e36f`) merges next to it. |
+| `origin/main` (`6ee55bc`) with `glogemflow-v3` (**done 2026-10-16**, `769534d`, with `fb7f9c0` and exactly these resolutions; tested: the SouthernAndes catchment of S10, hindcast and MRI-ESM2-0 ssp126 to 2300, gives all 23 `.dat` files, 17 spin-up files and every netCDF variable identical apart from the corrected monthly time labels; on 98 RGI6 glaciers of the AMOC study, fixed geometry to 3000, the result is byte-identical to main + fix) | `check_tran.pro` (2 places): our skip for reanalysis hindcasts (G13, `goto, check_tran_done`) against Lander's two debug `print` lines and his AMOC block. Keep both, with the label `check_tran_done:` after the AMOC block; ask Lander whether the prints stay. `read_climatepast_monthly_new.pro` (1): keep main's `;print, fn` and add our `era5_pt` line after it. `write_netcdf_glacier.pro` (1): keep ours (`nc_s_mbsl`); Lander's NaN fix for the temperature (`749e36f`) merges next to it. |
 
 Main has not touched `glogem.pro` since the split. The hard part is not git: a whole-branch merge brings the flow model, the temperature model and the GMIP4 scripts into main.
 
@@ -1002,8 +1010,6 @@ The list above misses core fixes that live only in `glogem.pro` or `settings.pro
 
 These need new work before or after the merge:
 
-- G2: the month shift and `gt min_ryear` in the CMIP6 projection branch;
-- G20: the monthly time labels in the IDL netCDF writers;
 - K1: the Δh advance-scheme runaway;
 - K13, K14, K16, K12: the settings rule, the `@`-include pattern (only in our temperature code), the ring-search hang and the swapped melt labels;
 - K20: the Antarctic flow hindcast;
