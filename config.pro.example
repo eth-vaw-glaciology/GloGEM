@@ -55,6 +55,10 @@
 ;calperiod_ID = 9                ; ID specifying calibration period (see settings.pro for list)
 ;caliphase_loop = 3              ; 1: default (no loop); 2: phases 1-2; 3: phases 1-3
 ;calibration_phase = '1'        ; starting calibration phase: 1: c_prec, 2: DDF_snow, 3: T-bias
+;calibrate_snowline = 'n'        ; 'y': c_prec from observed snow lines (daily runs; docs: calibration/snowline)
+;snowline_dataset = ''           ; snow-line observation file ('' = data/snowline/snowline_<period>/)
+;snowline_definition = 'highest_free' ; modelled snow line: 'highest_free' or 'p10' (Sommer et al. product)
+;calibrate_cprec_file = ''       ; calibration file whose c_prec is kept fixed for the glaciers it lists
 
 ; -----------------------------------------------------------------------
 ; CLIMATE DATA — MODEL INTERCOMPARISON PROJECT

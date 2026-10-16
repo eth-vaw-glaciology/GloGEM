@@ -14,24 +14,33 @@ if time_resolution eq 'monthly' then begin
    ; monthly transient snowline [m a.s.l.] - same logic as the daily snowline:
    ; among the glacierized bands (gl ne noval), find those that are snow-free
    ; (sno eq 0) and take the highest one; if the whole glacier is still snow-
-   ; covered, fall back to the lowest (terminus) elevation.
-   jj=where(sno eq 0 and gl ne noval,cj)
-   if cj gt 0 then begin
-      snowlinemon[ccmon-1]=gl[jj[cj-1]]
+   ; covered, fall back to the lowest (terminus) elevation. snowline_definition =
+   ; 'p10': the 10th percentile of the snow-covered area (snowline_p10).
+   if snowline_definition eq 'p10' then begin
+      snowlinemon[ccmon-1]=snowline_p10(sno,gl,area,elev,step,noval)
    endif else begin
-      positive_values=gl[where(gl ge 0)]
-      snowlinemon[ccmon-1]=positive_values[0]
+      jj=where(sno eq 0 and gl ne noval,cj)
+      if cj gt 0 then begin
+         snowlinemon[ccmon-1]=gl[jj[cj-1]]
+      endif else begin
+         positive_values=gl[where(gl ge 0)]
+         snowlinemon[ccmon-1]=positive_values[0]
+      endelse
    endelse
 endif else begin
    ; for entire catchment
    accday[ccmon-1]=total((psg)*area_ini)/total(area_ini) & refrday[ccmon-1]=total(refr*area_ini)/total(area_ini)
    rainday[ccmon-1]=total((plg)*area_ini)/total(area_ini)
    snowmeltday[ccmon-1]=total((snowmel)*area_ini)/total(area_ini) & icemeltday[ccmon-1]=total((icemel)*area)/total(area_ini)
-   jj=where(sno eq 0 and gl ne noval,cj)
-   if cj gt 0 then begin
-      snowlineday[ccmon-1]=gl[jj[cj-1]]
+   if snowline_definition eq 'p10' then begin
+      snowlineday[ccmon-1]=snowline_p10(sno,gl,area,elev,step,noval)
    endif else begin
-      positive_values = gl[where(gl ge 0)]
-      snowlineday[ccmon-1]=positive_values[0]
+      jj=where(sno eq 0 and gl ne noval,cj)
+      if cj gt 0 then begin
+         snowlineday[ccmon-1]=gl[jj[cj-1]]
+      endif else begin
+         positive_values = gl[where(gl ge 0)]
+         snowlineday[ccmon-1]=positive_values[0]
+      endelse
    endelse
 endelse

@@ -96,6 +96,21 @@ t_offset = 0.
 
 repeat_calibration = 'y'
 
+; snowline calibration of c_prec (von der Esch et al., in review), daily steps: c_prec is scanned,
+; phases 2-3 fit DDF / T_off at every value, and the value whose daily snow line fits the
+; observed transient snow lines best (weighted RMSE, spline minimum) is kept
+calibrate_snowline = 'n'
+snowline_cprec_range = [0.8, 3.0] ; scanned c_prec values [-]
+snowline_cprec_step = 0.2
+snowline_cal_crit = 0.05 ; [m w.e.] tolerance of the DDF / T_off fit at every scanned value
+snowline_dataset = '' ; observation file; '' = dir+'snowline/snowline_<period>/<RGI region>_snowline_median.dat'
+; modelled snow line (daily / monthly output and the snowline calibration): 'highest_free' the
+; highest snow-free band, or the lowest band if all are snow-covered; 'p10' the 10th percentile of
+; the elevation of the snow-covered area (the statistic of the Alpine product of Sommer et al.)
+snowline_definition = 'highest_free'
+; c_prec kept fixed for the glaciers listed in this calibration file (phase 1 does not fit them)
+calibrate_cprec_file = ''
+
 ; --- other options
 read_parameters = 'y'
 submonth_variability = 'y'
@@ -522,6 +537,32 @@ if glacier_retreat eq 'n' and hindcast_dynamic ne 'y' and use_flow_model eq 'n' 
 
 if read_parameters eq 'y' then calibrate = 'n'
 
+if total(snowline_definition eq ['highest_free', 'p10']) eq 0 then $
+  message, "snowline_definition must be 'highest_free' or 'p10'"
+if calibrate ne 'y' then begin
+  calibrate_snowline = 'n'
+  calibrate_cprec_file = ''
+endif
+if calibrate_snowline eq 'y' then begin
+  if calibrate_individual ne 'y' or calibrate_glacierspecific ne 'y' then $
+    message, "calibrate_snowline = 'y' needs calibrate_individual = 'y' and calibrate_glacierspecific = 'y'"
+  if time_resolution ne 'daily' or meltmodel ne '1' or caliphase_loop ne 3 then $
+    message, "calibrate_snowline = 'y' needs daily steps, meltmodel '1' and caliphase_loop = 3"
+  if calibrate_cprec_file ne '' then message, "calibrate_snowline and calibrate_cprec_file exclude each other"
+  if snowline_cprec_step le 0 or snowline_cprec_range[1] lt snowline_cprec_range[0] then $
+    message, 'snowline_cprec_range / snowline_cprec_step: empty scan'
+  snowline_cprec_values = snowline_cprec_range[0] + snowline_cprec_step * $
+    dindgen(floor((snowline_cprec_range[1] - snowline_cprec_range[0]) / snowline_cprec_step + 1d-6) + 1)
+  repeat_calibration = 'n' ; T_off starts at 0 at every scanned value, no pass with gridded T-offsets
+endif
+if calibrate_cprec_file ne '' then begin
+  if calibrate_individual ne 'y' then message, "calibrate_cprec_file needs calibrate_individual = 'y'"
+  if ~file_test(calibrate_cprec_file) then message, 'calibrate_cprec_file not found: ' + calibrate_cprec_file
+endif
+; glacier numbers in the observation and c_prec files are five digits, without the region
+if (calibrate_snowline eq 'y' or calibrate_cprec_file ne '') and region_id_loop[0] ne region_id_loop[1] then $
+  message, 'calibrate_snowline / calibrate_cprec_file: one region per run (region_id_loop)'
+
 if single_glacier ne '' then grid_run = 'n'
 
 ; dynamics only inside the reanalysis record; ERA5 currently ends 2025
@@ -557,6 +598,8 @@ if long_GCM ne '' then outf_names = ['Area', 'Volume', 'Annual_Balance_sfc', 'Wi
 ; If a user has cleared outf_names[14] (e.g. via a custom outf_names override or the
 ; long_GCM reduction above), re-enable it so the NetCDF writer does not crash.
 if write_netcdf eq 'y' and outf_names[14] eq '' then outf_names[14] = 'Discharge_gl'
+; the snowline calibration needs the daily snow line, kept with the same arrays
+if calibrate_snowline eq 'y' and outf_names[14] eq '' then outf_names[14] = 'Discharge_gl'
 
 ; Daily->monthly NetCDF aggregation only applies to daily runs that write NetCDF.
 if time_resolution ne 'daily' or write_netcdf ne 'y' then netcdf_daily_aggregated_monthly = 'n'

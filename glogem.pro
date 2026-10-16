@@ -190,10 +190,18 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
           ; Loop over three calibration phases
           caliphase_statistics=dblarr(4)   ; info on top and low values for c_prec
 
-          for cphl=1,double(caliphase_loop) do begin
+          ; snowline calibration: one pass (phases 2-3) per scanned c_prec, and one for the final
+          ; run at the minimum; otherwise a single pass
+          if calibrate_snowline eq 'y' then snowcal_npass=n_elements(snowline_cprec_values)+1 else snowcal_npass=1
+          if calibrate_snowline eq 'y' then cphl0=2 else cphl0=1
+          for snowcal_r=0,snowcal_npass-1 do begin
+
+          for cphl=cphl0,double(caliphase_loop) do begin
 
             if cphl gt 1 then calibration_phase=string(cphl,fo='(i1)')
             if calibration_phase eq '2' or calibration_phase eq '3' then read_parameters='y'
+            ; no parameter file yet before phase 2 of the first scanned value
+            if calibrate_snowline eq 'y' and snowcal_r eq 0 and cphl eq 2 then read_parameters='n'
 
             ; determine calibration periods and target
             if calibrate eq 'y' then begin
@@ -258,6 +266,15 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
             if catchment_selection ne '' then begin
               @procedures/initialise/catchment_selection.pro
 
+            endif
+
+            ; snowline calibration: observations and the record of the scan
+            if calibrate_snowline eq 'y' and snowcal_r eq 0 and cphl eq cphl0 then begin
+              @procedures/calibration/initialise_snowline_calibration.pro
+            endif
+            ; glaciers whose c_prec is given (phase 1 does not fit them)
+            if calibrate_cprec_file ne '' and cphl eq 1 then begin
+              @procedures/calibration/read_fixed_cprec.pro
             endif
 
             ; === CALIBRATION LOOP - for overall calibration on entire region
@@ -370,6 +387,11 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                     flow_gated_gl = 0   ; set by the spin-up quality gate in glogemflow_coupled.pro
                     if n_elements(n_growth_clamped) eq 0 then n_growth_clamped = 0
 
+                    ; snowline scan / given c_prec: whether and how often this glacier is run
+                    if calibrate_snowline eq 'y' or calibrate_cprec_file ne '' then begin
+                      @procedures/calibration/select_cprec_glacier.pro
+                    endif
+
                     for cal1=0,cal1max do begin
 
                       ; read hypsometry-file
@@ -432,6 +454,9 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
                       ; attribute specific parameter values
                       @procedures/calibration/apply_calibration_params.pro
+                      if calibrate_snowline eq 'y' or calibrate_cprec_file ne '' then begin
+                        @procedures/calibration/apply_cprec_override.pro
+                      endif
 
                       ; define arrays
                       gls=dblarr(nout,nb) & cnp=0
@@ -695,6 +720,9 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                       if cal1 ge cal1max and calibrate eq 'y' then begin
                         @procedures/calibration/apply_calibration_constraints.pro
                       endif
+                      if calibrate_cprec_file ne '' then begin
+                        @procedures/calibration/keep_fixed_cprec.pro
+                      endif
 
                       ; write hypsometry-evolution file
                       @procedures/write/write_hypsometry_evolution_file.pro
@@ -713,7 +741,12 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
                   ; write calibration file
                   if calibrate eq 'y' then begin
-                    @procedures/calibration/write_calibration_results.pro
+                    if calibrate_snowline eq 'y' then begin
+                      @procedures/calibration/select_snowline_minimum.pro
+                      @procedures/calibration/write_snowline_results.pro
+                    endif else begin
+                      @procedures/calibration/write_calibration_results.pro
+                    endelse
                   endif
 
                   cali_calflux=cali_calflux+mean(flux_calv)/1000.*ar_gl
@@ -792,10 +825,20 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
             for fid=10,10+n_elements(where(outf_names ne ''))-1 do close,string(fid,fo='(i2)')
           endif
 
+          if calibrate_snowline eq 'y' then if total(snowcal_id ne '' and snowcal_flag ge 0) eq 0 then $
+            message, 'snowline calibration: none of the glaciers run has observations in the modelled period'
+
           ; calculate statistics for calibration phases
           @procedures/calibration/calculate_calibration_stats.pro
 
         endfor                          ; calibration phases
+
+        if calibrate_snowline eq 'y' then begin
+          @procedures/calibration/write_snowline_log.pro
+          if snowcal_finished then break
+        endif
+
+        endfor                          ; snowline scan
 
         print, 'FINISHED region !!! '+region+' !!! '+clim_subregion
         if reanalysis_direct ne 'y' then print, '    calculated with GCM: '+GCM_model[gcms]+' / '+GCM_rcp[rcps]
