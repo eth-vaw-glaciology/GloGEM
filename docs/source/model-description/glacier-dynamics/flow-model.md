@@ -48,7 +48,7 @@ Limits and rules:
 - If a late length attempt fails, the attempt closest to the observed length is kept. The ELA bias is clamped at ±500 m.
 - The survey-year state is scaled to the observed volume before the run starts.
 
-The spin-up takes most of a flow glacier's run time, so its result is cached per glacier in `<dirres>/spinup_cache/<id>_y<year>_spinup.sav`. Failed spin-ups are cached as `<id>_y<year>_spinup_failed.txt`. The year is part of the name because an ERA5 hindcast spins up to the survey year and a projection to the year after. Each run writes a table of its spin-ups to `<dirres>/<time_resolution>/<Region>/calibration/flow_spinup_stats_<catchment>.dat`.
+The spin-up takes most of a flow glacier's run time, so its result is cached per glacier in `<dirres>/spinup_cache/rgi<V>_<Region>_<id>_y<year>_spinup.sav`. Failed spin-ups are cached as `rgi<V>_<Region>_<id>_y<year>_spinup_failed.txt`. The year is part of the name because an ERA5 hindcast spins up to the survey year and a projection to the year after; RGI version and region because the same 5-digit id names different glaciers in RGI6 and RGI7. Each run writes a table of its spin-ups to `<dirres>/<time_resolution>/<Region>/calibration/flow_spinup_stats_<catchment>.dat`.
 
 ```{important}
 Any change to the climate data, the calibration or the flow code makes the cache invalid. Delete the whole `spinup_cache/` folder (both file kinds) before the next run.

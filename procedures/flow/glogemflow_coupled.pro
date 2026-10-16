@@ -59,7 +59,8 @@ if n_elements(flow_initialised) eq 0 then begin
   ; the ~5-minute calibration loop entirely.
   spinup_cache_dir  = dirres + 'spinup_cache/'
   ; keyed by the spin-up year as well: a hindcast spins up one year earlier than a projection
-  spinup_key        = strtrim(id[gg[g]], 2) + '_y' + strtrim(tran[0] + ye - 1, 2)
+  ; and by RGI version and region: the same 5-digit id names different glaciers in RGI6 and RGI7
+  spinup_key        = 'rgi' + RGIversion + '_' + dir_region + '_' + strtrim(id[gg[g]], 2) + '_y' + strtrim(tran[0] + ye - 1, 2)
   spinup_cache_file = spinup_cache_dir + spinup_key + '_spinup.sav'
   ; Failure verdicts are cached as well (2026-09-08). A failed spin-up used to be
   ; recomputed for the same glacier in every GCM loop of a session and in every

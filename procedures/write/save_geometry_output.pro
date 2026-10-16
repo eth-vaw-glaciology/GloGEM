@@ -89,7 +89,8 @@ if ye eq years-1 then begin
   save_file = out_dir + '/geometry_' + id[gg[g]] + '_' + scenario_tag + '.sav'
   save, geometry_hist, file=save_file
 
-  if use_flow_model eq 'y' and n_elements(thick_dx) gt 0 then begin
+  ; only glaciers that ran the flow model: thick_dx of an earlier glacier survives in the session
+  if use_flow_model eq 'y' and n_elements(flow_initialised) gt 0 then begin
     flow_hist = { $
       thick:           flow_thick_hist, $
       sur:             flow_sur_hist, $
