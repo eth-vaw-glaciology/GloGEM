@@ -18,6 +18,7 @@ if cal1 eq 0 then begin
       cal_crit=target_uc
    endif else begin
       cal_crit=0.02*double(calibration_phase)+(0.04)/(fc-1.)
+      if calibrate_snowline eq 'y' then cal_crit=snowline_cal_crit
    endelse
 endif
 
