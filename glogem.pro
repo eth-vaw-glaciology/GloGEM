@@ -214,6 +214,11 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
             if read_parameters eq 'y' then begin
               @procedures/calibration/read_calibration_params.pro
+              if band_extension eq 'y' then begin
+                ; regional parameters the band extension blends into below the fronts (virtual_ice_balance.pro)
+                toff_reg=median(cali_toff,/even) & cprec_reg=median(cali_cprec,/even)
+                ddfs_reg=median(cali_ddfsnow,/even) & ddfi_reg=median(cali_ddfice,/even)
+              endif
             endif
 
             ; including gridded T-offsets in calibration
@@ -451,6 +456,16 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                       if band_extension eq 'y' then begin
                         ; virtual ice surface on every band (virtual_ice_balance.pro): snow, surface type, firn, last 5 balances
                         sno_v=dblarr(nb) & sur_v=dblarr(nb) & snostor_v=dblarr(nb) & firn_v=firn & bal_v5=dblarr(5,nb)
+                        ; parameters per band: the glacier's own down to its front, blending linearly into the
+                        ; regional medians below it (w_v = 0 at and above the front), over band_blend_depth or
+                        ; more: the offset changes by at most band_blend_dtdz per metre, so air temperature still
+                        ; rises going down
+                        v_ii=where(gl ne noval,v_ci) & if v_ci gt 0 then z_front_v=min(elev[v_ii]) else z_front_v=min(elev)
+                        if v_ci gt 0 then i_front_v=min(v_ii) else i_front_v=0   ; lowest band with ice
+                        blend_d_v=band_blend_depth > abs(t_offset-toff_reg)/band_blend_dtdz
+                        w_v=((z_front_v-elev)/blend_d_v > 0d) < 1d
+                        toff_v=t_offset+w_v*(toff_reg-t_offset) & cprec_v=c_prec+w_v*(cprec_reg-c_prec)
+                        ddfs_v=DDFsnow+w_v*(ddfs_reg-DDFsnow) & ddfi_v=DDFice+w_v*(ddfi_reg-DDFice)
                       endif
                       baly=dblarr(years,nb)
                       ; initialising some output arrays
@@ -492,7 +507,9 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
                         ; define arrays
                         bal=dblarr(nb) & melt=bal & acc=bal & refreeze=bal
-                        if band_extension eq 'y' then bal_v=dblarr(nb)   ; balance as if ice (virtual_ice_balance.pro)
+                        if band_extension eq 'y' then begin   ; balance as if ice and its refreezing state (virtual_ice_balance.pro)
+                          bal_v=dblarr(nb) & rf_cold_v=dblarr(nb) & rf_ind_v=dblarr(nb)
+                        endif
                         debris_red_factor=dblarr(nb)+snoval
                         rf_ind=dblarr(nb) & rf_cold=rf_ind
                         ii=where(gl ne noval,ci) & if ci gt 0 then ar_gl=total(area[ii]) else ar_gl=0
@@ -547,10 +564,6 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                             ; two melt models are available: 1: temperature-index model, 3: simplified energy balance model (only for monthly time steps)
                             @procedures/processing/meltmodel.pro
 
-                            ; --- every band as if its surface were ice; glogem.pro keeps it for the bands without ice
-                            if band_extension eq 'y' then begin
-                              @procedures/processing/virtual_ice_balance.pro
-                            endif
 
                             ; --- refreezing (positive)
 
@@ -563,6 +576,12 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                                 ; no refreezing
                               endelse
                             endelse
+
+                            ; --- every band as if its surface were ice (needs this month's refreezing scaling);
+                            ; glogem.pro keeps it for the bands without ice
+                            if band_extension eq 'y' then begin
+                              @procedures/processing/virtual_ice_balance.pro
+                            endif
 
                             ; --- firn/ice temperatures
                             ; (separate workflow as the target and setup differs)
