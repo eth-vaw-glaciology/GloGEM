@@ -17,5 +17,6 @@ if calibrate_glacierspecific eq 'n' then begin
    if ci eq 0 then print, '!!! No calibration data available for this region / period !!!'
    target=calimb_bn[ii[0]] & target_uc=calimb_uc[ii[0]] & cran=[calimb_p0[ii[0]],calimb_p1[ii[0]]]
 endif else begin
-   target_spec=calimb_bn & cran=[min(calimb_p0),max(calimb_p1)]
+   ; one spin-up year before the target period (hydrological years p0..p1)
+   target_spec=calimb_bn & cran=[min(calimb_p0)-1,max(calimb_p1)]
 endelse

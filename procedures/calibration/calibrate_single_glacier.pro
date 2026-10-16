@@ -29,7 +29,8 @@ if calibrate_glacierspecific eq 'y' then begin
    if ci gt 1 then target=mean(target_spec[ccj]) $
      else target=target_spec[ccj[0]]
    n=indgen(years)+tran[0]
-   pp=where(n gt calimb_p0[ccj[0]] and n le calimb_p1[ccj[0]])
+   ; all hydrological years of the target period, p0..p1 (2000_2020: 2000-2019)
+   pp=where(n ge calimb_p0[ccj[0]] and n le calimb_p1[ccj[0]])
    c_mb=mean(mb[pp])-min([2,mean(flux_calv[pp])])
 endif
 

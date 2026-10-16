@@ -14,6 +14,10 @@ Each glacier is calibrated individually using the reanalysis product specified i
 ## Data Sources
 
 - For RGIv6: **Geodetic Mass Balance**: [Hugonnet et al., 2021](https://www.nature.com/articles/s41586-021-03436-z), for the period 2000–2020 or 2000-2010 or 2010-2020.
+- The modelled balance is averaged over the hydrological years of the period: 2000–2020 means the
+  hydrological years 2000–2019 (October 1999 – September 2019), 20 years. The calibration run
+  starts one year earlier, as a spin-up: started without the previous year's snow, the first model
+  year comes out too negative (by up to 0.1 m w.e.).
 - For RGIv7: - not available so far
  
 ---
