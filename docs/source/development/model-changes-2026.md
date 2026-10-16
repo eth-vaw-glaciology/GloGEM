@@ -182,6 +182,9 @@ Janosch decided on 2026-09-25 not to rerun the submitted v1 regions, and on 2026
 | {ref}`G28 <mc-g28>` | RGI6 survey year −999 was not treated as missing | core | fixed | yes (25 RGI6 glaciers in 08 and 11) | yes | `9bfc181` |
 | {ref}`G29 <mc-g29>` | `amoc_end_year`; every run keeps a copy of its config | core | done | no | — | `a1cdd61` |
 | {ref}`G30 <mc-g30>` | Mass balance below the glacier front (`band_extension`) | core | new (AMOC) | no unless switched on | — | `7e79e2d`, `edc87e1`, `f901a87` |
+| {ref}`G31 <mc-g31>` | Geodetic target averaged over 19 of its 20 years; now all 20 after one spin-up year | core (calibration) | fixed; pushed for main (`fix/geodetic-target-period`) | yes, small | no (the bug is in main) | `a1fb2fa`; local GloGEMflow `d075c98` |
+| {ref}`G32 <mc-g32>` | `refreezing_full` stopped without the firn/ice temperature model (`TL_RF` undefined) | core | fixed on `snowline-calibration` | no (it ran only with the temperature model) | no (the bug is in main) | `07d694d` |
+| {ref}`G33 <mc-g33>` | Snowline (TSLA) calibration of c_prec, fixed c_prec from a file, snow line as p10 | core (calibration) | new, on `snowline-calibration` | no unless switched on | her one-script version only | `6528443`, `54497c5`, `c7a477c` |
 | {ref}`F1 <mc-f1>` | Port of MATLAB GloGEMflow to IDL and coupling to GloGEM | flow | done | — | not in main | `baa5c7b`, `020e81e`, ... |
 | {ref}`F2 <mc-f2>` | Flow → Δh handover: frozen, NaN or resurrected glaciers, lost year | flow | fixed | yes | not in main | `a473e25`, `61ac7d4`, `11ca640`, `5dfd530`, `df8bdd4` |
 | {ref}`F3 <mc-f3>` | Spin-up quality gate | flow | fixed | yes | not in main | `5dfd530` |
@@ -236,6 +239,9 @@ Janosch decided on 2026-09-25 not to rerun the submitted v1 regions, and on 2026
 | {ref}`K25 <mc-k25>` | Calibration tolerance used one-sidedly (+0.05 m w.e. a⁻¹ on 94 % of glaciers); small glaciers' targets about +0.25 too positive | calibration | open (finding) | yes (small) | yes | none |
 | {ref}`K26 <mc-k26>` | Refreezing depends on the number of elevation bands | core | fixed where bands are added (`band_extension`); plain runs unchanged | yes (small) | yes | `7e79e2d` |
 | {ref}`K27 <mc-k27>` | Parametrised refreezing: one common amount for all refreezing bands of a month | core | open (finding) | yes | yes | none |
+| {ref}`K28 <mc-k28>` | Gridded T_off round skips the first grid row and column | core (calibration) | open, latent | yes (those glaciers) | yes | none |
+| {ref}`K29 <mc-k29>` | Gridded T_off couples the glaciers of one grid cell | core (calibration) | by design; documented | yes (neighbours) | yes | none |
+| {ref}`K30 <mc-k30>` | Snow lines ask for less snow than the regional c_prec bounds allow; autumn snow too early | calibration | open (finding) | — | yes | none |
 
 ---
 
@@ -571,6 +577,55 @@ a blend depth that ignored the degree-day factors, small glaciers without extens
 byte-identical; with it, glacier-wide output identical to main + fix with the 10 advance bands; no band-year below
 a front rises going down; belev 1940–3000, no −99, written in f9.3. Details and figures: AMOC development history,
 chapter 4.
+
+(mc-g31)=
+### G31. Geodetic target averaged over 19 of its 20 years; now all 20 after one spin-up year
+
+The glacier-specific calibration averaged the modelled balance over hydrological years p0+1..p1
+(`calibrate_single_glacier.pro`: `n gt calimb_p0`). For `calibrate_glacierspecific_period = '2000_2020'`
+(Hugonnet et al., 2021: 2000-01-01 to 2020-01-01) that is 2001–2019, 19 years (October 2000 – September 2019):
+January–September 2000 and October–December 2019 were left out. In the code since its first commit (`702b3b6`)
+and in the older one-script versions. OGGM 1.6.2 averages calendar years 2000–2019 (`np.arange(2000, 2020)`).
+Now the run starts one year before the period (`determine_calibration_target.pro`: `cran = [min(p0) − 1,
+max(p1)]`) and the average covers p0..p1 (`n ge`): 20 hydrological years, October 1999 – September 2019, the
+same length as the target, three months earlier. The spin-up year is needed: started in 2000 without the previous
+year's snow, the year-2000 balance comes out up to 0.106 m w.e. too negative (mean 0.031); with one spin-up year
+the 20-year mean is within 0.002 m w.e. of a run with two (forward runs from 1998, 1999 and 2000, 23 Alpine
+calibration glaciers, RGI7, ERA5 monthly). Effect on those 23 glaciers: the old 19-year mean lay 0.027 m w.e.
+below the 20-year mean (0.002–0.050); c_prec changes on 1 glacier, DDF on 12 (mean +0.011), T_off on 10 (mean
++0.019 °C, at most +0.21). Regional calibration unchanged. Branch `fix/geodetic-target-period` (from main,
+pushed, pull request to open); the same commit for the shared GloGEMflow is prepared locally
+(`fix/geodetic-target-period-glogemflow`, not pushed).
+
+(mc-g32)=
+### G32. `refreezing_full` stopped without the firn/ice temperature model
+
+`refreezing_full = 'y'` stopped with "Variable is undefined: TL_RF" whenever `firnice_temperature = 'n'`, i.e.
+in every calibration. The state arrays `te_rf`/`tl_rf` are set in `initialise_firnicetemp_spinup.pro`, which runs
+only with the temperature model; the one-script GloGEM set them for every glacier, and the modular split
+(`30e3b58`) moved the line. Now also set in `initialise_output_arrays.pro`; with the temperature model on, the
+same zeros are set again, so runs that worked are unchanged (gate: calibrations byte-identical). Found when
+reproducing von der Esch et al.'s test glaciers with her settings. On `snowline-calibration` (`07d694d`); main
+has the bug.
+
+(mc-g33)=
+### G33. Snowline (TSLA) calibration of c_prec (von der Esch et al., in review)
+
+Ported from her one-script daily GloGEM (branch `Snowline-calibration`) into procedures, on the local branch
+`snowline-calibration`; documentation `docs/source/calibration/snowline.md` there. `calibrate_snowline = 'y'`
+(daily runs): c_prec is scanned (default 0.8–3.0, step 0.2); at each value phases 2–3 fit DDF and T_off (tolerance
+0.05 m w.e.); the weighted RMSE (1/σ) of the daily snow line against observed snow lines picks c_prec (spline
+minimum at the first rise). `calibrate_cprec_file` keeps c_prec fixed from a file in a standard calibration
+(carries the daily result into monthly runs). `snowline_definition = 'p10'` computes the model's snow line as
+the 10th percentile of the elevation of the snow-covered area, the statistic of the Alpine product of Sommer et
+al. (ESSD essd-2026-35); her definition (highest snow-free band, else the lowest band) stays the default. With
+hers, a fully snow-covered day compares the lowest band with the glacier's 10th-percentile elevation (about
+400 m on Morteratsch, 1100 m on Bossons), the RMSE hardly depends on c_prec, and on 12 Alpine glaciers 10 stop at
+the lowest value. Gates: switches off byte-identical (calibrations and forward runs, daily and monthly); RMSE,
+p10 and spline step equal to Python replicas; an independent review's findings fixed. Her script has two bugs the
+port avoids: `cali_id = transpose(id)` (her line 657) takes the phase-3 DDF from another glacier in catchments
+spanning several grid cells; a glacier without observations was scored against the last observation of the file.
+Her files use calendar days (day 366) and contain observations with σ = 0 (left out).
 
 ## 4. GloGEMflow items
 
@@ -1020,6 +1075,32 @@ Found 2026-10-14 (ice-temperature diagnostics; `glogemflow_icetemp/development_h
 
 `refreezing_parametrised.pro` sets `refr[ii[valid]] = min([[mel[ii[valid]], rf_melcrit*scaling_annual_temp*firn[ii[valid]]]], dimension=1)`. The inner brackets concatenate both vectors into one, so `min` returns a single number, the smallest melt or cap among all refreezing bands, and every refreezing band gets it (checked in IDL 2026-10-16: melts 0.30, 0.05, 0.20 and cap 0.10 give 0.05 for all three; the per-band intent gives 0.10, 0.05, 0.10). Refreezing is therefore smaller than intended when bands melt differently. It is in every GloGEM run on all branches and in all calibrations, which absorbed it; unchanged so far (decision pending). The virtual model of G30 uses the same expression, so it reproduces the glacier bands exactly.
 
+(mc-k28)=
+### K28. Gridded T_off round skips the first grid row and column (open, latent)
+
+`read_toffset_grid.pro` averages the first-round T_off per grid cell in loops `for i=1,max(gx)` and
+`for j=1,max(gy)`, but cells are numbered from 0 (`printf,4,...,gx,gy` in `write_calibration_results.pro`). Glaciers
+in cells with gx = 0 or gy = 0 keep `toff_data = 0` and start the second round from T_off 0 instead of their cell's
+mean. Found in the review of G33 (2026-10-16); not changed.
+
+(mc-k29)=
+### K29. Gridded T_off couples the glaciers of one grid cell (by design; documented)
+
+With `t_offgrid = y` (CentralEurope) and `repeat_calibration = 'y'`, every glacier starts the second round from
+the mean first-round T_off of its cell. A glacier whose parameters change (e.g. a fixed c_prec, G33) therefore
+shifts its neighbours slightly (Sphinxgrat 3.17 → 3.16 °C in the snowline test). For a strict before/after
+comparison, `repeat_calibration = 'n'`.
+
+(mc-k30)=
+### K30. Snow lines ask for less snow than the regional c_prec bounds allow; autumn snow too early (open, finding)
+
+With the Alpine snow lines of Sommer et al. (p10, raw, May–September, scan 0.4–3.0, ERA5 daily), 8 of 12 calibration
+glaciers of 1 km² or more fit best at c_prec ≤ 1.13; only Morteratsch (2.15) and Hintereis (1.87) ask for more,
+and 4 still improve at 0.4 (flat curves, not physical). The regional monthly table bounds c_prec to 1.3–2.3; 21 of
+23 calibration glaciers sit at 1.3. After the snowline calibration with all months, October–November hold 45 % of
+the remaining snow-line error: the model snows onto the lower glacier too early. Details: ice-temperature
+development history, chapter 9.
+
 ## 7. Decisions log
 
 All decisions below were taken by Janosch Beer.
@@ -1054,6 +1135,8 @@ All decisions below were taken by Janosch Beer.
 | 2026-10-01 | Fix the flowline's missing RGI 7.0 area correction on the branch (not in any submission). | F15 |
 | 2026-10-12 | Push the four GMIP4 tags to GitHub. | Tags |
 | 2026-10-12 | Clean the branch for the merge: reusable GMIP4 scripts to `scripts/gmip4/`, one-off scripts removed from the tip (kept in the tags); the merge itself later. | S10 |
+| 2026-10-16 | Geodetic target: all 20 hydrological years of the period, after one spin-up year. | G31 |
+| 2026-10-16 | Snowline calibration with the Sommer snow lines: p10 definition, raw snow lines, May–September, scan 0.4–3.0; a glacier keeps its snowline c_prec only where the snow lines fix it (diagnostic). | G33 |
 
 ---
 
