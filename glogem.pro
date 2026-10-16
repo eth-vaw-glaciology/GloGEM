@@ -231,7 +231,8 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
             @procedures/read/read_glacier_inventory_batchfile.pro
 
             ; checking whether survey-year/inventory-year is known and filling up with average if necessary
-            ii=where(survey_year ne noval,ci) & jj=where(survey_year eq noval,cj)
+            ; missing survey year: noval (-9999) in RGI7, -999 in RGI6
+            ii=where(survey_year gt 0,ci) & jj=where(survey_year le 0,cj)
             if ci gt 0 and cj gt 0 then survey_year[jj]=mean(survey_year[ii])
 
             ; if find_startyear eq 'y' then tran(0)=max([1980,min(survey_year)])
