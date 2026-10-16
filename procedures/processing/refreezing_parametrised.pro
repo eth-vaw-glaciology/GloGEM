@@ -21,13 +21,14 @@ compile_opt idl2
 ii = where(gl ne noval, ci)
 
 if ci gt 0 then begin
-   ; Update rf_cold for all valid indices
+   ; Update rf_cold for all valid indices; the scaling averages over the band count the
+   ; calibration had (nb_mbref, read_hypsometryfile.pro), not over extra empty bands (K26)
    if time_resolution eq 'monthly' then begin
       rf_cold[ii] = rf_cold[ii] + tg[ii]
-      scaling_annual_temp = abs(mean(rf_cold)) / 30.
+      scaling_annual_temp = abs(total(rf_cold) / nb_mbref) / 30.
    endif else begin
       rf_cold[ii] = rf_cold[ii] + tg[ii] / 30.
-      scaling_annual_temp = abs(mean(rf_cold)) / 10.
+      scaling_annual_temp = abs(total(rf_cold) / nb_mbref) / 10.
    endelse
 
    ; Apply conditions as a mask

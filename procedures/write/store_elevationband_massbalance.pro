@@ -23,6 +23,13 @@ if write_mb_elevationbands eq 'y' then begin
    if bal_month eq dd_thresholds[0] then if m eq dd_thresholds[0]-1 then elev_bmb[ye,*]=bal
    if bal_month eq dd_thresholds[2] then if m eq dd_thresholds[2]-1 then elev_refr[ye,*]=refreeze*1000.
    if bal_month eq dd_thresholds[0] then if m eq dd_thresholds[0]-1 then elev_refr[ye,*]=refreeze*1000.
+   ; band_extension: bands without ice get the balance an ice surface would have (virtual_ice_balance.pro)
+   if band_extension eq 'y' and ci gt 0 then begin
+      if bal_month eq dd_thresholds[2] then if m eq dd_thresholds[0] then elev_bwb[ye,ii]=bal_v[ii]
+      if bal_month eq dd_thresholds[0] then if m eq dd_thresholds[2] then elev_bwb[ye,ii]=bal_v[ii]
+      if bal_month eq dd_thresholds[2] then if m eq dd_thresholds[2]-1 then elev_bmb[ye,ii]=bal_v[ii]
+      if bal_month eq dd_thresholds[0] then if m eq dd_thresholds[0]-1 then elev_bmb[ye,ii]=bal_v[ii]
+   endif
    if eval_mbelevsensitivity eq 'y' then begin
       if bal_month eq dd_thresholds[2] then if m eq dd_thresholds[2]-1 then elev_mbsensall[count_mbelevsens+1,ye,*]=bal
       if bal_month eq dd_thresholds[0] then if m eq dd_thresholds[0]-1 then elev_mbsensall[count_mbelevsens+1,ye,*]=bal

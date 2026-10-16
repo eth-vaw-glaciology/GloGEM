@@ -254,6 +254,8 @@ adv_calving = -100. ; [m] terminal bed elevation (0 = no calving)
 adv_fcrit = 2. ; [m/a] elevation gains above this are redistributed
 adv_terminusfraction = 0.2
 adv_lookup = 'n'
+band_extension = 'n' ; 'y': mass balance on bands down to band_ext_depth below the glacier, as if they were ice (flow model, IGM forcing)
+band_ext_depth = 1500. ; [m] depth of the band extension below the lowest band
 
 ; --- calving (Oerlemans & Nick, 2005; marine-terminating only)
 frontal_ablation = 'y'
@@ -512,6 +514,9 @@ if use_flow_model eq 'y' then advance = 'y' ; flow model requires advance bands
 if flow_gridend_outflow ne 'frontal' and flow_gridend_outflow ne 'melt_if_land' then $
   message, 'flow_gridend_outflow must be ''frontal'' or ''melt_if_land'', not ''' + strtrim(flow_gridend_outflow, 2) + ''''
 if glacier_retreat eq 'n' and hindcast_dynamic ne 'y' and use_flow_model eq 'n' then advance = 'n'
+if band_extension eq 'y' and meltmodel ne '1' then message, 'band_extension needs meltmodel ''1'''
+if band_extension eq 'y' and glacier_retreat eq 'y' then $
+  message, 'band_extension is not coupled to the geometry change yet; use it with glacier_retreat=''n'''
 
 if read_parameters eq 'y' then calibrate = 'n'
 

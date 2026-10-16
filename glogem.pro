@@ -447,6 +447,10 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
                       sur=dblarr(nb) & sno=sur & snostor=sur
                       firn=sur & ff=where(elev gt hmed[gg[g]],ci) & if ci gt 0 then firn[ff]=1
+                      if band_extension eq 'y' then begin
+                        ; virtual ice surface on every band (virtual_ice_balance.pro): snow, surface type, firn, last 5 balances
+                        sno_v=dblarr(nb) & sur_v=dblarr(nb) & snostor_v=dblarr(nb) & firn_v=firn & bal_v5=dblarr(5,nb)
+                      endif
                       baly=dblarr(years,nb)
                       ; initialising some output arrays
                       @procedures/initialise/initialise_output_arrays.pro
@@ -487,6 +491,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
                         ; define arrays
                         bal=dblarr(nb) & melt=bal & acc=bal & refreeze=bal
+                        if band_extension eq 'y' then bal_v=dblarr(nb)   ; balance as if ice (virtual_ice_balance.pro)
                         debris_red_factor=dblarr(nb)+snoval
                         rf_ind=dblarr(nb) & rf_cold=rf_ind
                         ii=where(gl ne noval,ci) & if ci gt 0 then ar_gl=total(area[ii]) else ar_gl=0
@@ -540,6 +545,11 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                             ; --- melt (positive)
                             ; two melt models are available: 1: temperature-index model, 3: simplified energy balance model (only for monthly time steps)
                             @procedures/processing/meltmodel.pro
+
+                            ; --- every band as if its surface were ice; glogem.pro keeps it for the bands without ice
+                            if band_extension eq 'y' then begin
+                              @procedures/processing/virtual_ice_balance.pro
+                            endif
 
                             ; --- refreezing (positive)
 
@@ -641,6 +651,15 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
                         ; calculate balance - store results
                         @procedures/processing/finalize_annual_massbalance.pro
+
+                        ; virtual snow store and firn as finalize_annual_massbalance.pro: firn where the 5-year mean balance is positive
+                        if band_extension eq 'y' then begin
+                          snostor_v=sno_v
+                          bal_v5=shift(bal_v5,-1,0) & bal_v5[4,*]=bal_v
+                          if ye gt 4 then begin
+                            firn_v=dblarr(nb) & v_ii=where(total(bal_v5,1)/5d gt 0,v_ci) & if v_ci gt 0 then firn_v[v_ii]=1
+                          endif
+                        endif
 
                         ; === DEBRIS MODEL
                         ; annually adapting debris cover extent and thickness

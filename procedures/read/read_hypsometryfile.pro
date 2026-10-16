@@ -48,11 +48,20 @@ endif else begin   ; checks relevant to RGIv7.0
 endelse
    
 ; add bands at glacier tongue
-if advance eq 'y' and nb gt 3 then begin
+nb_mbref=nb
+if (advance eq 'y' or band_extension eq 'y') and nb gt 3 then begin
     adv_addband=adv_addband0
    if adv_calving lt 0 then adv_hmin=adv_calving else adv_hmin=10.
    if hmin[gg[g]]-adv_addband*10. lt adv_hmin then adv_addband=fix((hmin[gg[g]]-adv_hmin)/10)
    adv_addband=max([0,adv_addband])
+   ; bands the refreezing scaling averages over: the advance bands the calibration had (K26)
+   nb_mbref=nb+adv_addband
+   ; band_extension: bands down to band_ext_depth below the glacier instead
+   if band_extension eq 'y' then begin
+      adv_addband=round(band_ext_depth/10.)
+      if hmin[gg[g]]-adv_addband*10. lt adv_hmin then adv_addband=fix((hmin[gg[g]]-adv_hmin)/10)
+      adv_addband=max([0,adv_addband])
+   endif
    nb0=nb & nb=nb+adv_addband & tt=da & da=dblarr(12,nb) & da[*,nb-nb0:nb-1]=tt[*,0:nb0-1]
    for i=nb-nb0-1,0,-1 do da[1,i]=da[1,i+1]-10.
 endif

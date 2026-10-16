@@ -7,8 +7,9 @@
 compile_opt idl2
 
 ii = where(thick_ini eq 0, ci)
-if ci gt 0 then elev_bmb[*, ii] = snoval
-if ci gt 0 then elev_bwb[*, ii] = snoval
+; with band_extension the bands without ice carry their virtual balance
+if ci gt 0 and band_extension ne 'y' then elev_bmb[*, ii] = snoval
+if ci gt 0 and band_extension ne 'y' then elev_bwb[*, ii] = snoval
 if ci gt 0 then elev_refr[*, ii] = snoval
 for i = 0, n_elements(elev_bmb[0, *]) - 1 do begin
   fmt = '(i6,' + strtrim(string(years, format = '(i4)'), 2) + 'f7.1)'
