@@ -23,7 +23,7 @@ endif else if snowcal_flag[snowcal_g] eq 2 then begin
   DDFsnow = snowcal_st_par[snowcal_g, 1] & DDFice = snowcal_st_par[snowcal_g, 2]
   c_prec = snowcal_st_par[snowcal_g, 3] & t_offset = snowcal_st_par[snowcal_g, 4]
   flag = fix(snowcal_st_par[snowcal_g, 5]) & ccj = long(snowcal_st_par[snowcal_g, 6])
-  n = indgen(years) + tran[0] & pp = where(n gt calimb_p0[ccj[0]] and n le calimb_p1[ccj[0]])
+  n = indgen(years) + tran[0] & pp = where(n ge calimb_p0[ccj[0]] and n le calimb_p1[ccj[0]])
   flux_calv = dblarr(years) & ar_gl = 0.d
 endif
 if snowcal_flag[snowcal_g] ge 0 then begin
