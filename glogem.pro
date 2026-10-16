@@ -174,9 +174,10 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
             lon0=[min(rvlon)-0.1,max(rvlon)]
           endif
           ; We keep for the moment reading in .mdi files for the CMIP6 models before looping over the grid
-          if time_resolution eq 'monthly' and AMOC ne 'y' then begin
+          ; (AMOC reads its 1-D GCM files per cell, but the regional ERA5 file only once, here)
+          if time_resolution eq 'monthly' then begin
              @procedures/read/read_climatepast_monthly.pro
-             if GMIP4 ne 'y' and reanalysis_direct ne 'y' then begin
+             if GMIP4 ne 'y' and AMOC ne 'y' and reanalysis_direct ne 'y' then begin
                 @procedures/read/read_gcmdata_monthly.pro
              endif
           endif

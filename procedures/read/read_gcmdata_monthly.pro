@@ -58,7 +58,12 @@ endif else begin
    gxs=strcompress(string(mid[0],fo='(f7.2)'),/remove_all)
    gys=strcompress(string(mid[1],fo='(f7.2)'),/remove_all)
    fn=dir_clim+'/future/'+time_resolution+'/'+GCM_data+'/'+dir_region+'/'+GCM_model[gcms]+ '/'+GCM_rcp[rcps]+'/clim_' + gxs + '_' + gys + '.dat'
-   if FILE_TEST(fn) eq 1 then begin 
+   ; without the scenario folder the ring search below would never end
+   if ~file_test(file_dirname(fn), /directory) then begin
+      print, 'GCM scenario folder not found: ' + file_dirname(fn)
+      STOP
+   endif
+   if FILE_TEST(fn) eq 1 then begin
       ; All good and we continue
    endif else begin
       found = 0
@@ -84,9 +89,9 @@ endif else begin
          if found eq 1 then break
          ; Increase search window
          radius = radius + 1
-         ; Stop if search window gets 100 ... (1°)
-         if radius eq 100 and 'AMOC' eq 'n' then begin
-               print, 'No suitable GCM grid point found within 1° radius. Please check your input coordinates.'
+         ; Stop at 10° (1000 steps of 0.01°), as read_climatepast_daily.pro
+         if radius gt 1000 then begin
+               print, 'No suitable GCM grid point found within 10° radius. Please check your input coordinates.'
                STOP
          endif
       endwhile

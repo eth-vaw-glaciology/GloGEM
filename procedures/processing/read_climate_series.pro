@@ -56,11 +56,7 @@ if cg gt 0 then begin
            endif else begin
               ccl=''
            endelse
-           ; AMOC runs skip the region-level read in glogem.pro, so they read here;
-           ; GMIP4 already holds the regional arrays and nothing modifies them
-           if AMOC eq 'y' then begin
-              @procedures/read/read_climatepast_monthly.pro
-           endif
+           ; the regional ERA5 arrays are read once per region in glogem.pro and nothing modifies them
            ; GMIP4: take the GCM series at the reanalysis grid point the past series comes from
            if GMIP4 eq 'y' then begin
               dummy = min(abs(rlat - gmid[0]), gcm_ilat)
