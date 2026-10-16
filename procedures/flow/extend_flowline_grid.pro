@@ -70,6 +70,7 @@ if ext_n gt 0 then begin
     df_dx = [ext_z, df_dx]
     obs_sur_dx = [ext_z, obs_sur_dx]
     obs_sur_dx[ext_k] = sur_dx[ext_k]
+    obs_ice_dx = [byte(ext_z), obs_ice_dx]   ; the new cells had no ice
     thick_dx_year_start = [ext_z, thick_dx_year_start]
     sur_dx_year_start   = [ext_z, sur_dx_year_start]
     sur_dx_year_start[ext_k] = sur_dx[ext_k]
@@ -78,7 +79,7 @@ if ext_n gt 0 then begin
     if c_boy gt 0 then ii_boy = ii_boy + ext_n
 
     ; this year's balance on those cells, mapped as in STEP 2 of glogemflow_coupled.pro
-    ext_ms = sur_dx[ext_k] < obs_sur_dx[ext_k]
+    ext_ms = flow_mb_surface(sur_dx[ext_k], obs_sur_dx[ext_k], obs_ice_dx[ext_k], flow_mb_elev_cap)
     ext_mz = (ext_ms > elev[mb_srt[0]]) < elev[mb_srt[-1]]
     if n_elements(mb_srt) ge 2 then begin
       ext_bw = interpol(bal[mb_srt], elev[mb_srt], ext_mz)

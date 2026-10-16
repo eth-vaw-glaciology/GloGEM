@@ -274,6 +274,7 @@ if n_elements(flow_initialised) eq 0 then begin
   ; Used in STEP 2 to cap MB interpolation elevation — matches MATLAB massbal.m:
   ;   mb_sur(z) = obs_surf(z)  for cells where sur > obs_surf
   obs_sur_dx = sur_dx
+  obs_ice_dx = thick_dx gt 0   ; cells with ice at the inventory date (flow_mb_elev_cap='ice')
 
 endif
 
@@ -282,10 +283,10 @@ endif
 ; flowline cell's current surface elevation (sur_dx), then convert
 ; to m ice. GloGEM's calibrated MB is the single source.
 bal_dx = dblarr(xnum)
-; Cap surface elevation used for MB interpolation at the inventory-date reference surface.
-; Prevents runaway positive feedback when modelled ice temporarily exceeds the observed
-; profile (inflated geometry → high elevation → positive accumulation-zone MB → more growth).
-mb_sur_dx = sur_dx < obs_sur_dx
+; Elevation for the MB interpolation (flow_mb_elev_cap): 'all' caps it at the inventory-date
+; surface (MATLAB; prevents a runaway feedback when modelled ice exceeds the observed profile),
+; 'ice' only where the inventory had ice, 'none' not at all.
+mb_sur_dx = flow_mb_surface(sur_dx, obs_sur_dx, obs_ice_dx, flow_mb_elev_cap)
 ; glacier bands sorted by elevation, one per elevation (interpol needs a monotonic abscissa)
 ii_gl_bands = where(gl ne noval, n_gl_bands)
 if n_gl_bands eq 0 then ii_gl_bands = lindgen(nb)

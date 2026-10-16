@@ -241,6 +241,7 @@ spinup_max_wallclock_sec = 900d0
 ; Ice now only leaves the grid of a glacier whose inventory front is on a bed below
 ; 0 m, where that bed is below 0 m too (other fronts get a longer grid instead), so
 ; both settings give the same result.
+flow_mb_elev_cap = 'all' ; flowline balance read at: 'all' the surface, at most the inventory surface (MATLAB); 'ice' that cap only where the inventory had ice; 'none' the surface (as IGM)
 flow_gridend_outflow = 'frontal'
 
 ; --- glacier retreat module (Δh parameterisation option)
@@ -515,6 +516,8 @@ if calibrate eq 'n' then begin
 endif
 
 if use_flow_model eq 'y' then advance = 'y' ; flow model requires advance bands
+if flow_mb_elev_cap ne 'all' and flow_mb_elev_cap ne 'ice' and flow_mb_elev_cap ne 'none' then $
+  message, 'flow_mb_elev_cap must be ''all'', ''ice'' or ''none'', not ''' + strtrim(flow_mb_elev_cap, 2) + ''''
 if flow_gridend_outflow ne 'frontal' and flow_gridend_outflow ne 'melt_if_land' then $
   message, 'flow_gridend_outflow must be ''frontal'' or ''melt_if_land'', not ''' + strtrim(flow_gridend_outflow, 2) + ''''
 if glacier_retreat eq 'n' and hindcast_dynamic ne 'y' and use_flow_model eq 'n' then advance = 'n'
