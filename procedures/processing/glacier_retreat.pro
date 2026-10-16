@@ -17,17 +17,25 @@ noval = -9999
 gr_thick0 = thick & gr_area0 = area & gr_elev0 = elev & gr_gl0 = gl
 gr_area_ini0 = area_ini & gr_thick_ini0 = thick_ini
 gr_qcalv = 0d0   ; ice removed by the sea-level cut-off below, mio m3
+gr_qout = 0d0    ; ice that left a regrowing glacier at its lowest band (dh_regrowth.pro), mio m3
 
 ; -----------------------------
 ; update surface geometry
 
 ii = where(thick gt 0, ci)
 
+; a growth year with dh_regrowth='y' goes to procedures/processing/dh_regrowth.pro
+dhr_on = dh_regrowth eq 'y' and dvol gt 0 and ci gt 0
+
 ; initialize dh-param if elevation range of glacier larger than 50m, else non-dyn downwasting
-if ci gt 4 then begin
+if ci gt 4 or dhr_on then begin
   ; normalized dh-function
   dh = dblarr(nb) + noval
   hr = dh
+  if ci le 4 then begin
+    dh[ii] = 1d0   ; Δh regrowth of 4 bands or fewer: even thickening
+    goto, dhr_grow
+  endif
   hr0 = elev[ii[ci - 1]] - elev[ii[0]]
   for i = 0, ci - 1 do hr[ii[i]] = (elev[ii[ci - 1]] - elev[ii[i]]) / hr0 ; elevation range
   ; dh function
@@ -39,6 +47,12 @@ if ci gt 4 then begin
   if cj gt 0 then dh[jj] = 1
   jj = where(dh lt 0 and dh ne noval, cj)
   if cj gt 0 then dh[jj] = 0
+
+  dhr_grow:
+  if dhr_on then begin
+    @procedures/processing/dh_regrowth
+    goto, dhr_done
+  endif
 
   ; distribute volume change - dh-function
   f = dvol / (total(dh[ii] * area[ii] * 1000000))
@@ -176,6 +190,7 @@ if ci gt 4 then begin
     if cj gt 0 then gl[jj] = elev[jj]
   endif
 
+  dhr_done:
   ; ----- calving
   ; terminus break-off due to calving
 
@@ -270,7 +285,7 @@ endif
 ; redistribution above has gone unstable. Revert and downwaste uniformly
 ; instead, keeping the ice so the glacier can still grow later.
 gr_vreal = total(area * thick) - volumes[ye] * 1000.   ; realised change, mio m3
-gr_vexp = dvol / 1000000. - gr_qcalv                   ; mass-balance change less sea-level calving, mio m3
+gr_vexp = dvol / 1000000. - gr_qcalv - gr_qout         ; mass-balance change less sea-level calving and outflow, mio m3
 gr_tol = (0.1 * abs(gr_vexp)) > (0.05 * volumes[ye] * 1000.) > 0.05
 ; a non-finite result (NaN/Inf geometry) is reverted as well
 gr_bad = ~finite(gr_vreal) or total(~finite(area_ini)) gt 0 or total(~finite(thick_ini)) gt 0
@@ -284,6 +299,7 @@ if gr_bad or abs(gr_vreal - gr_vexp) gt gr_tol then begin
   elev = gr_elev0
   gl = gr_gl0
   flux_calv[ye] = 0   ; only the surface balance is applied below: no calving this year
+  gr_qout = 0d0       ; and no outflow
   if gr_bad then begin
     ; also undo this year's hypothetical advance bands; zero what is still non-finite
     area_ini = gr_area_ini0 & thick_ini = gr_thick_ini0
@@ -304,6 +320,22 @@ if gr_bad or abs(gr_vreal - gr_vexp) gt gr_tol then begin
     elev[gr_jj] = bed_elev[gr_jj]
     gl[gr_jj] = noval
   endif
+endif
+
+; ice that left a regrowing glacier at its lowest band (dh_regrowth.pro): frontal ablation,
+; or ice melt on land with flow_gridend_outflow='melt_if_land', as at the flow model's grid end
+if gr_qout gt 0 then begin
+  if flow_gridend_outflow eq 'melt_if_land' and bed_elev[0] ge 0 then begin
+    if areas[ye] gt 0 then begin
+      bim_we = gr_qout * 0.9d0 / areas[ye]   ; m w.e.
+      @procedures/processing/book_ice_melt
+    endif
+  endif else if ar_gl gt 0 then flux_calv[ye] = flux_calv[ye] + gr_qout * dens / ar_gl
+  ; per glacier and year in *_flow_gridend_outflow.dat, as the flow model's grid-end outflow
+  if areas[ye] gt 0 then flow_gridend[ye] = flow_gridend[ye] + gr_qout * 0.9d0 / areas[ye]
+  flow_ge_bed = bed_elev[0]
+  n_dh_outflow = n_dh_outflow + 1
+  dh_outflow_gt = dh_outflow_gt + gr_qout * 0.9d0 / 1000d0
 endif
 
 ; storing of results

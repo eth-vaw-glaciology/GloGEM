@@ -76,23 +76,8 @@ if lg_ci gt 0 then begin
     ; removed ice as ice melt, specific to areas[ye] like every flux of the year
     if lg_rm gt 0 and areas[ye] gt 0 then begin
       lg_we = lg_rm * 900d0 / areas[ye]   ; m w.e.
-      mb[ye] = mb[ye] - lg_we
-      imelt[ye] = imelt[ye] + lg_we
-      if time_resolution eq 'monthly' and outf_names[14] ne '' then begin
-        lg_k = ye * 12L + lindgen(12)
-        lg_ok = where(finite(melmo[lg_k]) and melmo[lg_k] ne snoval and $
-                      finite(balmo[lg_k]) and finite(discharge_gl[lg_k]), lg_cok)
-        if lg_cok gt 0 then begin
-          lg_k = lg_k[lg_ok]
-          ; spread like this year's melt, evenly if there was none
-          lg_s = total(melmo[lg_k] > 0d0)
-          if lg_s gt 0 then lg_add = (melmo[lg_k] > 0d0) * (lg_we / lg_s) $
-          else lg_add = dblarr(lg_cok) + lg_we / lg_cok
-          melmo[lg_k] = melmo[lg_k] + lg_add
-          balmo[lg_k] = balmo[lg_k] - lg_add
-          discharge_gl[lg_k] = discharge_gl[lg_k] + lg_add
-        endif
-      endif
+      bim_we = lg_we
+      @procedures/processing/book_ice_melt
     endif
 
     print, 'WARNING: growth limit hit, glacier ' + strtrim(id[gg[g]], 2) + $

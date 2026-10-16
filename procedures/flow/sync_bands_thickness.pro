@@ -67,6 +67,16 @@ if n_ice_sync ge 2l then begin
     if gl[j] ne noval and elev[j] ge elev_min_sync and elev[j] le elev_max_sync then begin
       if thick_ini[j] gt 0d0 then begin
         thick[j] = interpol(thick_sorted_sync, sur_sorted_sync, elev[j]) > 0d0
+      endif else if dh_regrowth eq 'y' and flow_blown_up and area[j] gt 0d0 then begin
+        ; Δh regrowth keeps the advanced tongue: the band's area and thickness at the
+        ; handover become its reference (area_ini, thick_ini)
+        thick[j] = interpol(thick_sorted_sync, sur_sorted_sync, elev[j]) > 0d0
+        if thick[j] gt 0d0 then begin
+          thick_ini[j] = thick[j] & area_ini[j] = area[j]
+        endif else begin
+          area[j] = 0d0
+          gl[j]   = noval
+        endelse
       endif else begin
         thick[j] = 0d0
         n_skipped_noref = n_skipped_noref + 1l

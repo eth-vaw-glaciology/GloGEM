@@ -255,6 +255,14 @@ adv_calving = -100. ; [m] terminal bed elevation (0 = no calving)
 adv_fcrit = 2. ; [m/a] elevation gains above this are redistributed
 adv_terminusfraction = 0.2
 adv_lookup = 'n'
+; Δh regrowth (procedures/processing/dh_regrowth.pro), 'n' = the advance scheme above:
+; a growing glacier refills its former bands, then bands beyond its inventory front, with
+; the volume kept exactly; no band grows thicker than the glacier's own bed strength
+; allows on its slope (dh_regrowth_tau_pct percentile of its inventory basal stress, at
+; least dh_regrowth_tau_min); ice left at the lowest band leaves as grid-end outflow
+dh_regrowth = 'n'
+dh_regrowth_tau_min = 100d3 ; [Pa]
+dh_regrowth_tau_pct = 0.9
 band_extension = 'n' ; 'y': mass balance on bands down to band_ext_depth below the glacier, as if they were ice (flow model, IGM forcing)
 band_ext_depth = 1500. ; [m] depth of the band extension below the lowest band
 band_blend_depth = 300. ; [m] below the front over which the extension bands blend from the glacier's own parameters into the regional medians (at least)
@@ -520,7 +528,12 @@ if flow_mb_elev_cap ne 'all' and flow_mb_elev_cap ne 'ice' and flow_mb_elev_cap 
   message, 'flow_mb_elev_cap must be ''all'', ''ice'' or ''none'', not ''' + strtrim(flow_mb_elev_cap, 2) + ''''
 if flow_gridend_outflow ne 'frontal' and flow_gridend_outflow ne 'melt_if_land' then $
   message, 'flow_gridend_outflow must be ''frontal'' or ''melt_if_land'', not ''' + strtrim(flow_gridend_outflow, 2) + ''''
+if dh_regrowth ne 'y' and dh_regrowth ne 'n' then $
+  message, 'dh_regrowth must be ''y'' or ''n'', not ''' + strtrim(dh_regrowth, 2) + ''''
 if glacier_retreat eq 'n' and hindcast_dynamic ne 'y' and use_flow_model eq 'n' then advance = 'n'
+if dh_regrowth eq 'y' and advance ne 'y' then $
+  message, 'dh_regrowth=''y'' needs advance=''y'' (the bands below the front it grows into); with fixed geometry set dh_regrowth=''n'''
+if dh_regrowth eq 'y' and adv_lookup eq 'y' then message, 'dh_regrowth=''y'' and adv_lookup=''y'' exclude each other'
 if AMOC eq 'y' and amoc_end_year lt 2026 then message, 'amoc_end_year must be 2026 or later (an earlier end makes the run an ERA5 hindcast, K13)'
 
 if read_parameters eq 'y' then calibrate = 'n'

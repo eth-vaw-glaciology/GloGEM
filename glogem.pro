@@ -131,6 +131,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
           cali_calflux=0
           n_cali_nomatch=0L   ; glaciers without their own calibration row
           n_growth_clamped=0L & growth_removed_gt=0d0   ; growth limit: clamps, ice removed (Gt)
+          n_dh_outflow=0L & dh_outflow_gt=0d0   ; dh_regrowth: glacier-years with outflow at the lowest band, ice (Gt)
           if use_flow_model eq 'y' then begin
             n_flow_ok       = 0L
             n_flow_short    = 0L
@@ -428,6 +429,11 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                       ; initialise some variables for the advance scheme
                       if advance eq 'y' and nb gt 3 then begin
                         @procedures/initialise/initialise_advance_scheme_vars.pro
+                      endif
+
+                      ; thickness limit of the Δh regrowth
+                      if dh_regrowth eq 'y' then begin
+                        @procedures/initialise/initialise_dh_regrowth.pro
                       endif
 
                       ; potential radiation time series
@@ -778,7 +784,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                   endif
 
                   ; flowline grid-end outflow of this glacier
-                  if write_file eq 'y' and calibrate ne 'y' and use_flow_model eq 'y' then begin
+                  if write_file eq 'y' and calibrate ne 'y' and (use_flow_model eq 'y' or dh_regrowth eq 'y') then begin
                     @procedures/write/write_flow_gridend_outflow.pro
                   endif
 
@@ -861,6 +867,9 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
           print, string(cali_calflux,fo='(f9.4)')
           print, '--------- GROWTH LIMIT: ' + strtrim(n_growth_clamped, 2) + ' glacier-years clamped, ' + $
             strtrim(string(growth_removed_gt, fo='(e10.3)'), 2) + ' Gt removed and booked as ice melt'
+          if dh_regrowth eq 'y' then $
+            print, '--------- Δh REGROWTH OUTFLOW: ' + strtrim(n_dh_outflow, 2) + ' glacier-years with ice leaving the lowest band, ' + $
+              strtrim(string(dh_outflow_gt, fo='(e10.3)'), 2) + ' Gt (flow_gridend_outflow=''' + flow_gridend_outflow + ''')'
           if read_parameters eq 'y' then begin
             if n_cali_nomatch gt 0 then cali_msg = 'WARNING: ' else cali_msg = ''
             print, '--------- ' + cali_msg + strtrim(n_cali_nomatch,2) + ' glacier(s) without their own row in the calibration file (nearest glacier ID used)'
