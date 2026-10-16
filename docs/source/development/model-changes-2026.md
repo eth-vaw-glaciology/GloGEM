@@ -176,6 +176,12 @@ Janosch decided on 2026-09-25 not to rerun the submitted v1 regions, and on 2026
 | {ref}`G22 <mc-g22>` | Start year of the Δh geometry change | core | fixed | no for standard configs | edge case differs | `780520a`, `ae75e1e` |
 | {ref}`G23 <mc-g23>` | "dhdt" renamed "Δh parameterisation" | core | done | no | — | `1661cac` |
 | {ref}`G24 <mc-g24>` | Englacial temperature module (off in GMIP4) | core | many fixes; in progress | only with `firnice_temperature='y'` | yes (at least three of the bugs) | see entry |
+| {ref}`G25 <mc-g25>` | AMOC runs re-read the regional ERA5 file in every 0.1° cell | core | fixed | bit-identical | yes | `0623127` |
+| {ref}`G26 <mc-g26>` | The GCM file search missed grid points at 0° longitude ("-0.00") | core | fixed | yes (cells whose search crosses 0°; Pyrenees with AMOC CESM) | yes | `1467b45` |
+| {ref}`G27 <mc-g27>` | An ERA5 hindcast in AMOC mode ran to 2499 | core | fixed | yes (AMOC-mode hindcasts only) | yes | `98790f3` |
+| {ref}`G28 <mc-g28>` | RGI6 survey year −999 was not treated as missing | core | fixed | yes (25 RGI6 glaciers in 08 and 11) | yes | `9bfc181` |
+| {ref}`G29 <mc-g29>` | `amoc_end_year`; every run keeps a copy of its config | core | done | no | — | `a1cdd61` |
+| {ref}`G30 <mc-g30>` | Mass balance below the glacier front (`band_extension`) | core | new (AMOC) | no unless switched on | — | `7e79e2d`, `edc87e1`, `f901a87` |
 | {ref}`F1 <mc-f1>` | Port of MATLAB GloGEMflow to IDL and coupling to GloGEM | flow | done | — | not in main | `baa5c7b`, `020e81e`, ... |
 | {ref}`F2 <mc-f2>` | Flow → Δh handover: frozen, NaN or resurrected glaciers, lost year | flow | fixed | yes | not in main | `a473e25`, `61ac7d4`, `11ca640`, `5dfd530`, `df8bdd4` |
 | {ref}`F3 <mc-f3>` | Spin-up quality gate | flow | fixed | yes | not in main | `5dfd530` |
@@ -191,6 +197,7 @@ Janosch decided on 2026-09-25 not to rerun the submitted v1 regions, and on 2026
 | {ref}`F13 <mc-f13>` | Flowline velocity for the temperature model | flow | done | temperature only | not in main | `a9cb358`, `5b1aa21`, `4b80a07` |
 | {ref}`F14 <mc-f14>` | Log says "falling back to Δh" when the glacier stays on flow | flow | fixed (round 5, v3r5) | no (log only) | not in main | `b4589c2` |
 | {ref}`F15 <mc-f15>` | The flowline ignored the RGI 7.0 area correction | flow | fixed after the campaign | yes | not in main | `4808988` |
+| {ref}`F16 <mc-f16>` | Flowline history written for Δh glaciers; spin-up cache key without RGI version and region | flow | fixed | no (output files and cache names) | not in main | `fc90642` |
 | {ref}`S1 <mc-s1>` | Combine counted batches twice (`GloGEM_` and `GloGEMflow_` files) | scripts | fixed | submission files | — | `a6037e2` |
 | {ref}`S2 <mc-s2>` | Combine and gate for v2: completeness, `mass_bsl` repair, month restamp | scripts | fixed | submission files | — | `8993a0d` |
 | {ref}`S3 <mc-s3>` | GMIP4 format: time bounds, whole calendar years, NaN-aware gate | scripts | fixed | submission files | — | `cc70ff7` |
@@ -201,6 +208,7 @@ Janosch decided on 2026-09-25 not to rerun the submitted v1 regions, and on 2026
 | {ref}`S8 <mc-s8>` | Campaign feeders: order, stagger, pre-flight, `.done` check | scripts | done | — | — | `61209b3`, `b57eb3c`, `e5629c2`, `44b6099`, `309ce36` |
 | {ref}`S9 <mc-s9>` | Run logs off the home quota (`GLOGEM_LOGDIR`) | scripts, `glogem.pro` | done | no | — | `2196916` |
 | {ref}`S10 <mc-s10>` | Clean-up of the branch for the merge | scripts, flow, docs | done | no | — | `7ced973`, `756bbf7`, `d16e290`, `95a87ec`, `736a770` |
+| {ref}`S11 <mc-s11>` | Batch files for other glacier sets; AMOC config generator and job queue | scripts | done | no | — | `e0a1a1c`, `4edecfd`, `93d4e39` |
 | {ref}`K1 <mc-k1>` | Δh advance scheme can regrow glaciers without bound | core | known, accepted | — | yes | none |
 | {ref}`K2 <mc-k2>` | GMIP4 GCM files are bias-corrected on the annual mean only | input data | open | — | yes | none |
 | {ref}`K3 <mc-k3>` | The 1939 months: zeros in the hindcast, GCM values in projections | core | known, accepted | — | yes | none |
@@ -212,11 +220,11 @@ Janosch decided on 2026-09-25 not to rerun the submitted v1 regions, and on 2026
 | {ref}`K9 <mc-k9>` | Low flow share: a quarter of glaciers fall back after spin-up failure | flow | open | — | — | none |
 | {ref}`K10 <mc-k10>` | 30 % year-to-year blow-up check mostly hits small melting glaciers | flow | open, low | — | — | none |
 | {ref}`K11 <mc-k11>` | Rebuilt elevation bands overstate glacier area; head-cell leak | flow | open | — | — | none |
-| {ref}`K12 <mc-k12>` | Ice-melt and snow-melt labels swapped in the `.dat` output | core | open | — | yes | none |
+| {ref}`K12 <mc-k12>` | Ice-melt and snow-melt labels swapped in the `.dat` output | core | fixed | yes (the two files swap) | yes | `c74d789` |
 | {ref}`K13 <mc-k13>` | The flow model silently does not run in runs ending before 2026 | core, flow | open | — | yes (the settings rule) | none |
 | {ref}`K14 <mc-k14>` | An `@` include after `if ... then` guards nothing | core | open | — | no (only in our temperature code) | none |
 | {ref}`K15 <mc-k15>` | NorthAsia: 57 glaciers outside every subregion box | core | known, accepted | — | yes | none |
-| {ref}`K16 <mc-k16>` | GCM ring search: missing directory hangs the job | core | open | — | yes | none |
+| {ref}`K16 <mc-k16>` | GCM ring search: missing directory hangs the job | core | fixed | no | yes | `0623127` |
 | {ref}`K17 <mc-k17>` | Smaller output issues (model attribute, stale band elevations) | output | open | — | partly | none |
 | {ref}`K18 <mc-k18>` | Debug `stop` and editor backup files on main | main only | open | — | yes | `70c5af5` |
 | {ref}`K19 <mc-k19>` | Kept spin-ups lean towards too-short glaciers; A_flow floor; no upper length limit in the gate | flow | open, to be disclosed | — | — | none |
@@ -226,7 +234,8 @@ Janosch decided on 2026-09-25 not to rerun the submitted v1 regions, and on 2026
 | {ref}`K23 <mc-k23>` | Small high glaciers: too much winter snow, the snow line too low; spring snow too persistent | calibration | open (finding) | — | yes | none |
 | {ref}`K24 <mc-k24>` | Regional table overrides the c_prec bounds of a config; band winter balance never written | core | bounds open, low; band winter balance fixed | no | yes | `26e6fbe` (band winter balance) |
 | {ref}`K25 <mc-k25>` | Calibration tolerance used one-sidedly (+0.05 m w.e. a⁻¹ on 94 % of glaciers); small glaciers' targets about +0.25 too positive | calibration | open (finding) | yes (small) | yes | none |
-| {ref}`K26 <mc-k26>` | Refreezing depends on the number of elevation bands | core | open, to be fixed with the AMOC band extension | yes (small) | yes | none |
+| {ref}`K26 <mc-k26>` | Refreezing depends on the number of elevation bands | core | fixed where bands are added (`band_extension`); plain runs unchanged | yes (small) | yes | `7e79e2d` |
+| {ref}`K27 <mc-k27>` | Parametrised refreezing: one common amount for all refreezing bands of a month | core | open (finding) | yes | yes | none |
 
 ---
 
@@ -500,6 +509,69 @@ The ice-temperature runs now use FRH: no offset, ERA5's lapse rate, the HL and l
 
 ---
 
+(mc-g25)=
+### G25. AMOC runs re-read the regional ERA5 file in every cell
+
+`glogem.pro` skipped the region-level climate read for AMOC, so `read_climate_series.pro` re-read the regional ERA5
+file for every 0.1° cell (207 MB per read in Scandinavia). `0623127` reads it once per region, as GMIP4 does since
+`2c5357b` (G7); the CMIP6 branch of the downscaling, which AMOC takes, already ran on a single read. Byte-identical
+on 98 RGI6 glaciers of 08 and 11; 20–30 % faster.
+
+(mc-g26)=
+### G26. The GCM file search missed grid points at 0° longitude
+
+The per-point GCM search (GMIP4 and AMOC) builds each candidate name with `string(x, fo='(f7.2)')`. From a cell
+centre that carries float noise, a candidate just below zero prints as `-0.00` and never matches `clim_0.00_*.dat`,
+so the search took the next file it found. The CESM AMOC files of CentralEurope have a point at 0.00/42.63 in the
+Pyrenees; the cell centred at −0.1° took its anomalies from 5.00°E instead. Under RCP45_045sv its three glaciers
+went from +0.10…+0.82 m w.e./yr after 2100 (wrong point) to −1.6…−2.6 (right point). Lander's AMOC runs and the
+IGM forcing made from them carry it. `1467b45` rounds each candidate to 0.01° before formatting; of 98 test
+glaciers only those three change.
+
+(mc-g27)=
+### G27. An ERA5 hindcast in AMOC mode ran to 2499
+
+`glogem.pro` set `tran[1]=2499` for every AMOC run; `check_tran.pro` skips reanalysis runs and could not undo it.
+`98790f3` gates the line like the 2100 line above it.
+
+(mc-g28)=
+### G28. RGI6 survey year −999 was not treated as missing
+
+The gap filler in `glogem.pro` replaced only `noval` (−9999); RGI6 marks unknown survey years −999 (21
+CentralEurope glaciers, mostly Dolomites/Brenta incl. Marmolada; 4 in Scandinavia). These glaciers changed geometry
+from 1941 (in an AMOC test the 21 grew from 0.048 to 0.116 km³ by 2000) and their flow spin-up had no reference
+window. `9bfc181` treats any year ≤ 0 as missing; RGI7 runs are unchanged.
+
+(mc-g29)=
+### G29. `amoc_end_year`; every run keeps a copy of its config
+
+`check_tran.pro` and `read_gcmdata_monthly.pro` hard-coded the AMOC end year 3000. `a1cdd61` adds `amoc_end_year`
+(default 3000, at least 2026): the random draw of repeated years starts from the same seed, so earlier years do
+not depend on it. The output folder kept only `settings.pro`, so a run's config overrides were lost (Lander's AMOC
+runs cannot be reconstructed for that reason); the run's config is now copied as `config<catchment>.pro`.
+
+(mc-g30)=
+### G30. Mass balance below the glacier front (`band_extension`)
+
+GloGEM computed a balance only down to 100 m below a front (the 10 advance bands), and a band without ice carried
+only a snow pack, its balance overwritten with −99 every month. An advancing flow tongue kept the balance of the
+lowest band; IGM got −99 below every front. `band_extension='y'` (fixed geometry only, for now) adds bands down to
+`band_ext_depth` (1500 m) below the lowest band, not below sea level, and runs on every band a copy of GloGEM's
+band model for an ice surface (`virtual_ice_balance.pro`: own snow, surface type, firn and refreezing state; same
+accumulation, degree-day melt, snow update and carry-over). Bands without ice take this virtual balance; it
+equals the real balance on every glacier band (2651 of 2651 in a debug run). Below the front the glacier's own
+T_off, degree-day factors and c_prec blend linearly into the regional medians, over at least `band_blend_depth`
+(300 m) and slowly enough that T_off changes by at most `band_blend_dtdz` (0.003 °C/m) and the factors by at most
+`band_blend_dlnp` (5e-4 per m), so the balance keeps falling going down; a safeguard holds a band at the value of
+the band above where it would still rise. The refreezing scaling divides by the band count the calibration had
+(K26). Two independent reviews (max effort, 2026-10-16) found and fixed: no fixed geometry in the IGM-forcing
+configs (`find_startyear`), missing refreezing, the glacier's own calibration carried 1500 m down (T_off up to
+7 °C: −19.2 vs −4.3 m w.e./yr for two glaciers 4 km apart), a 300 m blend that made the balance rise going down,
+a blend depth that ignored the degree-day factors, small glaciers without extension. Tests: `band_extension='n'`
+byte-identical; with it, glacier-wide output identical to main + fix with the 10 advance bands; no band-year below
+a front rises going down; belev 1940–3000, no −99, written in f9.3. Details and figures: AMOC development history,
+chapter 4.
+
 ## 4. GloGEMflow items
 
 GloGEMflow is not on `main`, so everything here is new code for main. In short, for our submissions:
@@ -692,6 +764,16 @@ Since `b0287ce`, a spin-up that stops in its 3rd or later length attempt keeps i
 
 ---
 
+(mc-f16)=
+### F16. Flowline history for Δh glaciers; spin-up cache key
+
+`save_geometry_output.pro` wrote a `flowgrid_*.sav` whenever `use_flow_model='y'` and `thick_dx` existed;
+`thick_dx` survives from the last flow glacier, so later Δh glaciers got another glacier's flowline. It now writes
+only for glaciers whose flow model started in the run (`flow_initialised`). The spin-up cache key was
+`<id>_y<year>`; the same id names different glaciers in RGI6 and RGI7 and in other regions. It is now
+`rgi<V>_<Region>_<id>_y<year>` (`fc90642`); old caches are recomputed. SouthernAndes test: 17 flowgrid files for
+the 17 flow glaciers, cache contents unchanged.
+
 ## 5. Scripts, post-processing and run infrastructure
 
 These are in `scripts/` and do not change model output, but they change the files submitted to GMIP4 or how campaigns run.
@@ -766,6 +848,17 @@ After the campaign, `glogemflow-v3` was cleaned so that it can be merged into `G
 
 ---
 
+(mc-s11)=
+### S11. Batch files for other glacier sets; AMOC config generator and job queue
+
+`create_region_batches.py` named batches by region only, so RGI6 batches would have overwritten the RGI7 ones (the
+existing RGI08/RGI11 batch files are RGI7 sets despite their `RGI60-` prefix). `--tag` adds a name part, existing
+files are kept unless `--force`, and `--ids-from` keeps only glaciers with a calibration row (GloGEM gives a glacier
+without a row its nearest neighbour's parameters, silently) (`e0a1a1c`). `scripts/amoc/make_amoc_configs.py`
+writes one config per region, scenario and batch (one scenario per job: `rcp_batch=3` drops a fourth one), and
+`scripts/amoc/run_queue.sh` runs a folder of configs N at a time from an exported tree, restartable (`4edecfd`,
+`93d4e39`).
+
 ## 6. Known issues, accepted or still open
 
 (mc-k1)=
@@ -824,9 +917,9 @@ In v1, by glacier count, 65.7 % were shorter than 1 km, 23.3 % failed their spin
 `update_elevation_bands.pro` rebuilds the bands from the flowline with areas up to about 60 % too large (Iceland 00376: 1,570 against 1,067 km²; SouthernAndes 12034: 2,200 against 1,368 km²). Since `cbb3c5a` the reported numbers come from the flowline, so this affects only band diagnostics. The head cell copies the thickness of the cell below it each sub-step (MATLAB's boundary condition) without booking the change: about 3e-5 Gt/a.
 
 (mc-k12)=
-### K12. Ice-melt and snow-melt labels swapped in the `.dat` output (open)
+### K12. Ice-melt and snow-melt labels swapped in the `.dat` output (fixed)
 
-`settings.pro` names output 4 `Icemelt_sfc` and output 5 `Snowmelt_sfc` (main `settings.pro:191-192`, `:372-376`, `:426-427`), but `write_results_files_monthly.pro:30-31` and `write_results_files_daily.pro:30-31` write `smelt` (snow melt) as output 4 and `imelt` (ice and firn melt) as output 5. So in every GloGEM run, on main and on our branches, Lander's included, the `Icemelt_sfc` file holds snow melt and the `Snowmelt_sfc` file holds ice melt. The netCDF files, and so the GMIP4 submissions, use total melt and are not affected. First noted in `41f39e4`.
+`settings.pro` names output 4 `Icemelt_sfc` and output 5 `Snowmelt_sfc` (main `settings.pro:191-192`, `:372-376`, `:426-427`), but `write_results_files_monthly.pro:30-31` and `write_results_files_daily.pro:30-31` write `smelt` (snow melt) as output 4 and `imelt` (ice and firn melt) as output 5. So in every GloGEM run, on main and on our branches, Lander's included, the `Icemelt_sfc` file holds snow melt and the `Snowmelt_sfc` file holds ice melt. The netCDF files, and so the GMIP4 submissions, use total melt and are not affected. First noted in `41f39e4`. **Fixed** by `c74d789` (2026-10-16): both writers put `imelt` into output 4 and `smelt` into output 5; the two files swap, everything else is byte-identical.
 
 (mc-k13)=
 ### K13. The flow model silently does not run in runs ending before 2026 (open)
@@ -844,9 +937,9 @@ In v1, by glacier count, 65.7 % were shorter than 1 km, 23.3 % failed their spin
 57 glaciers (0.18 of 189 km³: Chukotka south of its grid, 8 at 110.5E/75.8N, 5 in Japan) are in no NorthAsia subregion and are not simulated. Janosch 2026-09-28: leave them out.
 
 (mc-k16)=
-### K16. GCM ring search: a missing directory hangs the job (open)
+### K16. GCM ring search: a missing directory hangs the job (fixed)
 
-The STOP guard of the ring search in `read_gcmdata_monthly.pro` can never be reached, so a missing GCM directory makes the job search forever instead of stopping.
+The STOP guard of the ring search in `read_gcmdata_monthly.pro` can never be reached, so a missing GCM directory makes the job search forever instead of stopping (the test compared the string `'AMOC'` with `'n'`). **Fixed** by `0623127` (2026-10-16): the scenario folder is checked first and the search stops at 10°; 1° would be too tight for the AMOC grids (G26).
 
 (mc-k17)=
 ### K17. Smaller output issues (open)
@@ -918,9 +1011,14 @@ Found 2026-10-14 (ice-temperature diagnostics; `glogemflow_icetemp/development_h
 - **Effect:** small high glaciers keep too much firn (K23). No change made.
 
 (mc-k26)=
-### K26. Refreezing depends on the number of elevation bands (open)
+### K26. Refreezing depends on the number of elevation bands (fixed where bands are added)
 
-`refreezing_parametrised.pro:27` scales the refreezing cap by `abs(mean(rf_cold))/30`, the mean over all `nb` bands. Bands without ice keep `rf_cold = 0` and pull the mean towards zero, so the 10 advance bands of a run with `advance='y'` lower the refreezing on the glacier, and any change in the number of bands changes the mass balance. Found 2026-10-16 in the G2 test: a projection with the advance bands and the ERA5 hindcast without them (`glacier_retreat='n'` switches `advance` off in `settings.pro`) differ in monthly refreezing by up to 0.05 mm w.e. d⁻¹, in 8 % of glacier-months, mostly May–June (59 CentralEurope glaciers); with the same bands they are bit-identical. `rf_cold` itself is reset every year (`glogem.pro`, inside the year loop). Planned fix, with the band extension of the AMOC work: divide by the number of bands the calibration saw.
+`refreezing_parametrised.pro:27` scales the refreezing cap by `abs(mean(rf_cold))/30`, the mean over all `nb` bands. Bands without ice keep `rf_cold = 0` and pull the mean towards zero, so the 10 advance bands of a run with `advance='y'` lower the refreezing on the glacier, and any change in the number of bands changes the mass balance. Found 2026-10-16 in the G2 test: a projection with the advance bands and the ERA5 hindcast without them (`glacier_retreat='n'` switches `advance` off in `settings.pro`) differ in monthly refreezing by up to 0.05 mm w.e. d⁻¹, in 8 % of glacier-months, mostly May–June (59 CentralEurope glaciers); with the same bands they are bit-identical. `rf_cold` itself is reset every year (`glogem.pro`, inside the year loop). With `band_extension` (G30, `7e79e2d`) the scaling divides by `nb_mbref`, the band count with the 10 advance bands the calibration had (none for glaciers of 3 bands or fewer); runs without the extension still divide by their own band count (byte-identical to before).
+
+(mc-k27)=
+### K27. Parametrised refreezing: one common amount for all refreezing bands of a month (open, finding)
+
+`refreezing_parametrised.pro` sets `refr[ii[valid]] = min([[mel[ii[valid]], rf_melcrit*scaling_annual_temp*firn[ii[valid]]]], dimension=1)`. The inner brackets concatenate both vectors into one, so `min` returns a single number, the smallest melt or cap among all refreezing bands, and every refreezing band gets it (checked in IDL 2026-10-16: melts 0.30, 0.05, 0.20 and cap 0.10 give 0.05 for all three; the per-band intent gives 0.10, 0.05, 0.10). Refreezing is therefore smaller than intended when bands melt differently. It is in every GloGEM run on all branches and in all calibrations, which absorbed it; unchanged so far (decision pending). The virtual model of G30 uses the same expression, so it reproduces the glacier bands exactly.
 
 ## 7. Decisions log
 
