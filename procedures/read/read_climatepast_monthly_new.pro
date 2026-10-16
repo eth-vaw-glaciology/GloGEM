@@ -50,7 +50,7 @@ endif else begin
       endif
    endwhile
 endelse
-print, fn
+;print, fn
 ; ERA5 grid point [lon, lat] of the file read
 era5_pt = double((strsplit(file_basename(fn, '.dat'), '_', /extract))[1:2])
 anz=file_lines(fn)-3 & da=dblarr(5,anz) & tt=strarr(3)

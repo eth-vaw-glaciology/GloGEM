@@ -60,7 +60,6 @@ if reanalysis eq 'ERA-interim' then begin
       for i=0,ntime[0]-1 do for h=12,nlons-1 do rprec[i,h,*]=rprec[i,5,*]
    endif
 endif
-
 ryear=fix(rtime)
 rmon=round((rtime-ryear)*12+0.5-(ryear-ryear[0])/1400.*12)  ; hack accounting for leap years...
 
@@ -87,7 +86,6 @@ for i=0,nmonths[0]-1 do begin
    endfor
 endfor
 close,1
-
 endif
 
 ; RE_ANALYSIS - temperature gradient file

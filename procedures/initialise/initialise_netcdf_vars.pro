@@ -57,11 +57,25 @@ if area_ini_total eq 0 then goto, skip_netcdf_vars
 
 if time_resolution eq 'monthly' then begin
     ; Area-weighted mean temperature converted from deg C to K
-    tempmo_ini[ccmon-1] = total((tg + 273.15d) * area_ini) / area_ini_total
+    ;tempmo_ini[ccmon-1] = total((tg + 273.15d) * area_ini) / area_ini_total
+    ; New option LVT on 22 September 2026
+    ii = where(finite(tg) eq 1 and finite(area_ini) eq 1 and area_ini gt 0, ni)
+    if ni gt 0 then begin
+       tempmo_ini[ccmon-1] = total((tg[ii] + 273.15d) * area_ini[ii], /double) / total(area_ini[ii], /double)
+    endif else begin
+       tempmo_ini[ccmon-1] = !values.d_nan
+    endelse
     ; Total precipitation (solid + liquid) over the initial area [m w.e. x km2]
     precmo_ini[ccmon-1] = total((psg + plg) * area_ini)
 endif else begin
-    tempday_ini[ccmon-1] = total((tg + 273.15d) * area_ini) / area_ini_total
+    ;tempday_ini[ccmon-1] = total((tg + 273.15d) * area_ini) / area_ini_total
+    ; New option LVT on 22 September 2026
+    ii = where(finite(tg) eq 1 and finite(area_ini) eq 1 and area_ini gt 0, ni)
+    if ni gt 0 then begin
+       tempday_ini[ccmon-1] = total((tg[ii] + 273.15d) * area_ini[ii], /double) / total(area_ini[ii], /double)
+    endif else begin
+       tempday_ini[ccmon-1] = !values.d_nan
+    endelse
     precday_ini[ccmon-1] = total((psg + plg) * area_ini)
 endelse
 

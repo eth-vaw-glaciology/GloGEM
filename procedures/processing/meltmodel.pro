@@ -24,7 +24,9 @@ if time_resolution eq 'monthly' and submonth_variability eq 'y' and meltmodel ne
   a = dblarr(mon_len[m - 1])
   tgs = tg
   ; superimpose variability / make sure no shift in mean T is introduced!
-  for i = 0, mon_len[m - 1] - 1 do a[i] = tgs[0] + variab[m - 1, i] - mean(variab[m - 1, 0 : mon_len[m - 1] - 1])
+  for i = 0, mon_len[m - 1] - 1 do begin
+     a[i] = tgs[0] + variab[m - 1, i] - mean(variab[m - 1, 0 : mon_len[m - 1] - 1])
+  endfor
   for j = 0, nb - 1 do begin
     b = a + (tgs[j] - tgs[0])
     ii = where(b gt 0, ci)

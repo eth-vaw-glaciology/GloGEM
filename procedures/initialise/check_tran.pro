@@ -18,13 +18,23 @@ if GMIP4 eq 'y' then begin
     endelse
 endif
 
-; Overshoot                                                                                                                                                                                                                                        
+; Overshoot
 if GMIP4 eq 'y' then begin  
-    if rcpmodel eq 'ssp534-over'then begin                                                                                                                                                                                                                 
+    if rcpmodel eq 'ssp534-over'then begin                                                                                                                                                                                                                
         if gcmmodel eq 'CESM2-WACCM' then tran[1]=2299                                                                                                                                                                                                                 
         if gcmmodel eq 'IPSL-CM6A-LR' or gcmmodel eq 'MRI-ESM2-0' then tran[1]=2300                                                                                                                                                                                                  
         if gcmmodel eq 'MIROC6' then tran[1]=2100                                                                                                                                                                                                        
     endif 
+endif
+
+; AMOC
+if AMOC eq 'y' then begin
+;    if rcpmodel eq 'ssp534-over'then begin
+   if gcmmodel eq 'CESM' then begin
+      tran[1]=3000
+   endif else begin
+      tran[1]=3000
+   endelse
 endif
 
 check_tran_done:
