@@ -41,6 +41,8 @@ if n_elements(flow_initialised) eq 0 then begin
   ; inventory profile). Only a sea front lets ice leave the grid end as frontal ablation.
   ii_sf = where(horizontal_grid_inputs.thick_dx gt 0, c_sf)
   flow_sea_front = c_sf gt 0 ? (bed_dx[ii_sf[0]] lt 0) : 0b
+  ; set when the ice reaches the end of the longest grid with flow_domain_end='outflow'
+  flow_open_end = 0b
 
   ; Initialise cross-section geometry from initial_geometry.pro
   width_surface_dx = width_surface_dx_init
@@ -397,12 +399,15 @@ sur_dx_year_start   = sur_dx
 ; below -- a true volume would need width_mid_dx recomputed every
 ; sub-step, which STEP 4 currently only does once per year.
 vol_proxy_year_start = total(thick_dx_year_start)
+if flow_blowup_check eq 'mass' then $
+  flow_vol_ys = flow_cell_volume(thick_dx, width_base_dx, lambda_dx, dx)
 ; an ice-free flowline cannot regain ice: skip its no-op sub-steps (df_dx as they would leave it)
 flow_icefree = max(thick_dx) le 0d0
 if flow_icefree then df_dx[*] = 0
 
-; this year's applied balance and outflow at the downstream end (m3 ice), see ice_thickness.pro
-flow_mb_vol = 0d0 & flow_fa_vol = 0d0 & flow_budget_on = 1
+; this year's applied balance, outflow at the downstream end and inflow at the
+; upstream end (m3 ice), see ice_thickness.pro
+flow_mb_vol = 0d0 & flow_fa_vol = 0d0 & flow_hd_vol = 0d0 & flow_budget_on = 1
 while (~flow_icefree) and (time_flow lt year_end_flow) and (iter_flow lt max_iter_flow) do begin
   ; ---- Adaptive time step (CFL criterion, width-aware) ----
   ; Bootstrap case (df_dx still all-zero, before the first diffusivity call):
@@ -440,12 +445,23 @@ while (~flow_icefree) and (time_flow lt year_end_flow) and (iter_flow lt max_ite
   ; (small valley glaciers), catches the genuine ice-cap blow-ups in Svalbard/
   ; RussianArctic. Guard on vol_proxy_year_start avoids tripping on noisy
   ; ratios for near-ice-free glaciers.
-  vol_blowup = (vol_proxy_year_start gt 100d0) and $
-    (abs(total(thick_dx) - vol_proxy_year_start) gt 0.30d0 * vol_proxy_year_start)
+  ; flow_blowup_check='mass': instead, only a volume change that this year's balance and
+  ; the flow through both grid ends cannot explain (more than flow_blowup_mass_tol of the
+  ; volume at the start of the year, at least 10^4 m3)
+  if flow_blowup_check eq 'mass' then begin
+    flow_vol_res = flow_cell_volume(thick_dx, width_base_dx, lambda_dx, dx) - $
+      (flow_vol_ys + flow_mb_vol - flow_fa_vol + flow_hd_vol)
+    vol_blowup = ~finite(flow_vol_res) or abs(flow_vol_res) gt (flow_blowup_mass_tol * flow_vol_ys > 1d4)
+  endif else $
+    vol_blowup = (vol_proxy_year_start gt 100d0) and $
+      (abs(total(thick_dx) - vol_proxy_year_start) gt 0.30d0 * vol_proxy_year_start)
   if max(thick_dx) gt 5000d0 or total(~finite(thick_dx)) gt 0 or vol_blowup then begin
     print, 'WARNING: GloGEMflow blow-up at iter=' + strtrim(iter_flow, 2) + $
       ', max(thick_dx)=' + strtrim(max(thick_dx), 2) + $
       ', total_thick=' + strtrim(total(thick_dx), 2) + ' (was ' + strtrim(vol_proxy_year_start, 2) + ')'
+    if flow_blowup_check eq 'mass' then $
+      print, '  unexplained volume change ' + strtrim(flow_vol_res, 2) + ' m3 of ' + $
+        strtrim(flow_vol_ys, 2) + ' m3 at the start of the year'
     print, '  Falling back to Δh parameterisation for remainder of run.'
     flow_blown_up = 1
     thick_dx      = thick_dx_year_start
@@ -463,15 +479,21 @@ while (~flow_icefree) and (time_flow lt year_end_flow) and (iter_flow lt max_ite
   ; Ice reached the last active cell (index 2): lengthen the ice-free area in front
   ; of the glacier before any ice can leave the grid. Beyond the longest grid the
   ; flow model stops for this glacier and the Δh parameterisation takes this year
-  ; from its start. A sea front whose grid end is below sea level is not lengthened:
-  ; the ice leaving the end is frontal ablation (ice_thickness.pro).
-  if thick_dx[2] gt 0d0 and (flow_sea_front eq 0 or bed_dx[2] ge 0d0) then begin
+  ; from its start; with flow_domain_end='outflow' the glacier stays on the flow model
+  ; and the grid end lets the ice out (ice_thickness.pro). A sea front whose grid end
+  ; is below sea level is not lengthened: the ice leaving the end is frontal ablation.
+  if thick_dx[2] gt 0d0 and (flow_sea_front eq 0 or bed_dx[2] ge 0d0) and ~flow_open_end then begin
     ext_ctx = 'coupled'
     @procedures/flow/extend_flowline_grid
     if ext_n gt 0 then begin
       print, 'GloGEMflow: ice reached the end of the flowline grid in ' + strtrim(ye + tran[0], 2) + $
         ' --- ' + strtrim(ext_n, 2) + ' cells added in front (' + $
         strtrim(string(flow_frontal_length, fo='(f4.2)'), 2) + ' glacier lengths)'
+    endif else if flow_domain_end eq 'outflow' then begin
+      flow_open_end = 1b
+      print, 'WARNING: GloGEMflow ice reached the end of the longest flowline grid in ' + $
+        strtrim(ye + tran[0], 2) + ' (' + strtrim(string(flow_frontal_length, fo='(f4.2)'), 2) + $
+        ' glacier lengths in front) --- from now on the ice flows out of the grid end (grid-end outflow)'
     endif else begin
       print, 'WARNING: GloGEMflow ice reached the end of the longest flowline grid in ' + $
         strtrim(ye + tran[0], 2) + ' (' + strtrim(string(flow_frontal_length, fo='(f4.2)'), 2) + $

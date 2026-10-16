@@ -243,6 +243,18 @@ spinup_max_wallclock_sec = 900d0
 ; both settings give the same result.
 flow_mb_elev_cap = 'all' ; flowline balance read at: 'all' the surface, at most the inventory surface (MATLAB); 'ice' that cap only where the inventory had ice; 'none' the surface (as IGM)
 flow_gridend_outflow = 'frontal'
+; A flow-model year is a blow-up (the glacier goes to the Δh parameterisation) when a cell is
+; thicker than 5000 m or not finite, or:
+;   'proxy30' the sum of the cell thicknesses changed by more than 30 %
+;   'mass'    the volume changed by more than flow_blowup_mass_tol (share of the volume at the
+;             start of the year) beyond what the balance and the flow through the grid ends explain
+flow_blowup_check = 'proxy30'
+flow_blowup_mass_tol = 0.01
+; When the ice reaches the end of the longest flowline grid (1.5 glacier lengths in front):
+;   'handover' the glacier goes to the Δh parameterisation for the rest of the run
+;   'outflow'  it stays on the flow model and the grid end lets the ice out, booked as
+;              grid-end outflow (see flow_gridend_outflow; use 'melt_if_land' on land)
+flow_domain_end = 'handover'
 
 ; --- glacier retreat module (Δh parameterisation option)
 glacier_retreat = 'y'
@@ -528,8 +540,12 @@ if flow_mb_elev_cap ne 'all' and flow_mb_elev_cap ne 'ice' and flow_mb_elev_cap 
   message, 'flow_mb_elev_cap must be ''all'', ''ice'' or ''none'', not ''' + strtrim(flow_mb_elev_cap, 2) + ''''
 if flow_gridend_outflow ne 'frontal' and flow_gridend_outflow ne 'melt_if_land' then $
   message, 'flow_gridend_outflow must be ''frontal'' or ''melt_if_land'', not ''' + strtrim(flow_gridend_outflow, 2) + ''''
+if flow_blowup_check ne 'proxy30' and flow_blowup_check ne 'mass' then $
+  message, 'flow_blowup_check must be ''proxy30'' or ''mass'', not ''' + strtrim(flow_blowup_check, 2) + ''''
 if dh_regrowth ne 'y' and dh_regrowth ne 'n' then $
   message, 'dh_regrowth must be ''y'' or ''n'', not ''' + strtrim(dh_regrowth, 2) + ''''
+if flow_domain_end ne 'handover' and flow_domain_end ne 'outflow' then $
+  message, 'flow_domain_end must be ''handover'' or ''outflow'', not ''' + strtrim(flow_domain_end, 2) + ''''
 if glacier_retreat eq 'n' and hindcast_dynamic ne 'y' and use_flow_model eq 'n' then advance = 'n'
 if dh_regrowth eq 'y' and advance ne 'y' then $
   message, 'dh_regrowth=''y'' needs advance=''y'' (the bands below the front it grows into); with fixed geometry set dh_regrowth=''n'''

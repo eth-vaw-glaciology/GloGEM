@@ -8,6 +8,11 @@ for j = 0, 2 do begin
   ; Volume flux through each interface: times the mean cross-section width there
   qfl = dblarr(xnum)
   qfl[1:xnum-1] = fun[1:xnum-1] * (width_mid_dx[0:xnum-2] + width_mid_dx[1:xnum-1]) / 2.0d0
+  ; open end of the longest grid (flow_domain_end='outflow'): free outflow over a ghost cell
+  ; with the thickness of cell 2 on the bed continued from cells 3 and 2 (no thickness step);
+  ; outflow only
+  if n_elements(flow_open_end) gt 0 then if flow_open_end then $
+    qfl[2] = (df_dx[2] * (bed_dx[3] - bed_dx[2]) / dx * width_mid_dx[2]) > 0.0d0
 
   ; No cell gives more ice than it holds in this sub-step: each outgoing flux is
   ; scaled by the factor of the cell it leaves (qfl[i] > 0: cell i gives to cell i-1,
@@ -52,6 +57,8 @@ for j = 0, 2 do begin
   if n_elements(flow_budget_on) gt 0 then if flow_budget_on then begin
     ; ice leaving the flowline at its downstream end (interface of cells 1 and 2)
     flow_fa_vol = flow_fa_vol + (1.0d0 / 3.0d0) * dt * qfl[2]
+    ; ice entering at the upstream end (interface of cells xnum-2 and xnum-1)
+    flow_hd_vol = flow_hd_vol + (1.0d0 / 3.0d0) * dt * qfl[xnum - 1]
     ; balance actually applied (cross-section area): melt is limited to the area left after the flux step
     fb_m = tz_db
     fb_h = tz_a0 + tz_df
