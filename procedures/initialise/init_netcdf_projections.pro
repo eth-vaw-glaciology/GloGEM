@@ -95,13 +95,17 @@ nc_aggregate = (time_resolution eq 'daily' and netcdf_daily_aggregated_monthly e
 if time_resolution eq 'monthly' or nc_aggregate then begin
     nc_n_sub   = nc_years * 12
     nc_sub_lbl = 'monthly'
-    nc_time_sub = lonarr(nc_n_sub)
-    idx = 0L
-    for yr = 0L, nc_years-1L do $
-        for mo = 1, 12 do begin
-            nc_time_sub[idx] = long(julday(mo, 1, nc_tran[0]+yr) - nc_ref_jd)
-            idx++
-        endfor
+    if time_resolution eq 'monthly' then begin
+        nc_time_sub = nc_hydro_month_time(nc_n_sub, nc_tran[0], bal_month, nc_ref_jd)
+    endif else begin
+        nc_time_sub = lonarr(nc_n_sub)
+        idx = 0L
+        for yr = 0L, nc_years-1L do $
+            for mo = 1, 12 do begin
+                nc_time_sub[idx] = long(julday(mo, 1, nc_tran[0]+yr) - nc_ref_jd)
+                idx++
+            endfor
+    endelse
 endif else begin
     nc_n_sub   = nc_years * 365
     nc_sub_lbl = 'daily'
@@ -335,7 +339,9 @@ for yr = 0L, nc_years_past-1L do $
     nc_time_ann_past[yr] = long(julday(1, 1, tran[0]+yr) - nc_ref_jd)
 
 nc_time_sub_past = lonarr(nc_n_sub_past)
-if time_resolution eq 'monthly' or nc_aggregate then begin
+if time_resolution eq 'monthly' then begin
+    nc_time_sub_past = nc_hydro_month_time(nc_n_sub_past, tran[0], bal_month, nc_ref_jd)
+endif else if nc_aggregate then begin
     idx = 0L
     for yr = 0L, nc_years_past-1L do $
         for mo = 1, 12 do begin
@@ -354,7 +360,9 @@ for yr = 0L, nc_years_fut-1L do $
     nc_time_ann_fut[yr] = long(julday(1, 1, netcdf_split_year+yr) - nc_ref_jd)
 
 nc_time_sub_fut = lonarr(nc_n_sub_fut)
-if time_resolution eq 'monthly' or nc_aggregate then begin
+if time_resolution eq 'monthly' then begin
+    nc_time_sub_fut = nc_hydro_month_time(nc_n_sub_fut, netcdf_split_year, bal_month, nc_ref_jd)
+endif else if nc_aggregate then begin
     idx = 0L
     for yr = 0L, nc_years_fut-1L do $
         for mo = 1, 12 do begin

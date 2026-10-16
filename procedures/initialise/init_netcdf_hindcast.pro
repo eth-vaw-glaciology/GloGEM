@@ -76,13 +76,17 @@ nc_aggregate = (time_resolution eq 'daily' and netcdf_daily_aggregated_monthly e
 if time_resolution eq 'monthly' or nc_aggregate then begin
     nc_n_sub  = nc_years * 12
     nc_sub_lbl = 'monthly'
-    nc_time_sub = lonarr(nc_n_sub)
-    idx = 0L
-    for yr = 0L, nc_years-1L do $
-        for mo = 1, 12 do begin
-            nc_time_sub[idx] = long(julday(mo, 1, nc_tran[0]+yr) - nc_ref_jd)
-            idx++
-        endfor
+    if time_resolution eq 'monthly' then begin
+        nc_time_sub = nc_hydro_month_time(nc_n_sub, nc_tran[0], bal_month, nc_ref_jd)
+    endif else begin
+        nc_time_sub = lonarr(nc_n_sub)
+        idx = 0L
+        for yr = 0L, nc_years-1L do $
+            for mo = 1, 12 do begin
+                nc_time_sub[idx] = long(julday(mo, 1, nc_tran[0]+yr) - nc_ref_jd)
+                idx++
+            endfor
+    endelse
 endif else begin
     nc_n_sub  = nc_years * 365
     nc_sub_lbl = 'daily'
