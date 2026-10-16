@@ -275,6 +275,9 @@ adv_lookup = 'n'
 dh_regrowth = 'n'
 dh_regrowth_tau_min = 100d3 ; [Pa]
 dh_regrowth_tau_pct = 0.9
+; a glacier with no ice left restarts where the ice-surface balance of its old footprint has been
+; positive in each of the last five years (procedures/processing/dh_reseed.pro; needs band_extension and dh_regrowth)
+dh_reseed = 'n'
 band_extension = 'n' ; 'y': mass balance on bands down to band_ext_depth below the glacier, as if they were ice (flow model, IGM forcing)
 band_ext_depth = 1500. ; [m] depth of the band extension below the lowest band
 band_blend_depth = 300. ; [m] below the front over which the extension bands blend from the glacier's own parameters into the regional medians (at least)
@@ -550,6 +553,10 @@ if glacier_retreat eq 'n' and hindcast_dynamic ne 'y' and use_flow_model eq 'n' 
 if dh_regrowth eq 'y' and advance ne 'y' then $
   message, 'dh_regrowth=''y'' needs advance=''y'' (the bands below the front it grows into); with fixed geometry set dh_regrowth=''n'''
 if dh_regrowth eq 'y' and adv_lookup eq 'y' then message, 'dh_regrowth=''y'' and adv_lookup=''y'' exclude each other'
+if dh_reseed ne 'y' and dh_reseed ne 'n' then $
+  message, 'dh_reseed must be ''y'' or ''n'', not ''' + strtrim(dh_reseed, 2) + ''''
+if dh_reseed eq 'y' and (band_extension ne 'y' or dh_regrowth ne 'y') then $
+  message, 'dh_reseed=''y'' needs band_extension=''y'' (the ice-surface balance of the old footprint) and dh_regrowth=''y'''
 if AMOC eq 'y' and amoc_end_year lt 2026 then message, 'amoc_end_year must be 2026 or later (an earlier end makes the run an ERA5 hindcast, K13)'
 
 if read_parameters eq 'y' then calibrate = 'n'
@@ -559,14 +566,15 @@ if single_glacier ne '' then grid_run = 'n'
 ; dynamics only inside the reanalysis record; ERA5 currently ends 2025
 if tran[1] gt 2025 then hindcast_dynamic = 'n'
 
-; band_extension: fixed geometry only (glogem.pro switches glacier_retreat on after the survey year
-; when find_startyear or hindcast_dynamic is 'y'), and only with the parts it reproduces
+; band_extension: with changing geometry (glogem.pro switches glacier_retreat on after the survey year
+; when find_startyear or hindcast_dynamic is 'y') only with dh_regrowth, whose bands below the front it
+; provides (the old advance scheme would amplify them); only with the parts it reproduces
 if calibrate eq 'y' then band_extension = 'n'
 if band_extension eq 'y' then begin
   if meltmodel ne '1' then message, 'band_extension needs meltmodel ''1'''
   if read_parameters ne 'y' then message, 'band_extension needs read_parameters=''y'' (regional parameters from the calibration file)'
-  if glacier_retreat eq 'y' or find_startyear eq 'y' or hindcast_dynamic eq 'y' then $
-    message, 'band_extension needs fixed geometry: glacier_retreat=''n'', find_startyear=''n'', hindcast_dynamic=''n'''
+  if (glacier_retreat eq 'y' or find_startyear eq 'y' or hindcast_dynamic eq 'y') and dh_regrowth ne 'y' then $
+    message, 'band_extension with changing geometry needs dh_regrowth=''y''; for fixed geometry set glacier_retreat=''n'', find_startyear=''n'', hindcast_dynamic=''n'''
   if debris_supraglacial eq 'y' or firnice_temperature eq 'y' or refreezing_full eq 'y' then $
     message, 'band_extension does not support debris_supraglacial, firnice_temperature or refreezing_full'
   if band_ext_depth lt adv_addband0 * 10. then message, 'band_ext_depth must be at least adv_addband0*10 m'

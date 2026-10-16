@@ -404,6 +404,14 @@ if flow_blowup_check eq 'mass' then $
 ; an ice-free flowline cannot regain ice: skip its no-op sub-steps (df_dx as they would leave it)
 flow_icefree = max(thick_dx) le 0d0
 if flow_icefree then df_dx[*] = 0
+; with dh_reseed the glacier continues on the Δh parameterisation, which restarts it when its
+; old footprint gains mass again
+if flow_icefree and dh_reseed eq 'y' then begin
+  print, 'GloGEMflow: no ice left on the flowline in ' + strtrim(ye + tran[0], 2) + $
+    ' --- the glacier continues on the Δh parameterisation, which can restart it (dh_reseed)'
+  flow_blown_up = 1
+  use_flow_model_gl = 'n'
+endif
 
 ; this year's applied balance, outflow at the downstream end and inflow at the
 ; upstream end (m3 ice), see ice_thickness.pro

@@ -18,11 +18,17 @@ gr_thick0 = thick & gr_area0 = area & gr_elev0 = elev & gr_gl0 = gl
 gr_area_ini0 = area_ini & gr_thick_ini0 = thick_ini
 gr_qcalv = 0d0   ; ice removed by the sea-level cut-off below, mio m3
 gr_qout = 0d0    ; ice that left a regrowing glacier at its lowest band (dh_regrowth.pro), mio m3
+gr_qseed = 0d0   ; ice of a glacier that restarts this year (dh_reseed.pro), mio m3
 
 ; -----------------------------
 ; update surface geometry
 
 ii = where(thick gt 0, ci)
+
+; a glacier with no ice left can restart (dh_reseed='y')
+if ci eq 0 and dh_reseed eq 'y' then begin
+  @procedures/processing/dh_reseed
+endif
 
 ; a growth year with dh_regrowth='y' goes to procedures/processing/dh_regrowth.pro
 dhr_on = dh_regrowth eq 'y' and dvol gt 0 and ci gt 0
@@ -285,7 +291,7 @@ endif
 ; redistribution above has gone unstable. Revert and downwaste uniformly
 ; instead, keeping the ice so the glacier can still grow later.
 gr_vreal = total(area * thick) - volumes[ye] * 1000.   ; realised change, mio m3
-gr_vexp = dvol / 1000000. - gr_qcalv - gr_qout         ; mass-balance change less sea-level calving and outflow, mio m3
+gr_vexp = dvol / 1000000. - gr_qcalv - gr_qout + gr_qseed   ; mass-balance change less sea-level calving and outflow, plus a restart, mio m3
 gr_tol = (0.1 * abs(gr_vexp)) > (0.05 * volumes[ye] * 1000.) > 0.05
 ; a non-finite result (NaN/Inf geometry) is reverted as well
 gr_bad = ~finite(gr_vreal) or total(~finite(area_ini)) gt 0 or total(~finite(thick_ini)) gt 0
@@ -299,7 +305,7 @@ if gr_bad or abs(gr_vreal - gr_vexp) gt gr_tol then begin
   elev = gr_elev0
   gl = gr_gl0
   flux_calv[ye] = 0   ; only the surface balance is applied below: no calving this year
-  gr_qout = 0d0       ; and no outflow
+  gr_qout = 0d0 & gr_qseed = 0d0   ; and no outflow or restart
   if gr_bad then begin
     ; also undo this year's hypothetical advance bands; zero what is still non-finite
     area_ini = gr_area_ini0 & thick_ini = gr_thick_ini0
@@ -336,6 +342,16 @@ if gr_qout gt 0 then begin
   flow_ge_bed = bed_elev[0]
   n_dh_outflow = n_dh_outflow + 1
   dh_outflow_gt = dh_outflow_gt + gr_qout * 0.9d0 / 1000d0
+endif
+
+; a glacier that restarted this year (dh_reseed.pro): its new ice is its balance of the year
+if gr_qseed gt 0 then begin
+  areas[ye] = total(area)
+  mb[ye] = gr_qseed * 0.9d0 / areas[ye]
+  n_reseed = n_reseed + 1
+  print, 'Glacier ' + strtrim(id[gg[g]], 2) + ' restarts in ' + strtrim(ye + tran[0], 2) + ' on ' + $
+    strtrim(long(total(gl ne noval)), 2) + ' band(s) of its old footprint: ' + $
+    strtrim(string(gr_qseed, fo='(e10.3)'), 2) + ' mio m3 (dh_reseed)'
 endif
 
 ; storing of results
