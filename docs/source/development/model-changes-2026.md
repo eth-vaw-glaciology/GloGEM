@@ -15,6 +15,7 @@ For users of GloGEM; the details and the evidence are in the entries below.
 - **New: the GMIP4 ERA5 hindcast runs with changing geometry** ({ref}`G13 <mc-g13>`). Flow runs write `GloGEMflow_*` netCDF files.
 - **Fixed, climate input:** projections read the climate months late, in GMIP4 ({ref}`G1 <mc-g1>`) and in CMIP6 and AMOC ({ref}`G2 <mc-g2>`; both also fixed on main since 2026-10-16); ERA5 and GCM came from neighbouring grid points ({ref}`G3 <mc-g3>`); the climate point depended on the batching ({ref}`G4 <mc-g4>`); lapse rate and variability on the per-point climate path ({ref}`G5 <mc-g5>`); lost longitudes ({ref}`G6 <mc-g6>`); speed ({ref}`G7 <mc-g7>`).
 - **Fixed, elsewhere:** glaciers never simulated ({ref}`G8 <mc-g8>`); glaciers turning NaN in the Δh parameterisation ({ref}`G9 <mc-g9>`, {ref}`G10 <mc-g10>`); Δh mass check and sea-level calving ({ref}`G11 <mc-g11>`); the calving-flux file ({ref}`G15 <mc-g15>`); `mass_bsl` ({ref}`G18 <mc-g18>`); negative netCDF values ({ref}`G19 <mc-g19>`); monthly netCDF time labels ({ref}`G20 <mc-g20>`, also on main); the flowline now uses the RGI 7.0 area correction ({ref}`F15 <mc-f15>`).
+- **New for growing glaciers (AMOC), all off by default:** the flowline balance at the actual surface ({ref}`F17 <mc-f17>`), a blow-up check by mass ({ref}`F18 <mc-f18>`), free outflow at the end of the longest grid ({ref}`F19 <mc-f19>`), Δh regrowth with a thickness limit per glacier ({ref}`G34 <mc-g34>`).
 - **Running:** the environment variables `GLOGEM_CONFIG` and `GLOGEM_LOGDIR`; the GMIP4 campaign scripts in `scripts/gmip4/` with a README ({ref}`S10 <mc-s10>`).
 - **Still open:** the swapped ice-melt and snow-melt files ({ref}`K12 <mc-k12>`), refreezing that depends on the number of elevation bands ({ref}`K26 <mc-k26>`) and the other items of section 6.
 
@@ -185,6 +186,7 @@ Janosch decided on 2026-09-25 not to rerun the submitted v1 regions, and on 2026
 | {ref}`G31 <mc-g31>` | Geodetic target averaged over 19 of its 20 years; now all 20 after one spin-up year | core (calibration) | fixed; pushed for main (`fix/geodetic-target-period`) | yes, small | no (the bug is in main) | `a1fb2fa`; local GloGEMflow `d075c98` |
 | {ref}`G32 <mc-g32>` | `refreezing_full` stopped without the firn/ice temperature model (`TL_RF` undefined) | core | fixed on `snowline-calibration` | no (it ran only with the temperature model) | no (the bug is in main) | `07d694d` |
 | {ref}`G33 <mc-g33>` | Snowline (TSLA) calibration of c_prec, fixed c_prec from a file, snow line as p10 | core (calibration) | new, on `snowline-calibration` | no unless switched on | her one-script version only | `6528443`, `54497c5`, `c7a477c` |
+| {ref}`G34 <mc-g34>` | Δh regrowth: former bands refilled, a thickness limit per glacier, exact mass (`dh_regrowth`) | core | new (AMOC) | no unless switched on | — (K1 is in main) | `39e21ee` |
 | {ref}`F1 <mc-f1>` | Port of MATLAB GloGEMflow to IDL and coupling to GloGEM | flow | done | — | not in main | `baa5c7b`, `020e81e`, ... |
 | {ref}`F2 <mc-f2>` | Flow → Δh handover: frozen, NaN or resurrected glaciers, lost year | flow | fixed | yes | not in main | `a473e25`, `61ac7d4`, `11ca640`, `5dfd530`, `df8bdd4` |
 | {ref}`F3 <mc-f3>` | Spin-up quality gate | flow | fixed | yes | not in main | `5dfd530` |
@@ -201,6 +203,9 @@ Janosch decided on 2026-09-25 not to rerun the submitted v1 regions, and on 2026
 | {ref}`F14 <mc-f14>` | Log says "falling back to Δh" when the glacier stays on flow | flow | fixed (round 5, v3r5) | no (log only) | not in main | `b4589c2` |
 | {ref}`F15 <mc-f15>` | The flowline ignored the RGI 7.0 area correction | flow | fixed after the campaign | yes | not in main | `4808988` |
 | {ref}`F16 <mc-f16>` | Flowline history written for Δh glaciers; spin-up cache key without RGI version and region | flow | fixed | no (output files and cache names) | not in main | `fc90642` |
+| {ref}`F17 <mc-f17>` | Flowline balance read at most at the inventory surface: switch (`flow_mb_elev_cap`) | flow | new (AMOC) | no unless switched on | not in main | `72749f7` |
+| {ref}`F18 <mc-f18>` | Blow-up check by mass instead of the 30 % thickness sum (`flow_blowup_check`) | flow | new (AMOC) | no unless switched on | not in main | `f927883` |
+| {ref}`F19 <mc-f19>` | End of the longest flowline grid: free outflow instead of the handover to Δh (`flow_domain_end`) | flow | new (AMOC) | no unless switched on | not in main | `f927883` |
 | {ref}`S1 <mc-s1>` | Combine counted batches twice (`GloGEM_` and `GloGEMflow_` files) | scripts | fixed | submission files | — | `a6037e2` |
 | {ref}`S2 <mc-s2>` | Combine and gate for v2: completeness, `mass_bsl` repair, month restamp | scripts | fixed | submission files | — | `8993a0d` |
 | {ref}`S3 <mc-s3>` | GMIP4 format: time bounds, whole calendar years, NaN-aware gate | scripts | fixed | submission files | — | `cc70ff7` |
@@ -212,7 +217,8 @@ Janosch decided on 2026-09-25 not to rerun the submitted v1 regions, and on 2026
 | {ref}`S9 <mc-s9>` | Run logs off the home quota (`GLOGEM_LOGDIR`) | scripts, `glogem.pro` | done | no | — | `2196916` |
 | {ref}`S10 <mc-s10>` | Clean-up of the branch for the merge | scripts, flow, docs | done | no | — | `7ced973`, `756bbf7`, `d16e290`, `95a87ec`, `736a770` |
 | {ref}`S11 <mc-s11>` | Batch files for other glacier sets; AMOC config generator and job queue | scripts | done | no | — | `e0a1a1c`, `4edecfd`, `93d4e39` |
-| {ref}`K1 <mc-k1>` | Δh advance scheme can regrow glaciers without bound | core | known, accepted | — | yes | none |
+| {ref}`S12 <mc-s12>` | One job queue over several hosts; OGGM valley lines and the merging count | scripts | done | no | — | `0588fa3`, `cf05eb3` |
+| {ref}`K1 <mc-k1>` | Δh advance scheme can regrow glaciers without bound | core | known; replaced by `dh_regrowth` where switched on (G34) | — | yes | `39e21ee` |
 | {ref}`K2 <mc-k2>` | GMIP4 GCM files are bias-corrected on the annual mean only | input data | open | — | yes | none |
 | {ref}`K3 <mc-k3>` | The 1939 months: zeros in the hindcast, GCM values in projections | core | known, accepted | — | yes | none |
 | {ref}`K4 <mc-k4>` | Hindcast starts geometry change in the survey year, projections a year later | core | known, accepted | — | yes | none |
@@ -221,8 +227,8 @@ Janosch decided on 2026-09-25 not to rerun the submitted v1 regions, and on 2026
 | {ref}`K7 <mc-k7>` | ELA bias clamped at ±500 m instead of rejected | flow | known, accepted | — | — | none |
 | {ref}`K8 <mc-k8>` | Positive-balance glaciers at the calibration bounds | calibration | known, accepted | — | — | none |
 | {ref}`K9 <mc-k9>` | Low flow share: a quarter of glaciers fall back after spin-up failure | flow | open | — | — | none |
-| {ref}`K10 <mc-k10>` | 30 % year-to-year blow-up check mostly hits small melting glaciers | flow | open, low | — | — | none |
-| {ref}`K11 <mc-k11>` | Rebuilt elevation bands overstate glacier area; head-cell leak | flow | open | — | — | none |
+| {ref}`K10 <mc-k10>` | 30 % year-to-year blow-up check mostly hits small melting glaciers | flow | fixed behind `flow_blowup_check='mass'` (F18) | — | — | `f927883` |
+| {ref}`K11 <mc-k11>` | Rebuilt elevation bands overstate glacier area; head-cell leak | flow | open; the head-cell term is booked in the mass check (F18) | — | — | none |
 | {ref}`K12 <mc-k12>` | Ice-melt and snow-melt labels swapped in the `.dat` output | core | fixed | yes (the two files swap) | yes | `c74d789` |
 | {ref}`K13 <mc-k13>` | The flow model silently does not run in runs ending before 2026 | core, flow | open | — | yes (the settings rule) | none |
 | {ref}`K14 <mc-k14>` | An `@` include after `if ... then` guards nothing | core | open | — | no (only in our temperature code) | none |
@@ -627,6 +633,57 @@ port avoids: `cali_id = transpose(id)` (her line 657) takes the phase-3 DDF from
 spanning several grid cells; a glacier without observations was scored against the last observation of the file.
 Her files use calendar days (day 366) and contain observations with σ = 0 (left out).
 
+(mc-g34)=
+### G34. Δh regrowth (`dh_regrowth`)
+
+`glacier_retreat.pro` was written for shrinking glaciers. Below its inventory volume a growing glacier could only
+thicken the bands that still had ice, so its front stayed where the retreat had left it ("pillars"); above it, the
+advance scheme added bands with up to 9× the terminus area and booked their volume with the wrong area, which sent
+growth years into the G11 revert and its thickening at fixed area (K1). Lander's changing-geometry AMOC runs grow
+even where the balance is negative (Central Europe RCP45_045sv 126.6 → 182.8 km³). `dh_regrowth='y'` (needs
+`advance='y'`, excludes `adv_lookup='y'`) sends every growth year to the new `dh_regrowth.pro`; melt years are
+unchanged:
+
+1. the gain thickens the ice bands with the Δh shape;
+2. a band thickens by at most `adv_fcrit` (2 m) a year and never beyond its limit τ_g/(ρ g sin α)
+   (`initialise_dh_regrowth.pro`: τ_g is the area-weighted 90th percentile of the glacier's inventory basal stress,
+   at least `dh_regrowth_tau_min` = 100 kPa; α the band's along-flow slope over ±5 bands, at least 2°; never below
+   the inventory thickness), the front band only up to its target thickness; the ice above these goes to the front;
+3. that ice first brings the front band to its target, then refills the empty bands below it top down: former
+   bands to their inventory thickness and area, bands beyond the inventory front to the inventory terminus
+   thickness (at most the target of the band above and the band's limit) with the terminus area, without the
+   amplification. With the area–thickness relation of the Δh parameterisation the last band takes exactly what is
+   left;
+4. ice left at the lowest band leaves the glacier, booked like the flow model's grid-end outflow
+   (`flow_gridend_outflow`, use `'melt_if_land'` on land), written per glacier and year to
+   `*_flow_gridend_outflow.dat` and summed in the run log.
+
+At a flow→Δh handover the advanced flowline tongue is kept: those bands take their handover area and thickness as
+reference (`sync_bands_thickness.pro`). The melt booking of `limit_glacier_growth.pro` moved unchanged into
+`book_ice_melt.pro`, which both use. An independent review (max effort, 2026-10-16) found that the first version
+spread a near-zero layer of ice down to the lowest band and sent most of the gain out (a rounding residue after
+the last partial fill, and new bands capped at the thickness of a half-filled front band); fixed before the
+commit, together with the missing checks of `advance` and `adv_lookup`. Tests (the A1 test glaciers, CESM,
+Δh only, to 2500):
+
+| Region (RGI ID) | Scenario | Old scheme, 2500 | `dh_regrowth`, 2500 | 2003 |
+|---|---|---|---|---|
+| Central Europe (11) | RCP45_045sv | 8.2 km³ | 5.2 km³ | 15.5 km³ |
+| Central Europe (11) | RCP26_045sv | 26.6 km³ | 10.6 km³ | 15.5 km³ |
+| Scandinavia (08) | RCP85_045sv | 100.4 km³ | 41.3 km³ | 29.6 km³ |
+| Scandinavia (08) | RCP45_045sv | 328.6 km³ | 44.4 km³ | 29.6 km³ |
+
+Switch off: byte-identical (Central Europe AMOC Δh old tree against new; SouthernAndes GMIP4). No mass-check
+failure in a growth year (the remaining ones are melt years, as before). The 39 Scandinavian test glaciers have a
+fixed-geometry balance of +0.4 to +0.6 m w.e./a after 2100 under RCP85_045sv (the region's is about 0), so their
+growth is real. Under RCP45_045sv 132 km³ of ice leaves the glaciers at their lowest band: the bands reach only
+100 m below the inventory front, so strong growth leaves the glacier (before 2100: 0.9 km³). Letting the front band
+thicken up to its limit before it overflows (design A5) changes the outflow by less than 1 %. Still open: a glacier
+that has melted out completely cannot regrow (no balance without ice; in the Central Europe RCP26_045sv test 30 of
+59 glaciers melt out, 26 of them with a positive fixed-geometry balance after 2300), and the bands below the front
+should follow the valley (G30 with changing geometry, OGGM valley lines). Details: AMOC development history,
+chapter 5.
+
 ## 4. GloGEMflow items
 
 GloGEMflow is not on `main`, so everything here is new code for main. In short, for our submissions:
@@ -829,6 +886,51 @@ only for glaciers whose flow model started in the run (`flow_initialised`). The 
 `rgi<V>_<Region>_<id>_y<year>` (`fc90642`); old caches are recomputed. SouthernAndes test: 17 flowgrid files for
 the 17 flow glaciers, cache contents unchanged.
 
+(mc-f17)=
+### F17. Flowline balance read at most at the inventory surface (`flow_mb_elev_cap`)
+
+The flow model reads GloGEM's band balance at min(surface, inventory surface), as Harry's MATLAB `massbal.m`. In
+front of the inventory glacier the inventory "surface" is the bed, so an advancing tongue melts as if it lay on
+the valley floor, and a thickening glacier never gets the extra accumulation of its higher surface; IGM reads its
+forcing at the actual surface. `flow_mb_elev_cap` (`flow_mb_surface.pro`, used by both balance lookups): `'all'`
+today's cap (default), `'ice'` only where the inventory had ice (as the spin-up), `'none'` the actual surface.
+`'all'` is byte-identical (SouthernAndes S10). In a retreat scenario the options hardly differ (+0.05 % of the
+regional volume at most); in strong growth (39 Scandinavian glaciers, CESM RCP45_045sv) `'none'` gives the 13 flow
+glaciers 5.7 % more volume by 2600.
+
+(mc-f18)=
+### F18. Blow-up check by mass (`flow_blowup_check`)
+
+The 30 % check (K10) handed a glacier to the Δh parameterisation whenever the sum of its cell thicknesses changed by
+more than 30 % within a year: 99.3 % of the 27,363 v3 events were small glaciers melting fast, and a fast-growing
+glacier would be handed over too. `flow_blowup_check='mass'` compares the volume of the updated cells (trapezoid
+cross-section, `flow_cell_volume.pro`) with the volume at the start of the year plus the applied balance, minus the
+outflow at the downstream end, plus the inflow at the upstream end (the head-cell term of K11, now booked as
+`flow_hd_vol`), and counts a blow-up only if they differ by more than `flow_blowup_mass_tol` (1 %, at least
+10⁴ m³) or the difference is not finite. The 5000 m and NaN checks stay. In 4598 SouthernAndes and 5465
+Scandinavian flow glacier-years (the latter under strong growth) the budget closes to 5·10⁻¹⁵ of the volume, so the
+check fires only on a real error; the two SouthernAndes "blow-ups" of the 30 % check (ordinary melt) are gone and
+only those two glaciers change. Default byte-identical. The review notes that an exactly conservative scheme can
+still go unstable without losing mass (a checkerboard); only the 5000 m and NaN checks would see that.
+
+(mc-f19)=
+### F19. End of the longest flowline grid: free outflow (`flow_domain_end`)
+
+When a glacier's ice reached the end of its longest grid (1.5 glacier lengths in front), it went to the Δh
+parameterisation for the rest of the run, which then piled up its ice (13 of 39 Scandinavian test glaciers under
+CESM RCP45_045sv; the 39 reached 8.6× their 2003 volume by 2600). `flow_domain_end='outflow'` keeps the glacier on
+the flow model: cell 1 becomes a ghost cell with the thickness of cell 2 on the bed continued from cells 3 and 2
+(no thickness step), and the outflow across the end is the diffusivity of cell 2 times that bed slope
+(`diffusivity.pro`, `ice_thickness.pro`), so it grows with the thickness at the end; outflow only, so an uphill
+forefield stays closed. It is booked as the existing grid-end outflow (`flow_gridend_outflow`; use `'melt_if_land'`
+on land). Two earlier versions were wrong: passing on what flows into the last cell turns into a wall when the end
+cell's balance is positive (it thickens until the inflow stops; the outflow of two test glaciers fell from 2 to
+0.4–0.6 m w.e./a, found by the review) and into the old cliff when it is negative; and a ghost cell on the bed of
+cell 1 lets nothing out, because the two boundary cells carry the bed of cell 2 (MATLAB's boundary condition).
+Tests: default byte-identical; with every new switch on (39 Scandinavian glaciers,
+CESM RCP45_045sv, to 2600) 7 glaciers reach their grid end and stay on the flow model, the land glaciers among
+them keep an outflow of 1.4–2.2 m w.e./a for over 300 years, and the 39 reach 118 km³ by 2600 instead of 245 km³.
+
 ## 5. Scripts, post-processing and run infrastructure
 
 These are in `scripts/` and do not change model output, but they change the files submitted to GMIP4 or how campaigns run.
@@ -914,12 +1016,25 @@ writes one config per region, scenario and batch (one scenario per job: `rcp_bat
 `scripts/amoc/run_queue.sh` runs a folder of configs N at a time from an exported tree, restartable (`4edecfd`,
 `93d4e39`).
 
+(mc-s12)=
+### S12. One job queue over several hosts; OGGM valley lines and the merging count
+
+`scripts/amoc/run_queue.sh` claims a job with an atomic `mkdir <log dir>/<name>.claim`, so several hosts can work
+through one config folder (`0588fa3`); used for the IGM forcing on vierzack04–07. Jobs on the other hosts took
+about 35 instead of 16 minutes because they wrote over NFS to vierzack04's disk (its 8 NFS threads waited on disk
+flushes); logins to the other hosts then hang 20–60 s, because `~/.bashrc` runs conda from `/scratch_net/vierzack04`.
+For production, write on each host's local disk and gather afterwards. `scripts/amoc/oggm_valley_lines.py` unpacks
+OGGM's preprocessed glacier directories without the server's pickles and runs OGGM's own valley-line tasks
+(`compute_downstream_line`, `compute_downstream_bedshape`) for every glacier; `count_confluences.py` counts, per
+region, the glaciers whose valley line runs into another glacier or joins another glacier's valley line, with
+distances and the ice involved (`cf05eb3`).
+
 ## 6. Known issues, accepted or still open
 
 (mc-k1)=
 ### K1. The Δh advance scheme can regrow glaciers without bound (accepted)
 
-`glacier_retreat.pro:49` switches the advance scheme on once a glacier's volume exceeds its initial volume, and the area–thickness rescaling then feeds itself without a bound. Code bugs in it (line numbers as in the v1 code): a stale index `ci` (lines 111/144), `dh=-9999` on new bands (155), wrong-sign `redistribute_vplus` for a volume gain (55–63), `areas[ye-1]` (107), and new bands only 100 m below the terminus. Found 2026-09-15: in CentralEurope under MRI ssp534-over, glaciers above 5× their volume at 2300 hold 8.3 % of the ice in Lander's run (50 glaciers) and 37.3 % in ours (134 glaciers; the extra ones tipped over by G4); 03473 runs away identically in both. Later: NorthAsia small Δh glaciers get 3–4× thicker (13 % of MRI 2300 ice), Kilimanjaro reaches 660–1,010 m, LowLatitudes has 3–11 % of its 2300 ice more than 300 m thick; Lander's files show the same or more. Janosch accepted it on 2026-09-15 (no rerun; Lander to be told it is in his runs); on 2026-09-24 he asked for the bugs to be fixed and a physical bound to be added, which is not done. A patch that refreshes the stale index and sets dh = 1 on new bands (kept with the campaign notes; ask Janosch for it) was tested on one SouthernAndes batch but not analysed, and is on no branch.
+`glacier_retreat.pro:49` switches the advance scheme on once a glacier's volume exceeds its initial volume, and the area–thickness rescaling then feeds itself without a bound. Code bugs in it (line numbers as in the v1 code): a stale index `ci` (lines 111/144), `dh=-9999` on new bands (155), wrong-sign `redistribute_vplus` for a volume gain (55–63), `areas[ye-1]` (107), and new bands only 100 m below the terminus. Found 2026-09-15: in CentralEurope under MRI ssp534-over, glaciers above 5× their volume at 2300 hold 8.3 % of the ice in Lander's run (50 glaciers) and 37.3 % in ours (134 glaciers; the extra ones tipped over by G4); 03473 runs away identically in both. Later: NorthAsia small Δh glaciers get 3–4× thicker (13 % of MRI 2300 ice), Kilimanjaro reaches 660–1,010 m, LowLatitudes has 3–11 % of its 2300 ice more than 300 m thick; Lander's files show the same or more. Janosch accepted it on 2026-09-15 (no rerun; Lander to be told it is in his runs); on 2026-09-24 he asked for the bugs to be fixed and a physical bound to be added, which is not done. A patch that refreshes the stale index and sets dh = 1 on new bands (kept with the campaign notes; ask Janosch for it) was tested on one SouthernAndes batch but not analysed, and is on no branch. Since 2026-10-16 `dh_regrowth='y'` replaces the advance scheme in growth years (G34); the default is unchanged.
 
 (mc-k2)=
 ### K2. GMIP4 GCM files are bias-corrected on the annual mean only (open)
@@ -964,12 +1079,12 @@ In v1, by glacier count, 65.7 % were shorter than 1 km, 23.3 % failed their spin
 (mc-k10)=
 ### K10. The 30 % year-to-year blow-up check (open, low)
 
-99.3 % of the 27,363 v3 events are small glaciers melting fast (median 0.0005 km³), which are handed to the Δh parameterisation. A growth-only version was tested but not analysed.
+99.3 % of the 27,363 v3 events are small glaciers melting fast (median 0.0005 km³), which are handed to the Δh parameterisation. A growth-only version was tested but not analysed. Since 2026-10-16 `flow_blowup_check='mass'` replaces it (F18); the default is unchanged.
 
 (mc-k11)=
 ### K11. Rebuilt bands overstate the glacier area; head-cell leak (open)
 
-`update_elevation_bands.pro` rebuilds the bands from the flowline with areas up to about 60 % too large (Iceland 00376: 1,570 against 1,067 km²; SouthernAndes 12034: 2,200 against 1,368 km²). Since `cbb3c5a` the reported numbers come from the flowline, so this affects only band diagnostics. The head cell copies the thickness of the cell below it each sub-step (MATLAB's boundary condition) without booking the change: about 3e-5 Gt/a.
+`update_elevation_bands.pro` rebuilds the bands from the flowline with areas up to about 60 % too large (Iceland 00376: 1,570 against 1,067 km²; SouthernAndes 12034: 2,200 against 1,368 km²). Since `cbb3c5a` the reported numbers come from the flowline, so this affects only band diagnostics. The head cell copies the thickness of the cell below it each sub-step (MATLAB's boundary condition) without booking the change: about 3e-5 Gt/a. The flux it causes is now booked (`flow_hd_vol`) for the mass check of F18; in the test runs it was zero.
 
 (mc-k12)=
 ### K12. Ice-melt and snow-melt labels swapped in the `.dat` output (fixed)
