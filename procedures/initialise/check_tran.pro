@@ -31,9 +31,9 @@ endif
 if AMOC eq 'y' then begin
 ;    if rcpmodel eq 'ssp534-over'then begin
    if gcmmodel eq 'CESM' then begin
-      tran[1]=3000
+      tran[1]=amoc_end_year
    endif else begin
-      tran[1]=3000
+      tran[1]=amoc_end_year
    endelse
 endif
 

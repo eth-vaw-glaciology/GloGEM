@@ -256,6 +256,7 @@ adv_terminusfraction = 0.2
 adv_lookup = 'n'
 band_extension = 'n' ; 'y': mass balance on bands down to band_ext_depth below the glacier, as if they were ice (flow model, IGM forcing)
 band_ext_depth = 1500. ; [m] depth of the band extension below the lowest band
+amoc_end_year = 3000 ; last year of AMOC projections; the GCM series are extended to it by repeating their last 50 years
 
 ; --- calving (Oerlemans & Nick, 2005; marine-terminating only)
 frontal_ablation = 'y'
@@ -515,6 +516,7 @@ if flow_gridend_outflow ne 'frontal' and flow_gridend_outflow ne 'melt_if_land' 
   message, 'flow_gridend_outflow must be ''frontal'' or ''melt_if_land'', not ''' + strtrim(flow_gridend_outflow, 2) + ''''
 if glacier_retreat eq 'n' and hindcast_dynamic ne 'y' and use_flow_model eq 'n' then advance = 'n'
 if band_extension eq 'y' and meltmodel ne '1' then message, 'band_extension needs meltmodel ''1'''
+if AMOC eq 'y' and amoc_end_year lt 2026 then message, 'amoc_end_year must be 2026 or later (an earlier end makes the run an ERA5 hindcast, K13)'
 if band_extension eq 'y' and glacier_retreat eq 'y' then $
   message, 'band_extension is not coupled to the geometry change yet; use it with glacier_retreat=''n'''
 

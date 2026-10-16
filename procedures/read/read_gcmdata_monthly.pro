@@ -112,11 +112,11 @@ endelse
 
 if AMOC eq 'y' then begin
 ; ============================================================
-; EXTEND GCM TO 3000 BY RANDOMLY REPEATING LAST 50 YEARS
+; EXTEND GCM TO amoc_end_year (default 3000) BY RANDOMLY REPEATING LAST 50 YEARS
 ; AMOC / 1-D monthly climate data
 ; ============================================================
 
-extend_to_year = 3000
+extend_to_year = amoc_end_year
 
 last_year = fix(max(gcm_year))
 
