@@ -110,10 +110,25 @@ endfor
 
 for i=0,ci-1 do begin
 
+; 'firn': depth of the band's firn layers plus this winter's snow on the thermal density profile
+; (firnice_firn_ledger.pro); caps the meltwater below, and with firnice_firn_column 'ledger' the firn column
+if firnice_perm_limit eq 'firn' then z_fl = interpol(fl_znode, fl_cumwe, (total(fl_we[ii[i],*]) + sno[ii[i]]) < max(fl_cumwe))
+fl_empty = 0b
+if firnice_firn_column eq 'ledger' then fl_empty = byte(total(fl_we[ii[i],*]) le 0d)
+
 ; generate local, and actualized arrays for layer heat capacity, condictivity and density
 dens_fit=dblarr(total(fit_layers))+900
 ; firn column first, so the snow blend below mixes against the right material underneath
-if firn_th[ii[i]] eq 1 then dens_fit[0:n_elements(fit_dens)-1]=fit_dens ; to be verified...
+if firn_th[ii[i]] eq 1 and fl_empty eq 0 then begin
+   dens_fit[0:n_elements(fit_dens)-1]=fit_dens ; to be verified...
+   ; 'ledger' (3b-ii): firn only down to the firn base, ice below; a node's slice straddling the base is blended
+   if firnice_firn_column eq 'ledger' then for j=0, n_elements(fit_dens)-1 do begin
+      sl_top = fit_dz[1,j] - 0.5d*fit_dz[0,j]
+      sl_bot = fit_dz[1,j] + 0.5d*fit_dz[0,(j+1) < (total(fit_layers)-1)]
+      f_firn = ((z_fl - sl_top) / (sl_bot - sl_top)) > 0d < 1d
+      dens_fit[j] = f_firn*fit_dens[j] + (1d - f_firn)*rho_ice_k
+   endfor
+endif
 
 ; Snow depth at 300 kg/m3 and the number of layers it reaches (snow logbook). The snow itself
 ; enters through the gap conductances below; on firn bands it is inert (snow and firn share
@@ -148,7 +163,7 @@ if n_ice gt 0 then cond_fit[jj_ice]=k_ice_l[jj_ice]
 n_cond = n_elements(cond_fit)
 kgap = dblarr(n_cond)
 kgap[1:n_cond-1] = 0.5d*(cond_fit[0:n_cond-2] + cond_fit[1:n_cond-1])
-if firn_th[ii[i]] eq 0 and sno[ii[i]] gt 0d then begin
+if (firn_th[ii[i]] eq 0 or fl_empty) and sno[ii[i]] gt 0d then begin   ; an empty ledger is an ice band
    s_rest = sno[ii[i]]
    v_snow = dblarr(n_cond) & c_snow = dblarr(n_cond)   ; snow volume and heat capacity per node slice
    for j=1, n_cond-1 do begin
@@ -185,8 +200,7 @@ if firnice_perm_limit eq 'profile' then begin
    if n_830 gt 0 then z_perm_b = fit_dz[1, pd_830[0]]
 endif
 ; 'firn': no deeper than the band's firn layers plus this winter's snow (firnice_firn_ledger.pro)
-if firnice_perm_limit eq 'firn' then $
-   z_perm_b = z_perm_b < interpol(fl_znode, fl_cumwe, (total(fl_we[ii[i],*]) + sno[ii[i]]) < max(fl_cumwe))
+if firnice_perm_limit eq 'firn' then z_perm_b = z_perm_b < z_fl
 pdidx_arr = where(fit_dz[1,*] ge z_perm_b, n_pdi)
 perm_limit = (n_pdi gt 0) ? ((pdidx_arr[0] - 1l) > 1l) : (tt - 2l)
 perm_limit = perm_limit < (tt - 2l)
