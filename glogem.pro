@@ -520,7 +520,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                         ; define arrays
                         bal=dblarr(nb) & melt=bal & acc=bal & refreeze=bal
                         if band_extension eq 'y' then begin   ; balance as if ice and its refreezing state (virtual_ice_balance.pro)
-                          bal_v=dblarr(nb) & rf_cold_v=dblarr(nb) & rf_ind_v=dblarr(nb)
+                          bal_v=dblarr(nb) & rf_cold_v=dblarr(nb) & rf_ind_v=dblarr(nb) & refre_v=dblarr(nb)
                         endif
                         debris_red_factor=dblarr(nb)+snoval
                         rf_ind=dblarr(nb) & rf_cold=rf_ind
@@ -566,6 +566,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                             if time_resolution eq 'monthly' then cdm=cmon else cdm=cday
                             if ccmon eq 0 then jjclim=where(cyear eq ye-1+tran[0] and cdm eq m)
                             tg=temp[jjclim[0]+ccmon]+(elev-hclim)*dtdz[m-1]+t_offset
+                            if bext_dyn then tg=tg+(toff_v-t_offset)   ; blended offset below the inventory front
 			    
                             ; === Mass balance model
 

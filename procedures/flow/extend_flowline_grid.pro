@@ -82,13 +82,13 @@ if ext_n gt 0 then begin
     ext_ms = flow_mb_surface(sur_dx[ext_k], obs_sur_dx[ext_k], obs_ice_dx[ext_k], flow_mb_elev_cap)
     ext_mz = (ext_ms > elev[mb_srt[0]]) < elev[mb_srt[-1]]
     if n_elements(mb_srt) ge 2 then begin
-      ext_bw = interpol(bal[mb_srt], elev[mb_srt], ext_mz)
+      ext_bw = interpol(mb_bal[mb_srt], elev[mb_srt], ext_mz)
       ext_aw = interpol(acc[mb_srt], elev[mb_srt], ext_mz)
-      ext_rw = interpol(refreeze[mb_srt], elev[mb_srt], ext_mz)
+      ext_rw = interpol(mb_refr[mb_srt], elev[mb_srt], ext_mz)
     endif else begin
-      ext_bw = dblarr(ext_n + 2) + bal[mb_srt[0]]
+      ext_bw = dblarr(ext_n + 2) + mb_bal[mb_srt[0]]
       ext_aw = dblarr(ext_n + 2) + acc[mb_srt[0]]
-      ext_rw = dblarr(ext_n + 2) + refreeze[mb_srt[0]]
+      ext_rw = dblarr(ext_n + 2) + mb_refr[mb_srt[0]]
     endelse
     ext_bd = dblarr(ext_n + 2)
     ext_j = where(ext_bw lt 0, ext_c)

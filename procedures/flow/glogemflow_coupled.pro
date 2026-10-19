@@ -290,20 +290,35 @@ bal_dx = dblarr(xnum)
 ; 'ice' only where the inventory had ice, 'none' not at all.
 mb_sur_dx = flow_mb_surface(sur_dx, obs_sur_dx, obs_ice_dx, flow_mb_elev_cap)
 ; glacier bands sorted by elevation, one per elevation (interpol needs a monotonic abscissa)
+mb_bal = bal & mb_refr = refreeze
 ii_gl_bands = where(gl ne noval, n_gl_bands)
 if n_gl_bands eq 0 then ii_gl_bands = lindgen(nb)
-mb_srt = ii_gl_bands[sort(elev[ii_gl_bands])]
+mb_srt = ii_gl_bands
+if bext_dyn and n_gl_bands gt 0 then begin
+  ; below the lowest glacier band: the ice-surface balance of the bands there (band_extension),
+  ; not rising going down (as the IGM forcing)
+  mb_lo = min(elev[ii_gl_bands], mb_jlo) & mb_jlo = ii_gl_bands[mb_jlo]
+  ii_bx = where(gl eq noval and elev lt mb_lo, n_bx)
+  if n_bx gt 0 then begin
+    ii_bx = ii_bx[reverse(sort(elev[ii_bx]))]
+    mb_bal[ii_bx] = bal_v[ii_bx] & mb_refr[ii_bx] = refre_v[ii_bx]
+    mb_bal[ii_bx[0]] = mb_bal[ii_bx[0]] < mb_bal[mb_jlo]
+    for mb_k = 1l, n_bx - 1 do mb_bal[ii_bx[mb_k]] = mb_bal[ii_bx[mb_k]] < mb_bal[ii_bx[mb_k - 1]]
+    mb_srt = [ii_bx, ii_gl_bands]
+  endif
+endif
+mb_srt = mb_srt[sort(elev[mb_srt])]
 mb_srt = mb_srt[uniq(elev[mb_srt])]
-; beyond the lowest/highest glacier band hold that band's value (no linear extrapolation)
+; beyond the lowest/highest band hold that band's value (no linear extrapolation)
 mb_z = (mb_sur_dx > elev[mb_srt[0]]) < elev[mb_srt[-1]]
 if n_elements(mb_srt) ge 2 then begin
-  bal_we_interp = interpol(bal[mb_srt], elev[mb_srt], mb_z)
+  bal_we_interp = interpol(mb_bal[mb_srt], elev[mb_srt], mb_z)
   acc_we_interp = interpol(acc[mb_srt], elev[mb_srt], mb_z)
-  refr_we_interp = interpol(refreeze[mb_srt], elev[mb_srt], mb_z)
+  refr_we_interp = interpol(mb_refr[mb_srt], elev[mb_srt], mb_z)
 endif else begin
-  bal_we_interp = dblarr(xnum) + bal[mb_srt[0]]
+  bal_we_interp = dblarr(xnum) + mb_bal[mb_srt[0]]
   acc_we_interp = dblarr(xnum) + acc[mb_srt[0]]
-  refr_we_interp = dblarr(xnum) + refreeze[mb_srt[0]]
+  refr_we_interp = dblarr(xnum) + mb_refr[mb_srt[0]]
 endelse
 ; m w.e. -> m ice with GloGEM's ice density (0.9), the one used for volume -> mass
 ii_ice_mb = where(thick_dx gt 0, c_ice_mb)

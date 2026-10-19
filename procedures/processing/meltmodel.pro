@@ -42,6 +42,7 @@ case meltmodel of
     ii = where(sur eq 1 and tg gt t_melt, ci) ; snow
     if ci gt 0 then begin
       mel[ii] = DDFsnow * tg[ii] * mon_len[m - 1] / 1000.
+      if bext_dyn then mel[ii] = ddfs_v[ii] * tg[ii] * mon_len[m - 1] / 1000. ; blended below the inventory front
       jj = where(gl[ii] ne noval, cj)
       if cj gt 0 and ar_gl ne 0 then smelt[ye] = smelt[ye] + total(mel[ii[jj]] * area[ii[jj]]) / ar_gl
       if time_resolution eq 'daily' then snowmel[ii] = mel[ii]
@@ -50,6 +51,7 @@ case meltmodel of
     ii = where(sur eq 2 and tg gt t_melt, ci) ; Firn
     if ci gt 0 then begin
       mel[ii] = (0.5 * DDFice + 0.5 * DDFsnow) * tg[ii] * mon_len[m - 1] / 1000.
+      if bext_dyn then mel[ii] = (0.5 * ddfi_v[ii] + 0.5 * ddfs_v[ii]) * tg[ii] * mon_len[m - 1] / 1000.
       if ar_gl ne 0 then imelt[ye] = imelt[ye] + total(mel[ii] * area[ii]) / ar_gl
       if time_resolution eq 'daily' then icemel[ii] = mel[ii]
     endif
@@ -57,6 +59,7 @@ case meltmodel of
     ii = where(sur eq 0 and tg gt t_melt, ci) ; Ice
     if ci gt 0 then begin
       mel[ii] = DDFice * tg[ii] * mon_len[m - 1] / 1000.
+      if bext_dyn then mel[ii] = ddfi_v[ii] * tg[ii] * mon_len[m - 1] / 1000.
       if ar_gl ne 0 then imelt[ye] = imelt[ye] + total(mel[ii] * area[ii]) / ar_gl
       if time_resolution eq 'daily' then icemel[ii] = mel[ii]
     endif

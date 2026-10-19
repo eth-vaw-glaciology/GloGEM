@@ -11,6 +11,7 @@
 compile_opt idl2
 
 pc = prec[jjclim[0] + ccmon] * c_prec / 1000. ; correct quantity to m w.e.
+if bext_dyn then pc = prec[jjclim[0] + ccmon] * cprec_v / 1000. ; blended below the inventory front
 pg = pc + pc * ((elev - hclim) / 10000.) * dpdz ; extrapolate with elevation
 ; constrain high elevation precipitation
 jj = where(gl ne noval, cj)

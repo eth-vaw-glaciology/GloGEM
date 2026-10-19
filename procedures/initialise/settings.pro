@@ -584,6 +584,10 @@ if band_extension eq 'y' then begin
     message, 'band_blend_depth, band_blend_dtdz and band_blend_dlnp must be positive'
   if write_mb_elevationbands ne 'y' then print, 'NOTE: band_extension without write_mb_elevationbands: the extension is computed but not written'
 endif
+; band_extension with changing geometry: the glacier's own band model takes the blended parameters
+; of the extension (toff_v, cprec_v, ddfs_v, ddfi_v) on every band; at and above the inventory front they
+; are the glacier's own
+bext_dyn = band_extension eq 'y' and dh_regrowth eq 'y'
 
 if meltmodel eq '3' then c2_tolerance = c2m3_tolerance
 

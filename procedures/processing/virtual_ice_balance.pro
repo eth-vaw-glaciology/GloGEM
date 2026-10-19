@@ -32,7 +32,8 @@ sno_v = sno_v > 0
 
 ; temperature (tg_v after the sub-monthly step, tgr_v before it) and snowfall
 tg_v = tg & tgr_v = tgs & psg_v = psg
-v_bl = where(w_v gt 0, v_cbl)
+; (with bext_dyn tg, tgs and psg already carry the blended parameters)
+if bext_dyn then v_cbl = 0 else v_bl = where(w_v gt 0, v_cbl)
 if v_cbl gt 0 then begin
   tgr_v[v_bl] = tgs[v_bl] + toff_v[v_bl] - t_offset
   tg_v[v_bl] = tgr_v[v_bl]
@@ -77,6 +78,7 @@ if refreezing_parametrised eq 'y' and n_elements(scaling_annual_temp) gt 0 then 
 endif
 
 bal_v = bal_v + psg_v - mel_v + refr_v
+refre_v = refre_v + refr_v
 
 ; snow cover and surface type for the next month
 sno_v = (sno_v + psg_v - mel_v) > 0
