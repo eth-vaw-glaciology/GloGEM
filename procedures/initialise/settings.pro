@@ -210,6 +210,9 @@ firnice_firn_obs_dir    = ''    ; diagnostic only (the perfect-firn test): folde
                                 ; where a band and year has one (read_firn_obs.pro)
 firnice_firn_obs_mask   = 'n'   ; 'y' = observed bands also take the thermal firn mask from the observed balance,
                                 ; by the modelled mask's rule (5-year mean > 0); needs firnice_firn_obs_dir
+firnice_firn_column     = 'fixed' ; 'ledger' = a firn band's density (conduction, heat capacity) follows its
+                                ; firn ledger: firn down to the ledger's base, ice below (an empty ledger: an
+                                ; ice band with its seasonal snow); needs firnice_perm_limit 'firn'
 firnice_perm_cold_depth = 4.d   ; m, meltwater penetration into cold firn (Mattea et al. 2021, z_lim;
                                 ; Gilbert et al. 2014, 4-5 m at Col du Dome in 2012)
 firnice_thermal_lapse   = 'floor' ; lapse rate of the thermal surface above the climate cell:
@@ -554,6 +557,8 @@ if firnice_perm_limit eq 'firn' and time_resolution ne 'monthly' then $
 if firnice_firn_obs_dir ne '' and firnice_perm_limit ne 'firn' then message, "firnice_firn_obs_dir needs firnice_perm_limit 'firn'"
 if total(firnice_firn_obs_mask eq ['y', 'n']) eq 0 then message, "firnice_firn_obs_mask must be 'y' or 'n'"
 if firnice_firn_obs_mask eq 'y' and firnice_firn_obs_dir eq '' then message, "firnice_firn_obs_mask 'y' needs firnice_firn_obs_dir"
+if total(firnice_firn_column eq ['fixed', 'ledger']) eq 0 then message, "firnice_firn_column must be 'fixed' or 'ledger'"
+if firnice_firn_column eq 'ledger' and firnice_perm_limit ne 'firn' then message, "firnice_firn_column 'ledger' needs firnice_perm_limit 'firn'"
 if total(firnice_thermal_lapse eq ['floor', 'reanalysis', 'stations']) eq 0 then $
     message, "firnice_thermal_lapse must be 'floor', 'reanalysis' or 'stations'"
 if total(firnice_deepen_to_obs eq ['y', 'n']) eq 0 then message, "firnice_deepen_to_obs must be 'y' or 'n'"
