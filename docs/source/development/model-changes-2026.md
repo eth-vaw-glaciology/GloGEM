@@ -191,6 +191,7 @@ Janosch decided on 2026-09-25 not to rerun the submitted v1 regions, and on 2026
 | {ref}`G36 <mc-g36>` | 365-day thermal year | thermal (firn/ice temperature) | fixed on local GloGEMflow `a687448` (not pushed) | yes, tiny | yes (GloGEMflow thermal model only) | `a687448` |
 | {ref}`G37 <mc-g37>` | Blended parameters on glacier bands below the inventory front (`band_extension` with changing geometry) | core | new (AMOC) | no unless switched on | — | `4948986` |
 | {ref}`G38 <mc-g38>` | The hypsometry-evolution files stopped runs with more than 99 decades (`write_hypsometry_files`) | core (output) | fixed | no (output format only) | yes | `35e1906` |
+| {ref}`G39 <mc-g39>` | Flowline geometry every n years (`write_geometry_output='flow'`, `geometry_output_every`) | core (output) | new | no (new output only) | — | `edbb4b0` |
 | {ref}`F1 <mc-f1>` | Port of MATLAB GloGEMflow to IDL and coupling to GloGEM | flow | done | — | not in main | `baa5c7b`, `020e81e`, ... |
 | {ref}`F2 <mc-f2>` | Flow → Δh handover: frozen, NaN or resurrected glaciers, lost year | flow | fixed | yes | not in main | `a473e25`, `61ac7d4`, `11ca640`, `5dfd530`, `df8bdd4` |
 | {ref}`F3 <mc-f3>` | Spin-up quality gate | flow | fixed | yes | not in main | `5dfd530` |
@@ -834,6 +835,18 @@ before the G34 review fixes). Details: AMOC development history, chapter 7.
 spans more than 99 decades (the AMOC runs to 3000: 107) stopped at its first glacier with "Unexpected text in
 format". Now `strtrim(1 + ctt, 2)`; up to 99 columns the format is the same as before. Found 2026-10-19 when the
 AMOC test batches (W6) stopped.
+
+(mc-g39)=
+### G39. Flowline geometry every n years
+
+`save_geometry_output.pro` writes, per glacier, the band geometry of every year (`geometry_*.sav`) and, for flow
+glaciers, the flowline of every year (`flowgrid_*.sav`: thickness, surface, balance and width per cell, bed and
+distance along the flowline), in double precision: 393 MB for 59 glaciers to 2500, far too much for runs to 3000.
+New: `write_geometry_output='flow'` writes only the flowline file (the band geometry is in the decadal hypsometry
+output), and `geometry_output_every` (default 1) keeps only the years divisible by it and the last year, in single
+precision, compressed. The AMOC runs use `'flow'` and 10 years (`make_amoc_configs.py`, `edbb4b0`): 1.2 MB for the same 59
+glaciers. Years before the flow model starts (the survey year) hold zeros. Tests: the default output unchanged
+(`'y'` with every year: 75 files identical to before); the thinned files equal the full history at every decade.
 
 ## 4. GloGEMflow items
 
