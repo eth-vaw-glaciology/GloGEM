@@ -112,12 +112,28 @@ if firnice_perm_limit eq 'firn' then begin
    if cj gt 0 then for fl_k = 0l, n_fl-1 do begin
       fl_we[jj,fl_k] = b_ref[jj] & fl_yr[jj,fl_k] = long(tran[0]) - 1l - fl_k
    endfor
+   ; perfect-firn test: observed bands start from the steady state of their observed start balance
+   if firnice_firn_obs_dir ne '' then begin
+      jo = where(finite(fo_b0), co)
+      for fo_k = 0l, co-1 do begin
+         fl_we[jo[fo_k],*] = 0d & fl_yr[jo[fo_k],*] = 0l
+         if fo_b0[jo[fo_k]] gt 0 then for fl_k = 0l, n_fl-1 do begin
+            fl_we[jo[fo_k],fl_k] = fo_b0[jo[fo_k]] & fl_yr[jo[fo_k],fl_k] = long(tran[0]) - 1l - fl_k
+         endfor
+      endfor
+   endif
 endif
 
 ; Thermal firn mask from the reference balance, and its firn-ice transition depth from the same
 ; balance and the band's reference-period mean temperature
 firn_th = dblarr(nb)
 jj = where(b_ref gt 0 and gl ne noval, cj) & if cj gt 0 then firn_th[jj] = 1
+; perfect-firn test: observed bands take the mask of their observed start balance (before the
+; close-off depth, so every band that is firn by observation gets one)
+if firnice_firn_obs_mask eq 'y' then begin
+   jo = where(finite(fo_b0) and gl ne noval, co)
+   if co gt 0 then firn_th[jo] = double(fo_b0[jo] gt 0)
+endif
 hl_mask = (firn_th eq 1)
 hl_acc  = b_ref
 hl_tk   = dblarr(nb)

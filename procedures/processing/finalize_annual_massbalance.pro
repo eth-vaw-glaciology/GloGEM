@@ -37,6 +37,13 @@ if ye gt 4 then begin
       nflip_firn[ye] = total(firn_th eq 0 and firn eq 1 and gl ne noval)
    endif
    firn_th = firn   ; the thermal model follows the modelled mask from here on
+   ; perfect-firn test: observed bands follow their observed balance by the same rule
+   if firnice_temperature eq 'y' && firnice_firn_obs_mask eq 'y' then begin
+      for i=0,nb-1 do begin
+         fo_m = fo_b[ye-4:ye,i]
+         if gl[i] ne noval and total(finite(fo_m)) eq 5 then firn_th[i] = double(mean(fo_m) gt 0)
+      endfor
+   endif
 endif
 ; firnice_perm_limit 'firn': this year's balance enters the annual firn layers
 if firnice_temperature eq 'y' && firnice_perm_limit eq 'firn' then begin
