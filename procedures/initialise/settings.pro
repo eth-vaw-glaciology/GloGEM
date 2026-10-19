@@ -277,8 +277,9 @@ dh_regrowth_tau_min = 100d3 ; [Pa]
 dh_regrowth_tau_pct = 0.9
 dh_regrowth_adv_max = 100. ; [m/a] largest advance of the front along the flow in a year (0: no limit)
 ; a glacier with no ice left restarts where the ice-surface balance of its old footprint has been
-; positive in each of the last five years (procedures/processing/dh_reseed.pro; needs band_extension and dh_regrowth)
+; positive in each of the last dh_reseed_years years (procedures/processing/dh_reseed.pro; needs band_extension and dh_regrowth)
 dh_reseed = 'n'
+dh_reseed_years = 10
 band_extension = 'n' ; 'y': mass balance on bands down to band_ext_depth below the glacier, as if they were ice (flow model, IGM forcing)
 band_ext_depth = 1500. ; [m] depth of the band extension below the lowest band
 band_blend_depth = 300. ; [m] below the front over which the extension bands blend from the glacier's own parameters into the regional medians (at least)
@@ -557,6 +558,8 @@ if dh_regrowth eq 'y' and adv_lookup eq 'y' then message, 'dh_regrowth=''y'' and
 if dh_regrowth_adv_max lt 0 then message, 'dh_regrowth_adv_max must be 0 (no limit) or positive'
 if dh_reseed ne 'y' and dh_reseed ne 'n' then $
   message, 'dh_reseed must be ''y'' or ''n'', not ''' + strtrim(dh_reseed, 2) + ''''
+if dh_reseed eq 'y' and (dh_reseed_years lt 1 or dh_reseed_years ne round(dh_reseed_years)) then $
+  message, 'dh_reseed_years must be a whole number of years, at least 1'
 if dh_reseed eq 'y' and (band_extension ne 'y' or dh_regrowth ne 'y') then $
   message, 'dh_reseed=''y'' needs band_extension=''y'' (the ice-surface balance of the old footprint) and dh_regrowth=''y'''
 if AMOC eq 'y' and amoc_end_year lt 2026 then message, 'amoc_end_year must be 2026 or later (an earlier end makes the run an ERA5 hindcast, K13)'

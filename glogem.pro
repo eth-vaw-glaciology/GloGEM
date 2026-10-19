@@ -466,6 +466,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                       if band_extension eq 'y' then begin
                         ; virtual ice surface on every band (virtual_ice_balance.pro): snow, surface type, firn, last 5 balances
                         sno_v=dblarr(nb) & sur_v=dblarr(nb) & snostor_v=dblarr(nb) & firn_v=firn & bal_v5=dblarr(5,nb)
+                        if dh_reseed eq 'y' then bal_vr=dblarr(dh_reseed_years,nb)   ; the last dh_reseed_years balances (dh_reseed.pro)
                         ; parameters per band: the glacier's own down to its front, blending linearly into the
                         ; regional medians below it (w_v = 0 at and above the front), over band_blend_depth or
                         ; more: the offset changes by at most band_blend_dtdz per metre, the degree-day factors and
@@ -689,6 +690,9 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                         if band_extension eq 'y' then begin
                           snostor_v=sno_v
                           bal_v5=shift(bal_v5,-1,0) & bal_v5[4,*]=bal_v
+                          if dh_reseed eq 'y' then begin
+                            bal_vr=shift(bal_vr,-1,0) & bal_vr[dh_reseed_years-1,*]=bal_v
+                          endif
                           if ye gt 4 then begin
                             firn_v=dblarr(nb) & v_ii=where(total(bal_v5,1)/5d gt 0,v_ci) & if v_ci gt 0 then firn_v[v_ii]=1
                           endif
