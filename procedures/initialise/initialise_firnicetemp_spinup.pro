@@ -153,6 +153,7 @@ firn_th = firn
 ; (firnice_firn_ledger.pro; started from the reference balance in firnice_reference_forcing.pro),
 ; and the water equivalent of the thermal density profile down to each node, to turn them into depth
 n_fl = long(firnice_firn_age) + 1l
+sr_steps = 0l & sr_bed = 0l   ; firnice_snow_refreeze: band-steps with snow refreezing, and those reaching the bed node
 fl_we = dblarr(nb, n_fl) & fl_yr = lonarr(nb, n_fl)
 fl_znode = reform(fit_dz[1,0:n_elements(fit_dens)-1])
 fl_cumwe = dblarr(n_elements(fl_znode))
