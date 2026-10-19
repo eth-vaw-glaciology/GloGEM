@@ -316,7 +316,8 @@ count_mbelevsens_v0 = 5
 past_out = 'y'
 
 write_hypsometry_files = 'n'
-write_geometry_output = 'n' ; 'y' to save per-glacier geometry and flowline grid history (.sav)
+write_geometry_output = 'n' ; 'y' to save per-glacier geometry and flowline grid history (.sav), 'flow' the flowline history only
+geometry_output_every = 1 ; [years] with more than 1: only every n-th year (and the last), single precision
 
 ; --- spatial extent
 lat0 = [-9999, -9999] ; specify sub-region [degrees]; or use [9999,9999] for full region
@@ -556,6 +557,10 @@ if dh_regrowth eq 'y' and advance ne 'y' then $
   message, 'dh_regrowth=''y'' needs advance=''y'' (the bands below the front it grows into); with fixed geometry set dh_regrowth=''n'''
 if dh_regrowth eq 'y' and adv_lookup eq 'y' then message, 'dh_regrowth=''y'' and adv_lookup=''y'' exclude each other'
 if dh_regrowth_adv_max lt 0 then message, 'dh_regrowth_adv_max must be 0 (no limit) or positive'
+if write_geometry_output ne 'y' and write_geometry_output ne 'n' and write_geometry_output ne 'flow' then $
+  message, 'write_geometry_output must be ''y'', ''n'' or ''flow'', not ''' + strtrim(write_geometry_output, 2) + ''''
+if geometry_output_every lt 1 or geometry_output_every ne round(geometry_output_every) then $
+  message, 'geometry_output_every must be a whole number of years, at least 1'
 if dh_reseed ne 'y' and dh_reseed ne 'n' then $
   message, 'dh_reseed must be ''y'' or ''n'', not ''' + strtrim(dh_reseed, 2) + ''''
 if dh_reseed eq 'y' and (dh_reseed_years lt 1 or dh_reseed_years ne round(dh_reseed_years)) then $

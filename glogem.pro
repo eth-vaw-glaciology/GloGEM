@@ -735,7 +735,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                         endif                           ; glacier retreat
 
                         ; save per-glacier geometry and flowline grid history (.sav)
-                        if write_geometry_output eq 'y' then begin
+                        if write_geometry_output ne 'n' then begin
                           @procedures/write/save_geometry_output.pro
                         endif
 

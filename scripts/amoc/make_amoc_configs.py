@@ -11,7 +11,8 @@ front (band_extension), per-band balance files (mb_elevation/belev_*.dat) for IG
 --kind growth: changing geometry, flow model, every switch for growing glaciers
 (flow_mb_elev_cap 'none', blow-up check by mass, outflow at the grid end,
 dh_regrowth, band_extension, dh_reseed); growth_dh: the same on the Δh
-parameterisation only (twin runs); growth_capall: with flow_mb_elev_cap 'all'.
+parameterisation only (twin runs); growth_capall: with flow_mb_elev_cap 'all'. All three write the
+decadal band output (hypsometry) and the flowline every 10 years (geometry/flowgrid_*.sav).
 Each kind needs its own --run-dir (the output names do not contain the kind).
 
 The calibration must already be in <run-dir>/monthly/<Region>/calibration/.
@@ -36,7 +37,8 @@ SCENARIOS = [  # (GCM index, scenario index, name)
 ]
 GROWTH = ("frontal_ablation = 'n'\nflow_blowup_check = 'mass'\nflow_domain_end = 'outflow'\n"
           "flow_gridend_outflow = 'melt_if_land'\ndh_regrowth = 'y'\nband_extension = 'y'\ndh_reseed = 'y'\n"
-          "write_mb_elevationbands = 'n'\nfull_output = 'n'\nwrite_netcdf = 'n'\n")
+          "write_mb_elevationbands = 'n'\nfull_output = 'n'\nwrite_netcdf = 'n'\nwrite_hypsometry_files = 'y'\n"
+          "write_geometry_output = 'flow'\ngeometry_output_every = 10\n")
 KINDS = {
     # fixed geometry needs find_startyear='n' too: otherwise glogem.pro switches glacier_retreat
     # on after each glacier's survey year
