@@ -149,6 +149,8 @@ endfor
 ; from modelled balances (finalize_annual_massbalance.pro)
 firn_th = firn
 
+sr_steps = 0l & sr_bed = 0l   ; firnice_snow_refreeze: band-steps with snow refreezing, and those reaching the bed node
+
 ; ── Per-band calibration parameter arrays ────────────────────────────────────
 ; Initialized to scalar defaults from settings.pro (or config.pro overrides).
 ; A per-glacier file override (apply_firnicetemp_calibration.pro, called after

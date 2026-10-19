@@ -89,6 +89,8 @@ for i = 0, nb-1 do begin
 endfor
 close, 99
 print, 'Firn temp validation: ' + outfile
+if firnice_snow_refreeze eq 'y' then print, '  [snow refreezing on ice] band-steps ' + strtrim(sr_steps,2) + $
+   ', of which reaching the node above the bed (snow as deep as the ice column): ' + strtrim(sr_bed,2)
 
 ; firn line per year: modelled ELA and AAR, lowest thermal firn band, bands switching firn<->ice
 outfile = firnice_dir + '/firnice_firnline_' + id[gg[g]] + '.dat'
