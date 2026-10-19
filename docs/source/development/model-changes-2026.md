@@ -190,6 +190,7 @@ Janosch decided on 2026-09-25 not to rerun the submitted v1 regions, and on 2026
 | {ref}`G35 <mc-g35>` | A glacier that melted out can come back (`dh_reseed`); `band_extension` with changing geometry | core | new (AMOC) | no unless switched on | — (in main a melted-out glacier never regrows) | `550c701`, `e76f527` |
 | {ref}`G36 <mc-g36>` | 365-day thermal year | thermal (firn/ice temperature) | fixed on local GloGEMflow `a687448` (not pushed) | yes, tiny | yes (GloGEMflow thermal model only) | `a687448` |
 | {ref}`G37 <mc-g37>` | Blended parameters on glacier bands below the inventory front (`band_extension` with changing geometry) | core | new (AMOC) | no unless switched on | — | `4948986` |
+| {ref}`G38 <mc-g38>` | The hypsometry-evolution files stopped runs with more than 99 decades (`write_hypsometry_files`) | core (output) | fixed | no (output format only) | yes | `35e1906` |
 | {ref}`F1 <mc-f1>` | Port of MATLAB GloGEMflow to IDL and coupling to GloGEM | flow | done | — | not in main | `baa5c7b`, `020e81e`, ... |
 | {ref}`F2 <mc-f2>` | Flow → Δh handover: frozen, NaN or resurrected glaciers, lost year | flow | fixed | yes | not in main | `a473e25`, `61ac7d4`, `11ca640`, `5dfd530`, `df8bdd4` |
 | {ref}`F3 <mc-f3>` | Spin-up quality gate | flow | fixed | yes | not in main | `5dfd530` |
@@ -819,6 +820,15 @@ Central Europe RCP26_045sv): median −0.46 → +0.03 m w.e., 10th percentile �
 after the G34 review fixes); the positive tail (90th percentile +0.5 to +0.7 m w.e.) comes from the snow, firn and refreezing state of a band with ice, not from the
 parameters. Volume in 2500 changes by less than 1 % (Central Europe 9.91 → 9.95 km³, Scandinavia 46.2 → 46.3 km³,
 before the G34 review fixes). Details: AMOC development history, chapter 7.
+
+(mc-g38)=
+### G38. Hypsometry-evolution files beyond 99 decades
+
+`write_hypsometry_evolution_file.pro` built its format from the number of decade columns with
+`string(1 + ctt, fo='(i2)')`, which prints `**` from 100 columns on. A run with `write_hypsometry_files='y'` that
+spans more than 99 decades (the AMOC runs to 3000: 107) stopped at its first glacier with "Unexpected text in
+format". Now `strtrim(1 + ctt, 2)`; up to 99 columns the format is the same as before. Found 2026-10-19 when the
+AMOC test batches (W6) stopped.
 
 ## 4. GloGEMflow items
 
