@@ -18,6 +18,7 @@ compile_opt idl2
 
   noval=-9999 & snoval=-99
   ii=where(gl ne noval,ci)
+  rf_dtm=86400d*mon_len[m-1]/rf_dsc   ; sub-step [s]: this step's real length (a month of mon_len days, or one day)
 for i=0,ci-1 do begin
 
 if mel[ii[i]] lt rf_melcrit then rf_ind[ii[i]]=1 else rf_ind[ii[i]]=0
@@ -30,8 +31,8 @@ if rf_ind[ii[i]] eq 1 then begin     ; start builing up cold reservoir
       for j=1,rf_layers-2 do begin
 
          tl_rf[ii[i],0]=tgs[ii[i]]
-         te_rf[ii[i],j]=tl_rf[ii[i],j]+((rf_dt*cond[j]/(cap[j])*(tl_rf[ii[i],j-1]-tl_rf[ii[i],j])/rf_dz^2.)- $
-             (rf_dt*cond[j]/(cap[j])*(tl_rf[ii[i],j]-tl_rf[ii[i],j+1])/rf_dz^2.))/2. ; division by 2 to be removed?! keeping it for consistency at the moment...
+         te_rf[ii[i],j]=tl_rf[ii[i],j]+((rf_dtm*cond[j]/(cap[j])*(tl_rf[ii[i],j-1]-tl_rf[ii[i],j])/rf_dz^2.)- $
+             (rf_dtm*cond[j]/(cap[j])*(tl_rf[ii[i],j]-tl_rf[ii[i],j+1])/rf_dz^2.))/2. ; division by 2 to be removed?! keeping it for consistency at the moment...
          tl_rf[ii[i],*]=te_rf[ii[i],*]
 
       endfor

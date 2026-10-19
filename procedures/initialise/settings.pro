@@ -569,7 +569,8 @@ rf_melcrit = 0.02 ; critical amount of melt for initialising refreezing module (
 dens_rf = [300, 300, 400, 450, 500, 550, 600, 650] ; approx. density of layers
 rf_dz = 1. ; layer thickness (m)
 rf_dsc = 3. ; increase in temporal resolution (num. stability of heat conduction)
-; rf_dt: the full refreezing model's sub-step; the firn/ice temperature model sets its own (fit_dt) from mon_len
+; rf_dt: 30 days / rf_dsc (monthly) or 1 day / rf_dsc; refreezing_full (rf_dtm) and the firn/ice temperature model
+; (fit_dt) set their sub-steps from mon_len instead
 if time_resolution eq 'daily' then begin
   rf_dt = 3600. * 24. / rf_dsc ; compute time step
 endif else begin
