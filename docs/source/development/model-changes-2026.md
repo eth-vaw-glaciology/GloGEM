@@ -187,7 +187,7 @@ Janosch decided on 2026-09-25 not to rerun the submitted v1 regions, and on 2026
 | {ref}`G32 <mc-g32>` | `refreezing_full` stopped without the firn/ice temperature model (`TL_RF` undefined) | GloGEMflow | fixed; on GloGEMflow (2026-10-19) | no (it ran only with the temperature model) | yes (GloGEMflow only; main sets the arrays for every glacier) | GloGEMflow `cfff689`; local GloGEMflow `5496a8d`; first `07d694d` |
 | {ref}`G33 <mc-g33>` | Snowline (TSLA) calibration of c_prec, fixed c_prec from a file, snow line as p10 | core (calibration) | new, on `snowline-calibration` | no unless switched on | her one-script version only | `6528443`, `54497c5`, `c7a477c` |
 | {ref}`G34 <mc-g34>` | Δh regrowth: former bands refilled, a thickness limit per glacier, exact mass (`dh_regrowth`) | core | new (AMOC) | no unless switched on | — (K1 is in main) | `39e21ee`, `e76f527` |
-| {ref}`G35 <mc-g35>` | A glacier that melted out can come back (`dh_reseed`); `band_extension` with changing geometry | core | new (AMOC) | no unless switched on | — (in main a melted-out glacier never regrows) | `550c701`, `e76f527` |
+| {ref}`G35 <mc-g35>` | A glacier that melted out can come back (`dh_reseed`); `band_extension` with changing geometry | core | new (AMOC) | no unless switched on | — (in main a melted-out glacier never regrows) | `550c701`, `e76f527`, `db5d4f4` |
 | {ref}`G36 <mc-g36>` | 365-day thermal year | thermal (firn/ice temperature) | fixed on local GloGEMflow `a687448` (not pushed) | yes, tiny | yes (GloGEMflow thermal model only) | `a687448` |
 | {ref}`G37 <mc-g37>` | Blended parameters on glacier bands below the inventory front (`band_extension` with changing geometry) | core | new (AMOC) | no unless switched on | — | `4948986` |
 | {ref}`G38 <mc-g38>` | The hypsometry-evolution files stopped runs with more than 99 decades (`write_hypsometry_files`) | core (output) | fixed | no (output format only) | yes | `35e1906` |
@@ -744,9 +744,9 @@ and `dh_regrowth`) restarts such a glacier (`dh_reseed.pro`, called from `glacie
 ice, from the fifth model year on):
 
 1. every band of the inventory footprint on a bed above sea level whose ice-surface balance (G30,
-   `virtual_ice_balance.pro`) was positive in each of the last five years gets the sum of these five balances as
-   ice (m w.e. / 0.9), with the area of the Δh area–thickness relation, the firn cover of that ice surface and the
-   matching surface type (snow, firn or ice);
+   `virtual_ice_balance.pro`) was positive in each of the last `dh_reseed_years` (10) years gets the sum of these
+   balances as ice (m w.e. / 0.9), with the area of the Δh area–thickness relation, the firn cover of that ice
+   surface and the matching surface type (snow, firn or ice);
 2. the new ice is the glacier's balance and accumulation of the year: `areas[ye]`, `mb[ye]` and `accum[ye]` are set
    after the G11 mass check, which includes it (`gr_qseed`), so the budget closes;
 3. from the next year on the glacier is an ordinary Δh glacier (melt years as before, growth years G34).
@@ -781,8 +781,13 @@ glacier only from 0.01 km² (RGI's smallest). Fixed in `e76f527`. Tests (A1 test
 
 Restarts start in 2124–2214 (Central Europe) and 2090–2144 (Scandinavia). In Central Europe the restarted glaciers
 hold 0.051 km³ in 2500 (0.027 km³ in 2003); 03746 restarts 9 times, and 03232 and 03746 stay below 0.01 km². In
-Scandinavia the 4 hold 0.66 km³ (0.025 km³ in 2003). The remaining restarts that die within five years are marginal
-glaciers after a cold spell; that is the climate, not the rule. Switch off: byte-identical (SouthernAndes GMIP4: 23
+Scandinavia the 4 hold 0.66 km³ (0.025 km³ in 2003). In the AMOC test batches (W6) the five-year rule still let small glaciers in a
+marginal climate restart again and again (Scandinavia batch 08, CESM RCP26_045sv: 522 restarts by 101 glaciers, 188
+dead again within five years, median lifetime 9 years, together 0.001 km³). Janosch's decision (2026-10-19): ten
+years (`dh_reseed_years`, `db5d4f4`). Tests (Δh, to 3000): that batch 522 → 65 restarts by 51 glaciers, 188 → 3
+dead within five years, volume unchanged; Central Europe batch 13 RCP26_045sv 163 → 90 restarts by the same 88
+glaciers, 55 → 7 dead within five years, volume 5.67 → 5.65 km³; the A1 test glaciers 49 → 21 restarts (each
+glacier once; 03232 and 03746, which only flickered, no longer restart), volume unchanged. Switch off: byte-identical (SouthernAndes GMIP4: 23
 `.dat`, 4 netCDF, 17 spin-up files; Central Europe AMOC Δh: 25 `.dat`); `band_extension` with fixed geometry (the
 IGM-forcing set-up) byte-identical (149 `.dat` with the 59 `belev` files). Counts from the volume file are too
 high: it rounds a glacier below 0.0001 km³ to zero (the first counts were 29 and 5 melted out). In a restart year
@@ -1413,6 +1418,7 @@ All decisions below were taken by Janosch Beer.
 | 2026-10-16 | Snowline calibration with the Sommer snow lines: p10 definition, raw snow lines, May–September, scan 0.4–3.0; a glacier keeps its snowline c_prec only where the snow lines fix it (diagnostic). | G33 |
 | 2026-10-16 | A glacier that melted out completely must be able to come back (AMOC). | G35 |
 | 2026-10-19 | Bands below the 2003 front that get ice use the blended parameters, as IGM's forcing (AMOC). | G37, F20 |
+| 2026-10-19 | A glacier restarts after ten positive years, not five. | G35 |
 
 ---
 
