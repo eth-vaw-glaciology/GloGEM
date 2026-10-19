@@ -123,7 +123,7 @@ if firn_th[ii[i]] eq 1 and fl_empty eq 0 then begin
    dens_fit[0:n_elements(fit_dens)-1]=fit_dens ; to be verified...
    ; 'ledger' (3b-ii): firn only down to the firn base, ice below; a node's slice straddling the base is blended
    if firnice_firn_column eq 'ledger' then for j=0, n_elements(fit_dens)-1 do begin
-      sl_top = fit_dz[1,j] - 0.5d*fit_dz[0,j]
+      sl_top = (fit_dz[1,j] - 0.5d*fit_dz[0,j]) > 0d
       sl_bot = fit_dz[1,j] + 0.5d*fit_dz[0,(j+1) < (total(fit_layers)-1)]
       f_firn = ((z_fl - sl_top) / (sl_bot - sl_top)) > 0d < 1d
       dens_fit[j] = f_firn*fit_dens[j] + (1d - f_firn)*rho_ice_k
@@ -223,7 +223,8 @@ if firn_permeability eq 'n' then fit_water = 0  ; check if permeability is disab
 ; latent heat release over firn/snow surface
 ; water percolation is capped at perm_limit (firn-ice transition density);
 ; cold ice below that depth is not reachable by annual meltwater
-if firn_th[ii[i]] eq 1 then begin
+; (firnice_firn_column 'ledger': a firn band whose ledger is empty is ice, and its water runs off)
+if firn_th[ii[i]] eq 1 and fl_empty eq 0 then begin
 
 wd_j = 0l   ; deepest node the water brings to the melting point (wet-depth log)
 if firnice_perm_limit eq 'firn' && firnice_write[0] eq 'y' then $
