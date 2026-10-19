@@ -101,3 +101,10 @@ endif else begin
     print, '  sync_bands_thickness: flowline melted out (' + strtrim(n_ice_sync, 2) + $
       ' ice cell(s)) -- all band thick[] zeroed for the Δh handover.'
 endelse
+
+; at a handover to the Δh parameterisation with dh_reseed='y', bands without ice lie on their
+; bed, as the Δh parameterisation places them (their ice-surface balance decides a restart)
+if flow_blown_up and dh_reseed eq 'y' then begin
+  sb_jj = where(thick le 0, sb_cj)
+  if sb_cj gt 0 then elev[sb_jj] = bed_elev[sb_jj]
+endif

@@ -132,12 +132,13 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
           n_cali_nomatch=0L   ; glaciers without their own calibration row
           n_growth_clamped=0L & growth_removed_gt=0d0   ; growth limit: clamps, ice removed (Gt)
           n_dh_outflow=0L & dh_outflow_gt=0d0   ; dh_regrowth: glacier-years with outflow at the lowest band, ice (Gt)
-          n_reseed=0L   ; dh_reseed: restarts of glaciers that had no ice left
+          n_reseed=0L & n_reseed_gl=0L   ; dh_reseed: restarts of glaciers that had no ice left, glaciers that restarted
           if use_flow_model eq 'y' then begin
             n_flow_ok       = 0L
             n_flow_short    = 0L
             n_flow_fallback = 0L
             n_flow_gated    = 0L
+            n_flow_meltout  = 0L
             flow_ge_fa_gt   = 0d0   ; grid-end outflow booked as frontal ablation, Gt
             flow_ge_melt_gt = 0d0   ; grid-end outflow booked as melt, Gt
             flow_fc_gt      = 0d0   ; flowline ice calved at the front below sea level, Gt
@@ -383,6 +384,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                     if use_flow_model eq 'y' then flow_initialised = !NULL
                     use_flow_model_gl = use_flow_model  ; per-glacier, may be overridden below
                     flow_gated_gl = 0   ; set by the spin-up quality gate in glogemflow_coupled.pro
+                    flow_meltout_gl = 0   ; set when the flowline melted out (dh_reseed, glogemflow_coupled.pro)
 
                     for cal1=0,cal1max do begin
 
@@ -456,6 +458,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                       areas=dblarr(years) & volumes=areas
                       flux_calv=areas
                       flow_gridend=areas & flow_ge_bed=-9999d0   ; flowline grid-end outflow (m w.e.), bed there (m)
+                      flow_ge_sea=0b & reseed_gl=0b   ; outflow at the sea-level cut of the bands; the glacier restarted
                       flow_fcalv=areas   ; flowline ice calved at the front below sea level (m w.e.)
 
                       sur=dblarr(nb) & sno=sur & snostor=sur
@@ -758,6 +761,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                       if flow_eligible and calibrate ne 'y' and cal1 eq 0 then begin
                         if use_flow_model_gl eq 'y' then n_flow_ok = n_flow_ok + 1 $
                         else if flow_gated_gl then n_flow_gated = n_flow_gated + 1 $
+                        else if flow_meltout_gl then n_flow_meltout = n_flow_meltout + 1 $
                         else n_flow_fallback = n_flow_fallback + 1
                       endif
 
@@ -872,7 +876,8 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
             print, '--------- Δh REGROWTH OUTFLOW: ' + strtrim(n_dh_outflow, 2) + ' glacier-years with ice leaving the lowest band, ' + $
               strtrim(string(dh_outflow_gt, fo='(e10.3)'), 2) + ' Gt (flow_gridend_outflow=''' + flow_gridend_outflow + ''')'
           if dh_reseed eq 'y' then $
-            print, '--------- RESTARTS: ' + strtrim(n_reseed, 2) + ' glacier(s) that had no ice left started again (dh_reseed)'
+            print, '--------- RESTARTS: ' + strtrim(n_reseed, 2) + ' restart(s) of ' + strtrim(n_reseed_gl, 2) + $
+              ' glacier(s) that had no ice left (dh_reseed)'
           if read_parameters eq 'y' then begin
             if n_cali_nomatch gt 0 then cali_msg = 'WARNING: ' else cali_msg = ''
             print, '--------- ' + cali_msg + strtrim(n_cali_nomatch,2) + ' glacier(s) without their own row in the calibration file (nearest glacier ID used)'
@@ -888,6 +893,9 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
             print, '  ' + strtrim(n_flow_short,2)    + ' (' + strtrim(pct_short,2)  + '%)  excluded: length < 1 km'
             print, '  ' + strtrim(n_flow_fallback,2) + ' (' + strtrim(pct_fallbk,2) + '%)  excluded: spinup failure (fell back to Dh parameterisation)'
             print, '  ' + strtrim(n_flow_gated,2)    + ' (' + strtrim(pct_gated,2)   + '%)  excluded: spin-up could not reproduce the observed glacier (quality gate)'
+            if dh_reseed eq 'y' then $
+              print, '  ' + strtrim(n_flow_meltout,2) + ' (' + strtrim(string(n_flow_meltout * 100. / n_flow_total, fo='(f5.1)'),2) + $
+                '%)  ran with GloGEMflow until the flowline melted out, then on the Δh parameterisation (dh_reseed)'
             flow_ge_gt = flow_ge_fa_gt + flow_ge_melt_gt
             print, '--------- FLOWLINE GRID-END OUTFLOW (flow_gridend_outflow=''' + flow_gridend_outflow + '''):'
             print, '  ' + strtrim(string(flow_ge_gt, fo='(f12.4)'), 2) + ' Gt over the run (' + $

@@ -275,6 +275,7 @@ adv_lookup = 'n'
 dh_regrowth = 'n'
 dh_regrowth_tau_min = 100d3 ; [Pa]
 dh_regrowth_tau_pct = 0.9
+dh_regrowth_adv_max = 100. ; [m/a] largest advance of the front along the flow in a year (0: no limit)
 ; a glacier with no ice left restarts where the ice-surface balance of its old footprint has been
 ; positive in each of the last five years (procedures/processing/dh_reseed.pro; needs band_extension and dh_regrowth)
 dh_reseed = 'n'
@@ -553,6 +554,7 @@ if glacier_retreat eq 'n' and hindcast_dynamic ne 'y' and use_flow_model eq 'n' 
 if dh_regrowth eq 'y' and advance ne 'y' then $
   message, 'dh_regrowth=''y'' needs advance=''y'' (the bands below the front it grows into); with fixed geometry set dh_regrowth=''n'''
 if dh_regrowth eq 'y' and adv_lookup eq 'y' then message, 'dh_regrowth=''y'' and adv_lookup=''y'' exclude each other'
+if dh_regrowth_adv_max lt 0 then message, 'dh_regrowth_adv_max must be 0 (no limit) or positive'
 if dh_reseed ne 'y' and dh_reseed ne 'n' then $
   message, 'dh_reseed must be ''y'' or ''n'', not ''' + strtrim(dh_reseed, 2) + ''''
 if dh_reseed eq 'y' and (band_extension ne 'y' or dh_regrowth ne 'y') then $

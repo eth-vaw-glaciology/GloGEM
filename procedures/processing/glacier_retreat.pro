@@ -331,7 +331,7 @@ endif
 ; ice that left a regrowing glacier at its lowest band (dh_regrowth.pro): frontal ablation,
 ; or ice melt on land with flow_gridend_outflow='melt_if_land', as at the flow model's grid end
 if gr_qout gt 0 then begin
-  if flow_gridend_outflow eq 'melt_if_land' and bed_elev[0] ge 0 then begin
+  if flow_gridend_outflow eq 'melt_if_land' and bed_elev[0] ge 0 and ~adv_sea then begin
     if areas[ye] gt 0 then begin
       bim_we = gr_qout * 0.9d0 / areas[ye]   ; m w.e.
       @procedures/processing/book_ice_melt
@@ -339,7 +339,7 @@ if gr_qout gt 0 then begin
   endif else if ar_gl gt 0 then flux_calv[ye] = flux_calv[ye] + gr_qout * dens / ar_gl
   ; per glacier and year in *_flow_gridend_outflow.dat, as the flow model's grid-end outflow
   if areas[ye] gt 0 then flow_gridend[ye] = flow_gridend[ye] + gr_qout * 0.9d0 / areas[ye]
-  flow_ge_bed = bed_elev[0]
+  flow_ge_bed = bed_elev[0] & flow_ge_sea = adv_sea
   n_dh_outflow = n_dh_outflow + 1
   dh_outflow_gt = dh_outflow_gt + gr_qout * 0.9d0 / 1000d0
 endif
@@ -349,6 +349,9 @@ if gr_qseed gt 0 then begin
   areas[ye] = total(area)
   mb[ye] = gr_qseed * 0.9d0 / areas[ye]
   n_reseed = n_reseed + 1
+  if ~reseed_gl then n_reseed_gl = n_reseed_gl + 1
+  reseed_gl = 1b
+  accum[ye] = mb[ye]   ; the new ice is snow of the last five years
   print, 'Glacier ' + strtrim(id[gg[g]], 2) + ' restarts in ' + strtrim(ye + tran[0], 2) + ' on ' + $
     strtrim(long(total(gl ne noval)), 2) + ' band(s) of its old footprint: ' + $
     strtrim(string(gr_qseed, fo='(e10.3)'), 2) + ' mio m3 (dh_reseed)'

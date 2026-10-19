@@ -411,6 +411,9 @@ if flow_icefree and dh_reseed eq 'y' then begin
     ' --- the glacier continues on the Δh parameterisation, which can restart it (dh_reseed)'
   flow_blown_up = 1
   use_flow_model_gl = 'n'
+  flow_meltout_gl = 1
+  fm_jj = where(thick le 0, fm_cj)
+  if fm_cj gt 0 then elev[fm_jj] = bed_elev[fm_jj]   ; bands without ice lie on their bed, as in the Δh parameterisation
 endif
 
 ; this year's applied balance, outflow at the downstream end and inflow at the

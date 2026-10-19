@@ -17,7 +17,7 @@
 compile_opt idl2
 
 if flow_ge_bed eq -9999d0 then wg_book = 'none' $
-else if flow_gridend_outflow eq 'melt_if_land' and flow_ge_bed ge 0d0 then wg_book = 'melt' $
+else if flow_gridend_outflow eq 'melt_if_land' and flow_ge_bed ge 0d0 and ~flow_ge_sea then wg_book = 'melt' $
 else wg_book = 'frontal'
 printf,36,id[gg[g]],flow_ge_bed,wg_book,flow_gridend,fo='(a,f10.1,a9,'+strcompress(string(years),/remove_all)+'f10.5)'
 printf,37,id[gg[g]],flow_fcalv,fo='(a,'+strcompress(string(years),/remove_all)+'f10.5)'
