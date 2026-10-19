@@ -29,7 +29,7 @@
 ;   mon_len                    – days per month [12-element array]
 ;   fit_dz, fit_layers, fit_dens – layer geometry
 ;   Lh_rf, cice, kice, cair, kair, geothermal_flux – physics constants
-;   rf_dsc, rf_dt              – temporal sub-stepping
+;   rf_dsc                     – temporal sub-stepping (the step length fit_dt comes from mon_len)
 ;   firnice_implicit, firn_permeability – solver flags
 ;   firnice_thermal_spinup, firnice_spinup_ref_period,
 ;   firnice_spinup_max_cycles, firnice_spinup_tol – spinup settings

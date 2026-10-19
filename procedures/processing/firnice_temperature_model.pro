@@ -244,6 +244,9 @@ endelse
    ; driving stress (SIA): used for strain heating if enabled
    tau_d_sh = rho_ice * grav * (thick[ii[i]] > 1.0d) * sin(slope[ii[i]] * !DTOR)
 
+   ; thermal sub-step [s]: this step's real length (a month of mon_len days, or one day) in rf_dsc parts
+   fit_dt = 86400d * mon_len[m-1] / rf_dsc
+
    for h=0,rf_dsc-1 do begin
 
       ; ── boundary conditions (shared by both conduction schemes) ──────────────
@@ -305,7 +308,7 @@ endelse
 
          ; Explicit forward-difference. The /2. below is NOT cosmetic: explicit stability needs
          ; dt <= dz^2/(2*kappa), which for ice (kappa ~1.11e-6 m2/s) and the 1 m near-surface
-         ; layers is 5.2 days, against rf_dt = 10 days. Halving the diffusivity lifts the limit
+         ; layers is 5.2 days, against fit_dt = 9.3-10.3 days. Halving the diffusivity lifts the limit
          ; to 10.4 days. Remove it only with a smaller timestep. Prefer firnice_implicit='y'.
          for j=1,tt-2 do begin
             dzm = fit_dz[0,j]
@@ -314,10 +317,10 @@ endelse
             km  = kgap[j]
             kp  = kgap[(j+1) < (n_cond-1)]
             if fit_lacc_on then begin   ; yearly sums of the coupling, halved as below
-               lacc_a[ii[i],j] += 0.5d*rf_dt*km/(cap_fit[j]*dzc*dzm)
-               lacc_c[ii[i],j] += 0.5d*rf_dt*kp/(cap_fit[j]*dzc*dzp)
+               lacc_a[ii[i],j] += 0.5d*fit_dt*km/(cap_fit[j]*dzc*dzm)
+               lacc_c[ii[i],j] += 0.5d*fit_dt*kp/(cap_fit[j]*dzc*dzp)
             endif
-            te_fit[ii[i],j]=tl_fit[ii[i],j]+(rf_dt/(cap_fit[j]*dzc)* $
+            te_fit[ii[i],j]=tl_fit[ii[i],j]+(fit_dt/(cap_fit[j]*dzc)* $
                 (km*(tl_fit[ii[i],j-1]-tl_fit[ii[i],j])/dzm $
                  - kp*(tl_fit[ii[i],j]-tl_fit[ii[i],j+1])/dzp))/2.
             tl_fit[ii[i],j]=te_fit[ii[i],j]
@@ -342,8 +345,8 @@ endelse
                dzc = 0.5d*(dzm + dzp)
                km  = kgap[j]
                kp  = kgap[(j+1) < (n_cond-1)]
-               ra  = rf_dt * km / (cap_fit[j] * dzc * dzm)
-               rc  = rf_dt * kp / (cap_fit[j] * dzc * dzp)
+               ra  = fit_dt * km / (cap_fit[j] * dzc * dzm)
+               rc  = fit_dt * kp / (cap_fit[j] * dzc * dzp)
                if fit_lacc_on then begin   ; yearly sums of the coupling for the drift correction
                   lacc_a[ii[i],j] += ra & lacc_c[ii[i],j] += rc
                endif
@@ -395,7 +398,7 @@ endelse
           for j = 1, tt-2 do begin
               tau_j = tau_d_sh * ((fit_dz[1,j] / (thick[ii[i]] > 1.0d)) < 1.0d)
               Q_j   = 2.0d * A_sh * tau_j^sh_exp       ; W m⁻³
-              dT_j  = Q_j * rf_dt / cap_fit[j]         ; K per substep (cap_fit is J m⁻³ K⁻¹)
+              dT_j  = Q_j * fit_dt / cap_fit[j]         ; K per substep (cap_fit is J m⁻³ K⁻¹)
               tl_fit[ii[i],j] = (tl_fit[ii[i],j] + dT_j) < pmp_profile[j]
           endfor
       endif
@@ -446,12 +449,12 @@ endelse
          ; Upglacier source is the next higher-elevation band (i+1)
          upglacier_idx = i + 1
 
-         ; Timestep in seconds. rf_dt (settings.pro) is already seconds-per-
-         ; substep (= seconds-in-a-month / rf_dsc) -- do not multiply by
+         ; Timestep in seconds. fit_dt (set above) is already seconds-per-
+         ; substep (= seconds-in-the-step / rf_dsc) -- do not multiply by
          ; another month-seconds/rf_dsc factor here, that double-counts the
          ; conversion and inflates dt_seconds by ~rf_dsc*86400*30.5, which
          ; saturates the courant clamp below for almost any nonzero velocity.
-         dt_seconds = rf_dt
+         dt_seconds = fit_dt
 
          ; Horizontal distance to upglacier band, derived from actual elevation spacing and slope
          delta_elev = ABS(elev[ii[i+1]] - elev[ii[i]])  ; vertical elevation step [m]
@@ -555,10 +558,10 @@ endelse
          temp_v = tl_fit[ii[i],*]
          temp_before_v = tl_fit[ii[i],idx_out_14m]  ; 14 m, before vertical advection
 
-         ; Convert rf_dt (already seconds-per-substep) to years directly --
+         ; Convert fit_dt (already seconds-per-substep) to years directly --
          ; do not multiply by another month-seconds/rf_dsc factor here, see
          ; the matching note on dt_seconds above (same bug, same fix).
-         dt_years = rf_dt / (365.25D * 24.0D * 3600.0D)
+         dt_years = fit_dt / (365.25D * 24.0D * 3600.0D)
 
          ; Apply vertical advection for each layer (except boundaries)
          FOR j=1,tt-2 DO BEGIN
