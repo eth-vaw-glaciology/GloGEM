@@ -183,8 +183,8 @@ Janosch decided on 2026-09-25 not to rerun the submitted v1 regions, and on 2026
 | {ref}`G28 <mc-g28>` | RGI6 survey year −999 was not treated as missing | core | fixed | yes (25 RGI6 glaciers in 08 and 11) | yes | `9bfc181` |
 | {ref}`G29 <mc-g29>` | `amoc_end_year`; every run keeps a copy of its config | core | done | no | — | `a1cdd61` |
 | {ref}`G30 <mc-g30>` | Mass balance below the glacier front (`band_extension`) | core | new (AMOC) | no unless switched on | — | `7e79e2d`, `edc87e1`, `f901a87` |
-| {ref}`G31 <mc-g31>` | Geodetic target averaged over 19 of its 20 years; now all 20 after one spin-up year | core (calibration) | fixed; pushed for main (`fix/geodetic-target-period`) | yes, small | no (the bug is in main) | `a1fb2fa`; local GloGEMflow `d075c98` |
-| {ref}`G32 <mc-g32>` | `refreezing_full` stopped without the firn/ice temperature model (`TL_RF` undefined) | core | fixed on `snowline-calibration` | no (it ran only with the temperature model) | no (the bug is in main) | `07d694d` |
+| {ref}`G31 <mc-g31>` | Geodetic target averaged over 19 of its 20 years; now all 20 after one spin-up year | core (calibration) | fixed; on main and GloGEMflow (2026-10-19) | yes, small | no (the bug is in main) | main `a1fb2fa`; GloGEMflow `5dc500b`; local GloGEMflow `d075c98` |
+| {ref}`G32 <mc-g32>` | `refreezing_full` stopped without the firn/ice temperature model (`TL_RF` undefined) | GloGEMflow | fixed; on GloGEMflow (2026-10-19) | no (it ran only with the temperature model) | yes (GloGEMflow only; main sets the arrays for every glacier) | GloGEMflow `cfff689`; local GloGEMflow `5496a8d`; first `07d694d` |
 | {ref}`G33 <mc-g33>` | Snowline (TSLA) calibration of c_prec, fixed c_prec from a file, snow line as p10 | core (calibration) | new, on `snowline-calibration` | no unless switched on | her one-script version only | `6528443`, `54497c5`, `c7a477c` |
 | {ref}`G34 <mc-g34>` | Δh regrowth: former bands refilled, a thickness limit per glacier, exact mass (`dh_regrowth`) | core | new (AMOC) | no unless switched on | — (K1 is in main) | `39e21ee` |
 | {ref}`F1 <mc-f1>` | Port of MATLAB GloGEMflow to IDL and coupling to GloGEM | flow | done | — | not in main | `baa5c7b`, `020e81e`, ... |
@@ -599,20 +599,22 @@ year's snow, the year-2000 balance comes out up to 0.106 m w.e. too negative (me
 the 20-year mean is within 0.002 m w.e. of a run with two (forward runs from 1998, 1999 and 2000, 23 Alpine
 calibration glaciers, RGI7, ERA5 monthly). Effect on those 23 glaciers: the old 19-year mean lay 0.027 m w.e.
 below the 20-year mean (0.002–0.050); c_prec changes on 1 glacier, DDF on 12 (mean +0.011), T_off on 10 (mean
-+0.019 °C, at most +0.21). Regional calibration unchanged. Branch `fix/geodetic-target-period` (from main,
-pushed, pull request to open); the same commit for the shared GloGEMflow is prepared locally
-(`fix/geodetic-target-period-glogemflow`, not pushed).
++0.019 °C, at most +0.21). Regional calibration unchanged. On main since 2026-10-19 (fast-forward to `a1fb2fa`;
+the branch `fix/geodetic-target-period` is deleted) and on GloGEMflow (`5dc500b`).
 
 (mc-g32)=
 ### G32. `refreezing_full` stopped without the firn/ice temperature model
 
 `refreezing_full = 'y'` stopped with "Variable is undefined: TL_RF" whenever `firnice_temperature = 'n'`, i.e.
-in every calibration. The state arrays `te_rf`/`tl_rf` are set in `initialise_firnicetemp_spinup.pro`, which runs
-only with the temperature model; the one-script GloGEM set them for every glacier, and the modular split
-(`30e3b58`) moved the line. Now also set in `initialise_output_arrays.pro`; with the temperature model on, the
-same zeros are set again, so runs that worked are unchanged (gate: calibrations byte-identical). Found when
-reproducing von der Esch et al.'s test glaciers with her settings. On `snowline-calibration` (`07d694d`); main
-has the bug.
+in every calibration. The state arrays `te_rf`/`tl_rf` are set in `initialise_firnicetemp_spinup.pro`. On main
+that file is included for every glacier (`glogem.pro`), so main is not affected: its full-refreezing test
+calibrations run. On GloGEMflow the include became conditional on `firnice_temperature = 'y'`. Now also set in
+`initialise_output_arrays.pro`; with the temperature model on, the same zeros are set again, so runs that worked
+are unchanged. Tests (repository test calibration, Aletsch and Morteratsch, monthly and daily): default
+refreezing byte-identical; `refreezing_full = 'y'` stopped before and runs after. Found when reproducing von der
+Esch et al.'s test glaciers with her settings. On GloGEMflow since 2026-10-19 (`cfff689`, first `07d694d` on
+`snowline-calibration`). Not needed on main; an earlier version of this entry said main had the bug, which was
+wrong.
 
 (mc-g33)=
 ### G33. Snowline (TSLA) calibration of c_prec (von der Esch et al., in review)
