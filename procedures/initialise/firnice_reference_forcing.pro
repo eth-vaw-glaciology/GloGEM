@@ -51,6 +51,7 @@ if sp_y1 ne tran[0]-1l then $
 ; forc_mel, forc_plg and forc_tgs are the thermal model's energy inputs (firnice_thermal_forcing.pro,
 ; without t_offset if firnice_forcing_toff = 'n'); b_ref, forc_sno and firn_th stay the mass balance's.
 sno_keep = sno & sur_keep = sur & snostor_keep = snostor
+tl_rf_keep = tl_rf & te_rf_keep = te_rf   ; the full refreezing model's state (refreezing_full)
 sno = dblarr(nb) & sur = dblarr(nb) & snostor = dblarr(nb)
 forc_sno = dblarr(12, nb) & forc_mel = dblarr(12, nb) & forc_plg = dblarr(12, nb) & forc_tgs = dblarr(12, nb)
 b_ref = dblarr(nb)
@@ -101,6 +102,7 @@ for yr_rf = 0, 2 do begin
 endfor
 mb_book = 1b
 sno = sno_keep & sur = sur_keep & snostor = snostor_keep
+tl_rf = tl_rf_keep & te_rf = te_rf_keep
 
 ; Thermal firn mask from the reference balance, and its firn-ice transition depth from the same
 ; balance and the band's reference-period mean temperature
