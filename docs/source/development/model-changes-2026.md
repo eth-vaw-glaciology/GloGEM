@@ -1419,6 +1419,7 @@ All decisions below were taken by Janosch Beer.
 | 2026-10-16 | A glacier that melted out completely must be able to come back (AMOC). | G35 |
 | 2026-10-19 | Bands below the 2003 front that get ice use the blended parameters, as IGM's forcing (AMOC). | G37, F20 |
 | 2026-10-19 | A glacier restarts after ten positive years, not five. | G35 |
+| 2026-10-19 | AMOC: no routing between glaciers and no terrain forefields; each region and scenario is reported only until more than 5 % of its ice first loses ice at the end of its room (`scripts/amoc/reporting_limit.py`). | G34, F19 |
 
 ---
 
