@@ -462,6 +462,9 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                         ; initialise_firnicetemp_spinup (as before) it only ever saw the defaults.
                         ; reference-period forcing, balance b_ref and thermal firn mask
                         ; (spin-up forcing, and burial/emergence in the main run)
+                        if firnice_firn_obs_dir ne '' then begin
+                          @procedures/read/read_firn_obs.pro
+                        endif
                         if time_resolution eq 'monthly' then begin
                           @procedures/initialise/firnice_reference_forcing.pro
                         endif else b_ref = dblarr(nb)

@@ -16,6 +16,7 @@ for fl_i = 0l, nb-1 do begin
       continue
    endif
    fl_b = bal[fl_i]
+   if firnice_firn_obs_dir ne '' then if finite(fo_b[ye,fl_i]) then fl_b = fo_b[ye,fl_i]   ; perfect-firn test
    if fl_b gt 0d then begin
       fl_we[fl_i,1:n_fl-1] = fl_we[fl_i,0:n_fl-2] & fl_yr[fl_i,1:n_fl-1] = fl_yr[fl_i,0:n_fl-2]
       fl_we[fl_i,0] = fl_b & fl_yr[fl_i,0] = fl_year
