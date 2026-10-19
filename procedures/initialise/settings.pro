@@ -215,8 +215,9 @@ firnice_firn_column     = 'fixed' ; 'ledger' = a firn band's density (conduction
                                 ; ice band with its seasonal snow); needs firnice_perm_limit 'firn'
 firnice_perm_cold_depth = 4.d   ; m, meltwater penetration into cold firn (Mattea et al. 2021, z_lim;
                                 ; Gilbert et al. 2014, 4-5 m at Col du Dome in 2012)
-firnice_snow_refreeze   = 'n'   ; 'y' = on ice bands, meltwater and rain (x f_ref) refreeze in the seasonal
-                                ; snow and at the ice surface beneath it before running off
+firnice_snow_refreeze   = 'n'   ; 'y' = on ice bands (and empty-ledger firn bands under firnice_firn_column
+                                ; 'ledger'), meltwater and rain (x f_ref) refreeze in the seasonal snow and at
+                                ; the ice surface beneath it before running off
 firnice_thermal_lapse   = 'floor' ; lapse rate of the thermal surface above the climate cell:
                                 ; 'floor' = at least 6.5 K/km; 'reanalysis' = ERA5's own (as the
                                 ; mass balance; better at Jungfraujoch and Corvatsch 1981-2020);
