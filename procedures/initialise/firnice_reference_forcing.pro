@@ -134,6 +134,12 @@ if firnice_firn_obs_mask eq 'y' then begin
    jo = where(finite(fo_b0) and gl ne noval, co)
    if co gt 0 then firn_th[jo] = double(fo_b0[jo] gt 0)
 endif
+; perfect-firn test: observed bands take their observed start balance as b_ref from here on (close-off
+; depth, burial, drift spin-up), so only the energy stays the model's; the mask above keeps the model's b_ref
+if firnice_firn_obs_dir ne '' then begin
+   jo = where(finite(fo_b0) and gl ne noval, co)
+   if co gt 0 then b_ref[jo] = fo_b0[jo]
+endif
 hl_mask = (firn_th eq 1)
 hl_acc  = b_ref
 hl_tk   = dblarr(nb)

@@ -557,6 +557,8 @@ if firnice_perm_limit eq 'firn' and time_resolution ne 'monthly' then $
 if firnice_firn_obs_dir ne '' and firnice_perm_limit ne 'firn' then message, "firnice_firn_obs_dir needs firnice_perm_limit 'firn'"
 if total(firnice_firn_obs_mask eq ['y', 'n']) eq 0 then message, "firnice_firn_obs_mask must be 'y' or 'n'"
 if firnice_firn_obs_mask eq 'y' and firnice_firn_obs_dir eq '' then message, "firnice_firn_obs_mask 'y' needs firnice_firn_obs_dir"
+if firnice_firn_obs_dir ne '' then if ~file_test(firnice_firn_obs_dir, /directory) then $
+    message, "firnice_firn_obs_dir not found: " + firnice_firn_obs_dir
 if total(firnice_firn_column eq ['fixed', 'ledger']) eq 0 then message, "firnice_firn_column must be 'fixed' or 'ledger'"
 if firnice_firn_column eq 'ledger' and firnice_perm_limit ne 'firn' then message, "firnice_firn_column 'ledger' needs firnice_perm_limit 'firn'"
 if total(firnice_thermal_lapse eq ['floor', 'reanalysis', 'stations']) eq 0 then $
