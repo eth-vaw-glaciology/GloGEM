@@ -212,6 +212,7 @@ Janosch decided on 2026-09-25 not to rerun the submitted v1 regions, and on 2026
 | {ref}`F18 <mc-f18>` | Blow-up check by mass instead of the 30 % thickness sum (`flow_blowup_check`) | flow | new (AMOC) | no unless switched on | not in main | `f927883` |
 | {ref}`F19 <mc-f19>` | End of the longest flowline grid: free outflow instead of the handover to Δh (`flow_domain_end`) | flow | new (AMOC) | no unless switched on | not in main | `f927883` |
 | {ref}`F20 <mc-f20>` | Flowline balance below the front: the ice-surface balance instead of the lowest band's | flow | new (AMOC) | no unless switched on | not in main | `4948986` |
+| {ref}`F21 <mc-f21>` | Spin-up parameter gate: A_flow at its floor or the ELA bias at its clamp → Δh (`spinup_gate_aflow_min`, `spinup_gate_ela_max`) | flow | new (AMOC) | no unless switched on | not in main | `3bb5b85` |
 | {ref}`S1 <mc-s1>` | Combine counted batches twice (`GloGEM_` and `GloGEMflow_` files) | scripts | fixed | submission files | — | `a6037e2` |
 | {ref}`S2 <mc-s2>` | Combine and gate for v2: completeness, `mass_bsl` repair, month restamp | scripts | fixed | submission files | — | `8993a0d` |
 | {ref}`S3 <mc-s3>` | GMIP4 format: time bounds, whole calendar years, NaN-aware gate | scripts | fixed | submission files | — | `cc70ff7` |
@@ -253,6 +254,7 @@ Janosch decided on 2026-09-25 not to rerun the submitted v1 regions, and on 2026
 | {ref}`K27 <mc-k27>` | Parametrised refreezing: one common amount for all refreezing bands of a month | core | open (finding) | yes | yes | none |
 | {ref}`K28 <mc-k28>` | Gridded T_off round skips the first grid row and column | core (calibration) | open, latent | yes (those glaciers) | yes | none |
 | {ref}`K29 <mc-k29>` | Gridded T_off couples the glaciers of one grid cell | core (calibration) | by design; documented | yes (neighbours) | yes | none |
+| {ref}`K31 <mc-k31>` | Flow spin-ups with A_flow at its floor or the ELA bias at its clamp pass the quality gate and thicken without bound | flow | fixed for AMOC by F21; in the GMIP4 submissions | yes (long or cool runs) | not in main | — |
 | {ref}`K30 <mc-k30>` | Snow lines ask for less snow than the regional c_prec bounds allow; autumn snow too early | calibration | open (finding) | — | yes | none |
 
 ---
@@ -1108,6 +1110,24 @@ Tests: defaults byte-identical. Central Europe RCP26_045sv flow test (cap 'all')
 Scandinavia RCP45_045sv (cap 'none', every switch): 111.5 → 109.8 km³ in 2500, outflow at the grid ends and lowest
 bands 23.0 → 25.9 km³ (both with G37, before the G34 review fixes). Details: AMOC development history, chapter 7.
 
+(mc-f21)=
+### F21. Spin-up parameter gate
+
+The spin-up tunes A_flow (floor 1e-20 Pa⁻³ a⁻¹) and an ELA bias (clamped at ±500 m) until the flowline matches
+the inventory volume, and the quality gate (F3) checks only the result: volume and length within 50 %. Some
+spin-ups reach the volume only with ice that hardly deforms (A_flow near 1e-20, median 2e-16) or with the ELA bias
+at its clamp. Such a glacier cannot pass ice to its tongue; under a neutral or positive balance it thickens without
+bound (K31). In the AMOC production runs (`edbb4b0`) Scandinavian glacier 00287 grew from 11.8 to about 100 km³ and
+01490 from 6.9 to 38 km³ in scenarios in which the region shrinks; the growth limit (G12) cut them back only at 20 ×
+their volume, booking about 10 km³ a year as melt (annual balances of −187 m w.e.). Before the reporting limits the
+runaways held about 30 % of the Scandinavian ice in the shrinking scenarios, and they set those limits. New, after
+the quality gate and also on spin-up cache hits: `spinup_gate_aflow_min` (A_flow below it) and `spinup_gate_ela_max`
+(|ELA bias| at or above it) send the glacier to the Δh parameterisation from the start; 0 switches each off (the
+default, so GMIP4 is unchanged). The AMOC runs use 1e-19 and 499.9 m (`make_amoc_configs.py`), as Zekollari et al.
+(2019) reject spin-ups beyond ±500 m (`3bb5b85`). Test: Scandinavia batch 04, GFDL ref: volume in 2999 103.7 → 2.3 km³
+(00287 stays at 11.8 km³); every other glacier identical. In the AMOC production spin-ups this concerns 13 of 788 flow glaciers in
+Central Europe (2.6 km³) and 44 of 626 in Scandinavia (37.6 km³ of 183 km³ flow ice in 2003).
+
 ## 5. Scripts, post-processing and run infrastructure
 
 These are in `scripts/` and do not change model output, but they change the files submitted to GMIP4 or how campaigns run.
@@ -1392,6 +1412,17 @@ and 4 still improve at 0.4 (flat curves, not physical). The regional monthly tab
 23 calibration glaciers sit at 1.3. After the snowline calibration with all months, October–November hold 45 % of
 the remaining snow-line error: the model snows onto the lower glacier too early. Details: ice-temperature
 development history, chapter 9.
+
+(mc-k31)=
+### K31. Flow spin-ups at the edge of their parameter range pass the quality gate (fixed for AMOC by F21; in GMIP4)
+
+The quality gate (F3) accepts a spin-up that matches volume and length, also when A_flow is at its floor or the
+ELA bias at its clamp; such glaciers hardly flow and thicken without bound under a neutral or positive balance (F21).
+Found 2026-10-20 in the AMOC production runs. In the GMIP4 Scandinavia submission (`scandinavia_flow_rgi7_gmip4`,
+RGI7) 162 of 529 flow spin-ups (31 %) have A_flow below 1e-19 or the ELA bias at the clamp (154 at the clamp). The
+87 of them above 0.05 km³ grow to a median 1.2–1.4 × their 2020 volume, up to 13 × (MRI-ESM2-0 SSP1-2.6, 2300), and
+under MRI-ESM2-0 SSP5-8.5 they hold 73 % of the ice left in 2300. It stayed hidden because the 21st-century runs
+melt such glaciers anyway. Other regions not checked yet. Whether to tell GlacierMIP4: Janosch.
 
 ## 7. Decisions log
 
