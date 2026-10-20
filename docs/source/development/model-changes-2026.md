@@ -928,8 +928,8 @@ if changed, change both branches); the ice that a melting-out band cannot give i
 tree that does not know the setting ignores it silently (K32).
 
 The old branch is in main and in every GMIP4 submission. Switching `'y'` on by default at the merge changes the
-results of every glacier that reaches 4 bands; that is for the GloGEM developers to decide. Whether to tell
-GlacierMIP4: Janosch.
+results of every glacier that reaches 4 bands; that is for the GloGEM developers to decide. GlacierMIP4 is not
+told: the submissions stand (Janosch, 2026-10-20).
 
 ## 4. GloGEMflow items
 
@@ -1516,7 +1516,8 @@ Found 2026-10-20 in the AMOC production runs. In the GMIP4 Scandinavia submissio
 RGI7) 162 of 529 flow spin-ups (31 %) have A_flow below 1e-19 or the ELA bias at the clamp (154 at the clamp). The
 87 of them above 0.05 km³ grow to a median 1.2–1.4 × their 2020 volume, up to 13 × (MRI-ESM2-0 SSP1-2.6, 2300), and
 under MRI-ESM2-0 SSP5-8.5 they hold 73 % of the ice left in 2300. It stayed hidden because the 21st-century runs
-melt such glaciers anyway. Other regions not checked yet. Whether to tell GlacierMIP4: Janosch.
+melt such glaciers anyway. Other regions not checked yet. GlacierMIP4 is not told: the submission stands (Janosch,
+2026-10-20).
 
 (mc-k32)=
 ### K32. Unknown settings in a user config are accepted silently
@@ -1576,6 +1577,7 @@ All decisions below were taken by Janosch Beer.
 | 2026-10-19 | AMOC: no routing between glaciers and no terrain forefields; each region and scenario is reported only until more than 5 % of its ice first loses ice at the end of its room (`scripts/amoc/reporting_limit.py`). | G34, F19 |
 | 2026-10-20 | AMOC: flow spin-ups with A_flow at its floor or the ELA bias at its clamp run on the Δh parameterisation; production rerun (run 2). | F21, `3bb5b85` |
 | 2026-10-20 | AMOC: the A cut-off is the rate factor of ice at −30 °C (1.2e-18 Pa⁻³ a⁻¹) instead of 1e-19; the Δh small-glacier leak is fixed behind a switch, on for AMOC; production rerun (run 3). | F21, G42, `85e0899` |
+| 2026-10-20 | No note to GlacierMIP4 about the stiff spin-ups (K31) or the small-glacier leak (G42) in the submitted runs. | K31, G42 |
 
 ---
 
