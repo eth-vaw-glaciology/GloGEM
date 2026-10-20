@@ -223,6 +223,10 @@ growth_max_rel   = 20.0d0   ; x the inventory volume
 ; spin-up). Evaluated in glogemflow_coupled.pro; see the comment there for the evidence.
 spinup_gate_vol_tol = 0.5d0   ; fraction of observed volume
 spinup_gate_len_min = 0.5d0   ; fraction of observed length
+; and the spin-up's parameters inside their range (0: off): A_flow at least spinup_gate_aflow_min [Pa-3 a-1],
+; |ELA bias| below spinup_gate_ela_max [m] (the spin-up clamps it at 500 m)
+spinup_gate_aflow_min = 0d0
+spinup_gate_ela_max = 0d0
 
 ; Spin-up cost limit (spinup_flowmodel.pro): the calibration of one glacier stops after
 ; spinup_max_substeps flow time steps (Phase A and B, all attempts). That is the work the
@@ -557,6 +561,8 @@ if dh_regrowth eq 'y' and advance ne 'y' then $
   message, 'dh_regrowth=''y'' needs advance=''y'' (the bands below the front it grows into); with fixed geometry set dh_regrowth=''n'''
 if dh_regrowth eq 'y' and adv_lookup eq 'y' then message, 'dh_regrowth=''y'' and adv_lookup=''y'' exclude each other'
 if dh_regrowth_adv_max lt 0 then message, 'dh_regrowth_adv_max must be 0 (no limit) or positive'
+if spinup_gate_aflow_min lt 0 or spinup_gate_ela_max lt 0 then $
+  message, 'spinup_gate_aflow_min and spinup_gate_ela_max must be 0 (off) or positive'
 if write_geometry_output ne 'y' and write_geometry_output ne 'n' and write_geometry_output ne 'flow' then $
   message, 'write_geometry_output must be ''y'', ''n'' or ''flow'', not ''' + strtrim(write_geometry_output, 2) + ''''
 if geometry_output_every lt 1 or geometry_output_every ne round(geometry_output_every) then $

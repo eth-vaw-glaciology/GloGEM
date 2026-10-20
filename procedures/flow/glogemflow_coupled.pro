@@ -207,6 +207,17 @@ if n_elements(flow_initialised) eq 0 then begin
     flow_gated_gl = 1
     goto, glogemflow_skip
   endif
+  ; spin-up parameters at the edge of their range: ice that barely flows (A_flow below spinup_gate_aflow_min)
+  ; or the ELA bias at its clamp (spinup_gate_ela_max); 0 switches each off
+  if (spinup_gate_aflow_min gt 0d0 and spinup_aflow lt spinup_gate_aflow_min) or $
+     (spinup_gate_ela_max gt 0d0 and abs(spinup_ela_bias) ge spinup_gate_ela_max) then begin
+    print, 'WARNING: spin-up parameter gate: glacier ' + strtrim(id[gg[g]], 2) + ' -- A_flow ' + $
+      strtrim(string(spinup_aflow, fo='(e9.2)'), 2) + ', ELA bias ' + $
+      strtrim(string(spinup_ela_bias, fo='(f7.1)'), 2) + ' m --- using the Δh parameterisation from the start.'
+    use_flow_model_gl = 'n'
+    flow_gated_gl = 1
+    goto, glogemflow_skip
+  endif
 
   flow_initialised = 1
   print, 'GloGEMflow coupled: initialised at year ' + $
