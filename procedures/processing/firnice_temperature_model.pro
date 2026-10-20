@@ -235,9 +235,8 @@ endif
 
 endif else begin
 
-; ice bands (and, under firnice_firn_column 'ledger', firn bands with an empty ledger): meltwater runs
-; off the impermeable ice; the seasonal snow shares the top nodes of the ice column. Without
-; firnice_snow_refreeze no latent heat goes into them.
+; ice bands: meltwater runs off the impermeable ice; the seasonal snow shares the top nodes of the
+; ice column. Without firnice_snow_refreeze no latent heat goes into them.
 fit_water=0d
 ; firnice_snow_refreeze 'y': the month's water refreezes in the seasonal snow and as superimposed
 ; ice on the ice surface: it warms the nodes holding snow, down to the node whose slice holds the
