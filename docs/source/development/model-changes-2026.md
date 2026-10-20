@@ -927,6 +927,14 @@ settles over a few years instead of at once (a solve on the curve, as in `dh_reg
 if changed, change both branches); the ice that a melting-out band cannot give is still not booked, as before; a
 tree that does not know the setting ignores it silently (K32).
 
+Production run 3 (2026-10-20, with the switch; settings and config copies checked): the Scandinavian residuals after
+2010 drop from −2.7 to −4.6 km³ to −0.01 to −0.15 km³ in the shrinking scenarios, and Central Europe's from −0.11 to
+−0.27 km³ to −0.06 to +0.03 km³. The two R15 Scandinavian batches are byte-identical in run 3. Volume in 2999 gains
+1.0–1.8 km³ in the Scandinavian shrinking scenarios (less than the leak lost, as most of the affected glaciers melt
+out anyway). The two growth scenarios keep +0.6 and +1.1 km³ (0.1 % of their volume change), mostly from one flowline
+glacier at the growth limit (00434, +0.0025 km³ a year at 214 km³, the same in run 2; less than 0.003 km³ before the
+reporting limits); in run 2 the leak masked it.
+
 The old branch is in main and in every GMIP4 submission. Switching `'y'` on by default at the merge changes the
 results of every glacier that reaches 4 bands; that is for the GloGEM developers to decide. GlacierMIP4 is not
 told: the submissions stand (Janosch, 2026-10-20).
@@ -1219,8 +1227,13 @@ is an effective value (it also absorbs sliding and geometry errors; median 2e-16
 factor of 10 below the coldest plausible ice is allowed; it is also 100 × below the regional median, which picks the
 same glaciers; and below it 2 of 11 Scandinavian flow glaciers grow in all three scenarios in which the region
 shrinks, above it 3 of 571. Stricter values were rejected: OGGM's lower bound (0.1 × the temperate A) bounds one
-factor per region, not each glacier, and the A of ice at −10 °C leaves no margin for an effective value. The new
-value moves at most 11 more Scandinavian glaciers (2.7 km³) and 1 tiny Central European one.
+factor per region, not each glacier, and the A of ice at −10 °C leaves no margin for an effective value. Production
+run 3 (`85e0899`, 2026-10-20, final): the new value moved 11 more Scandinavian glaciers (2.7 km³), 30 in all
+(29.1 km³), and no Central European one (its one candidate, 03464, was already rejected by the quality gate). The
+flowline model carries 773 Central European glaciers (92.6 % of the 2003 ice) and 571 Scandinavian ones (47.8 %).
+Scandinavian volume in 2999 changes by −1.8 to −50 km³, all from the 11 glaciers, which grew most in the growth
+scenarios. The reporting limits are unchanged except Scandinavia GFDL hos_Eref, 2157 → 2149: the share at a limit
+hovers at 5 % there (4.99 → 5.03 % in 2150, with the same ice at a limit and 2.4 km³ less in the region).
 
 ## 5. Scripts, post-processing and run infrastructure
 
