@@ -14,8 +14,8 @@ For users of GloGEM; the details and the evidence are in the entries below.
 - **New: growth limit.** Every glacier is bounded once a year, on both geometry paths ({ref}`G12 <mc-g12>`).
 - **New: the GMIP4 ERA5 hindcast runs with changing geometry** ({ref}`G13 <mc-g13>`). Flow runs write `GloGEMflow_*` netCDF files.
 - **Fixed, climate input:** projections read the climate months late, in GMIP4 ({ref}`G1 <mc-g1>`) and in CMIP6 and AMOC ({ref}`G2 <mc-g2>`; both also fixed on main since 2026-10-16); ERA5 and GCM came from neighbouring grid points ({ref}`G3 <mc-g3>`); the climate point depended on the batching ({ref}`G4 <mc-g4>`); lapse rate and variability on the per-point climate path ({ref}`G5 <mc-g5>`); lost longitudes ({ref}`G6 <mc-g6>`); speed ({ref}`G7 <mc-g7>`).
-- **Fixed, elsewhere:** glaciers never simulated ({ref}`G8 <mc-g8>`); glaciers turning NaN in the Δh parameterisation ({ref}`G9 <mc-g9>`, {ref}`G10 <mc-g10>`); Δh mass check and sea-level calving ({ref}`G11 <mc-g11>`); the calving-flux file ({ref}`G15 <mc-g15>`); `mass_bsl` ({ref}`G18 <mc-g18>`); negative netCDF values ({ref}`G19 <mc-g19>`); monthly netCDF time labels ({ref}`G20 <mc-g20>`, also on main); the full refreezing model's year and cold reservoir ({ref}`G40 <mc-g40>`, {ref}`G41 <mc-g41>`, local GloGEMflow); the flowline now uses the RGI 7.0 area correction ({ref}`F15 <mc-f15>`).
-- **New for growing glaciers (AMOC), all off by default:** the flowline balance at the actual surface ({ref}`F17 <mc-f17>`), a blow-up check by mass ({ref}`F18 <mc-f18>`), free outflow at the end of the longest grid ({ref}`F19 <mc-f19>`), Δh regrowth with a thickness limit per glacier ({ref}`G34 <mc-g34>`), a restart of glaciers that melted out ({ref}`G35 <mc-g35>`), the blended parameters below the inventory front in GloGEM's own band model ({ref}`G37 <mc-g37>`) and in the flowline's balance ({ref}`F20 <mc-f20>`).
+- **Fixed, elsewhere:** glaciers never simulated ({ref}`G8 <mc-g8>`); glaciers turning NaN in the Δh parameterisation ({ref}`G9 <mc-g9>`, {ref}`G10 <mc-g10>`); Δh mass check and sea-level calving ({ref}`G11 <mc-g11>`); the calving-flux file ({ref}`G15 <mc-g15>`); `mass_bsl` ({ref}`G18 <mc-g18>`); negative netCDF values ({ref}`G19 <mc-g19>`); monthly netCDF time labels ({ref}`G20 <mc-g20>`, also on main); the full refreezing model's year and cold reservoir ({ref}`G40 <mc-g40>`, {ref}`G41 <mc-g41>`, local GloGEMflow); the Δh parameterisation of glaciers with 4 bands or fewer lost or gained 1.5 × the balance ({ref}`G42 <mc-g42>`, behind a switch); the flowline now uses the RGI 7.0 area correction ({ref}`F15 <mc-f15>`).
+- **New for growing glaciers (AMOC), all off by default:** the flowline balance at the actual surface ({ref}`F17 <mc-f17>`), a blow-up check by mass ({ref}`F18 <mc-f18>`), free outflow at the end of the longest grid ({ref}`F19 <mc-f19>`), Δh regrowth with a thickness limit per glacier ({ref}`G34 <mc-g34>`), a restart of glaciers that melted out ({ref}`G35 <mc-g35>`), the blended parameters below the inventory front in GloGEM's own band model ({ref}`G37 <mc-g37>`) and in the flowline's balance ({ref}`F20 <mc-f20>`), and a gate that sends flow spin-ups with implausibly stiff ice or the ELA bias at its clamp to the Δh parameterisation ({ref}`F21 <mc-f21>`).
 - **Running:** the environment variables `GLOGEM_CONFIG` and `GLOGEM_LOGDIR`; the GMIP4 campaign scripts in `scripts/gmip4/` with a README ({ref}`S10 <mc-s10>`).
 - **Still open:** the swapped ice-melt and snow-melt files ({ref}`K12 <mc-k12>`), refreezing that depends on the number of elevation bands ({ref}`K26 <mc-k26>`) and the other items of section 6.
 
@@ -30,6 +30,7 @@ For users of GloGEM; the details and the evidence are in the entries below.
 - {ref}`G9 <mc-g9>`: Δh advance scheme: a division by zero turns glaciers into NaN.
 - {ref}`G10 <mc-g10>`: Δh parameterisation: melting glaciers turn NaN instead of melting out.
 - {ref}`G15 <mc-g15>`: the calving-flux file is never written.
+- {ref}`G42 <mc-g42>`: the Δh parameterisation of glaciers with 4 bands or fewer loses (or gains) about 1.5 × the balance; our fix is behind a switch, off by default.
 - {ref}`K12 <mc-k12>`: in every `.dat` output the `Icemelt_sfc` file holds snow melt and the `Snowmelt_sfc` file holds ice melt.
 - {ref}`K16 <mc-k16>`: a missing GCM directory makes the job hang instead of stopping.
 
@@ -194,6 +195,7 @@ Janosch decided on 2026-09-25 not to rerun the submitted v1 regions, and on 2026
 | {ref}`G39 <mc-g39>` | Flowline geometry every n years (`write_geometry_output='flow'`, `geometry_output_every`) | core (output) | new | no (new output only) | — | `edbb4b0` |
 | {ref}`G40 <mc-g40>` | `refreezing_full`: 365-day year | core (refreezing) | fixed on local GloGEMflow `2cce026` (not pushed) | only with `refreezing_full='y'` | yes | `2cce026` |
 | {ref}`G41 <mc-g41>` | `refreezing_full`: the cold reservoir was used once per hydrological year; an October melt left the rest of the year without refreezing | core (refreezing) | fixed on local GloGEMflow `01dbb65` (not pushed) | only with `refreezing_full='y'` | yes | `01dbb65` |
+| {ref}`G42 <mc-g42>` | Δh parameterisation of glaciers with 4 bands or fewer: 1.5 × the balance lost or gained | core | fixed behind a switch (`dh_small_conserve`, on for AMOC) | yes (glaciers that reach 4 bands; Scandinavian AMOC runs 1.6–2.5 % of the ice lost) | yes | `85e0899` |
 | {ref}`F1 <mc-f1>` | Port of MATLAB GloGEMflow to IDL and coupling to GloGEM | flow | done | — | not in main | `baa5c7b`, `020e81e`, ... |
 | {ref}`F2 <mc-f2>` | Flow → Δh handover: frozen, NaN or resurrected glaciers, lost year | flow | fixed | yes | not in main | `a473e25`, `61ac7d4`, `11ca640`, `5dfd530`, `df8bdd4` |
 | {ref}`F3 <mc-f3>` | Spin-up quality gate | flow | fixed | yes | not in main | `5dfd530` |
@@ -214,7 +216,7 @@ Janosch decided on 2026-09-25 not to rerun the submitted v1 regions, and on 2026
 | {ref}`F18 <mc-f18>` | Blow-up check by mass instead of the 30 % thickness sum (`flow_blowup_check`) | flow | new (AMOC) | no unless switched on | not in main | `f927883` |
 | {ref}`F19 <mc-f19>` | End of the longest flowline grid: free outflow instead of the handover to Δh (`flow_domain_end`) | flow | new (AMOC) | no unless switched on | not in main | `f927883` |
 | {ref}`F20 <mc-f20>` | Flowline balance below the front: the ice-surface balance instead of the lowest band's | flow | new (AMOC) | no unless switched on | not in main | `4948986` |
-| {ref}`F21 <mc-f21>` | Spin-up parameter gate: A_flow at its floor or the ELA bias at its clamp → Δh (`spinup_gate_aflow_min`, `spinup_gate_ela_max`) | flow | new (AMOC) | no unless switched on | not in main | `3bb5b85` |
+| {ref}`F21 <mc-f21>` | Spin-up parameter gate: A_flow at its floor or the ELA bias at its clamp → Δh (`spinup_gate_aflow_min`, `spinup_gate_ela_max`) | flow | new (AMOC) | no unless switched on | not in main | `3bb5b85`; AMOC value `85e0899` |
 | {ref}`S1 <mc-s1>` | Combine counted batches twice (`GloGEM_` and `GloGEMflow_` files) | scripts | fixed | submission files | — | `a6037e2` |
 | {ref}`S2 <mc-s2>` | Combine and gate for v2: completeness, `mass_bsl` repair, month restamp | scripts | fixed | submission files | — | `8993a0d` |
 | {ref}`S3 <mc-s3>` | GMIP4 format: time bounds, whole calendar years, NaN-aware gate | scripts | fixed | submission files | — | `cc70ff7` |
@@ -258,6 +260,7 @@ Janosch decided on 2026-09-25 not to rerun the submitted v1 regions, and on 2026
 | {ref}`K29 <mc-k29>` | Gridded T_off couples the glaciers of one grid cell | core (calibration) | by design; documented | yes (neighbours) | yes | none |
 | {ref}`K31 <mc-k31>` | Flow spin-ups with A_flow at its floor or the ELA bias at its clamp pass the quality gate and thicken without bound | flow | fixed for AMOC by F21; in the GMIP4 submissions | yes (long or cool runs) | not in main | — |
 | {ref}`K32 <mc-k32>` | Unknown settings in a user config are accepted silently | core (settings) | known; documented | — | yes | none |
+| {ref}`K33 <mc-k33>` | GMIP4 Scandinavia: a few budget residuals far larger than G42 explains | core | open, not investigated | unknown | unknown | — |
 | {ref}`K30 <mc-k30>` | Snow lines ask for less snow than the regional c_prec bounds allow; autumn snow too early | calibration | open (finding) | — | yes | none |
 
 ---
@@ -396,7 +399,7 @@ The per-point climate path (`new='y'`, used for NorthAsia, LowLatitudes and Anta
 (mc-g11)=
 ### G11. Δh mass-conservation check, the sea-level calving it undid, and negative frontal ablation
 
-- **The check.** `44b688a` (all branches, 2026-09-15). The correction that makes the Δh redistribution match the volume change divides by `total(dh*area)`, which tends to zero on a remnant and then amplifies instead of correcting. Scandinavia 00447 (CESM2-WACCM ssp585) jumped from 0.014 to 0.093 km³ in 2078 and became a 569 m thick stub at 2985 m, above its own ELA, ending 2099 at 0.684 km³ against 0.016 km³ in the pure-Δh reference. Our output gate caught it. The new check compares the realised volume change with the balance (tolerance 5 % of the volume plus 0.05 million m³); on failure it restores the geometry of the start of the year and applies the balance as uniform thinning with the area fixed. 00447: 0.684 → 0.065 km³ in 2099; 00012 bit-identical. This is a partial fix: 00447 still ends about 4× the reference and its band elevations still reach about 3000 m (K1).
+- **The check.** `44b688a` (all branches, 2026-09-15). The correction that makes the Δh redistribution match the volume change divides by `total(dh*area)`, which tends to zero on a remnant and then amplifies instead of correcting. Scandinavia 00447 (CESM2-WACCM ssp585) jumped from 0.014 to 0.093 km³ in 2078 and became a 569 m thick stub at 2985 m, above its own ELA, ending 2099 at 0.684 km³ against 0.016 km³ in the pure-Δh reference. Our output gate caught it. The new check compares the realised volume change with the balance (tolerance the largest of 10 % of the expected change, 5 % of the volume and 0.05 million m³; G42: this let a 1.5 × error in small glaciers pass); on failure it restores the geometry of the start of the year and applies the balance as uniform thinning with the area fixed. 00447: 0.684 → 0.065 km³ in 2099; 00012 bit-identical. This is a partial fix: 00447 still ends about 4× the reference and its band elevations still reach about 3000 m (K1).
 - **Sea-level calving undone.** `glacier_retreat.pro` cuts off bands whose surface is below sea level and books their ice as frontal ablation (`flux_calv`). The new check compared the volume change with the surface balance only, so in every year with a sizeable cut it reverted the geometry: the ice stayed, while the calving was still reported. ArcticCanadaN 01236 reported about 29 m w.e./yr (2.8 Gt/a) of calving every year from 2011 while its volume followed the surface balance; this one glacier contributed +1.26 Gt/a to the region's 2000–2019 hindcast budget residual of +0.90 Gt/a. `9394bb6` (v3) measures the calving as the ice actually removed, lets the check expect the balance minus that calving, and sets the calving to 0 if the check still reverts. Test: 01236 residual +1.2435 → 0.0000 Gt/a, 2025 volume 8.95 → 6.16 km³; 43 SouthernAndes glaciers: volume and area bit-identical.
 - **Negative frontal ablation.** For the partly cut band, the area came from the area–thickness scaling, which can exceed the area before the cut, so the band gained ice; since `9394bb6` that showed up as negative frontal ablation (14578: −1.776 m w.e. in 2193; 14571: 5 negative years, −0.30 Gt). GMIP4 requires frontal ablation ≥ 0. `c5d5f5d` (v3) sets the band thickness so that exactly the planned amount `q_calv` is removed. Test: 39 of 43 SouthernAndes glaciers bit-identical, no negative values left, total frontal ablation 2.191 → 2.476 Gt.
 - **Submissions.** Submitted ArcticCanadaN (03) carries the undone calving, and so does v2 where sea-level cuts occur. The negative frontal ablation only appeared with `9394bb6`, which is on the fixes branch and was fixed by `c5d5f5d` before v3, so no submission carries it. Lander's runs are not affected (no mass check on main).
@@ -811,6 +814,9 @@ in years without ice. Limits: only on the glacier's own footprint (no new glacie
 the inventory); a restarted flow glacier stays on the Δh parameterisation. Details and figures: AMOC development
 history, chapter 6.
 
+The restart statistics above were measured before G42: with `dh_small_conserve='y'` a restarted glacier of 4 bands
+or fewer no longer loses 1.5 × its balance in melt years, so it lives longer.
+
 (mc-g36)=
 ### G36. 365-day thermal year
 
@@ -891,6 +897,39 @@ balance within 0.05 m w.e., ELA within 13 m, snow-line RMSE 350.1 → 349.5 m (b
 Review notes, unchanged: rain also refreezes (min(melt + rain, cold)); the bottom layer is held at 0 °C; the reservoir
 is in m of ice but compared with m w.e. (about 9 % more refreezing than the energy allows). On local GloGEMflow since
 2026-10-19 (`01dbb65`), not pushed. Details: ice-temperature development history, chapter 10.
+
+(mc-g42)=
+### G42. Δh parameterisation of glaciers with 4 bands or fewer: 1.5 × the balance (`dh_small_conserve`)
+
+`glacier_retreat.pro` sends a glacier with 4 ice bands or fewer (less than about 50 m of elevation range) to its
+"very small glaciers" branch instead of the Δh function. That branch adds `bal/0.9` to each band's thickness and then
+sets the band area from the area–thickness scaling `area_ini*(thick/thick_ini)^(1/expon)`. With `expon = 2` a band
+on the scaling curve holds a volume proportional to thickness^1.5, so a melt year removes about 1.5 × the balance
+and a growth year adds 1.5 ×; the extra half is booked nowhere. The mass check of G11 tolerates 5 % of the
+glacier's volume a year, so it fires only near melt-out.
+
+Found 2026-10-20 in the AMOC production runs (run 2). In Scandinavia's shrinking scenarios 3.2–4.6 km³ lost after
+2010 are missing from the budget (1.6–2.5 % of the ice lost; Central Europe 0.1–0.3 km³), mostly from plateau
+glaciers whose last 4 bands still hold up to 0.8 km³ (01779: every melt year from 2287 to 2432 removed 1.47–1.52 ×
+its balance, 0.26 km³ in all). The GMIP4 Scandinavia run (RGI7, default settings) shows the same factor in both
+directions (−0.5 to −2.6 km³ in melt years, +0.1 to +5.5 km³ in growth years); in the AMOC runs Δh regrowth (G34)
+takes the growth years, so only the losses remained.
+
+New switch `dh_small_conserve` (default `'n'` = the old branch): with `'y'` each band keeps `area*(thick + bal/0.9)`,
+takes its area from the scaling of that thickness and its thickness from volume / area, as the main branch does
+after the Δh redistribution. A band without inventory thickness or area keeps its area; a NaN still reaches the
+non-finite revert of G11. The AMOC runs use `'y'` (`85e0899`). Tests (R15): SouthernAndes GMIP4 with the defaults
+byte-identical; Scandinavia batch 16, CESM RCP45_018sv: budget residual −0.470 → −0.0006 km³ and G11 reverts 363 → 4,
+all in melt-out years (a band holding less ice than its balance removes); batch 13, GFDL ref: −0.155 → −0.004 km³;
+Central Europe batch 13, CESM RCP85_045sv: −0.006 → −0.003 km³. An independent max-effort review found no blocker.
+Its notes: a band far from the scaling curve (for example handed over from a flowline with a very different area)
+settles over a few years instead of at once (a solve on the curve, as in `dh_regrowth.pro`, would settle at once;
+if changed, change both branches); the ice that a melting-out band cannot give is still not booked, as before; a
+tree that does not know the setting ignores it silently (K32).
+
+The old branch is in main and in every GMIP4 submission. Switching `'y'` on by default at the merge changes the
+results of every glacier that reaches 4 bands; that is for the GloGEM developers to decide. Whether to tell
+GlacierMIP4: Janosch.
 
 ## 4. GloGEMflow items
 
@@ -1165,10 +1204,23 @@ their volume, booking about 10 km³ a year as melt (annual balances of −187 m 
 runaways held about 30 % of the Scandinavian ice in the shrinking scenarios, and they set those limits. New, after
 the quality gate and also on spin-up cache hits: `spinup_gate_aflow_min` (A_flow below it) and `spinup_gate_ela_max`
 (|ELA bias| at or above it) send the glacier to the Δh parameterisation from the start; 0 switches each off (the
-default, so GMIP4 is unchanged). The AMOC runs use 1e-19 and 499.9 m (`make_amoc_configs.py`), as Zekollari et al.
+default, so GMIP4 is unchanged). The AMOC runs first used 1e-19 and 499.9 m (`make_amoc_configs.py`), as Zekollari et al.
 (2019) reject spin-ups beyond ±500 m (`3bb5b85`). Test: Scandinavia batch 04, GFDL ref: volume in 2999 103.7 → 2.3 km³
-(00287 stays at 11.8 km³); every other glacier identical. In the AMOC production spin-ups this concerns 13 of 788 flow glaciers in
-Central Europe (2.6 km³) and 44 of 626 in Scandinavia (37.6 km³ of 183 km³ flow ice in 2003).
+(00287 stays at 11.8 km³); every other glacier identical. In the AMOC production spin-ups 13 of 788 (Central Europe) and 44 of 626 (Scandinavia) end at
+the floor or the clamp; the quality gate already rejects 6 and 25 of them, and the gate moved the other 7 (1.6 km³, all
+at the ELA clamp) and 19 (26.4 of 299 km³ in 2003). Production run 2 (2026-10-20): Central Europe unchanged; the
+Scandinavian shrinking scenarios shrink to the end (GFDL ref, 2999: 264 → 51 km³).
+
+**The A cut-off, revised (2026-10-20, Janosch).** 1e-19 had been read off a histogram (ice at about −55 °C), and
+some glaciers just above it still grew where the region shrinks (00320, A = 6.8e-19: 1.1 → 2.9 km³ under GFDL ref).
+The AMOC runs now use the rate factor of ice at −30 °C, 1.2e-18 Pa⁻³ a⁻¹ (3.7e-26 s⁻¹ Pa⁻³, Cuffey and Paterson,
+2010, Table 3.4; `85e0899`). Reasons: these temperate and polythermal glaciers hold no ice that cold, and the tuned A
+is an effective value (it also absorbs sliding and geometry errors; median 2e-16, softer than temperate ice), so a
+factor of 10 below the coldest plausible ice is allowed; it is also 100 × below the regional median, which picks the
+same glaciers; and below it 2 of 11 Scandinavian flow glaciers grow in all three scenarios in which the region
+shrinks, above it 3 of 571. Stricter values were rejected: OGGM's lower bound (0.1 × the temperate A) bounds one
+factor per region, not each glacier, and the A of ice at −10 °C leaves no margin for an effective value. The new
+value moves at most 11 more Scandinavian glaciers (2.7 km³) and 1 tiny Central European one.
 
 ## 5. Scripts, post-processing and run infrastructure
 
@@ -1475,6 +1527,13 @@ in their monthly snow line by up to 750 m in winter, because `snowline_definitio
 `snowline-calibration` (G33); GloGEMflow ignored it and wrote its own definition (the highest snow-free band).
 Comparisons across trees should check that every setting exists in both.
 
+(mc-k33)=
+### K33. GMIP4 Scandinavia: a few budget residuals far larger than G42 explains (open)
+
+Found 2026-10-20 while measuring G42 in the GMIP4 Scandinavia run (RGI7): besides the 1.5 × signature, a few
+glaciers have much larger residuals between their volume change and their balance (00389: −21 km³ over the run).
+Not investigated.
+
 ## 7. Decisions log
 
 All decisions below were taken by Janosch Beer.
@@ -1515,6 +1574,8 @@ All decisions below were taken by Janosch Beer.
 | 2026-10-19 | Bands below the 2003 front that get ice use the blended parameters, as IGM's forcing (AMOC). | G37, F20 |
 | 2026-10-19 | A glacier restarts after ten positive years, not five. | G35 |
 | 2026-10-19 | AMOC: no routing between glaciers and no terrain forefields; each region and scenario is reported only until more than 5 % of its ice first loses ice at the end of its room (`scripts/amoc/reporting_limit.py`). | G34, F19 |
+| 2026-10-20 | AMOC: flow spin-ups with A_flow at its floor or the ELA bias at its clamp run on the Δh parameterisation; production rerun (run 2). | F21, `3bb5b85` |
+| 2026-10-20 | AMOC: the A cut-off is the rate factor of ice at −30 °C (1.2e-18 Pa⁻³ a⁻¹) instead of 1e-19; the Δh small-glacier leak is fixed behind a switch, on for AMOC; production rerun (run 3). | F21, G42, `85e0899` |
 
 ---
 
