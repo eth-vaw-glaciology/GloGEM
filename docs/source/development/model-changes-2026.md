@@ -530,6 +530,8 @@ On the local branch `firn-ledger` (on local GloGEMflow `01dbb65`, not pushed), a
 - the firn column following the ledger (`firnice_firn_column = 'ledger'`);
 - meltwater refreezing in the seasonal snow and at the ice surface on ice bands (`firnice_snow_refreeze`).
 
+`firnice_snow_refreeze` was adopted on 2026-10-20 (the central thermal variant is now FRHS). It is on local GloGEMflow `8a8aba9` on its own, without the firn ledger, which stays on its branch. Gate: defaults byte-identical with GloGEMflow, and with the switch on identical to the run from `firn-ledger` (373 of 373 files). Not pushed. Details: ice-temperature development history, chapter 11.
+
 The ice-temperature runs now use FRH: no offset, ERA5's lapse rate, the HL and latent-heat fixes. Two candidate rules failed their pre-registered tests and stay on unmerged branches:
 - a depth limit for meltwater in cold firn (`perc-wetting-front`);
 - meltwater refreezing in the winter snow on ice (`snow-refreeze`).
