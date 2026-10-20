@@ -36,6 +36,15 @@ for ms = 1, 12 do begin
     pclim_sp[ms-1] = mean(ps_sp[jm])
 endfor
 
+; mb_hist_file (diagnostic): the correction's mean over the reference period
+mbh_P_sp = 1d & mbh_dT_sp = 0d
+if mbh_on then begin
+    mbh_k = where(mbh_year ge sp_y0 and mbh_year le sp_y1, mbh_c)
+    if mbh_c gt 0 then begin
+        mbh_P_sp = mean(mbh_P[mbh_k]) & mbh_dT_sp = mean(mbh_dT[mbh_k])
+    endif
+endif
+
 if sp_y1 ne tran[0]-1l then $
     print, '  [thermal spinup] note: reference period ends Sep ' + strtrim(sp_y1,2) + $
            ', main run starts month ' + strtrim(bal_month,2) + ' of ' + strtrim(tran[0]-1l,2)
@@ -68,6 +77,10 @@ for yr_rf = 0, 2 do begin
         jj = where(sno lt 0, cj) & if cj gt 0 then sno[jj] = 0
         tg = tclim_sp[m-1] + (elev - hclim) * dtdz[m-1] + t_offset
         pc = pclim_sp[m-1] * c_prec / 1000.
+        if mbh_on then begin
+            tg = tg + mbh_dT_sp
+            pc = pc * mbh_P_sp
+        endif
         forc_sno[mo_rf, *] = sno
         @procedures/processing/accumulation.pro
         @procedures/processing/meltmodel.pro

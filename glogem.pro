@@ -476,6 +476,13 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
                       for ye=0,years-1 do begin
 
+                        ; mb_hist_file: this hydrological year's precipitation factor and temperature offset
+                        if mbh_on then begin
+                          mbh_k = where(mbh_year eq ye + tran[0], mbh_c)
+                          mbh_P_y = (mbh_c gt 0) ? mbh_P[mbh_k[0]] : 1d
+                          mbh_dT_y = (mbh_c gt 0) ? mbh_dT[mbh_k[0]] : 0d
+                        endif
+
                         if eval_mbelevsensitivity eq 'y' then begin
                           count_mbelevsens=count_mbelevsens_v0 ; initialising to start value of counter
                           mbelevsensitivity_again:
@@ -529,6 +536,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                             if time_resolution eq 'monthly' then cdm=cmon else cdm=cday
                             if ccmon eq 0 then jjclim=where(cyear eq ye-1+tran[0] and cdm eq m)
                             tg=temp[jjclim[0]+ccmon]+(elev-hclim)*dtdz[m-1]+t_offset
+                            if mbh_on then tg = tg + mbh_dT_y
 			    
                             ; === Mass balance model
 

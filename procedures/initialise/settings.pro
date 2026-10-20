@@ -205,6 +205,10 @@ firnice_perm_cold_depth = 4.d   ; m, meltwater penetration into cold firn (Matte
                                 ; Gilbert et al. 2014, 4-5 m at Col du Dome in 2012)
 firnice_snow_refreeze   = 'n'   ; 'y' = on ice bands, meltwater and rain (x f_ref) refreeze in the seasonal
                                 ; snow and at the ice surface beneath it before running off
+mb_hist_file            = ''    ; diagnostic: file of 'hydrological year, precipitation factor, temperature
+                                ; offset [C]' applied to the monthly climate of those years (precipitation
+                                ; and air temperature, so also the thermal surface); the thermal spin-up
+                                ; takes the mean over firnice_spinup_ref_period; '' = off
 firnice_thermal_lapse   = 'floor' ; lapse rate of the thermal surface above the climate cell:
                                 ; 'floor' = at least 6.5 K/km; 'reanalysis' = ERA5's own (as the
                                 ; mass balance; better at Jungfraujoch and Corvatsch 1981-2020);
@@ -545,6 +549,26 @@ if total(firnice_thermal_lapse eq ['floor', 'reanalysis', 'stations']) eq 0 then
     message, "firnice_thermal_lapse must be 'floor', 'reanalysis' or 'stations'"
 if total(firnice_deepen_to_obs eq ['y', 'n']) eq 0 then message, "firnice_deepen_to_obs must be 'y' or 'n'"
 if total(firnice_snow_refreeze eq ['y', 'n']) eq 0 then message, "firnice_snow_refreeze must be 'y' or 'n'"
+mbh_on = 0b
+if mb_hist_file ne '' then begin
+  if time_resolution ne 'monthly' or calibrate eq 'y' or use_flow_model eq 'y' then $
+    message, 'mb_hist_file: monthly forward runs without the flow model only'
+  mbh_year = [0l] & mbh_P = [0d] & mbh_dT = [0d] & mbh_line = ''
+  openr, mbh_lun, mb_hist_file, /get_lun
+  while not eof(mbh_lun) do begin
+    readf, mbh_lun, mbh_line
+    mbh_line = strtrim(mbh_line, 2)
+    if mbh_line eq '' then continue
+    if strmid(mbh_line, 0, 1) eq '#' then continue
+    mbh_f = strsplit(mbh_line, /extract)
+    mbh_year = [mbh_year, long(mbh_f[0])] & mbh_P = [mbh_P, double(mbh_f[1])] & mbh_dT = [mbh_dT, double(mbh_f[2])]
+  endwhile
+  free_lun, mbh_lun
+  if n_elements(mbh_year) lt 2 then message, 'mb_hist_file: no rows in ' + mb_hist_file
+  mbh_year = mbh_year[1:*] & mbh_P = mbh_P[1:*] & mbh_dT = mbh_dT[1:*]
+  mbh_on = 1b
+  print, '  [mb history correction] ' + strtrim(n_elements(mbh_year), 2) + ' years from ' + mb_hist_file
+endif
 if firnice_temperature eq 'y' and firnice_forcing_toff eq 'n' then $
   if meltmodel ne '1' or time_resolution ne 'monthly' or debris_supraglacial ne 'n' then $
     message, "firnice_forcing_toff = 'n' needs meltmodel '1', monthly steps and no supraglacial debris"

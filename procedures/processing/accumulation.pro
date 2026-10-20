@@ -13,6 +13,7 @@ compile_opt idl2
 ; mb_book = 0b (thermal spin-up): pc is supplied by the caller, and nothing below touches the
 ; climate cursor or the annual totals
 if mb_book then pc = prec[jjclim[0] + ccmon] * c_prec / 1000. ; correct quantity to m w.e.
+if mb_book && mbh_on then pc = pc * mbh_P_y   ; mb_hist_file (diagnostic)
 pg = pc + pc * ((elev - hclim) / 10000.) * dpdz ; extrapolate with elevation
 ; constrain high elevation precipitation
 jj = where(gl ne noval, cj)
