@@ -206,9 +206,10 @@ firnice_perm_cold_depth = 4.d   ; m, meltwater penetration into cold firn (Matte
 firnice_snow_refreeze   = 'n'   ; 'y' = on ice bands, meltwater and rain (x f_ref) refreeze in the seasonal
                                 ; snow and at the ice surface beneath it before running off
 mb_hist_file            = ''    ; diagnostic: file of 'hydrological year, precipitation factor, temperature
-                                ; offset [C]' applied to the monthly climate of those years (precipitation
-                                ; and air temperature, so also the thermal surface); the thermal spin-up
-                                ; takes the mean over firnice_spinup_ref_period; '' = off
+                                ; offset [C]': the factor scales the precipitation of October-April (the
+                                ; winter balance's months), the offset shifts the air temperature of every
+                                ; month (so also the thermal surface); the thermal spin-up takes the mean
+                                ; over firnice_spinup_ref_period; '' = off
 firnice_thermal_lapse   = 'floor' ; lapse rate of the thermal surface above the climate cell:
                                 ; 'floor' = at least 6.5 K/km; 'reanalysis' = ERA5's own (as the
                                 ; mass balance; better at Jungfraujoch and Corvatsch 1981-2020);

@@ -79,7 +79,7 @@ for yr_rf = 0, 2 do begin
         pc = pclim_sp[m-1] * c_prec / 1000.
         if mbh_on then begin
             tg = tg + mbh_dT_sp
-            pc = pc * mbh_P_sp
+            if m ge 10 or m le 4 then pc = pc * mbh_P_sp
         endif
         forc_sno[mo_rf, *] = sno
         @procedures/processing/accumulation.pro
@@ -125,7 +125,7 @@ hl_mask = (firn_th eq 1)
 hl_acc  = b_ref
 hl_tk   = dblarr(nb)
 t_off_th = (firnice_forcing_toff eq 'n') ? 0d : t_offset
-for i = 0, nb-1 do hl_tk[i] = mean(tclim_sp + (elev[i] - hclim) * dtdz + (((elev[i] - hclim) > 0d) < zth_cap) * (dtdz_icetemp - dtdz) + t_off_th)
+for i = 0, nb-1 do hl_tk[i] = mean(tclim_sp + (elev[i] - hclim) * dtdz + (((elev[i] - hclim) > 0d) < zth_cap) * (dtdz_icetemp - dtdz) + t_off_th) + mbh_dT_sp
 hl_tk   = (hl_tk + 273.15d) > 220.d
 @procedures/initialise/firnice_perm_depth.pro
 jg = where(gl ne noval, cg)
