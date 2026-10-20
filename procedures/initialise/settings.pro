@@ -284,6 +284,9 @@ dh_regrowth_adv_max = 100. ; [m/a] largest advance of the front along the flow i
 ; positive in each of the last dh_reseed_years years (procedures/processing/dh_reseed.pro; needs band_extension and dh_regrowth)
 dh_reseed = 'n'
 dh_reseed_years = 10
+; glaciers with 4 bands or fewer (procedures/processing/glacier_retreat.pro): 'y' keeps each band's
+; volume when its area adapts to the new thickness; 'n' (legacy) loses or gains about 1.5x the balance
+dh_small_conserve = 'n'
 band_extension = 'n' ; 'y': mass balance on bands down to band_ext_depth below the glacier, as if they were ice (flow model, IGM forcing)
 band_ext_depth = 1500. ; [m] depth of the band extension below the lowest band
 band_blend_depth = 300. ; [m] below the front over which the extension bands blend from the glacier's own parameters into the regional medians (at least)
@@ -567,6 +570,8 @@ if write_geometry_output ne 'y' and write_geometry_output ne 'n' and write_geome
   message, 'write_geometry_output must be ''y'', ''n'' or ''flow'', not ''' + strtrim(write_geometry_output, 2) + ''''
 if geometry_output_every lt 1 or geometry_output_every ne round(geometry_output_every) then $
   message, 'geometry_output_every must be a whole number of years, at least 1'
+if dh_small_conserve ne 'y' and dh_small_conserve ne 'n' then $
+  message, 'dh_small_conserve must be ''y'' or ''n'', not ''' + strtrim(dh_small_conserve, 2) + ''''
 if dh_reseed ne 'y' and dh_reseed ne 'n' then $
   message, 'dh_reseed must be ''y'' or ''n'', not ''' + strtrim(dh_reseed, 2) + ''''
 if dh_reseed eq 'y' and (dh_reseed_years lt 1 or dh_reseed_years ne round(dh_reseed_years)) then $

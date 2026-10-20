@@ -246,10 +246,27 @@ endif else begin
   ; ----------------------------
   ; very small glaciers
 
-  ; apply surface elevation change
-  for i = 0, ci - 1 do thick[ii[i]] = thick[ii[i]] + bal[ii[i]] / 0.9 ; thickness
-  for i = 0, ci - 1 do elev[ii[i]] = elev[ii[i]] + bal[ii[i]] / 0.9 ; surface elevation
-  for i = 0, ci - 1 do area[ii[i]] = area_ini[ii[i]] * (thick[ii[i]] / thick_ini[ii[i]]) ^ (1. / expon) ; area in elevation band
+  if dh_small_conserve eq 'y' then begin
+    ; each band keeps its volume plus its balance: area from the area-thickness scaling, thickness from the volume
+    for i = 0, ci - 1 do begin
+      gr_k = ii[i]
+      gr_vb = area[gr_k] * (thick[gr_k] + bal[gr_k] / 0.9)
+      if gr_vb le 0 then thick[gr_k] = -1d0 else begin   ; no ice left: cleared below (NaN goes on to the mass check)
+        if thick_ini[gr_k] gt 0 and area_ini[gr_k] gt 0 then begin
+          gr_a = area_ini[gr_k] * ((thick[gr_k] + bal[gr_k] / 0.9) / thick_ini[gr_k]) ^ (1. / expon)
+          if finite(gr_a) and gr_a gt 0 then area[gr_k] = gr_a
+        endif
+        thick[gr_k] = gr_vb / area[gr_k]
+        elev[gr_k] = bed_elev[gr_k] + thick[gr_k]
+        gl[gr_k] = elev[gr_k]
+      endelse
+    endfor
+  endif else begin
+    ; apply surface elevation change
+    for i = 0, ci - 1 do thick[ii[i]] = thick[ii[i]] + bal[ii[i]] / 0.9 ; thickness
+    for i = 0, ci - 1 do elev[ii[i]] = elev[ii[i]] + bal[ii[i]] / 0.9 ; surface elevation
+    for i = 0, ci - 1 do area[ii[i]] = area_ini[ii[i]] * (thick[ii[i]] / thick_ini[ii[i]]) ^ (1. / expon) ; area in elevation band
+  endelse
   jj = where(thick lt 0, cj)
   if cj gt 0 then begin
     thick[jj] = 0
