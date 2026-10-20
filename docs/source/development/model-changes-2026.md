@@ -14,7 +14,7 @@ For users of GloGEM; the details and the evidence are in the entries below.
 - **New: growth limit.** Every glacier is bounded once a year, on both geometry paths ({ref}`G12 <mc-g12>`).
 - **New: the GMIP4 ERA5 hindcast runs with changing geometry** ({ref}`G13 <mc-g13>`). Flow runs write `GloGEMflow_*` netCDF files.
 - **Fixed, climate input:** projections read the climate months late, in GMIP4 ({ref}`G1 <mc-g1>`) and in CMIP6 and AMOC ({ref}`G2 <mc-g2>`; both also fixed on main since 2026-10-16); ERA5 and GCM came from neighbouring grid points ({ref}`G3 <mc-g3>`); the climate point depended on the batching ({ref}`G4 <mc-g4>`); lapse rate and variability on the per-point climate path ({ref}`G5 <mc-g5>`); lost longitudes ({ref}`G6 <mc-g6>`); speed ({ref}`G7 <mc-g7>`).
-- **Fixed, elsewhere:** glaciers never simulated ({ref}`G8 <mc-g8>`); glaciers turning NaN in the Δh parameterisation ({ref}`G9 <mc-g9>`, {ref}`G10 <mc-g10>`); Δh mass check and sea-level calving ({ref}`G11 <mc-g11>`); the calving-flux file ({ref}`G15 <mc-g15>`); `mass_bsl` ({ref}`G18 <mc-g18>`); negative netCDF values ({ref}`G19 <mc-g19>`); monthly netCDF time labels ({ref}`G20 <mc-g20>`, also on main); the flowline now uses the RGI 7.0 area correction ({ref}`F15 <mc-f15>`).
+- **Fixed, elsewhere:** glaciers never simulated ({ref}`G8 <mc-g8>`); glaciers turning NaN in the Δh parameterisation ({ref}`G9 <mc-g9>`, {ref}`G10 <mc-g10>`); Δh mass check and sea-level calving ({ref}`G11 <mc-g11>`); the calving-flux file ({ref}`G15 <mc-g15>`); `mass_bsl` ({ref}`G18 <mc-g18>`); negative netCDF values ({ref}`G19 <mc-g19>`); monthly netCDF time labels ({ref}`G20 <mc-g20>`, also on main); the full refreezing model's year and cold reservoir ({ref}`G40 <mc-g40>`, {ref}`G41 <mc-g41>`, local GloGEMflow); the flowline now uses the RGI 7.0 area correction ({ref}`F15 <mc-f15>`).
 - **New for growing glaciers (AMOC), all off by default:** the flowline balance at the actual surface ({ref}`F17 <mc-f17>`), a blow-up check by mass ({ref}`F18 <mc-f18>`), free outflow at the end of the longest grid ({ref}`F19 <mc-f19>`), Δh regrowth with a thickness limit per glacier ({ref}`G34 <mc-g34>`), a restart of glaciers that melted out ({ref}`G35 <mc-g35>`), the blended parameters below the inventory front in GloGEM's own band model ({ref}`G37 <mc-g37>`) and in the flowline's balance ({ref}`F20 <mc-f20>`).
 - **Running:** the environment variables `GLOGEM_CONFIG` and `GLOGEM_LOGDIR`; the GMIP4 campaign scripts in `scripts/gmip4/` with a README ({ref}`S10 <mc-s10>`).
 - **Still open:** the swapped ice-melt and snow-melt files ({ref}`K12 <mc-k12>`), refreezing that depends on the number of elevation bands ({ref}`K26 <mc-k26>`) and the other items of section 6.
@@ -192,6 +192,8 @@ Janosch decided on 2026-09-25 not to rerun the submitted v1 regions, and on 2026
 | {ref}`G37 <mc-g37>` | Blended parameters on glacier bands below the inventory front (`band_extension` with changing geometry) | core | new (AMOC) | no unless switched on | — | `4948986` |
 | {ref}`G38 <mc-g38>` | The hypsometry-evolution files stopped runs with more than 99 decades (`write_hypsometry_files`) | core (output) | fixed | no (output format only) | yes | `35e1906` |
 | {ref}`G39 <mc-g39>` | Flowline geometry every n years (`write_geometry_output='flow'`, `geometry_output_every`) | core (output) | new | no (new output only) | — | `edbb4b0` |
+| {ref}`G40 <mc-g40>` | `refreezing_full`: 365-day year | core (refreezing) | fixed on local GloGEMflow `2cce026` (not pushed) | only with `refreezing_full='y'` | yes | `2cce026` |
+| {ref}`G41 <mc-g41>` | `refreezing_full`: the cold reservoir was used once per hydrological year; an October melt left the rest of the year without refreezing | core (refreezing) | fixed on local GloGEMflow `01dbb65` (not pushed) | only with `refreezing_full='y'` | yes | `01dbb65` |
 | {ref}`F1 <mc-f1>` | Port of MATLAB GloGEMflow to IDL and coupling to GloGEM | flow | done | — | not in main | `baa5c7b`, `020e81e`, ... |
 | {ref}`F2 <mc-f2>` | Flow → Δh handover: frozen, NaN or resurrected glaciers, lost year | flow | fixed | yes | not in main | `a473e25`, `61ac7d4`, `11ca640`, `5dfd530`, `df8bdd4` |
 | {ref}`F3 <mc-f3>` | Spin-up quality gate | flow | fixed | yes | not in main | `5dfd530` |
@@ -255,6 +257,7 @@ Janosch decided on 2026-09-25 not to rerun the submitted v1 regions, and on 2026
 | {ref}`K28 <mc-k28>` | Gridded T_off round skips the first grid row and column | core (calibration) | open, latent | yes (those glaciers) | yes | none |
 | {ref}`K29 <mc-k29>` | Gridded T_off couples the glaciers of one grid cell | core (calibration) | by design; documented | yes (neighbours) | yes | none |
 | {ref}`K31 <mc-k31>` | Flow spin-ups with A_flow at its floor or the ELA bias at its clamp pass the quality gate and thicken without bound | flow | fixed for AMOC by F21; in the GMIP4 submissions | yes (long or cool runs) | not in main | — |
+| {ref}`K32 <mc-k32>` | Unknown settings in a user config are accepted silently | core (settings) | known; documented | — | yes | none |
 | {ref}`K30 <mc-k30>` | Snow lines ask for less snow than the regional c_prec bounds allow; autumn snow too early | calibration | open (finding) | — | yes | none |
 
 ---
@@ -520,6 +523,12 @@ October 2026, on `GloGEMflow` only. Every switch defaults to the earlier behavio
 - the thermal lapse rate: 'floor', 'reanalysis' or 'stations' (`4a5e962`, `b17fcfe`); a bed log, `firnice_bed_<id>.dat`; `firnice_deepen_to_obs`;
 - borehole profiles buffered and written once per glacier, because 30 open files exceeded IDL's 29 units (`8c38120`);
 - a comment correcting what f_adv scales (`161dcdd`).
+
+On the local branch `firn-ledger` (on local GloGEMflow `01dbb65`, not pushed), also off by default and gate-tested byte-identical (2026-10-20, with the parametrised and the full refreezing model):
+- the firn ledger (`firnice_perm_limit = 'firn'`, `firnice_firn_age`): meltwater no deeper than the band's annual firn layers;
+- the perfect-firn diagnostic (`firnice_firn_obs_dir`, `firnice_firn_obs_mask`): the ledger fed observed band balances;
+- the firn column following the ledger (`firnice_firn_column = 'ledger'`);
+- meltwater refreezing in the seasonal snow and at the ice surface on ice bands (`firnice_snow_refreeze`).
 
 The ice-temperature runs now use FRH: no offset, ERA5's lapse rate, the HL and latent-heat fixes. Two candidate rules failed their pre-registered tests and stay on unmerged branches:
 - a depth limit for meltwater in cold firn (`perc-wetting-front`);
@@ -849,6 +858,37 @@ output), and `geometry_output_every` (default 1) keeps only the years divisible 
 precision, compressed. The AMOC runs use `'flow'` and 10 years (`make_amoc_configs.py`, `edbb4b0`): 1.2 MB for the same 59
 glaciers. Years before the flow model starts (the survey year) hold zeros. Tests: the default output unchanged
 (`'y'` with every year: 75 files identical to before); the thinned files equal the full history at every decade.
+
+(mc-g40)=
+### G40. `refreezing_full`: 365-day year
+
+The full refreezing model advanced its cold reservoir with rf_dt = 30 days / rf_dsc for every month, so its year had
+360 days while melt came from the month's real length (as the thermal model before G36). It now sets its sub-step
+rf_dtm = 86400 * mon_len[m-1] / rf_dsc (daily runs unchanged). Only runs with `refreezing_full = 'y'` change; the
+repository's monthly test calibration (Aletsch, Morteratsch) gives the same parameters at the precision written. On
+local GloGEMflow since 2026-10-19 (`2cce026`), not pushed.
+
+(mc-g41)=
+### G41. `refreezing_full`: the cold reservoir re-arms after every cold month
+
+Found by an independent review (2026-10-19) while preparing `refreezing_full` as the mass-balance scheme that refreezes
+meltwater in the seasonal snow on ice bands (the parametrised scheme caps refreezing with the firn mask, so it gives
+almost none there). Three flaws, all in main too:
+1. the reservoir was evaluated only when rf_cold = 0, i.e. once per hydrological year, and set to snoval once used,
+   so an October melt month (on bare ice at once: no snow) used it up and refr stayed 0 for the rest of the year,
+   the normal case on the tongues. Now every cold month re-arms it, and a partial use leaves the layers only the
+   cold that is left;
+2. the conduction sweep copied the whole te_rf row back at every layer, restoring the cold of a profile already
+   reset to 0 C; now layer by layer;
+3. the thermal model's reference forcing left its state in tl_rf/te_rf for the main run; now saved and restored.
+
+Only runs with `refreezing_full = 'y'` change. Effect on the 23 Central European calibration glaciers (monthly
+2000–2025, each on its own recalibration): refreezing on ice bands is 1.6 mm w.e. a⁻¹ with the parametrised scheme
+and 48 with the repaired full one (firn bands 26 and 65). Against GLAMOS the mass balance hardly changes: winter
+balance within 0.05 m w.e., ELA within 13 m, snow-line RMSE 350.1 → 349.5 m (both runs on the same tree, see K32).
+Review notes, unchanged: rain also refreezes (min(melt + rain, cold)); the bottom layer is held at 0 °C; the reservoir
+is in m of ice but compared with m w.e. (about 9 % more refreezing than the energy allows). On local GloGEMflow since
+2026-10-19 (`01dbb65`), not pushed. Details: ice-temperature development history, chapter 10.
 
 ## 4. GloGEMflow items
 
@@ -1423,6 +1463,15 @@ RGI7) 162 of 529 flow spin-ups (31 %) have A_flow below 1e-19 or the ELA bias at
 87 of them above 0.05 km³ grow to a median 1.2–1.4 × their 2020 volume, up to 13 × (MRI-ESM2-0 SSP1-2.6, 2300), and
 under MRI-ESM2-0 SSP5-8.5 they hold 73 % of the ice left in 2300. It stayed hidden because the 21st-century runs
 melt such glaciers anyway. Other regions not checked yet. Whether to tell GlacierMIP4: Janosch.
+
+(mc-k32)=
+### K32. Unknown settings in a user config are accepted silently
+
+A user config is a list of IDL assignments, so a setting the tree does not know is set and never read. Found
+2026-10-20: forward runs of the same configuration on the `snowline-calibration` worktree and on GloGEMflow differed
+in their monthly snow line by up to 750 m in winter, because `snowline_definition = 'p10'` exists only on
+`snowline-calibration` (G33); GloGEMflow ignored it and wrote its own definition (the highest snow-free band).
+Comparisons across trees should check that every setting exists in both.
 
 ## 7. Decisions log
 
