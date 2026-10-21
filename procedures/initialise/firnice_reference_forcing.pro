@@ -124,6 +124,10 @@ if cg gt 0 then begin
            ' m, AAR ' + strtrim(round(aar_ref),2) + ' %' + $
            ' (mass-balance mask: ' + strtrim(cm,2) + ', lowest ' + (cm gt 0 ? strtrim(round(min(elev[jg[jm]])),2) : '-') + ' m)'
 endif
+if n_elements(firnice_profile_ind) gt 0 then for jp = 0l, n_elements(firnice_profile_ind[0, *]) - 1l do $
+    print, '  [b_ref] ' + id[gg[g]] + ' ' + strtrim(round(elev0[firnice_profile_ind[0, jp]]), 2) + ' ' + $
+        string(b_ref[firnice_profile_ind[0, jp]], fo='(f8.3)') + ' m w.e./a, firn_th ' + $
+        strtrim(fix(firn_th[firnice_profile_ind[0, jp]]), 2)
 if firnice_forcing_toff eq 'n' then $
     print, '  [thermal forcing] t_offset ' + string(t_offset, fo='(f6.2)') + ' K left out: firn-band melt + rain ' + $
            string(rfw_th, fo='(f7.3)') + ' m w.e./a (mass balance ' + string(rfw_mb, fo='(f7.3)') + ')'
