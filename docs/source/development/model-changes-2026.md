@@ -16,7 +16,7 @@ For users of GloGEM; the details and the evidence are in the entries below.
 - **Fixed, climate input:** projections read the climate months late, in GMIP4 ({ref}`G1 <mc-g1>`) and in CMIP6 and AMOC ({ref}`G2 <mc-g2>`; both also fixed on main since 2026-10-16); ERA5 and GCM came from neighbouring grid points ({ref}`G3 <mc-g3>`); the climate point depended on the batching ({ref}`G4 <mc-g4>`); lapse rate and variability on the per-point climate path ({ref}`G5 <mc-g5>`); lost longitudes ({ref}`G6 <mc-g6>`); speed ({ref}`G7 <mc-g7>`).
 - **Fixed, elsewhere:** glaciers never simulated ({ref}`G8 <mc-g8>`); glaciers turning NaN in the Δh parameterisation ({ref}`G9 <mc-g9>`, {ref}`G10 <mc-g10>`); Δh mass check and sea-level calving ({ref}`G11 <mc-g11>`); the calving-flux file ({ref}`G15 <mc-g15>`); `mass_bsl` ({ref}`G18 <mc-g18>`); negative netCDF values ({ref}`G19 <mc-g19>`); monthly netCDF time labels ({ref}`G20 <mc-g20>`, also on main); the full refreezing model's year and cold reservoir ({ref}`G40 <mc-g40>`, {ref}`G41 <mc-g41>`, local GloGEMflow); the Δh parameterisation of glaciers with 4 bands or fewer lost or gained 1.5 × the balance ({ref}`G42 <mc-g42>`, behind a switch); the flowline now uses the RGI 7.0 area correction ({ref}`F15 <mc-f15>`).
 - **New for growing glaciers (AMOC), all off by default:** the flowline balance at the actual surface ({ref}`F17 <mc-f17>`), a blow-up check by mass ({ref}`F18 <mc-f18>`), free outflow at the end of the longest grid ({ref}`F19 <mc-f19>`), Δh regrowth with a thickness limit per glacier ({ref}`G34 <mc-g34>`), a restart of glaciers that melted out ({ref}`G35 <mc-g35>`), the blended parameters below the inventory front in GloGEM's own band model ({ref}`G37 <mc-g37>`) and in the flowline's balance ({ref}`F20 <mc-f20>`), and a gate that sends flow spin-ups with implausibly stiff ice or the ELA bias at its clamp to the Δh parameterisation ({ref}`F21 <mc-f21>`).
-- **New for snowline calibration, off by default:** the snowline can drop onto the ground below the glacier front ({ref}`G43 <mc-g43>`, also prepared for main).
+- **New for snowline calibration, off by default:** the snowline can drop onto the ground below the glacier front, down to each glacier's own valley floor ({ref}`G43 <mc-g43>`, also prepared for main).
 - **Running:** the environment variables `GLOGEM_CONFIG` and `GLOGEM_LOGDIR`; the GMIP4 campaign scripts in `scripts/gmip4/` with a README ({ref}`S10 <mc-s10>`).
 - **Still open:** the swapped ice-melt and snow-melt files ({ref}`K12 <mc-k12>`), refreezing that depends on the number of elevation bands ({ref}`K26 <mc-k26>`) and the other items of section 6.
 
@@ -197,7 +197,7 @@ Janosch decided on 2026-09-25 not to rerun the submitted v1 regions, and on 2026
 | {ref}`G40 <mc-g40>` | `refreezing_full`: 365-day year | core (refreezing) | fixed on local GloGEMflow `2cce026` (not pushed) | only with `refreezing_full='y'` | yes | `2cce026` |
 | {ref}`G41 <mc-g41>` | `refreezing_full`: the cold reservoir was used once per hydrological year; an October melt left the rest of the year without refreezing | core (refreezing) | fixed on local GloGEMflow `01dbb65` (not pushed) | only with `refreezing_full='y'` | yes | `01dbb65` |
 | {ref}`G42 <mc-g42>` | Δh parameterisation of glaciers with 4 bands or fewer: 1.5 × the balance lost or gained | core | fixed behind a switch (`dh_small_conserve`, on for AMOC) | yes (glaciers that reach 4 bands; Scandinavian AMOC runs 1.6–2.5 % of the ice lost) | yes | `85e0899` |
-| {ref}`G43 <mc-g43>` | The snowline cannot go below the glacier front | core (output) | new option `snowline_ext_depth` (off by default); branch for main prepared | snowline only | yes | `5cd0370` |
+| {ref}`G43 <mc-g43>` | The snowline cannot go below the glacier front | core (output) | new options `snowline_ext_depth` and `snowline_ext_valley` (valley floors from `scripts/valley_floor.py`), off by default; branch for main prepared | snowline only | yes | `5cd0370`, `0a67c16`, `7243ee6` |
 | {ref}`F1 <mc-f1>` | Port of MATLAB GloGEMflow to IDL and coupling to GloGEM | flow | done | — | not in main | `baa5c7b`, `020e81e`, ... |
 | {ref}`F2 <mc-f2>` | Flow → Δh handover: frozen, NaN or resurrected glaciers, lost year | flow | fixed | yes | not in main | `a473e25`, `61ac7d4`, `11ca640`, `5dfd530`, `df8bdd4` |
 | {ref}`F3 <mc-f3>` | Spin-up quality gate | flow | fixed | yes | not in main | `5dfd530` |
@@ -1002,8 +1002,33 @@ calibration.
   - netCDF in hindcasts and the missing `dyn/` folder (G13, still on main);
   - a missing debris file, `debris/centralasiaW/factor_06713.dat`, stops a Karakoram RGI6 run.
 
-**Commits:** `5cd0370` on `feature/snowline-below-front`, off main's base `fb7f9c0`, prepared for a pull request into
-main; merged into `glogemflow-v3`.
+**Following the terrain** (`snowline_ext_valley`, decided by Janosch 2026-10-21). Without terrain, the ground bands
+go straight down `snowline_ext_depth` below the front, which can lie below the real valley floor (Aletsch: 75 m a.s.l.).
+With `snowline_ext_valley` set to a folder of valley-floor files, each glacier's ground stops at its own valley floor.
+
+- **What GloGEM uses:** the valley's depth below the start of the path, hung below GloGEM's own front, and never
+  deeper than `snowline_ext_depth`. Glaciers missing from the file keep the fixed depth and are named in the log.
+- **The files** are written by `scripts/valley_floor.py`:
+  - **Terrain:** Copernicus GLO-90, downloaded per tile.
+  - **The path:** from the lowest point of the outline, strictly downhill on the smoothed terrain with its hollows
+    filled; flats are crossed by the shortest way to their outlet.
+  - **The cut:** after `--distance` (default 10 km) or at the sea. The floor is the lowest raw terrain on the path.
+- **The first version** used OGGM's cheapest route to the edge of a box. The independent review found that its
+  direction depended on the box size: Biafo at 10 km ran up the Braldu. The downhill version does not depend on it:
+  of 196 glaciers, 3 floors move by more than 1 m between 2 and 22 km margins, by at most 34 m.
+- **Why measure the depth on one terrain model:** Copernicus and GloGEM's front differ by −182 to +367 m in the
+  Karakoram.
+- **Karakoram** (196 glaciers, 10 s): the valleys are flat below the big glaciers. Below Biafo, Baltoro and Siachen
+  they are 113–157 m lower after 10 km, 266–442 m after 30 km and 358–645 m after 50 km.
+- **Tests:**
+  - option off, and option on without a valley file, are unchanged;
+  - with 30 km floors only the snowline differs, and no snowline of 93 glaciers lies below front minus valley depth;
+  - with a file covering 3 of 91 glaciers, those 3 stop at their floor and the other 88 equal the run without a file;
+  - a synthetic valley with a closed lake: the path crosses the lake to its outlet and never climbs.
+- **Not covered:** glaciers within reach of the 180° line are left out.
+
+**Commits:** `5cd0370`, `0a67c16` and `7243ee6` on `feature/snowline-below-front`, off main's base `fb7f9c0`,
+prepared for a pull request into main. Merged into `glogemflow-v3` (`ae0ef2c`, `795533e`).
 
 ## 4. GloGEMflow items
 
@@ -1658,6 +1683,7 @@ All decisions below were taken by Janosch Beer.
 | 2026-10-20 | AMOC: the A cut-off is the rate factor of ice at −30 °C (1.2e-18 Pa⁻³ a⁻¹) instead of 1e-19; the Δh small-glacier leak is fixed behind a switch, on for AMOC; production rerun (run 3). | F21, G42, `85e0899` |
 | 2026-10-20 | No note to GlacierMIP4 about the stiff spin-ups (K31) or the small-glacier leak (G42) in the submitted runs. | K31, G42 |
 | 2026-10-21 | For Lander's Karakoram snowline calibration, main gets a snow-only option for the ground below the glacier front (not the full `band_extension`); the ground uses the glacier's own parameters and the precipitation of the inventory front. | G43, `5cd0370` |
+| 2026-10-21 | The ground below the front follows the terrain: it stops at each glacier's own valley floor, a fixed distance down its valley on a DEM. | G43, `0a67c16`, `7243ee6` |
 
 ---
 
