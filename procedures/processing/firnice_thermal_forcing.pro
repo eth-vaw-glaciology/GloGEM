@@ -18,6 +18,8 @@ if firnice_forcing_toff ne 'n' then begin
   tgs_th = tgs & mel_th = mel & plg_th = plg
 endif else begin
   ftw_tm = tgs - t_offset
+  ; the spin-up's reference forcing only: firnice_spinup_dT (firnice_reference_forcing.pro sets ftw_dsp)
+  if n_elements(ftw_dsp) gt 0 then ftw_tm = ftw_tm + ftw_dsp
   ; air for the rain split and the melt: with firnice_thermal_lapse = 'stations' the station lapse
   ; rate above the climate cell, as the thermal surface gets it (firnice_temperature_model.pro);
   ; tgs_th stays ftw_tm, the surface adds its own shift

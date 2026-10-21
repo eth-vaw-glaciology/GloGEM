@@ -163,6 +163,9 @@ firnice_spinup_ref_period = [1961, 1990] ; climate reference period for equilibr
 firnice_spinup_max_cycles = 500       ; max equilibrium cycles (convergence usually <200)
 firnice_spinup_tol = 0.05d            ; °C convergence tolerance (max change in deep layers)
 firnice_spinup_min_cycles = 200       ; minimum equilibrium cycles before convergence is checked
+firnice_spinup_dT = 0d               ; K added to the thermal model's air temperature in the spin-up's reference
+                                     ; forcing (diagnostic: a colder climate before the reference period); the
+                                     ; mass balance, firn mask and burial keep the reference climate
 firnice_spinup_solver = 'drift'       ; 'drift' = measure the drift and jump to equilibrium
                                       ; (spinup_firnicetemp_thermal.pro); 'cycle' = repeat the
                                       ; reference year until the deep layers stop changing
@@ -550,6 +553,8 @@ if total(firnice_thermal_lapse eq ['floor', 'reanalysis', 'stations']) eq 0 then
     message, "firnice_thermal_lapse must be 'floor', 'reanalysis' or 'stations'"
 if total(firnice_deepen_to_obs eq ['y', 'n']) eq 0 then message, "firnice_deepen_to_obs must be 'y' or 'n'"
 if total(firnice_snow_refreeze eq ['y', 'n']) eq 0 then message, "firnice_snow_refreeze must be 'y' or 'n'"
+if firnice_spinup_dT ne 0 and firnice_forcing_toff ne 'n' then $
+    message, "firnice_spinup_dT needs firnice_forcing_toff = 'n'"
 if total(firnice_orient eq ['n', 'table']) eq 0 then message, "firnice_orient must be 'n' or 'table'"
 if firnice_orient eq 'table' then $
   if firnice_temperature ne 'y' or firnice_forcing_toff ne 'n' or firnice_orient_dir eq '' then $

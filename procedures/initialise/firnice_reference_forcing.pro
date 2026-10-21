@@ -57,6 +57,7 @@ forc_sno = dblarr(12, nb) & forc_mel = dblarr(12, nb) & forc_plg = dblarr(12, nb
 b_ref = dblarr(nb)
 rfw_mb = 0d & rfw_th = 0d   ; firn-band melt + rain of the kept year, mass balance and thermal
 mb_book = 0b
+ftw_dsp = double(firnice_spinup_dT)   ; firnice_thermal_forcing.pro: the thermal inputs only
 for yr_rf = 0, 2 do begin
     rf_ind = dblarr(nb) & rf_cold = rf_ind
     bal_rf = dblarr(nb)
@@ -101,6 +102,7 @@ for yr_rf = 0, 2 do begin
     b_ref = bal_rf
 endfor
 mb_book = 1b
+ftw_dsp = 0d
 sno = sno_keep & sur = sur_keep & snostor = snostor_keep
 tl_rf = tl_rf_keep & te_rf = te_rf_keep
 
