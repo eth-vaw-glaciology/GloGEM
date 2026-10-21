@@ -209,7 +209,7 @@ firnice_orient          = 'n'   ; 'table' = the thermal model's melt is multipli
                                 ; factor F (melt of the band's slope over melt of flat ground in the same
                                 ; weather), read from firnice_orient_dir as a function of the month's air
                                 ; temperature anomaly; the mass balance is unchanged
-firnice_orient_dir      = ''    ; folder of orient_<glacier id>.dat; a glacier without a file keeps F = 1
+firnice_orient_dir      = ''    ; folder of orient_<glacier id>.dat, one for every glacier of the run
 firnice_thermal_lapse   = 'floor' ; lapse rate of the thermal surface above the climate cell:
                                 ; 'floor' = at least 6.5 K/km; 'reanalysis' = ERA5's own (as the
                                 ; mass balance; better at Jungfraujoch and Corvatsch 1981-2020);
@@ -554,6 +554,8 @@ if total(firnice_orient eq ['n', 'table']) eq 0 then message, "firnice_orient mu
 if firnice_orient eq 'table' then $
   if firnice_temperature ne 'y' or firnice_forcing_toff ne 'n' or firnice_orient_dir eq '' then $
     message, "firnice_orient = 'table' needs firnice_temperature 'y', firnice_forcing_toff 'n' and firnice_orient_dir"
+if firnice_orient eq 'table' then if not file_test(firnice_orient_dir, /directory) then $
+    message, 'firnice_orient: no folder ' + firnice_orient_dir
 if firnice_temperature eq 'y' and firnice_forcing_toff eq 'n' then $
   if meltmodel ne '1' or time_resolution ne 'monthly' or debris_supraglacial ne 'n' then $
     message, "firnice_forcing_toff = 'n' needs meltmodel '1', monthly steps and no supraglacial debris"

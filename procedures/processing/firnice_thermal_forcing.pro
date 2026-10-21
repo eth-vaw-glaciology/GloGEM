@@ -53,9 +53,10 @@ endif else begin
   if ftw_c gt 0 then mel_th[ftw_i] = DDFice * ftw_tg[ftw_i] * mon_len[m - 1] / 1000.
   ; orientation factor at this month's anomaly from 1981-2020, linear in dT, held at the table's ends
   if firnice_orient eq 'table' then begin
-    ftw_x = ((ftw_tl - forient_tref[*, m - 1]) > forient_dt[0]) < forient_dt[6]
-    ftw_k = (long(floor(ftw_x - forient_dt[0])) > 0) < 5
-    ftw_w = ftw_x - forient_dt[ftw_k]
+    ftw_nd = n_elements(forient_dt)
+    ftw_x = ((ftw_tl - forient_tref[*, m - 1]) > forient_dt[0]) < forient_dt[ftw_nd - 1]
+    ftw_k = (value_locate(forient_dt, ftw_x) > 0) < (ftw_nd - 2)
+    ftw_w = (ftw_x - forient_dt[ftw_k]) / (forient_dt[ftw_k + 1] - forient_dt[ftw_k])
     ftw_n = lindgen(nb)
     mel_th = mel_th * (forient[ftw_n, ftw_k] + ftw_w * (forient[ftw_n, ftw_k + 1] - forient[ftw_n, ftw_k]))
   endif
