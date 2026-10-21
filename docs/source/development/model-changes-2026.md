@@ -1701,7 +1701,7 @@ All decisions below were taken by Janosch Beer.
 
 ### Merge order and conflicts
 
-Planned: first merge `GloGEMflow` (the temperature work) and `glogemflow-v3` into one branch, then merge `origin/main` into it, then open the pull request into main. A dry run with `git merge-tree` (2026-10-12, no merge made) gives:
+Planned: first merge `GloGEMflow` (the temperature work) and `glogemflow-v3` into one branch, then merge `origin/main` into it, then merge the result into main and push (the team does not use pull requests on main; the merge message documents the changes). A dry run with `git merge-tree` (2026-10-12, no merge made) gives:
 
 | Merge | Conflicts and how to resolve them |
 |---|---|
