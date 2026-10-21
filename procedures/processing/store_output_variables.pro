@@ -22,7 +22,7 @@ if time_resolution eq 'monthly' then begin
    endif else begin
       positive_values=gl[where(gl ge 0)]
       snowlinemon[ccmon-1]=positive_values[0]
-      if snowline_ext_depth gt 0 then snowlinemon[ccmon-1]=snowline_below_front(sno,gl,elev,noval,sx_n,sx_sno,sx_elev,snowlinemon[ccmon-1])
+      if snowline_ext_depth gt 0 then snowlinemon[ccmon-1]=snowline_below_front(sno,gl,elev,noval,sx_n,sx_sno,sx_elev,sx_zmin,snowlinemon[ccmon-1])
    endelse
 endif else begin
    ; for entire catchment
@@ -35,6 +35,6 @@ endif else begin
    endif else begin
       positive_values = gl[where(gl ge 0)]
       snowlineday[ccmon-1]=positive_values[0]
-      if snowline_ext_depth gt 0 then snowlineday[ccmon-1]=snowline_below_front(sno,gl,elev,noval,sx_n,sx_sno,sx_elev,snowlineday[ccmon-1])
+      if snowline_ext_depth gt 0 then snowlineday[ccmon-1]=snowline_below_front(sno,gl,elev,noval,sx_n,sx_sno,sx_elev,sx_zmin,snowlineday[ccmon-1])
    endelse
 endelse

@@ -192,6 +192,10 @@ full_output = 'n'
 ; no glacier band is snow-free (procedures/processing/snowline_extension.pro). All other output is unchanged.
 ; 0 = off, e.g. 1500.
 snowline_ext_depth = 0.
+; folder with the valley floor below each glacier (valley_floor_rgi<RGIversion>_<region>.dat, written by
+; scripts/valley_floor.py): the ground bands stop at the glacier's own valley floor, never deeper than
+; snowline_ext_depth; '' = no terrain, every glacier gets snowline_ext_depth
+snowline_ext_valley = ''
 
 ; default output file list (reduced output); full_output='y' variants set in Zone 2
 if full_output eq 'n' then outf_names = ['Area', 'Volume', 'Annual_Balance_sfc', 'Winter_balance_sfc', 'Icemelt_sfc', $
@@ -453,6 +457,7 @@ if snowline_ext_depth gt 0 then begin
     snowline_ext_depth = 0.
   endif else begin
     print, 'Snowline below the glacier front: ground bands down to ' + strtrim(string(snowline_ext_depth, format='(f8.0)'), 2) + ' m below the front (snowline_ext_depth)'
+    if snowline_ext_valley ne '' then print, '  ... and not below each glacier''s valley floor from ' + snowline_ext_valley
     if full_output ne 'y' and write_netcdf ne 'y' then $
       print, 'NOTE: snowline_ext_depth: the snowline is written only with full_output=''y'' or write_netcdf=''y'''
   endelse

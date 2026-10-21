@@ -147,6 +147,11 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
           if catchment_selection ne '' then size_range=[0,100000.]
 
+          ; valley floor below each glacier, for the snowline below the front
+          if snowline_ext_depth gt 0 and snowline_ext_valley ne '' then begin
+            @procedures/read/read_valley_floor.pro
+          endif
+
           ; read calibration data file (REGIONAL MEAN MASS BALANCE)
           if calibrate eq 'y' then begin
             @procedures/calibration/read_calibration_targets.pro

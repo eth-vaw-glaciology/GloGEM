@@ -91,6 +91,19 @@ the front:
   - The glacier's own bands without ice below its lowest ice band count too: advance bands, and bands that have melted
     out, at their bed elevation.
   - Bands below sea level are ignored.
+- **Following the terrain (`snowline_ext_valley`).** Set this to a folder with valley-floor files, and each glacier's
+  ground bands stop at its own valley floor (never deeper than `snowline_ext_depth`). Bands of the glacier itself below
+  that floor are ignored too.
+  - **The files** are written once per region by `scripts/valley_floor.py`:
+    - It starts at the lowest point of each glacier's outline and follows the valley downhill over the Copernicus
+      GLO-90 terrain, in the same way as OGGM's downstream lines.
+    - It stops after a set distance (`--distance`, default 10 km), and the lowest terrain on that path is the valley
+      floor.
+    - It needs Python with geopandas, rasterio, scipy and scikit-image, internet access for the DEM tiles, and the RGI
+      outlines of the region.
+  - **Glaciers missing from the file** keep `snowline_ext_depth`.
+  - **The distance matters.** Large Karakoram valleys are flat below the glaciers. 10 km below the fronts of Biafo,
+    Baltoro and Siachen the valley is only 8–165 m lower; 30 km below, 270–470 m; 50 km below, 370–700 m.
 - **Their snow pack.** Each band carries a snow pack computed as on glacier bands without ice. Snowfall uses the
   glacier's own temperature offset and precipitation factor; snow melts with its own degree-day factor.
   - **Precipitation on the new bands is that of the inventory front.** It does not keep decreasing with elevation. With
@@ -118,8 +131,9 @@ the front:
 
 ```{note}
 The ground bands are a simple continuation of the glacier, not real terrain.
-- **Their floor can lie below the real valley floor.** For Aletsch, 1500 m below the front is 75 m a.s.l. Compare
-  modelled and observed snowlines only above the local valley floor.
+- **Without `snowline_ext_valley`, their floor can lie below the real valley floor.** For Aletsch, 1500 m below the
+  front is 75 m a.s.l. Either give the valley floors, or compare modelled and observed snowlines only above the local
+  valley floor.
 - **The glacier's parameters are used off the glacier.** The calibrated temperature offset, precipitation factor and
   degree-day factor apply below the front, so a snowline calibration partly tunes them there.
 - **Temperature follows the lapse rate down**, so winter valley inversions are missing.
