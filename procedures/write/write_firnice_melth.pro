@@ -16,7 +16,7 @@ for wm_k = 0, 1 do begin
     openw, wm_lun, firnice_dir + '/firnice_' + wm_name + '_' + id[gg[g]] + '.dat', width = 20000
     printf, wm_lun, '# ' + ((wm_k eq 0) ? 'thermal degree-day melt before the orientation factor [m w.e. per month]' : $
         'thermal air temperature [C]') + ', glacier ' + id[gg[g]] + '; columns: year month, then one per band'
-    printf, wm_lun, 'year month ' + strjoin(strtrim(string(round(elev0)), 2), ' ')
+    printf, wm_lun, 'year month ' + strjoin(strtrim(string(round(reform(elev0))), 2), ' ')
     for wm_y = 0l, years - 1l do for wm_m = 1, 12 do $
         printf, wm_lun, wm_y + tran[0], wm_m, reform(wm_val[wm_y, wm_m - 1, *]), $
             format = '(2i6,' + strtrim(nb, 2) + '(e14.6))'
