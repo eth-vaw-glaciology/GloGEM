@@ -58,5 +58,21 @@ a=strsplit(tt[1],':',/extract) & hclim=double(a[1])
 prec_orig=precre  ; storing full precipitation array (with many wet days) for bias correction
 cyear=ryear & cday=rday & temp=tempre & prec=precre
 
+
+; New extreme effect (13/04)
+;percent = 1 ; Warmest 1% of the days
+;tempre = replace_clim(tempre, ryear, rmon, rday, percent)
+; Heat wave effect
+percent = 80.0 ; Above 95% percentile
+min_duration = 3 ; Duration of the heatwave
+;tempre = replace_heatwaves_clim(tempre, rday, ryear, percent,min_duration)
+tempre = replace_heatwaves(tempre, ryear, rday, rmon, percent, min_duration) 
+;tempre = replace_heatwaves_movingblock_fixmean(tempre, ryear, rday, rmon, percent, min_duration) 
+;percent = 5; Remove 5 % most snowfall days summed over 3 days
+;precre = replace_snowdays(tempre, precre, ryear, rday, percent, 3)
+;prec = precre
+print, 'Clim replaced'
+
+
 ; removing low daily precipitation amounts
 ii=where(prec lt p_thres,ci) & if ci gt 0 then prec[ii]=0
