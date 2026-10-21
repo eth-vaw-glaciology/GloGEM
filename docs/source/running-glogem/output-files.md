@@ -72,8 +72,58 @@ Setting `full_output = 'y'` adds daily resolved variables to the output:
 | `Discharge` | (mm/day) | Daily Discharge  intial glacier area |
 | `Snowline_day` | (m a.s.l.) | Daily transient snowline altitude |
 
+The monthly model writes the same snowline as `Snowline_mon` (one value per month).
+
 ```{note}
 Discharge variables are not available for 2300 runs (`long_GCM = 'long_'`).
+```
+
+### Snowline
+
+The snowline is the middle of the highest glacier band without snow. If the whole glacier is snow-covered, it is the
+glacier's lowest band (its front), so by default it can never go below the front.
+
+With `snowline_ext_depth > 0` (m, e.g. 1500; off by default; set it in your config file) the snowline can drop below
+the front:
+
+- **Ground bands.**
+  - New 10 m bands continue below the glacier, down to that depth below the inventory front and never below sea level.
+  - The glacier's own bands without ice below its lowest ice band count too: advance bands, and bands that have melted
+    out, at their bed elevation.
+  - Bands below sea level are ignored.
+- **Their snow pack.** Each band carries a snow pack computed as on glacier bands without ice. Snowfall uses the
+  glacier's own temperature offset and precipitation factor; snow melts with its own degree-day factor.
+  - **Precipitation on the new bands is that of the inventory front.** It does not keep decreasing with elevation. With
+    the linear gradient (`dPdz`) it would reach zero 10000/`dPdz` m below the climate grid point (2000 m in
+    SouthAsiaWest), and no snow could ever lie lower.
+  - **Snow left over from the year before is removed once a year:** on 1 January in the northern hemisphere; in the
+    southern hemisphere in July in monthly runs and on day 181 in daily runs.
+  - **Melt starts one time step late on fresh snow on bare ground.** This is main's behaviour on bands without ice.
+    The same holds for snow lying at the start of each mass-balance year, which does not melt in that year's first
+    step. That is one day in daily runs but a whole month in monthly runs.
+  - **Any amount of snow counts as snow cover.**
+- **When they are used.**
+  - When no glacier band is free of snow, the snowline is the highest snow-free ground band.
+  - If all ground bands are snow-covered too, it is the lowest ground band: the snowline is at or below that level.
+- **A glacier that has melted away.** By default its snowline is written as −9999. With the option it is the highest
+  snow-free band of its former area. Note that daily `.dat` rows carry the initial glacier area.
+- **What it does not change.** Every other output is unchanged: mass balance, refreezing, debris melt, geometry and the
+  belev files. The snowline is also unchanged whenever a glacier band is snow-free.
+- **Requirements.**
+  - It needs `meltmodel = '1'`.
+  - It does not work with `eval_mbelevsensitivity`.
+  - It works daily and monthly, with debris, and in calibration runs. Calibration runs compute the snowline but do not
+    write it.
+  - The snowline is written with `full_output = 'y'` (`Snowline_day` / `Snowline_mon`) or with `write_netcdf = 'y'`.
+
+```{note}
+The ground bands are a simple continuation of the glacier, not real terrain.
+- **Their floor can lie below the real valley floor.** For Aletsch, 1500 m below the front is 75 m a.s.l. Compare
+  modelled and observed snowlines only above the local valley floor.
+- **The glacier's parameters are used off the glacier.** The calibrated temperature offset, precipitation factor and
+  degree-day factor apply below the front, so a snowline calibration partly tunes them there.
+- **Temperature follows the lapse rate down**, so winter valley inversions are missing.
+- **The late melt of fresh snow** gives one-day dips on snowfall days. Comparing multi-day values avoids them.
 ```
 
 ---

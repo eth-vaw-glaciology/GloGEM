@@ -137,6 +137,8 @@
 ;write_geometry_output = 'n'    ; 'y' to save per-glacier geometry and flowline grid history (.sav)
 ;                               ;   ~0.5-1 MB per glacier per SSP; disable for global runs (~600 GB)
 ;                               ;   Aggregate timeseries (volume, area, MB) are in the .dat files regardless.
+;snowline_ext_depth = 0.         ; [m] e.g. 1500.: the snowline can drop onto the ground below the glacier
+;                                ;   front, down to this depth below it (0 = off; needs meltmodel '1')
 
 ; -----------------------------------------------------------------------
 ; LOOKUP TABLES

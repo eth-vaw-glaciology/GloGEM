@@ -481,6 +481,10 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                         ddfs_v=DDFsnow+w_v*(ddfs_reg-DDFsnow) & ddfi_v=DDFice+w_v*(ddfi_reg-DDFice)
                       endif
                       baly=dblarr(years,nb)
+                      ; ground bands below the glacier front for the snowline
+                      if snowline_ext_depth gt 0 then begin
+                        @procedures/initialise/initialise_snowline_extension.pro
+                      endif
                       ; initialising some output arrays
                       @procedures/initialise/initialise_output_arrays.pro
 
@@ -635,6 +639,11 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                             jj=where(sno eq 0 and gl ne noval,cj) & if cj gt 0 then sur[jj]=0
                             jj=where(sno eq 0 and gl eq noval,cj) & if cj gt 0 then sur[jj]=noval
                             jj=where(sno eq 0 and firn eq 1,cj) & if cj gt 0 then sur[jj]=2
+
+                            ; --- snow on the ground bands below the glacier front (snowline)
+                            if snowline_ext_depth gt 0 then begin
+                              @procedures/processing/snowline_extension.pro
+                            endif
 
                             ; cumulate balances - store results
                             bal=bal+psg-mel+refr

@@ -57,13 +57,14 @@ The original GloGEM format. **One file per variable**, one row per glacier.
 
 - **`full_output='n'`** (reduced) → 15 variables:
   `Area, Volume, Annual_Balance_sfc, Winter_balance_sfc, Icemelt_sfc, Snowmelt_sfc, Accumulation_sfc, Rain_sfc, ELA, AAR, Refreezing_sfc, Hmin, Frontal_ablation, Discharge, Discharge_gl`
-- **`full_output='y'`** → the same 15 **plus** 5 sub-annual (monthly or daily) series.
+- **`full_output='y'`** → the same 15 **plus** 6 sub-annual (monthly or daily) series, including the snowline
+  (`snowline_ext_depth` lets it drop below the glacier front; see the output-files page).
 
 **Monthly/daily split for `.dat`:** the *extra* variables differ by `time_resolution`:
 
 | | Monthly (`write_results_files_monthly.pro`) | Daily (`write_results_files_daily.pro`) |
 |---|---|---|
-| Sub-annual vars | `Balance_mon, Precipitation_mon, Accumulation_mon, Melt_mon, Refreezing_mon` | `Accumulation_day, Rain_day, Snowmelt_day, Icemelt_day, Refreezing_day, Snowline_day` |
+| Sub-annual vars | `Balance_mon, Precipitation_mon, Accumulation_mon, Melt_mon, Refreezing_mon, Snowline_mon` | `Accumulation_day, Rain_day, Snowmelt_day, Icemelt_day, Refreezing_day, Snowline_day` |
 | Row layout | 12 values per year, concatenated | 365 values per year, with year + area prepended per row |
 
 **Units in `.dat`:**
