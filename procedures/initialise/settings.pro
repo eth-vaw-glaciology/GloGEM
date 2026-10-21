@@ -187,6 +187,17 @@ bedrock_parabolacorr = 0.2
 clim_subregion = ''
 full_output = 'n'
 
+; snowline below the glacier front: ground bands down to snowline_ext_depth [m] below each glacier's inventory
+; front (not below sea level) carry a snow pack, with the front's precipitation, and the snowline uses them when
+; no glacier band is snow-free (procedures/processing/snowline_extension.pro). All other output is unchanged.
+; 0 = off, e.g. 1500.
+snowline_ext_depth = 0.
+; folder with the valley floor below each glacier (valley_floor_rgi<RGIversion>_<region>.dat, written by
+; scripts/valley_floor.py): the ground bands stop at the glacier's own valley floor, i.e. the valley's depth below
+; the glacier on the file's terrain, never deeper than snowline_ext_depth; '' = no terrain, every glacier gets
+; snowline_ext_depth
+snowline_ext_valley = ''
+
 ; default output file list (reduced output); full_output='y' variants set in Zone 2
 if full_output eq 'n' then outf_names = ['Area', 'Volume', 'Annual_Balance_sfc', 'Winter_balance_sfc', 'Icemelt_sfc', $
   'Snowmelt_sfc', 'Accumulation_sfc', 'Rain_sfc', 'ELA', 'AAR', 'Refreezing_sfc', 'Hmin', 'Frontal_ablation', $
@@ -436,6 +447,23 @@ if write_netcdf eq 'y' and outf_names[14] eq '' then outf_names[14] = 'Discharge
 
 ; Daily->monthly NetCDF aggregation only applies to daily runs that write NetCDF.
 if time_resolution ne 'daily' or write_netcdf ne 'y' then netcdf_daily_aggregated_monthly = 'n'
+
+; snowline below the glacier front
+if snowline_ext_depth lt 0 then message, 'snowline_ext_depth must be 0 (off) or positive [m]'
+if snowline_ext_depth eq 0 and snowline_ext_valley ne '' then print, 'NOTE: snowline_ext_valley has no effect while snowline_ext_depth = 0'
+if snowline_ext_depth gt 0 then begin
+  if meltmodel ne '1' then message, 'snowline_ext_depth needs meltmodel ''1'''
+  if eval_mbelevsensitivity eq 'y' then message, 'snowline_ext_depth does not work with eval_mbelevsensitivity'
+  if outf_names[14] eq '' then begin
+    print, 'NOTE: snowline_ext_depth set to 0: the snowline is not computed when outf_names[14] is empty'
+    snowline_ext_depth = 0.
+  endif else begin
+    print, 'Snowline below the glacier front: ground bands down to ' + strtrim(string(snowline_ext_depth, format='(f8.0)'), 2) + ' m below the front (snowline_ext_depth)'
+    if snowline_ext_valley ne '' then print, '  ... and not below each glacier''s valley floor from ' + snowline_ext_valley
+    if full_output ne 'y' and write_netcdf ne 'y' then $
+      print, 'NOTE: snowline_ext_depth: the snowline is written only with full_output=''y'' or write_netcdf=''y'''
+  endelse
+endif
 
 ; **********************************
 ; -----------------------------------

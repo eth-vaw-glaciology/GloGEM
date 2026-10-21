@@ -147,6 +147,11 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
           if catchment_selection ne '' then size_range=[0,100000.]
 
+          ; valley floor below each glacier, for the snowline below the front
+          if snowline_ext_depth gt 0 and snowline_ext_valley ne '' then begin
+            @procedures/read/read_valley_floor.pro
+          endif
+
           ; read calibration data file (REGIONAL MEAN MASS BALANCE)
           if calibrate eq 'y' then begin
             @procedures/calibration/read_calibration_targets.pro
@@ -370,6 +375,10 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                       sur=dblarr(nb) & sno=sur & snostor=sur
                       firn=sur & ff=where(elev gt hmed[gg[g]],ci) & if ci gt 0 then firn[ff]=1
                       baly=dblarr(years,nb)
+                      ; ground bands below the glacier front for the snowline
+                      if snowline_ext_depth gt 0 then begin
+                        @procedures/initialise/initialise_snowline_extension.pro
+                      endif
                       ; initialising some output arrays
                       @procedures/initialise/initialise_output_arrays.pro
 
@@ -475,6 +484,11 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                             jj=where(sno eq 0 and gl ne noval,cj) & if cj gt 0 then sur[jj]=0
                             jj=where(sno eq 0 and gl eq noval,cj) & if cj gt 0 then sur[jj]=noval
                             jj=where(sno eq 0 and firn eq 1,cj) & if cj gt 0 then sur[jj]=2
+
+                            ; --- snow on the ground bands below the glacier front (snowline)
+                            if snowline_ext_depth gt 0 then begin
+                              @procedures/processing/snowline_extension.pro
+                            endif
 
                             ; cumulate balances - store results
                             bal=bal+psg-mel+refr

@@ -13,6 +13,7 @@
 ; The supraglacial debris melt is calculated in the calculatedebrismelt.pro procedure which is called within this procedure.
 ;
 ; The procedure uses the variable sur to distinguish between snow (1), firn (2) and ice (0) surfaces.
+; Snow melt of meltmodel '1' is mirrored for the ground bands below the glacier in snowline_extension.pro: keep both in step.
 ; *************************************************************
 
 compile_opt idl2

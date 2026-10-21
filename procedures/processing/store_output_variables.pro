@@ -14,13 +14,15 @@ if time_resolution eq 'monthly' then begin
    ; monthly transient snowline [m a.s.l.] - same logic as the daily snowline:
    ; among the glacierized bands (gl ne noval), find those that are snow-free
    ; (sno eq 0) and take the highest one; if the whole glacier is still snow-
-   ; covered, fall back to the lowest (terminus) elevation.
+   ; covered, fall back to the lowest (terminus) elevation, or with snowline_ext_depth
+   ; to the ground below the front (functions/snowline_below_front.pro).
    jj=where(sno eq 0 and gl ne noval,cj)
    if cj gt 0 then begin
       snowlinemon[ccmon-1]=gl[jj[cj-1]]
    endif else begin
       positive_values=gl[where(gl ge 0)]
       snowlinemon[ccmon-1]=positive_values[0]
+      if snowline_ext_depth gt 0 then snowlinemon[ccmon-1]=snowline_below_front(sno,gl,elev,noval,sx_n,sx_sno,sx_elev,sx_zmin,snowlinemon[ccmon-1])
    endelse
 endif else begin
    ; for entire catchment
@@ -33,5 +35,6 @@ endif else begin
    endif else begin
       positive_values = gl[where(gl ge 0)]
       snowlineday[ccmon-1]=positive_values[0]
+      if snowline_ext_depth gt 0 then snowlineday[ccmon-1]=snowline_below_front(sno,gl,elev,noval,sx_n,sx_sno,sx_elev,sx_zmin,snowlineday[ccmon-1])
    endelse
 endelse

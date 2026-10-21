@@ -72,8 +72,85 @@ Setting `full_output = 'y'` adds daily resolved variables to the output:
 | `Discharge` | (mm/day) | Daily Discharge  intial glacier area |
 | `Snowline_day` | (m a.s.l.) | Daily transient snowline altitude |
 
+The monthly model writes the same snowline as `Snowline_mon` (one value per month).
+
 ```{note}
 Discharge variables are not available for 2300 runs (`long_GCM = 'long_'`).
+```
+
+### Snowline
+
+The snowline is the middle of the highest glacier band without snow. If the whole glacier is snow-covered, it is the
+glacier's lowest band (its front), so by default it can never go below the front.
+
+With `snowline_ext_depth > 0` (m, e.g. 1500; off by default; set it in your config file) the snowline can drop below
+the front:
+
+- **Ground bands.**
+  - New 10 m bands continue below the glacier, down to that depth below the inventory front and never below sea level.
+  - The glacier's own bands without ice below its lowest ice band count too: advance bands, and bands that have melted
+    out, at their bed elevation.
+  - Bands below sea level are ignored.
+- **Following the terrain (`snowline_ext_valley`).** Set this to a folder with valley-floor files, and each glacier's
+  ground bands stop at its own valley floor, never deeper than `snowline_ext_depth`. Bands of the glacier itself below
+  that floor are ignored too.
+  - **The files are written once per region by `scripts/valley_floor.py`.**
+    - It starts at the lowest point of each glacier's outline on the Copernicus GLO-90 terrain (90 m).
+    - It follows the valley strictly downhill: hollows in the terrain are filled first, so the path can never get
+      stuck or climb.
+    - It stops after a set distance (`--distance`, default 10 km) or at the sea. The lowest terrain on that path is
+      the valley floor.
+  - **Two terrain models.** GloGEM uses the valley's depth below the start of the path, so its own front and the
+    Copernicus terrain need not agree. They differ by up to a few hundred metres in the Karakoram.
+  - **Running it, for example:**
+    `python3 scripts/valley_floor.py --outlines 14_rgi62_SouthAsiaWest.shp --region centralasiaW --rgi-version 6 --out <folder> --dem-dir <tile folder> --processes 8`
+    - The file is called `valley_floor_rgi<RGIversion>_<region>.dat`. `--region` must be GloGEM's region name as in
+      `region_batch.dat` (column `region_n`, e.g. `centralasiaW`; case matters).
+    - Outlines come from OGGM: `oggm.utils.get_rgi_region_file('14', version='62')` for RGI 6.2, or
+      `version='70G'` for RGI 7.0.
+    - It needs Python with geopandas, rasterio, scipy and scikit-image, and internet access. The terrain tiles of a
+      region (about 100) take a few hundred MB.
+    - Check a few paths on a map with `--paths <file.csv>`. A path can run onto another glacier: a tributary reaching
+      its trunk glacier.
+  - **Glaciers missing from the file** keep `snowline_ext_depth`; GloGEM names them in the log. This includes those
+    within reach of the 180° line, which the script leaves out.
+  - **The distance matters.** Large Karakoram valleys are flat below the glaciers. Below the fronts of Biafo, Baltoro
+    and Siachen the valley is 113–157 m lower after 10 km, 266–442 m lower after 30 km and 358–645 m lower after
+    50 km.
+- **Their snow pack.** Each band carries a snow pack computed as on glacier bands without ice. Snowfall uses the
+  glacier's own temperature offset and precipitation factor; snow melts with its own degree-day factor.
+  - **Precipitation on the new bands is that of the inventory front.** It does not keep decreasing with elevation. With
+    the linear gradient (`dPdz`) it would reach zero 10000/`dPdz` m below the climate grid point (2000 m in
+    SouthAsiaWest), and no snow could ever lie lower.
+  - **Snow left over from the year before is removed once a year:** on 1 January in the northern hemisphere; in the
+    southern hemisphere in July in monthly runs and on day 181 in daily runs.
+  - **Melt starts one time step late on fresh snow on bare ground.** This is main's behaviour on bands without ice.
+    The same holds for snow lying at the start of each mass-balance year, which does not melt in that year's first
+    step. That is one day in daily runs but a whole month in monthly runs.
+  - **Any amount of snow counts as snow cover.**
+- **When they are used.**
+  - When no glacier band is free of snow, the snowline is the highest snow-free ground band.
+  - If all ground bands are snow-covered too, it is the lowest ground band: the snowline is at or below that level.
+- **A glacier that has melted away.** By default its snowline is written as −9999. With the option it is the highest
+  snow-free band of its former area. Note that daily `.dat` rows carry the initial glacier area.
+- **What it does not change.** Every other output is unchanged: mass balance, refreezing, debris melt, geometry and the
+  belev files. The snowline is also unchanged whenever a glacier band is snow-free.
+- **Requirements.**
+  - It needs `meltmodel = '1'`.
+  - It does not work with `eval_mbelevsensitivity`.
+  - It works daily and monthly, with debris, and in calibration runs. Calibration runs compute the snowline but do not
+    write it.
+  - The snowline is written with `full_output = 'y'` (`Snowline_day` / `Snowline_mon`) or with `write_netcdf = 'y'`.
+
+```{note}
+The ground bands are a simple continuation of the glacier, not real terrain.
+- **Without `snowline_ext_valley`, their floor can lie below the real valley floor.** For Aletsch, 1500 m below the
+  front is 75 m a.s.l. Either give the valley floors, or compare modelled and observed snowlines only above the local
+  valley floor.
+- **The glacier's parameters are used off the glacier.** The calibrated temperature offset, precipitation factor and
+  degree-day factor apply below the front, so a snowline calibration partly tunes them there.
+- **Temperature follows the lapse rate down**, so winter valley inversions are missing.
+- **The late melt of fresh snow** gives one-day dips on snowfall days. Comparing multi-day values avoids them.
 ```
 
 ---
