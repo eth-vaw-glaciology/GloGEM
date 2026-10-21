@@ -16,6 +16,7 @@ For users of GloGEM; the details and the evidence are in the entries below.
 - **Fixed, climate input:** projections read the climate months late, in GMIP4 ({ref}`G1 <mc-g1>`) and in CMIP6 and AMOC ({ref}`G2 <mc-g2>`; both also fixed on main since 2026-10-16); ERA5 and GCM came from neighbouring grid points ({ref}`G3 <mc-g3>`); the climate point depended on the batching ({ref}`G4 <mc-g4>`); lapse rate and variability on the per-point climate path ({ref}`G5 <mc-g5>`); lost longitudes ({ref}`G6 <mc-g6>`); speed ({ref}`G7 <mc-g7>`).
 - **Fixed, elsewhere:** glaciers never simulated ({ref}`G8 <mc-g8>`); glaciers turning NaN in the Δh parameterisation ({ref}`G9 <mc-g9>`, {ref}`G10 <mc-g10>`); Δh mass check and sea-level calving ({ref}`G11 <mc-g11>`); the calving-flux file ({ref}`G15 <mc-g15>`); `mass_bsl` ({ref}`G18 <mc-g18>`); negative netCDF values ({ref}`G19 <mc-g19>`); monthly netCDF time labels ({ref}`G20 <mc-g20>`, also on main); the full refreezing model's year and cold reservoir ({ref}`G40 <mc-g40>`, {ref}`G41 <mc-g41>`, local GloGEMflow); the Δh parameterisation of glaciers with 4 bands or fewer lost or gained 1.5 × the balance ({ref}`G42 <mc-g42>`, behind a switch); the flowline now uses the RGI 7.0 area correction ({ref}`F15 <mc-f15>`).
 - **New for growing glaciers (AMOC), all off by default:** the flowline balance at the actual surface ({ref}`F17 <mc-f17>`), a blow-up check by mass ({ref}`F18 <mc-f18>`), free outflow at the end of the longest grid ({ref}`F19 <mc-f19>`), Δh regrowth with a thickness limit per glacier ({ref}`G34 <mc-g34>`), a restart of glaciers that melted out ({ref}`G35 <mc-g35>`), the blended parameters below the inventory front in GloGEM's own band model ({ref}`G37 <mc-g37>`) and in the flowline's balance ({ref}`F20 <mc-f20>`), and a gate that sends flow spin-ups with implausibly stiff ice or the ELA bias at its clamp to the Δh parameterisation ({ref}`F21 <mc-f21>`).
+- **New for snowline calibration, off by default:** the snowline can drop onto the ground below the glacier front ({ref}`G43 <mc-g43>`, also prepared for main).
 - **Running:** the environment variables `GLOGEM_CONFIG` and `GLOGEM_LOGDIR`; the GMIP4 campaign scripts in `scripts/gmip4/` with a README ({ref}`S10 <mc-s10>`).
 - **Still open:** the swapped ice-melt and snow-melt files ({ref}`K12 <mc-k12>`), refreezing that depends on the number of elevation bands ({ref}`K26 <mc-k26>`) and the other items of section 6.
 
@@ -196,6 +197,7 @@ Janosch decided on 2026-09-25 not to rerun the submitted v1 regions, and on 2026
 | {ref}`G40 <mc-g40>` | `refreezing_full`: 365-day year | core (refreezing) | fixed on local GloGEMflow `2cce026` (not pushed) | only with `refreezing_full='y'` | yes | `2cce026` |
 | {ref}`G41 <mc-g41>` | `refreezing_full`: the cold reservoir was used once per hydrological year; an October melt left the rest of the year without refreezing | core (refreezing) | fixed on local GloGEMflow `01dbb65` (not pushed) | only with `refreezing_full='y'` | yes | `01dbb65` |
 | {ref}`G42 <mc-g42>` | Δh parameterisation of glaciers with 4 bands or fewer: 1.5 × the balance lost or gained | core | fixed behind a switch (`dh_small_conserve`, on for AMOC) | yes (glaciers that reach 4 bands; Scandinavian AMOC runs 1.6–2.5 % of the ice lost) | yes | `85e0899` |
+| {ref}`G43 <mc-g43>` | The snowline cannot go below the glacier front | core (output) | new option `snowline_ext_depth` (off by default); branch for main prepared | snowline only | yes | `5cd0370` |
 | {ref}`F1 <mc-f1>` | Port of MATLAB GloGEMflow to IDL and coupling to GloGEM | flow | done | — | not in main | `baa5c7b`, `020e81e`, ... |
 | {ref}`F2 <mc-f2>` | Flow → Δh handover: frozen, NaN or resurrected glaciers, lost year | flow | fixed | yes | not in main | `a473e25`, `61ac7d4`, `11ca640`, `5dfd530`, `df8bdd4` |
 | {ref}`F3 <mc-f3>` | Spin-up quality gate | flow | fixed | yes | not in main | `5dfd530` |
@@ -939,6 +941,70 @@ The old branch is in main and in every GMIP4 submission. Switching `'y'` on by d
 results of every glacier that reaches 4 bands; that is for the GloGEM developers to decide. GlacierMIP4 is not
 told: the submissions stand (Janosch, 2026-10-20).
 
+(mc-g43)=
+### G43. The snowline cannot go below the glacier front (`snowline_ext_depth`)
+
+The snowline (`Snowline_day`, `Snowline_mon`, netCDF `snowline`; `store_output_variables.pro`) is the highest
+snow-free glacier band, otherwise the glacier's lowest band. So it can never go below the front. In winter, observed
+regional snowlines lie far below it: in the Karakoram, the model says about 3500 m and the observations 2000 m.
+Daily runs calibrated against snowlines (Lander's Karakoram project) therefore cannot match winter. Asked by Lander,
+2026-10-19.
+
+`band_extension` (G30) does not help here. The snowline ignores its bands, it refuses debris, and it is off in
+calibration.
+
+**New option `snowline_ext_depth`** (m, default 0 = off, set in the user config, e.g. `1500.`):
+
+- **Ground bands** (`initialise_snowline_extension.pro`): 10 m bands continue below each glacier, down to that depth
+  below the inventory front, and not below sea level. Bands the glacier already has below its front (advance bands)
+  count towards the depth.
+- **Their snow pack** (`snowline_extension.pro`): each step mirrors what main does on bands without ice, with the
+  glacier's own parameters:
+  - the yearly removal of old snow;
+  - snowfall (`accumulation.pro`);
+  - degree-day snow melt, including the monthly sub-month step (`meltmodel.pro`);
+  - the snow update and the surface type.
+
+  One difference: precipitation is that of the inventory front. With the linear gradient it would reach zero
+  10000/`dPdz` m below the climate grid point (2000 m in SouthAsiaWest), so snow under Baltoro and Siachen would stop
+  at about 3230 m, only 160–370 m below their fronts (Janosch's decision, 2026-10-21).
+- **The snowline** (`functions/snowline_below_front.pro`): the ground bands are used only when no glacier band is
+  snow-free. The snowline is then the highest snow-free ground band, otherwise the lowest one. The glacier's own bands
+  without ice below its lowest ice band count, and bands below sea level are ignored. A glacier that has melted away
+  gets the highest snow-free band of its former area instead of −9999.
+- **Why separate arrays** (prefix `sx_`)**, not more glacier bands.** More bands would have changed:
+  - refreezing (K26);
+  - the advance scheme (150 bands instead of 10);
+  - debris seeding;
+  - the writers.
+- **Limits:**
+  - `meltmodel '1'` only;
+  - not with `eval_mbelevsensitivity`;
+  - on v3, capped at `band_ext_depth` when `band_extension='y'`.
+
+**Tests** (2026-10-21):
+- **Option off:** byte-identical to the base `fb7f9c0`, and on v3 to `655178b`. The test runs covered:
+  - the repository's Aletsch configs (daily and monthly calibration, hindcast, GMIP4 projection);
+  - Karakoram RGI6, daily with debris: 91 glaciers, and the Biafo calibration;
+  - a glacier with 3 bands;
+  - Svalbard tidewater 00030, including a dynamic hindcast;
+  - New Zealand (southern hemisphere).
+- **Option on:** only the snowline differs; it is always lower, never below sea level, and the calibration is
+  identical.
+- **Mirror check:** on the advance bands, the copied snow equals main's bit for bit (2.3 million daily and 69,000
+  monthly comparisons).
+- **Karakoram behaviour:** in winter the ground is snow-covered down to the floor (48 % of days). In spring the
+  snowline climbs from the floor to the front; summer is unchanged.
+- **Run time:** +3 % daily, +10 % monthly.
+- **Independent max-effort review:** no blocker. Its findings are fixed: the snow cut off by the gradient (above),
+  snowlines below sea level, and the docs.
+- **Met on the way, not new:**
+  - netCDF in hindcasts and the missing `dyn/` folder (G13, still on main);
+  - a missing debris file, `debris/centralasiaW/factor_06713.dat`, stops a Karakoram RGI6 run.
+
+**Commits:** `5cd0370` on `feature/snowline-below-front`, off main's base `fb7f9c0`, prepared for a pull request into
+main; merged into `glogemflow-v3`.
+
 ## 4. GloGEMflow items
 
 GloGEMflow is not on `main`, so everything here is new code for main. In short, for our submissions:
@@ -1591,6 +1657,7 @@ All decisions below were taken by Janosch Beer.
 | 2026-10-20 | AMOC: flow spin-ups with A_flow at its floor or the ELA bias at its clamp run on the Δh parameterisation; production rerun (run 2). | F21, `3bb5b85` |
 | 2026-10-20 | AMOC: the A cut-off is the rate factor of ice at −30 °C (1.2e-18 Pa⁻³ a⁻¹) instead of 1e-19; the Δh small-glacier leak is fixed behind a switch, on for AMOC; production rerun (run 3). | F21, G42, `85e0899` |
 | 2026-10-20 | No note to GlacierMIP4 about the stiff spin-ups (K31) or the small-glacier leak (G42) in the submitted runs. | K31, G42 |
+| 2026-10-21 | For Lander's Karakoram snowline calibration, main gets a snow-only option for the ground below the glacier front (not the full `band_extension`); the ground uses the glacier's own parameters and the precipitation of the inventory front. | G43, `5cd0370` |
 
 ---
 
