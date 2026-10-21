@@ -193,8 +193,9 @@ full_output = 'n'
 ; 0 = off, e.g. 1500.
 snowline_ext_depth = 0.
 ; folder with the valley floor below each glacier (valley_floor_rgi<RGIversion>_<region>.dat, written by
-; scripts/valley_floor.py): the ground bands stop at the glacier's own valley floor, never deeper than
-; snowline_ext_depth; '' = no terrain, every glacier gets snowline_ext_depth
+; scripts/valley_floor.py): the ground bands stop at the glacier's own valley floor, i.e. the valley's depth below
+; the glacier on the file's terrain, never deeper than snowline_ext_depth; '' = no terrain, every glacier gets
+; snowline_ext_depth
 snowline_ext_valley = ''
 
 ; default output file list (reduced output); full_output='y' variants set in Zone 2
@@ -449,6 +450,7 @@ if time_resolution ne 'daily' or write_netcdf ne 'y' then netcdf_daily_aggregate
 
 ; snowline below the glacier front
 if snowline_ext_depth lt 0 then message, 'snowline_ext_depth must be 0 (off) or positive [m]'
+if snowline_ext_depth eq 0 and snowline_ext_valley ne '' then print, 'NOTE: snowline_ext_valley has no effect while snowline_ext_depth = 0'
 if snowline_ext_depth gt 0 then begin
   if meltmodel ne '1' then message, 'snowline_ext_depth needs meltmodel ''1'''
   if eval_mbelevsensitivity eq 'y' then message, 'snowline_ext_depth does not work with eval_mbelevsensitivity'

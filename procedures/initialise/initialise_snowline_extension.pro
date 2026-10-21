@@ -15,13 +15,16 @@ sx_ii = where(gl ne noval, sx_ci)
 if sx_ci gt 0 then sx_if = sx_ii[0] else sx_if = 0l
 sx_n = round(snowline_ext_depth / 10.)
 sx_zmin = 0d   ; lowest ground band the snowline may use (functions/snowline_below_front.pro)
-; not below the glacier's own valley floor (read_valley_floor.pro); glaciers not in the file keep the depth
+; not below the glacier's own valley floor (read_valley_floor.pro): the valley's depth below the start of the path,
+; measured on the file's terrain model, is hung below the front; glaciers not in the file keep the depth
 if snowline_ext_valley ne '' then begin
-  sx_k = where(vf_id eq long(id[gg[g]]), sx_ck)
+  sx_ck = 0l
+  if vf_n gt 0 then sx_k = where(vf_id[0 : vf_n - 1] eq long(id[gg[g]]), sx_ck)
   if sx_ck gt 0 then begin
-    sx_n = sx_n < (long(floor((elev0[sx_if] - vf_z[sx_k[0]]) / 10.)) > 0)
-    sx_zmin = sx_zmin > vf_z[sx_k[0]]
-  endif
+    sx_d = (vf_z0[sx_k[0]] - vf_z[sx_k[0]]) > 0
+    sx_n = sx_n < long(floor(sx_d / 10.))
+    sx_zmin = sx_zmin > (elev0[sx_if] - sx_d)
+  endif else if cal1 eq 0 then print, 'NOTE: no valley floor for glacier ' + id[gg[g]] + ': ground bands down to snowline_ext_depth'
 endif
 sx_n = sx_n - sx_if
 sx_n = sx_n < long(floor((min(elev0) - 5.) / 10.))
