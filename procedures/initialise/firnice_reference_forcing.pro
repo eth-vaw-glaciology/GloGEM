@@ -103,6 +103,9 @@ endfor
 mb_book = 1b
 sno = sno_keep & sur = sur_keep & snostor = snostor_keep
 tl_rf = tl_rf_keep & te_rf = te_rf_keep
+if firnice_burial_dir ne '' then begin
+    @procedures/initialise/setup_firnice_burial.pro
+endif
 
 ; Thermal firn mask from the reference balance, and its firn-ice transition depth from the same
 ; balance and the band's reference-period mean temperature
