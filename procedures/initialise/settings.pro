@@ -213,6 +213,9 @@ firnice_orient          = 'n'   ; 'table' = the thermal model's melt is multipli
                                 ; weather), read from firnice_orient_dir as a function of the month's air
                                 ; temperature anomaly; the mass balance is unchanged
 firnice_orient_dir      = ''    ; folder of orient_<glacier id>.dat, one for every glacier of the run
+firnice_write_melth     = 'n'   ; 'y' = write, per band and month of the main run, the thermal model's degree-day
+                                ; melt before the orientation factor (firnice_melth_<id>.dat, m w.e.) and its air
+                                ; temperature (firnice_tairth_<id>.dat, C): the inputs the orientation tables match
 firnice_thermal_lapse   = 'floor' ; lapse rate of the thermal surface above the climate cell:
                                 ; 'floor' = at least 6.5 K/km; 'reanalysis' = ERA5's own (as the
                                 ; mass balance; better at Jungfraujoch and Corvatsch 1981-2020);
@@ -555,6 +558,8 @@ if total(firnice_deepen_to_obs eq ['y', 'n']) eq 0 then message, "firnice_deepen
 if total(firnice_snow_refreeze eq ['y', 'n']) eq 0 then message, "firnice_snow_refreeze must be 'y' or 'n'"
 if firnice_spinup_dT ne 0 and firnice_forcing_toff ne 'n' then $
     message, "firnice_spinup_dT needs firnice_forcing_toff = 'n'"
+if firnice_write_melth eq 'y' and firnice_forcing_toff ne 'n' then $
+    message, "firnice_write_melth needs firnice_forcing_toff = 'n'"
 if total(firnice_orient eq ['n', 'table']) eq 0 then message, "firnice_orient must be 'n' or 'table'"
 if firnice_orient eq 'table' then $
   if firnice_temperature ne 'y' or firnice_forcing_toff ne 'n' or firnice_orient_dir eq '' then $

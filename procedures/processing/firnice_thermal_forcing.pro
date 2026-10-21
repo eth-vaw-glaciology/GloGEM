@@ -53,6 +53,9 @@ endif else begin
   if ftw_c gt 0 then mel_th[ftw_i] = (0.5 * DDFice + 0.5 * DDFsnow) * ftw_tg[ftw_i] * mon_len[m - 1] / 1000.
   ftw_i = where(sur eq 0 and ftw_tg gt t_melt, ftw_c)
   if ftw_c gt 0 then mel_th[ftw_i] = DDFice * ftw_tg[ftw_i] * mon_len[m - 1] / 1000.
+  if firnice_write_melth eq 'y' and mb_book then begin
+    melth_log[ye, m - 1, *] = mel_th & tairth_log[ye, m - 1, *] = ftw_tl
+  endif
   ; orientation factor at this month's anomaly from 1981-2020, linear in dT, held at the table's ends
   if firnice_orient eq 'table' then begin
     ftw_nd = n_elements(forient_dt)

@@ -463,6 +463,9 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                         if firnice_orient eq 'table' then begin
                           @procedures/initialise/setup_firnice_orient.pro
                         endif
+                        if firnice_write_melth eq 'y' then begin
+                          melth_log = dblarr(years, 12, nb) + noval & tairth_log = melth_log
+                        endif
                         ; reference-period forcing, balance b_ref and thermal firn mask
                         ; (spin-up forcing, and burial/emergence in the main run)
                         if time_resolution eq 'monthly' then begin
@@ -685,6 +688,9 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                       ; write firn temperature validation diagnostics (C&P vs. model f_rf)
                       if firnice_temperature eq 'y' then begin
                         @procedures/write/write_firnicetemp_validation
+                      endif
+                      if firnice_temperature eq 'y' and firnice_write_melth eq 'y' then begin
+                        @procedures/write/write_firnice_melth.pro
                       endif
 
                       ; === Optimization - SINGLE-GLACIER MASS BALANCE
