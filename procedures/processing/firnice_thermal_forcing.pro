@@ -6,6 +6,8 @@
 ; firnice_forcing_toff = 'y' (default) they are the mass balance's tgs, mel and plg. With 'n'
 ; they come from the same formulas as accumulation.pro and meltmodel.pro (degree-day model '1',
 ; monthly, sub-monthly variability), on the air temperature without t_offset.
+; With firnice_orient = 'table' the melt is multiplied per band by the orientation factor of
+; setup_firnice_orient.pro, at this month's air temperature anomaly.
 ; Writes no mass-balance variable. Called after accumulation.pro and meltmodel.pro (needs pg,
 ; tgs, sur), in the month loop and in firnice_reference_forcing.pro.
 ; *************************************************************
@@ -49,5 +51,13 @@ endif else begin
   if ftw_c gt 0 then mel_th[ftw_i] = (0.5 * DDFice + 0.5 * DDFsnow) * ftw_tg[ftw_i] * mon_len[m - 1] / 1000.
   ftw_i = where(sur eq 0 and ftw_tg gt t_melt, ftw_c)
   if ftw_c gt 0 then mel_th[ftw_i] = DDFice * ftw_tg[ftw_i] * mon_len[m - 1] / 1000.
+  ; orientation factor at this month's anomaly from 1981-2020, linear in dT, held at the table's ends
+  if firnice_orient eq 'table' then begin
+    ftw_x = ((ftw_tl - forient_tref[*, m - 1]) > forient_dt[0]) < forient_dt[6]
+    ftw_k = (long(floor(ftw_x - forient_dt[0])) > 0) < 5
+    ftw_w = ftw_x - forient_dt[ftw_k]
+    ftw_n = lindgen(nb)
+    mel_th = mel_th * (forient[ftw_n, ftw_k] + ftw_w * (forient[ftw_n, ftw_k + 1] - forient[ftw_n, ftw_k]))
+  endif
   tgs_th = ftw_tm
 endelse
