@@ -6,6 +6,7 @@
 ; It is called by the main procedure for each year and month/day of the simulation.
 ; The precipitation is extrapolated with elevation (dpdz) and constrained at high elevations.
 ; The state of precipitation (snow or rain) is determined based on a temperature threshold T_thres.
+; Mirrored for the ground bands below the glacier in snowline_extension.pro: keep both in step.
 ; *************************************************************
 
 compile_opt idl2
