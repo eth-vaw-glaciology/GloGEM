@@ -538,6 +538,8 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                             if time_resolution eq 'monthly' then cdm=cmon else cdm=cday
                             if ccmon eq 0 then jjclim=where(cyear eq ye-1+tran[0] and cdm eq m)
                             tg=temp[jjclim[0]+ccmon]+(elev-hclim)*dtdz[m-1]+t_offset
+                            ; this month's free air index, before accumulation.pro advances ccmon
+                            if firnice_thermal_air eq 'freeair' then fa_it = jjclim[0]+ccmon
 			    
                             ; === Mass balance model
 
@@ -572,7 +574,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                             if firnice_temperature eq 'y' and $
                                (use_flow_model_gl ne 'y' or n_elements(flow_initialised) gt 0) then begin
                               if firnice_thermal_air eq 'freeair' then $
-                                fa_tm = freeair_at(fa_node, fa_h0, fa_dh, elev, fa_tix[jjclim[0]+ccmon])
+                                fa_tm = freeair_at(fa_node, fa_h0, fa_dh, elev, fa_tix[fa_it])
                               @procedures/processing/firnice_thermal_forcing.pro
                               @procedures/processing/firnice_temperature_model.pro
                             endif    ; firn-ice temperature model
