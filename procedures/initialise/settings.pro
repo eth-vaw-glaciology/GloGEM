@@ -227,6 +227,17 @@ firnice_lapse_stations  = [-0.000833d, -0.002520d, -0.004709d, -0.005872d, -0.00
                            -0.006854d, -0.006397d, -0.005681d, -0.004061d, -0.002689d, -0.001051d]
 firnice_lapse_stations_dz = 1170.d ; m above the climate cell up to which the station rates hold (the two
                                 ; stations' mean height above their grid points); above it ERA5's own rate
+firnice_thermal_air     = 'era5_2m' ; air of the thermal model: 'era5_2m' = the 2 m temperature of the climate
+                                ; cell with the lapse rate above; 'freeair' = ERA5 pressure-level temperature at
+                                ; each band's height (firnice_freeair_file) for the surface, the melt and rain
+                                ; that refreeze, Herron-Langway and the spin-up; the mass balance keeps the 2 m air
+firnice_freeair_file    = ''    ; free-air temperature at fixed heights per grid cell and month (NetCDF from
+                                ; glogemflow_icetemp scripts/icetemp_analysis/freeair/make_freeair_table.py)
+firnice_surface_cool    = 'n'   ; 'gilbert' = thermal surface min(0, 0.95 * air + firnice_surface_cool_dt)
+                                ; instead of min(0, air): the snow surface colder than the air (Gilbert et al.
+                                ; 2014, Col du Dome, daily means 2012-13)
+firnice_surface_cool_dt = -3.4d ; K: -3.4 = the measured skin; -1.4 = with Gilbert's +2 K for sunlight
+                                ; penetrating the snow (Trad of their firn model)
 firnice_deepen_to_obs   = 'y'   ; 'y' = at borehole bands the column runs at least to the deepest
                                 ; reading; 'n' = to the band's ice thickness, as elsewhere
 firnice_temp_calib      = 'n'   ; 'y' = apply per-band transfer-model calibration
@@ -566,6 +577,15 @@ if firnice_orient eq 'table' then $
     message, "firnice_orient = 'table' needs firnice_temperature 'y', firnice_forcing_toff 'n' and firnice_orient_dir"
 if firnice_orient eq 'table' then if not file_test(firnice_orient_dir, /directory) then $
     message, 'firnice_orient: no folder ' + firnice_orient_dir
+if total(firnice_thermal_air eq ['era5_2m', 'freeair']) eq 0 then $
+    message, "firnice_thermal_air must be 'era5_2m' or 'freeair'"
+if firnice_thermal_air eq 'freeair' then $
+  if firnice_temperature ne 'y' or firnice_forcing_toff ne 'n' or firnice_thermal_lapse ne 'reanalysis' then $
+    message, "firnice_thermal_air = 'freeair' needs firnice_temperature 'y', firnice_forcing_toff 'n' and " + $
+             "firnice_thermal_lapse 'reanalysis'"
+if firnice_thermal_air eq 'freeair' then if not file_test(firnice_freeair_file) then $
+    message, 'firnice_thermal_air: no file ' + firnice_freeair_file
+if total(firnice_surface_cool eq ['n', 'gilbert']) eq 0 then message, "firnice_surface_cool must be 'n' or 'gilbert'"
 if firnice_temperature eq 'y' and firnice_forcing_toff eq 'n' then $
   if meltmodel ne '1' or time_resolution ne 'monthly' or debris_supraglacial ne 'n' then $
     message, "firnice_forcing_toff = 'n' needs meltmodel '1', monthly steps and no supraglacial debris"

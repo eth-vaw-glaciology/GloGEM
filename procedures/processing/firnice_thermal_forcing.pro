@@ -8,6 +8,7 @@
 ; monthly, sub-monthly variability), on the air temperature without t_offset.
 ; With firnice_orient = 'table' the melt is multiplied per band by the orientation factor of
 ; setup_firnice_orient.pro, at this month's air temperature anomaly.
+; With firnice_thermal_air = 'freeair' the air is fa_tm, the free air at the bands, set by the caller.
 ; Writes no mass-balance variable. Called after accumulation.pro and meltmodel.pro (needs pg,
 ; tgs, sur), in the month loop and in firnice_reference_forcing.pro.
 ; *************************************************************
@@ -17,7 +18,7 @@ compile_opt idl2
 if firnice_forcing_toff ne 'n' then begin
   tgs_th = tgs & mel_th = mel & plg_th = plg
 endif else begin
-  ftw_tm = tgs - t_offset
+  if firnice_thermal_air eq 'freeair' then ftw_tm = fa_tm else ftw_tm = tgs - t_offset
   ; the spin-up's reference forcing only: firnice_spinup_dT (firnice_reference_forcing.pro sets ftw_dsp)
   if n_elements(ftw_dsp) gt 0 then ftw_tm = ftw_tm + ftw_dsp
   ; air for the rain split and the melt: with firnice_thermal_lapse = 'stations' the station lapse

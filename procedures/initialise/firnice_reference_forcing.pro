@@ -36,6 +36,20 @@ for ms = 1, 12 do begin
     pclim_sp[ms-1] = mean(ps_sp[jm])
 endfor
 
+; free air at the bands, same months (firnice_thermal_air = 'freeair', setup_firnice_freeair.pro)
+if firnice_thermal_air eq 'freeair' then begin
+    hyd_fa = long(fa_year) + (long(fa_mon) ge bal_month)
+    fa_sp = dblarr(12, nb)
+    for fa_ms = 1, 12 do begin
+        fa_jm = where(hyd_fa ge sp_y0 and hyd_fa le sp_y1 and fa_mon eq fa_ms, fa_cm)
+        if fa_cm lt 20 then message, 'thermal spin-up: only ' + strtrim(fa_cm,2) + ' years of free air for month ' + $
+            strtrim(fa_ms,2) + ' in ' + strtrim(sp_y0,2) + '-' + strtrim(sp_y1,2) + ' (need >= 20)'
+        fa_acc = dblarr(nb)
+        for fa_k = 0, fa_cm-1 do fa_acc = fa_acc + freeair_at(fa_node, fa_h0, fa_dh, elev, fa_jm[fa_k])
+        fa_sp[fa_ms-1, *] = fa_acc / fa_cm
+    endfor
+endif
+
 if sp_y1 ne tran[0]-1l then $
     print, '  [thermal spinup] note: reference period ends Sep ' + strtrim(sp_y1,2) + $
            ', main run starts month ' + strtrim(bal_month,2) + ' of ' + strtrim(tran[0]-1l,2)
@@ -79,6 +93,7 @@ for yr_rf = 0, 2 do begin
                 @procedures/processing/refreezing_parametrised.pro
             endif
         endelse
+        if firnice_thermal_air eq 'freeair' then fa_tm = reform(fa_sp[m-1, *])
         @procedures/processing/firnice_thermal_forcing.pro
         forc_mel[mo_rf, *] = mel_th & forc_plg[mo_rf, *] = plg_th & forc_tgs[mo_rf, *] = tgs_th
         if yr_rf eq 2 then begin
@@ -115,6 +130,7 @@ hl_acc  = b_ref
 hl_tk   = dblarr(nb)
 t_off_th = (firnice_forcing_toff eq 'n') ? 0d : t_offset
 for i = 0, nb-1 do hl_tk[i] = mean(tclim_sp + (elev[i] - hclim) * dtdz + (((elev[i] - hclim) > 0d) < zth_cap) * (dtdz_icetemp - dtdz) + t_off_th)
+if firnice_thermal_air eq 'freeair' then for i = 0, nb-1 do hl_tk[i] = mean(fa_sp[*, i])
 hl_tk   = (hl_tk + 273.15d) > 220.d
 @procedures/initialise/firnice_perm_depth.pro
 jg = where(gl ne noval, cg)

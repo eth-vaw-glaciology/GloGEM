@@ -42,6 +42,13 @@ for i=0,nb-1 do begin
      else a=temp+dlap+t_off_th
    t_maat_band[i]=mean(a)
 endfor
+; free air (firnice_thermal_air = 'freeair', setup_firnice_freeair.pro): its mean over the same months
+if firnice_thermal_air eq 'freeair' then begin
+   if ci gt 0 then fa_im = fa_tix[ii] else fa_im = fa_tix
+   fa_acc = dblarr(nb)
+   for fa_k = 0, n_elements(fa_im)-1 do fa_acc = fa_acc + freeair_at(fa_node, fa_h0, fa_dh, elev, fa_im[fa_k])
+   t_maat_band = fa_acc / n_elements(fa_im)
+endif
 
 ; ── glenglat calibration constants (notebook 02 CART depth-2, rounded) ───────
 T_AMP_THRESH   = 20.0d    ; °C  Maritime / Non-Maritime T_amplitude boundary
@@ -196,6 +203,9 @@ firnice_refreeze_frac_b = dblarr(nb) + firnice_refreeze_frac
 ; conductivity, advection and latent heat instead of being prescribed here.
 te_fit = dblarr(nb, total(fit_layers)+1)
 for i = 0, nb-1 do te_fit[i, 0:total(fit_layers)-1] = min([0.d, t_maat_band[i]])
+; firnice_surface_cool = 'gilbert': at the surface temperature of firnice_temperature_model.pro
+if firnice_surface_cool eq 'gilbert' then for i = 0, nb-1 do $
+    te_fit[i, 0:total(fit_layers)-1] = min([0.d, 0.95d * t_maat_band[i] + firnice_surface_cool_dt])
 tl_fit = te_fit
 
 ; The thermal spinup used to run here. It now runs in glogem.pro AFTER the

@@ -9,7 +9,8 @@
 ; bands without a line keep F = 1 (a file with no data line: F = 1 everywhere).
 ; Sets: forient_dt[nd], forient[nb, nd] (F at forient_dt), and forient_tref[nb, 12], the band's mean
 ; air temperature of each calendar month 1981-2020 as the thermal melt sees it (no t_offset;
-; the station lapse rate if firnice_thermal_lapse = 'stations'). firnice_thermal_forcing.pro
+; the station lapse rate if firnice_thermal_lapse = 'stations', the free air if firnice_thermal_air =
+; 'freeair'). firnice_thermal_forcing.pro
 ; reads F at this month's anomaly from forient_tref.
 ; *************************************************************
 
@@ -25,6 +26,13 @@ for ms_or = 1, 12 do begin
     forient_tref[*, ms_or - 1] = mean(ts_or[jm_or]) + (elev - hclim) * dtdz[ms_or - 1]
     if firnice_thermal_lapse eq 'stations' then forient_tref[*, ms_or - 1] = forient_tref[*, ms_or - 1] + $
         (((elev - hclim) > 0d) < zth_cap) * (dtdz_icetemp[ms_or - 1] - dtdz[ms_or - 1])
+    ; free air (firnice_thermal_air = 'freeair'): its own 1981-2020 mean at the bands
+    if firnice_thermal_air eq 'freeair' then begin
+        fa_jm = where(long(fa_year) ge 1981 and long(fa_year) le 2020 and long(fa_mon) eq ms_or, fa_cm)
+        fa_acc = dblarr(nb)
+        for fa_k = 0, fa_cm-1 do fa_acc = fa_acc + freeair_at(fa_node, fa_h0, fa_dh, elev, fa_jm[fa_k])
+        forient_tref[*, ms_or - 1] = fa_acc / fa_cm
+    endif
 endfor
 
 fn_or = firnice_orient_dir + path_sep() + 'orient_' + id[gg[g]] + '.dat'

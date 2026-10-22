@@ -447,6 +447,9 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                       ; === MAIN LOOP over years
 
                       if firnice_temperature eq 'y' then begin
+                        if firnice_thermal_air eq 'freeair' then begin
+                          @procedures/initialise/setup_firnice_freeair.pro
+                        endif
                         @procedures/initialise/initialise_firnicetemp_spinup.pro
                         if firnice_temp_calib_file ne '' then begin
                           @procedures/initialise/apply_firnicetemp_calibration.pro
@@ -568,6 +571,8 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
                             if firnice_temperature eq 'y' and $
                                (use_flow_model_gl ne 'y' or n_elements(flow_initialised) gt 0) then begin
+                              if firnice_thermal_air eq 'freeair' then $
+                                fa_tm = freeair_at(fa_node, fa_h0, fa_dh, elev, fa_tix[jjclim[0]+ccmon])
                               @procedures/processing/firnice_thermal_forcing.pro
                               @procedures/processing/firnice_temperature_model.pro
                             endif    ; firn-ice temperature model
