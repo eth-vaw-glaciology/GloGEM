@@ -238,6 +238,8 @@ firnice_surface_cool    = 'n'   ; 'gilbert' = thermal surface min(0, 0.95 * air 
                                 ; 2014, Col du Dome, daily means 2012-13)
 firnice_surface_cool_dt = -3.4d ; K: -3.4 = the measured skin; -1.4 = with Gilbert's +2 K for sunlight
                                 ; penetrating the snow (Trad of their firn model)
+firnice_f_sur           = 0d    ; f_sur [K]: thermal surface min(0, air - f_sur), the snow surface colder than the air
+                                ; by a calibrated amount; 0 = off
 firnice_deepen_to_obs   = 'y'   ; 'y' = at borehole bands the column runs at least to the deepest
                                 ; reading; 'n' = to the band's ice thickness, as elsewhere
 firnice_temp_calib      = 'n'   ; 'y' = apply per-band transfer-model calibration
@@ -586,6 +588,8 @@ if firnice_thermal_air eq 'freeair' then $
 if firnice_thermal_air eq 'freeair' then if not file_test(firnice_freeair_file) then $
     message, 'firnice_thermal_air: no file ' + firnice_freeair_file
 if total(firnice_surface_cool eq ['n', 'gilbert']) eq 0 then message, "firnice_surface_cool must be 'n' or 'gilbert'"
+if firnice_f_sur lt 0d then message, 'firnice_f_sur must be >= 0'
+if firnice_f_sur ne 0d and firnice_surface_cool ne 'n' then message, "firnice_f_sur needs firnice_surface_cool 'n'"
 if firnice_temperature eq 'y' and firnice_forcing_toff eq 'n' then $
   if meltmodel ne '1' or time_resolution ne 'monthly' or debris_supraglacial ne 'n' then $
     message, "firnice_forcing_toff = 'n' needs meltmodel '1', monthly steps and no supraglacial debris"

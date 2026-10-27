@@ -283,6 +283,8 @@ endelse
       fit_tair = tgs_th[ii[i]] + (((elev[ii[i]]-hclim) > 0d) < zth_cap)*(dtdz_icetemp[m-1]-dtdz[m-1])
       ; firnice_surface_cool = 'gilbert': the snow surface colder than the air (Gilbert et al. 2014)
       if firnice_surface_cool eq 'gilbert' then fit_tair = 0.95d * fit_tair + firnice_surface_cool_dt
+      ; firnice_f_sur: the snow surface colder than the air by f_sur
+      if firnice_f_sur ne 0d then fit_tair = fit_tair - firnice_f_sur
       tl_fit[ii[i],0] = min([0d, fit_tair])
 
       ; ── melting-surface clamp (experimental, firnice_melt_surface eq 'y') ─────

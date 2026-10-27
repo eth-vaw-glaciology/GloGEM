@@ -206,6 +206,8 @@ for i = 0, nb-1 do te_fit[i, 0:total(fit_layers)-1] = min([0.d, t_maat_band[i]])
 ; firnice_surface_cool = 'gilbert': at the surface temperature of firnice_temperature_model.pro
 if firnice_surface_cool eq 'gilbert' then for i = 0, nb-1 do $
     te_fit[i, 0:total(fit_layers)-1] = min([0.d, 0.95d * t_maat_band[i] + firnice_surface_cool_dt])
+if firnice_f_sur ne 0d then for i = 0, nb-1 do $
+    te_fit[i, 0:total(fit_layers)-1] = min([0.d, t_maat_band[i] - firnice_f_sur])
 tl_fit = te_fit
 
 ; The thermal spinup used to run here. It now runs in glogem.pro AFTER the
