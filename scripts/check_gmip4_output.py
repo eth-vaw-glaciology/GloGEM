@@ -26,7 +26,7 @@ Two checks per region:
      until proven otherwise).
 
 Usage:
-    python3 scripts/check_gmip4_output.py REGION [REGION ...] [--all] [--quiet] [--v2 | --v3]
+    python3 scripts/check_gmip4_output.py REGION [REGION ...] [--all] [--quiet] [--v2 | --v3 | --v4]
 
     REGION   lower-case as used in combine_gmip4_output.py, e.g. svalbard,
              arcticcanadan, southasiaeast
@@ -234,6 +234,8 @@ def main(argv):
         RUN = "gmip4v2"
     if "--v3" in argv:
         RUN = "gmip4v3"
+    if "--v4" in argv:
+        RUN = "gmip4v4"
     regions = [a for a in argv if not a.startswith("--")]
     if "--all" in argv or not regions:
         regions = list(REGION_DIR)

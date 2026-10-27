@@ -33,7 +33,7 @@ Aggregation across batches:
     batch's first-year area, constant in time.
 
 Usage:
-    python3 combine_gmip4_output.py REGION METHOD [--verify-only] [--v2 | --v3]
+    python3 combine_gmip4_output.py REGION METHOD [--verify-only] [--v2 | --v3 | --v4]
 
     REGION   region_n from region_batch.dat, e.g. svalbard, caucasus
     METHOD   dh | flow
@@ -41,6 +41,7 @@ Usage:
                     stats without writing anything
     --v2            read the v2 campaign (<region>_<method>_rgi7_gmip4v2)
     --v3            read the v3 campaign (<region>_<method>_rgi7_gmip4v3)
+    --v4            read the v4 rerun (<region>_<method>_rgi7_gmip4v4)
 
 Reused-Δh sources are declared in REUSE_SOURCES below, per region.
 """
@@ -509,4 +510,6 @@ if __name__ == "__main__":
         RUN = "gmip4v2"
     if "--v3" in sys.argv:
         RUN = "gmip4v3"
+    if "--v4" in sys.argv:
+        RUN = "gmip4v4"
     process(region_arg, method_arg, verify)
