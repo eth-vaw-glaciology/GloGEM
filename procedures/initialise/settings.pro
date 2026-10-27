@@ -223,6 +223,10 @@ growth_max_rel   = 20.0d0   ; x the inventory volume
 ; spin-up). Evaluated in glogemflow_coupled.pro; see the comment there for the evidence.
 spinup_gate_vol_tol = 0.5d0   ; fraction of observed volume
 spinup_gate_len_min = 0.5d0   ; fraction of observed length
+; and the spin-up's parameters inside their range (0: off): A_flow at least spinup_gate_aflow_min [Pa-3 a-1],
+; |ELA bias| below spinup_gate_ela_max [m] (the spin-up clamps it at 500 m)
+spinup_gate_aflow_min = 0d0
+spinup_gate_ela_max = 0d0
 
 ; Spin-up cost limit (spinup_flowmodel.pro): the calibration of one glacier stops after
 ; spinup_max_substeps flow time steps (Phase A and B, all attempts). That is the work the
@@ -254,6 +258,9 @@ adv_calving = -100. ; [m] terminal bed elevation (0 = no calving)
 adv_fcrit = 2. ; [m/a] elevation gains above this are redistributed
 adv_terminusfraction = 0.2
 adv_lookup = 'n'
+; glaciers with 4 bands or fewer (procedures/processing/glacier_retreat.pro): 'y' keeps each band's
+; volume when its area adapts to the new thickness; 'n' (legacy) loses or gains about 1.5x the balance
+dh_small_conserve = 'n'
 
 ; --- calving (Oerlemans & Nick, 2005; marine-terminating only)
 frontal_ablation = 'y'
@@ -511,6 +518,10 @@ endif
 if use_flow_model eq 'y' then advance = 'y' ; flow model requires advance bands
 if flow_gridend_outflow ne 'frontal' and flow_gridend_outflow ne 'melt_if_land' then $
   message, 'flow_gridend_outflow must be ''frontal'' or ''melt_if_land'', not ''' + strtrim(flow_gridend_outflow, 2) + ''''
+if spinup_gate_aflow_min lt 0 or spinup_gate_ela_max lt 0 then $
+  message, 'spinup_gate_aflow_min and spinup_gate_ela_max must be 0 (off) or positive'
+if dh_small_conserve ne 'y' and dh_small_conserve ne 'n' then $
+  message, 'dh_small_conserve must be ''y'' or ''n'', not ''' + strtrim(dh_small_conserve, 2) + ''''
 if glacier_retreat eq 'n' and hindcast_dynamic ne 'y' and use_flow_model eq 'n' then advance = 'n'
 
 if read_parameters eq 'y' then calibrate = 'n'
