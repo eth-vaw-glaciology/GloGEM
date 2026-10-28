@@ -41,3 +41,16 @@ if meltmodel eq '3' then begin
    cali_c0=da[8,*] & cali_c1=da[9,*] & cali_a_ice=da[10,*] & cali_a_snow=da[11,*]
    cali_cprec=da[12,*] & cali_toff=da[13,*]
 endif
+
+; the air of the calibration (write_calibration_air.pro; no file = the 2 m air) must be the run's air
+fn_ca = dircali+'/'+time_resolution+'/'+dir_region+'/calibration/air_temperature.txt'
+cal_air = 'era5_2m'
+if file_test(fn_ca) then begin
+   openr, lun_ca, fn_ca, /get_lun & readf, lun_ca, cal_air & free_lun, lun_ca & cal_air = strtrim(cal_air, 2)
+endif
+if cal_air ne air_temperature then begin
+   if freeair_mixed_calibration ne 'y' then $
+      message, 'air_temperature = ' + air_temperature + ', but the calibration in ' + dircali + ' was made with ' + $
+               cal_air + " (freeair_mixed_calibration = 'y' to run it anyway)"
+   print, '  [free air] note: air_temperature = ' + air_temperature + ' on a calibration made with ' + cal_air
+endif

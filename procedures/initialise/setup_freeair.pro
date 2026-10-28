@@ -36,9 +36,15 @@ if max(abs((fa_hgt[1 : *] - fa_hgt[0 : -2]) - fa_dh)) gt 1d-6 then $
 if max(abs((long(fa_year) - long(fa_year[0])) * 12 + long(fa_mon) - long(fa_mon[0]) - lindgen(nt_fa))) ne 0 then $
   message, 'free air: the months of ' + freeair_file + ' are not consecutive'
 fa_tix = (long(cyear) - long(fa_year[0])) * 12 + long(cmon) - long(fa_mon[0])
-if min(fa_tix) lt 0 or max(fa_tix) ge nt_fa then $
-  message, 'free air: the run (' + strtrim(long(cyear[0]), 2) + '-' + strtrim(long(cyear[-1]), 2) + $
-           ') reaches beyond the table (' + strtrim(fa_year[0], 2) + '-' + strtrim(fa_year[-1], 2) + ')'
+; months before the reanalysis record hold the 2 m placeholder (downscale_gcmdata_monthly.pro, temp = 0);
+; fa_tix = -1 there, and the mass balance keeps that placeholder
+fa_pre = (long(cyear) * 12 + long(cmon)) lt min(long(ryear) * 12 + long(rmon))
+if firnice_temperature eq 'y' and firnice_thermal_air eq 'freeair' then fa_pre[*] = 0b
+jfa = where(fa_pre and fa_tix lt 0, cfa) & if cfa gt 0 then fa_tix[jfa] = -1
+jfa = where(~fa_pre and (fa_tix lt 0 or fa_tix ge nt_fa), cfa)
+if cfa gt 0 then $
+  message, 'free air: the run reaches ' + strtrim(long(cyear[jfa[0]]), 2) + '-' + strtrim(long(cmon[jfa[0]]), 2) + $
+           ', beyond the table (' + strtrim(fa_year[0], 2) + '-' + strtrim(fa_year[-1], 2) + ')'
 print, '  [free air] cell ' + strtrim(string(fa_lon, fo = '(f7.2)'), 2) + ' E ' + $
        strtrim(string(fa_lat, fo = '(f6.2)'), 2) + ' N, ' + strtrim(fa_year[0], 2) + '-' + $
        strtrim(fa_year[-1], 2) + ', ' + strtrim(round(fa_h0), 2) + '-' + strtrim(round(fa_hgt[-1]), 2) + ' m'

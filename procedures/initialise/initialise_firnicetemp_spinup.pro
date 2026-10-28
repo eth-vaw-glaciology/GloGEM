@@ -70,7 +70,7 @@ endfor
 if air_temperature eq 'freeair' then begin
     fa_ref = dblarr(12, nb)
     for m = 1, 12 do begin
-        jm = where(cyear lt 2020 and cmon eq m, cm)
+        jm = where(cyear lt 2020 and cmon eq m and fa_tix ge 0, cm)
         fa_acc = dblarr(nb)
         for fa_k = 0, cm-1 do fa_acc = fa_acc + freeair_at(fa_node, fa_h0, fa_dh, elev, fa_tix[jm[fa_k]])
         if cm gt 0 then fa_ref[m-1, *] = fa_acc / cm

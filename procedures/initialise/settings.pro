@@ -81,6 +81,8 @@ air_temperature = 'era5_2m' ; 'era5_2m' = the 2 m temperature of the climate cel
                             ; climate files, the years of the table only)
 freeair_file = ''           ; free-air temperature at fixed heights per grid cell and month (NetCDF from
                             ; glogemflow_icetemp scripts/icetemp_analysis/freeair/make_freeair_table.py)
+freeair_mixed_calibration = 'n' ; 'y' = run on a calibration made with the other air (diagnostic); otherwise a
+                            ; run stops when its air differs from the calibration's (calibration/air_temperature.txt)
 
 ; === calibration
 
@@ -590,8 +592,15 @@ if firnice_orient eq 'table' then if not file_test(firnice_orient_dir, /director
 if total(air_temperature eq ['era5_2m', 'freeair']) eq 0 then message, "air_temperature must be 'era5_2m' or 'freeair'"
 if air_temperature eq 'freeair' then begin
   if time_resolution ne 'monthly' then message, "air_temperature = 'freeair' needs monthly steps"
-  if firnice_temperature eq 'y' then firnice_thermal_air = 'freeair'
+  if firnice_temperature eq 'y' then begin
+    if firnice_forcing_toff ne 'n' or firnice_thermal_lapse ne 'reanalysis' then $
+      message, "air_temperature = 'freeair' with the thermal model needs firnice_forcing_toff 'n' and " + $
+               "firnice_thermal_lapse 'reanalysis'"
+    firnice_thermal_air = 'freeair'
+  endif
 endif
+; without the thermal model (e.g. calibrate = 'y') its air setting has no effect
+if firnice_temperature eq 'n' then firnice_thermal_air = 'era5_2m'
 if total(firnice_thermal_air eq ['era5_2m', 'freeair']) eq 0 then $
     message, "firnice_thermal_air must be 'era5_2m' or 'freeair'"
 ; one table for the mass balance and the thermal model
