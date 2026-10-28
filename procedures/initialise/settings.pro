@@ -74,6 +74,14 @@ grid_step = 0.1
 bias_correction = 'y'
 bias_correction_method = 1 ; 1: delta method, 2: quantile mapping (daily T only)
 
+; --- air temperature at the bands
+air_temperature = 'era5_2m' ; 'era5_2m' = the 2 m temperature of the climate cell with the monthly lapse rate;
+                            ; 'freeair' = ERA5 pressure-level temperature at each band's height (freeair_file) for
+                            ; the mass balance, its calibration and, if on, the thermal model (monthly, gridded
+                            ; climate files, the years of the table only)
+freeair_file = ''           ; free-air temperature at fixed heights per grid cell and month (NetCDF from
+                            ; glogemflow_icetemp scripts/icetemp_analysis/freeair/make_freeair_table.py)
+
 ; === calibration
 
 valiglaciers_only = 'n'
@@ -230,9 +238,9 @@ firnice_lapse_stations_dz = 1170.d ; m above the climate cell up to which the st
 firnice_thermal_air     = 'era5_2m' ; air of the thermal model: 'era5_2m' = the 2 m temperature of the climate
                                 ; cell with the lapse rate above; 'freeair' = ERA5 pressure-level temperature at
                                 ; each band's height (firnice_freeair_file) for the surface, the melt and rain
-                                ; that refreeze, Herron-Langway and the spin-up; the mass balance keeps the 2 m air
-firnice_freeair_file    = ''    ; free-air temperature at fixed heights per grid cell and month (NetCDF from
-                                ; glogemflow_icetemp scripts/icetemp_analysis/freeair/make_freeair_table.py)
+                                ; that refreeze, Herron-Langway and the spin-up; the mass balance keeps
+                                ; air_temperature (set to 'freeair' when air_temperature = 'freeair')
+firnice_freeair_file    = ''    ; the table of firnice_thermal_air = 'freeair' (same as freeair_file)
 firnice_surface_cool    = 'n'   ; 'gilbert' = thermal surface min(0, 0.95 * air + firnice_surface_cool_dt)
                                 ; instead of min(0, air): the snow surface colder than the air (Gilbert et al.
                                 ; 2014, Col du Dome, daily means 2012-13)
@@ -579,14 +587,24 @@ if firnice_orient eq 'table' then $
     message, "firnice_orient = 'table' needs firnice_temperature 'y', firnice_forcing_toff 'n' and firnice_orient_dir"
 if firnice_orient eq 'table' then if not file_test(firnice_orient_dir, /directory) then $
     message, 'firnice_orient: no folder ' + firnice_orient_dir
+if total(air_temperature eq ['era5_2m', 'freeair']) eq 0 then message, "air_temperature must be 'era5_2m' or 'freeair'"
+if air_temperature eq 'freeair' then begin
+  if time_resolution ne 'monthly' then message, "air_temperature = 'freeair' needs monthly steps"
+  if firnice_temperature eq 'y' then firnice_thermal_air = 'freeair'
+endif
 if total(firnice_thermal_air eq ['era5_2m', 'freeair']) eq 0 then $
     message, "firnice_thermal_air must be 'era5_2m' or 'freeair'"
+; one table for the mass balance and the thermal model
+if freeair_file ne '' and firnice_freeair_file ne '' and freeair_file ne firnice_freeair_file then $
+    message, 'freeair_file and firnice_freeair_file name different tables'
+if freeair_file eq '' then freeair_file = firnice_freeair_file
+use_freeair = (air_temperature eq 'freeair' or (firnice_temperature eq 'y' and firnice_thermal_air eq 'freeair')) $
+    ? 'y' : 'n'
+if use_freeair eq 'y' then if not file_test(freeair_file) then message, 'free air: no file ' + freeair_file
 if firnice_thermal_air eq 'freeair' then $
   if firnice_temperature ne 'y' or firnice_forcing_toff ne 'n' or firnice_thermal_lapse ne 'reanalysis' then $
     message, "firnice_thermal_air = 'freeair' needs firnice_temperature 'y', firnice_forcing_toff 'n' and " + $
              "firnice_thermal_lapse 'reanalysis'"
-if firnice_thermal_air eq 'freeair' then if not file_test(firnice_freeair_file) then $
-    message, 'firnice_thermal_air: no file ' + firnice_freeair_file
 if total(firnice_surface_cool eq ['n', 'gilbert']) eq 0 then message, "firnice_surface_cool must be 'n' or 'gilbert'"
 if firnice_f_sur lt 0d then message, 'firnice_f_sur must be >= 0'
 if firnice_f_sur ne 0d and firnice_surface_cool ne 'n' then message, "firnice_f_sur needs firnice_surface_cool 'n'"

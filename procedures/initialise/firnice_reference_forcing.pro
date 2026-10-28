@@ -36,7 +36,7 @@ for ms = 1, 12 do begin
     pclim_sp[ms-1] = mean(ps_sp[jm])
 endfor
 
-; free air at the bands, same months (firnice_thermal_air = 'freeair', setup_firnice_freeair.pro)
+; free air at the bands, same months (firnice_thermal_air = 'freeair', setup_freeair.pro)
 if firnice_thermal_air eq 'freeair' then begin
     hyd_fa = long(fa_year) + (long(fa_mon) ge bal_month)
     fa_sp = dblarr(12, nb)
@@ -82,6 +82,7 @@ for yr_rf = 0, 2 do begin
         if bal_month eq dd_thresholds[0] then if m eq dd_thresholds[1] then sno = sno - snostor
         jj = where(sno lt 0, cj) & if cj gt 0 then sno[jj] = 0
         tg = tclim_sp[m-1] + (elev - hclim) * dtdz[m-1] + t_offset
+        if air_temperature eq 'freeair' then tg = reform(fa_sp[m-1, *]) + t_offset
         pc = pclim_sp[m-1] * c_prec / 1000.
         forc_sno[mo_rf, *] = sno
         @procedures/processing/accumulation.pro

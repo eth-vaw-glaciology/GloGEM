@@ -42,7 +42,7 @@ for i=0,nb-1 do begin
      else a=temp+dlap+t_off_th
    t_maat_band[i]=mean(a)
 endfor
-; free air (firnice_thermal_air = 'freeair', setup_firnice_freeair.pro): its mean over the same months
+; free air (firnice_thermal_air = 'freeair', setup_freeair.pro): its mean over the same months
 if firnice_thermal_air eq 'freeair' then begin
    if ci gt 0 then fa_im = fa_tix[ii] else fa_im = fa_tix
    fa_acc = dblarr(nb)
@@ -66,6 +66,16 @@ for m = 1, 12 do begin
     jm = where(cyear lt 2020 and cmon eq m, cm)
     if cm gt 0 then tclim_ref[m-1] = mean(temp[jm])
 endfor
+; the mass balance's free air of the same months (air_temperature = 'freeair')
+if air_temperature eq 'freeair' then begin
+    fa_ref = dblarr(12, nb)
+    for m = 1, 12 do begin
+        jm = where(cyear lt 2020 and cmon eq m, cm)
+        fa_acc = dblarr(nb)
+        for fa_k = 0, cm-1 do fa_acc = fa_acc + freeair_at(fa_node, fa_h0, fa_dh, elev, fa_tix[jm[fa_k]])
+        if cm gt 0 then fa_ref[m-1, *] = fa_acc / cm
+    endfor
+endif
 
 ; ── T_amplitude per band → ΔT_firn, 4-leaf decision tree ─────────────────────
 ; DIAGNOSTIC ONLY: no longer feeds the physics, kept as the reference column that
@@ -138,6 +148,7 @@ for i = 0, nb-1 do begin
     acc_ann = 0.d
     for ms = 1, 12 do begin
         tg_b  = tclim_ref[ms-1] + (elev[i] - hclim) * dtdz[ms-1] + t_offset
+        if air_temperature eq 'freeair' then tg_b = fa_ref[ms-1, i] + t_offset
         ; Elevation-scaled precipitation
         pg_b  = pclim_ref[ms-1] + pclim_ref[ms-1] * ((elev[i] - hclim) / 10000.d) * dpdz
         ; Snow fraction using same T_thres ramp as accumulation.pro

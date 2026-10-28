@@ -346,7 +346,12 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                   stor_im=dblarr(nout) & stor_dv=stor_im & stor_ar=stor_im & stor_vo=stor_im
 
                   @procedures/processing/read_climate_series.pro
-		  
+
+                  ; free air of this climate cell (air_temperature or firnice_thermal_air = 'freeair')
+                  if use_freeair eq 'y' and cg gt 0 then begin
+                    @procedures/initialise/setup_freeair.pro
+                  endif
+
                   if cg gt 0 then begin
                     if calibrate eq 'n' then a=GCM_model[gcms]+'/'+GCM_rcp[rcps] else a='CALI - '+reanalysis
                     if total(a_gl[gg]) gt 10. and gx mod 2 eq 0 and gy mod 2 eq 0 then $
@@ -447,9 +452,6 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                       ; === MAIN LOOP over years
 
                       if firnice_temperature eq 'y' then begin
-                        if firnice_thermal_air eq 'freeair' then begin
-                          @procedures/initialise/setup_firnice_freeair.pro
-                        endif
                         @procedures/initialise/initialise_firnicetemp_spinup.pro
                         if firnice_temp_calib_file ne '' then begin
                           @procedures/initialise/apply_firnicetemp_calibration.pro
@@ -538,6 +540,8 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                             if time_resolution eq 'monthly' then cdm=cmon else cdm=cday
                             if ccmon eq 0 then jjclim=where(cyear eq ye-1+tran[0] and cdm eq m)
                             tg=temp[jjclim[0]+ccmon]+(elev-hclim)*dtdz[m-1]+t_offset
+                            if air_temperature eq 'freeair' then $
+                              tg=freeair_at(fa_node,fa_h0,fa_dh,elev,fa_tix[jjclim[0]+ccmon])+t_offset
                             ; this month's free air index, before accumulation.pro advances ccmon
                             if firnice_thermal_air eq 'freeair' then fa_it = jjclim[0]+ccmon
 			    

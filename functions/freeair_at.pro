@@ -2,7 +2,7 @@
 ; freeair_at
 ;
 ; Free-air temperature [C] at the elevations elev for month t of one grid cell's table
-; fa[nh, nt] (heights h0, h0+dh, ...; setup_firnice_freeair.pro): linear in height,
+; fa[nh, nt] (heights h0, h0+dh, ...; setup_freeair.pro): linear in height,
 ; held at the table's ends.
 ; *************************************************************
 function freeair_at, fa, h0, dh, elev, t
