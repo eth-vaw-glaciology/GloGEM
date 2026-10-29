@@ -69,7 +69,7 @@ for m = 1, 12 do begin
     jm = where(cyear lt 2020 and cmon eq m, cm)
     if cm gt 0 then tclim_ref[m-1] = mean(temp[jm])
 endfor
-; the mass balance's free air of the same months (air_temperature = 'freeair')
+; the mass balance's free air of the same months, blended below the cell's ground (air_temperature = 'freeair')
 if air_temperature eq 'freeair' then begin
     fa_ref = dblarr(12, nb)
     for m = 1, 12 do begin

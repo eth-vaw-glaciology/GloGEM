@@ -10,7 +10,7 @@
 ; Sets: forient_dt[nd], forient[nb, nd] (F at forient_dt), and forient_tref[nb, 12], the band's mean
 ; air temperature of each calendar month 1981-2020 as the thermal melt sees it (no t_offset;
 ; the station lapse rate if firnice_thermal_lapse = 'stations', the free air if firnice_thermal_air =
-; 'freeair'). firnice_thermal_forcing.pro
+; 'freeair', blended below the cell's ground if air_temperature = 'freeair'). firnice_thermal_forcing.pro
 ; reads F at this month's anomaly from forient_tref.
 ; *************************************************************
 
@@ -32,6 +32,8 @@ for ms_or = 1, 12 do begin
         fa_acc = dblarr(nb)
         for fa_k = 0, fa_cm-1 do fa_acc = fa_acc + freeair_at(fa_node, fa_h0, fa_dh, elev, fa_jm[fa_k])
         ; air_temperature = 'freeair': below the cell's ground blended with the 2 m air above
+        if air_temperature eq 'freeair' and fa_cm ne cm_or then message, 'firnice_orient: ' + strtrim(fa_cm, 2) + $
+            ' months of free air but ' + strtrim(cm_or, 2) + ' of 2 m air for month ' + strtrim(ms_or, 2) + ' in 1981-2020'
         if air_temperature eq 'freeair' then $
             forient_tref[*, ms_or - 1] = freeair_blend(fa_acc / fa_cm, forient_tref[*, ms_or - 1], elev, hclim, $
                 freeair_blend_depth) $

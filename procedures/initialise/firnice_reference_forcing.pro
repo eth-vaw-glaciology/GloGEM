@@ -36,7 +36,8 @@ for ms = 1, 12 do begin
     pclim_sp[ms-1] = mean(ps_sp[jm])
 endfor
 
-; free air at the bands, same months (firnice_thermal_air = 'freeair', setup_freeair.pro)
+; free air at the bands, same months (firnice_thermal_air = 'freeair', setup_freeair.pro; with
+; air_temperature = 'freeair' blended below the cell's ground)
 if firnice_thermal_air eq 'freeair' then begin
     hyd_fa = long(fa_year) + (long(fa_mon) ge bal_month)
     fa_sp = dblarr(12, nb)
@@ -47,9 +48,15 @@ if firnice_thermal_air eq 'freeair' then begin
         fa_acc = dblarr(nb)
         for fa_k = 0, fa_cm-1 do fa_acc = fa_acc + freeair_at(fa_node, fa_h0, fa_dh, elev, fa_jm[fa_k])
         fa_sp[fa_ms-1, *] = fa_acc / fa_cm
-        ; air_temperature = 'freeair': the mass balance's band air below the cell's ground
-        if air_temperature eq 'freeair' then fa_sp[fa_ms-1, *] = freeair_blend(fa_acc / fa_cm, $
-            tclim_sp[fa_ms-1] + (elev - hclim) * dtdz[fa_ms-1], elev, hclim, freeair_blend_depth)
+        ; air_temperature = 'freeair': the mass balance's band air, blended below the cell's ground with
+        ; the 2 m air of the same months
+        if air_temperature eq 'freeair' then begin
+            jm_t2 = where(hyd_sp ge sp_y0 and hyd_sp le sp_y1 and rmon eq fa_ms, cm_t2)
+            if cm_t2 ne fa_cm then message, 'thermal spin-up: ' + strtrim(fa_cm,2) + ' months of free air but ' + $
+                strtrim(cm_t2,2) + ' of 2 m air for month ' + strtrim(fa_ms,2) + ' in ' + strtrim(sp_y0,2) + '-' + strtrim(sp_y1,2)
+            fa_sp[fa_ms-1, *] = freeair_blend(fa_acc / fa_cm, tclim_sp[fa_ms-1] + (elev - hclim) * dtdz[fa_ms-1], $
+                elev, hclim, freeair_blend_depth)
+        endif
     endfor
 endif
 
