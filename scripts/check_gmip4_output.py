@@ -31,6 +31,8 @@ Usage:
     REGION   lower-case as used in combine_gmip4_output.py, e.g. svalbard,
              arcticcanadan, southasiaeast
 
+    Environment: GMIP4_FINAL_BASE, as in combine_gmip4_output.py
+
 Thresholds were set against the 2026-09-08 findings and against what
 healthy runs look like (largest legitimate single glacier: an ArcticCanadaN
 ice cap at ~1007 km3 and ~330 m mean thickness).
@@ -52,7 +54,8 @@ EXCESS_TOL  = 0.01     # flagged glaciers worth <1 % of regional ice pass: the
                        # lands a hair over. Judge the volume, not the boundary.
 
 GLOGEM_BASE = "/scratch_net/vierzack04_fourth/jabeer/GloGEM/glogemflow_development"
-FINAL_BASE  = "/scratch_net/vierzack04_fourth/jabeer/GloGEM/r7spec_global_results/flow"
+FINAL_BASE  = os.environ.get("GMIP4_FINAL_BASE",
+                             "/scratch_net/vierzack04_fourth/jabeer/GloGEM/r7spec_global_results") + "/flow"
 
 # Kept in sync by hand with combine_gmip4_output.py (which cannot be imported:
 # it runs process() at module level).

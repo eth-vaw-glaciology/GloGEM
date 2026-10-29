@@ -43,9 +43,13 @@ Usage:
     --v3            read the v3 campaign (<region>_<method>_rgi7_gmip4v3)
     --v4            read the v4 rerun (<region>_<method>_rgi7_gmip4v4)
 
+Environment: GMIP4_FINAL_BASE replaces r7spec_global_results as the output root
+(a staging folder, so submitted files are not overwritten).
+
 Reused-Δh sources are declared in REUSE_SOURCES below, per region.
 """
 
+import os
 import sys
 import glob
 import re
@@ -57,7 +61,8 @@ import numpy as np
 import netCDF4 as nc
 
 GLOGEM_BASE = Path("/scratch_net/vierzack04_fourth/jabeer/GloGEM/glogemflow_development")
-FINAL_BASE = Path("/scratch_net/vierzack04_fourth/jabeer/GloGEM/r7spec_global_results")
+FINAL_BASE = Path(os.environ.get("GMIP4_FINAL_BASE",
+                                 "/scratch_net/vierzack04_fourth/jabeer/GloGEM/r7spec_global_results"))
 
 ALL_GCMS = [
     "ACCESS-ESM1-5", "BCC-CSM2-MR", "CESM2-WACCM", "IPSL-CM6A-LR",
