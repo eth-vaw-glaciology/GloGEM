@@ -31,7 +31,11 @@ for ms_or = 1, 12 do begin
         fa_jm = where(long(fa_year) ge 1981 and long(fa_year) le 2020 and long(fa_mon) eq ms_or, fa_cm)
         fa_acc = dblarr(nb)
         for fa_k = 0, fa_cm-1 do fa_acc = fa_acc + freeair_at(fa_node, fa_h0, fa_dh, elev, fa_jm[fa_k])
-        forient_tref[*, ms_or - 1] = fa_acc / fa_cm
+        ; air_temperature = 'freeair': below the cell's ground blended with the 2 m air above
+        if air_temperature eq 'freeair' then $
+            forient_tref[*, ms_or - 1] = freeair_blend(fa_acc / fa_cm, forient_tref[*, ms_or - 1], elev, hclim, $
+                freeair_blend_depth) $
+        else forient_tref[*, ms_or - 1] = fa_acc / fa_cm
     endif
 endfor
 

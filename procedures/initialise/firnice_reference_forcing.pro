@@ -47,6 +47,9 @@ if firnice_thermal_air eq 'freeair' then begin
         fa_acc = dblarr(nb)
         for fa_k = 0, fa_cm-1 do fa_acc = fa_acc + freeair_at(fa_node, fa_h0, fa_dh, elev, fa_jm[fa_k])
         fa_sp[fa_ms-1, *] = fa_acc / fa_cm
+        ; air_temperature = 'freeair': the mass balance's band air below the cell's ground
+        if air_temperature eq 'freeair' then fa_sp[fa_ms-1, *] = freeair_blend(fa_acc / fa_cm, $
+            tclim_sp[fa_ms-1] + (elev - hclim) * dtdz[fa_ms-1], elev, hclim, freeair_blend_depth)
     endfor
 endif
 

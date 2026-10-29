@@ -47,7 +47,10 @@ if firnice_thermal_air eq 'freeair' then begin
    if ci gt 0 then fa_im = fa_tix[ii] else fa_im = fa_tix
    fa_acc = dblarr(nb)
    for fa_k = 0, n_elements(fa_im)-1 do fa_acc = fa_acc + freeair_at(fa_node, fa_h0, fa_dh, elev, fa_im[fa_k])
-   t_maat_band = fa_acc / n_elements(fa_im)
+   ; air_temperature = 'freeair': below the cell's ground blended with the 2 m air above
+   if air_temperature eq 'freeair' then $
+      t_maat_band = freeair_blend(fa_acc / n_elements(fa_im), t_maat_band, elev, hclim, freeair_blend_depth) $
+   else t_maat_band = fa_acc / n_elements(fa_im)
 endif
 
 ; ── glenglat calibration constants (notebook 02 CART depth-2, rounded) ───────
@@ -73,7 +76,8 @@ if air_temperature eq 'freeair' then begin
         jm = where(cyear lt 2020 and cmon eq m and fa_tix ge 0, cm)
         fa_acc = dblarr(nb)
         for fa_k = 0, cm-1 do fa_acc = fa_acc + freeair_at(fa_node, fa_h0, fa_dh, elev, fa_tix[jm[fa_k]])
-        if cm gt 0 then fa_ref[m-1, *] = fa_acc / cm
+        if cm gt 0 then fa_ref[m-1, *] = freeair_blend(fa_acc / cm, tclim_ref[m-1] + (elev - hclim) * dtdz[m-1], $
+            elev, hclim, freeair_blend_depth)
     endfor
 endif
 

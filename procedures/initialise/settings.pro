@@ -81,6 +81,8 @@ air_temperature = 'era5_2m' ; 'era5_2m' = the 2 m temperature of the climate cel
                             ; climate files, the years of the table only)
 freeair_file = ''           ; free-air temperature at fixed heights per grid cell and month (NetCDF from
                             ; glogemflow_icetemp scripts/icetemp_analysis/freeair/make_freeair_table.py)
+freeair_blend_depth = 400d  ; [m] below the climate cell's ground the band air changes gradually from the free air
+                            ; to the 2 m air with the lapse rate, all 2 m air this far below it (freeair_blend.pro)
 freeair_mixed_calibration = 'n' ; 'y' = run on a calibration made with the other air (diagnostic); otherwise a
                             ; run stops when its air differs from the calibration's (calibration/air_temperature.txt)
 
@@ -592,6 +594,7 @@ if firnice_orient eq 'table' then if not file_test(firnice_orient_dir, /director
 if total(air_temperature eq ['era5_2m', 'freeair']) eq 0 then message, "air_temperature must be 'era5_2m' or 'freeair'"
 if air_temperature eq 'freeair' then begin
   if time_resolution ne 'monthly' then message, "air_temperature = 'freeair' needs monthly steps"
+  if not (freeair_blend_depth gt 0) then message, 'freeair_blend_depth must be > 0'
   if firnice_temperature eq 'y' then begin
     if firnice_forcing_toff ne 'n' or firnice_thermal_lapse ne 'reanalysis' then $
       message, "air_temperature = 'freeair' with the thermal model needs firnice_forcing_toff 'n' and " + $
