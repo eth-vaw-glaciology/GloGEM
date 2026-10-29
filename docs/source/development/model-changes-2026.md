@@ -17,6 +17,7 @@ For users of GloGEM; the details and the evidence are in the entries below.
 - **Fixed, elsewhere:** glaciers never simulated ({ref}`G8 <mc-g8>`); glaciers turning NaN in the Δh parameterisation ({ref}`G9 <mc-g9>`, {ref}`G10 <mc-g10>`); Δh mass check and sea-level calving ({ref}`G11 <mc-g11>`); the calving-flux file ({ref}`G15 <mc-g15>`); `mass_bsl` ({ref}`G18 <mc-g18>`); negative netCDF values ({ref}`G19 <mc-g19>`); monthly netCDF time labels ({ref}`G20 <mc-g20>`, also on main); the full refreezing model's year and cold reservoir ({ref}`G40 <mc-g40>`, {ref}`G41 <mc-g41>`, local GloGEMflow); the Δh parameterisation of glaciers with 4 bands or fewer lost or gained 1.5 × the balance ({ref}`G42 <mc-g42>`, behind a switch); the flowline now uses the RGI 7.0 area correction ({ref}`F15 <mc-f15>`).
 - **New for growing glaciers (AMOC), all off by default:** the flowline balance at the actual surface ({ref}`F17 <mc-f17>`), a blow-up check by mass ({ref}`F18 <mc-f18>`), free outflow at the end of the longest grid ({ref}`F19 <mc-f19>`), Δh regrowth with a thickness limit per glacier ({ref}`G34 <mc-g34>`), a restart of glaciers that melted out ({ref}`G35 <mc-g35>`), the blended parameters below the inventory front in GloGEM's own band model ({ref}`G37 <mc-g37>`) and in the flowline's balance ({ref}`F20 <mc-f20>`), and a gate that sends flow spin-ups with implausibly stiff ice or the ELA bias at its clamp to the Δh parameterisation ({ref}`F21 <mc-f21>`).
 - **New for snowline calibration, off by default:** the snowline can drop onto the ground below the glacier front, down to each glacier's own valley floor ({ref}`G43 <mc-g43>`, also on main since 2026-10-21).
+- **New for the Alps, off by default:** the free air (ERA5's pressure-level temperature at the band's height) as the mass balance's air ({ref}`G44 <mc-g44>`, branch `freeair-mb`, not yet on v3 or main). With the right air, two hidden stand-ins that hold winter melt down come to light ({ref}`K34 <mc-k34>`).
 - **Running:** the environment variables `GLOGEM_CONFIG` and `GLOGEM_LOGDIR`; the GMIP4 campaign scripts in `scripts/gmip4/` with a README ({ref}`S10 <mc-s10>`).
 - **Still open:** the swapped ice-melt and snow-melt files ({ref}`K12 <mc-k12>`), refreezing that depends on the number of elevation bands ({ref}`K26 <mc-k26>`) and the other items of section 6.
 
@@ -198,6 +199,7 @@ Janosch decided on 2026-09-25 not to rerun the submitted v1 regions, and on 2026
 | {ref}`G41 <mc-g41>` | `refreezing_full`: the cold reservoir was used once per hydrological year; an October melt left the rest of the year without refreezing | core (refreezing) | fixed on local GloGEMflow `01dbb65` (not pushed) | only with `refreezing_full='y'` | yes | `01dbb65` |
 | {ref}`G42 <mc-g42>` | Δh parameterisation of glaciers with 4 bands or fewer: 1.5 × the balance lost or gained | core | fixed behind a switch (`dh_small_conserve`, on for AMOC) | yes (glaciers that reach 4 bands; Scandinavian AMOC runs 1.6–2.5 % of the ice lost) | yes | `85e0899` |
 | {ref}`G43 <mc-g43>` | The snowline cannot go below the glacier front | core (output) | new options `snowline_ext_depth` and `snowline_ext_valley` (valley floors from `scripts/valley_floor.py`), off by default; on main (`d71a9a8`) | snowline only | on main | `5cd0370`, `0a67c16`, `7243ee6` |
+| {ref}`G44 <mc-g44>` | The free air as the air temperature (Alps) | core (climate input) | new options `air_temperature`, `freeair_file`, `freeair_blend_depth`, off by default; branch `freeair-mb` | only when switched on | no (new) | `a90b24a`, `a7cdeb3`, `5ea744b`, `5964b0f` |
 | {ref}`F1 <mc-f1>` | Port of MATLAB GloGEMflow to IDL and coupling to GloGEM | flow | done | — | not in main | `baa5c7b`, `020e81e`, ... |
 | {ref}`F2 <mc-f2>` | Flow → Δh handover: frozen, NaN or resurrected glaciers, lost year | flow | fixed | yes | not in main | `a473e25`, `61ac7d4`, `11ca640`, `5dfd530`, `df8bdd4` |
 | {ref}`F3 <mc-f3>` | Spin-up quality gate | flow | fixed | yes | not in main | `5dfd530` |
@@ -263,6 +265,7 @@ Janosch decided on 2026-09-25 not to rerun the submitted v1 regions, and on 2026
 | {ref}`K31 <mc-k31>` | Flow spin-ups with A_flow at its floor or the ELA bias at its clamp pass the quality gate and thicken without bound | flow | fixed for AMOC by F21; in the GMIP4 submissions | yes (long or cool runs) | not in main | — |
 | {ref}`K32 <mc-k32>` | Unknown settings in a user config are accepted silently | core (settings) | known; documented | — | yes | none |
 | {ref}`K33 <mc-k33>` | GMIP4 Scandinavia: a few budget residuals far larger than G42 explains | core | open, not investigated | unknown | unknown | — |
+| {ref}`K34 <mc-k34>` | Winter melt is held down by two stand-ins: the 2 m air's winter cold and the halved sub-monthly variability | core (melt, refreezing) | open (finding) | — | yes | none |
 | {ref}`K30 <mc-k30>` | Snow lines ask for less snow than the regional c_prec bounds allow; autumn snow too early | calibration | open (finding) | — | yes | none |
 
 ---
@@ -1031,6 +1034,51 @@ With `snowline_ext_valley` set to a folder of valley-floor files, each glacier's
 Merged into `glogemflow-v3` (`ae0ef2c`, `795533e`), and into main as `d71a9a8`, pushed on 2026-10-21 (Janosch's OK).
 The team does not use pull requests on main; the merge message documents the change.
 
+(mc-g44)=
+### G44. The free air as the air temperature (`air_temperature`, Alps)
+
+Each band's air is today ERA5's 2 m air at the climate grid point, carried to the band with the monthly lapse rate,
+plus T_off. In the Alps that air is 4–6 °C too cold in winter at the high stations. ERA5's own temperature on
+pressure levels, read at the band's height (the "free air"), matches the same stations within about 0.5 °C in every
+month (ice-temperature development history, `glogemflow_icetemp/development_history/13_the_air_from_above.md`). At
+116 SLF IMIS flat snow stations at 2000–2750 m, the free air is within 0.6 °C in every month; the 2 m air is 2–5 °C
+too cold from October to February (chapter 15 there). Approved by Janosch 2026-10-28 for the Alps only, as an option.
+
+**New options** (default unchanged, `air_temperature = 'era5_2m'`):
+
+- `air_temperature = 'freeair'`: the mass balance's band air is the free air at the band's height plus T_off
+  (`glogem.pro`), also in the thermal model's reference balance and spin-up when the firn/ice temperature model is on.
+- `freeair_file`: the free-air table, per ERA5 grid point, month (1940–2025) and height (500–5000 m every 100 m),
+  linear in geopotential height between 18 pressure levels (`scripts/icetemp_analysis/freeair/make_freeair_table.py`
+  in `glogemflow_icetemp`). A region without a table stops with a message.
+- `freeair_blend_depth` (400 m): below ERA5's ground (`hclim`) the free air is ERA5's extrapolation and too warm in
+  winter cold pools (six valley stations: +4.2 °C). The band air slides linearly to today's 2 m air over this depth
+  (`functions/freeair_blend.pro`; at the stations −0.85 °C instead; Janosch's choice 2026-10-28).
+- The calibration writes `calibration/air_temperature.txt` (air, blend depth, table). A run whose air differs from
+  its calibration's stops, unless `freeair_mixed_calibration = 'y'`.
+- Months before 1940 keep the 2 m air; a projection stops at the table's end (January 2026) until the projections are
+  anchored (not done).
+- With the thermal model on, the option needs `firnice_forcing_toff = 'n'` and `firnice_thermal_lapse =
+  'reanalysis'`; the thermal air follows. The older thermal-only switch `firnice_thermal_air = 'freeair'` is unchanged.
+
+**Tests** (2026-10-28/29): option off byte-identical to the base (a past run, a calibration, a GCM projection, a
+thermal run); option on, the logged band air equals the table plus T_off to 5e-6 K and the blend to 5.7e-6 K; the
+thermal-only mode identical (57 of 57 files); every stop tested. Two independent max-effort reviews; their findings
+are fixed (`a7cdeb3`, `5964b0f`).
+
+**Effect** (CentralEurope, 4079 glaciers, recalibrated as before on Hugonnet 2000–2020, years 2001–2020):
+
+- 4024 glaciers on target (4025 before); the parameters barely move (median T_off 0.11 → 0.20 °C).
+- With today's parameters the free air alone changes the Alpine balance from −0.80 to −0.73 m w.e. a⁻¹: in summer the
+  free air is 0.3–0.8 °C colder than today's band air high up, in October 1.5–2.5 °C and in winter 4–6 °C warmer.
+- The balance profile steepens (Mer de Glace at 1800 m −8.0 → −9.2, Aletsch at 3600 m +1.74 → +2.04 m w.e. a⁻¹).
+- Sensitivity to +1 °C: −1.00 → −1.12 m w.e. a⁻¹.
+- Against GLAMOS (18 glaciers with a measured winter balance): summer bias −0.18 → +0.01, winter +0.03 → −0.27
+  m w.e.; 0.3–0.5 m w.e. too little winter balance at 2100–2900 m, where the 2 m air was right ({ref}`K34 <mc-k34>`).
+
+**Commits:** `a90b24a`, `a7cdeb3`, `5ea744b`, `5964b0f` on `freeair-mb`, off `freeair-thermal` (`61ada09`) of the
+ice-temperature line. Not on `glogemflow-v3` or main; to main only after Janosch's OK, off by default.
+
 ## 4. GloGEMflow items
 
 GloGEMflow is not on `main`, so everything here is new code for main. In short, for our submissions:
@@ -1541,7 +1589,7 @@ The combined Antarctic (RGI 19) ERA5 hindcast at `gmip4-v3` changes by −39.0 G
 (mc-k21)=
 ### K21. The temperature offset grows with height (open, finding)
 
-The third calibration factor, T_off, is unbounded and closes each glacier's budget after c_prec and DDF hit their bounds. In CentralEurope, 93 % of the 181 glaciers above 3400 m mean elevation with their own measured target sit at both bounds, at a median T_off of +3.1 °C; below 3000 m the median is about 0. So T_off acts as a budget term that is largest where cold firn lives, not as an air-temperature correction. Mont Blanc's target is a real measurement (−0.06 ± 0.18 m w.e. a⁻¹). Found by the ice-temperature work (2026-10-12/13); no change to the mass balance.
+The third calibration factor, T_off, is unbounded and closes each glacier's budget after c_prec and DDF hit their bounds. In CentralEurope, 93 % of the 181 glaciers above 3400 m mean elevation with their own measured target sit at both bounds, at a median T_off of +3.1 °C; below 3000 m the median is about 0. So T_off acts as a budget term that is largest where cold firn lives, not as an air-temperature correction. Mont Blanc's target is a real measurement (−0.06 ± 0.18 m w.e. a⁻¹). Found by the ice-temperature work (2026-10-12/13); no change to the mass balance. The free air ({ref}`G44 <mc-g44>`) does not remove it: above 3400 m the median T_off is 3.17 °C on the 2 m air and 3.29 °C on the free air (2026-10-29).
 
 (mc-k22)=
 ### K22. RGI7 band aspect classes are coded 0 = N … 4 = S (open, low)
@@ -1639,6 +1687,36 @@ Comparisons across trees should check that every setting exists in both.
 Found 2026-10-20 while measuring G42 in the GMIP4 Scandinavia run (RGI7): besides the 1.5 × signature, a few
 glaciers have much larger residuals between their volume change and their balance (00389: −21 km³ over the run).
 Not investigated.
+
+(mc-k34)=
+### K34. Winter melt is held down by two stand-ins (open, finding)
+
+Found 2026-10-29 with the free air ({ref}`G44 <mc-g44>`). With the right air, the winter balance at 2000–2750 m drops
+by 0.3–0.5 m w.e. and falls below GLAMOS, where the 2 m air was right. Rebuilt month by month with GloGEM's own rules
+(`glogemflow_icetemp/scripts/icetemp_analysis/freeair/freeair_winter_melt.py`): about 90 % of the loss is melt,
+mostly in October and November, and about 5 % rain instead of snow.
+
+- **The air is right.** At 116 SLF IMIS flat snow stations at 2000–2750 m, the free air is within 0.6 °C of the
+  measured air in every month.
+- **The daily spread is not too wide.** For each measured month, the unhalved sub-monthly variability gives 78–97 %
+  of the measured degree-days from November to March, and 89–100 % from April to October (102 stations, daily means;
+  `freeair_imis_degree_days.py`, definition shared with the ice-temperature work).
+- **Two stand-ins kept winter melt low:**
+  - the 2 m air's winter cold (about 4 °C at these heights);
+  - the halving of the variability from November to March (`gradient_variability_monthly.pro`, `vf = 0.5`), which
+    cuts the degree-days to 12–45 % of the measured ones.
+- **What they stand in for:**
+  - a snow surface colder than the air: it is measured 4.5–6.3 °C colder from November to March, and in midwinter it
+    reaches 0 °C on about half the days the air is above 0 °C;
+  - meltwater that refreezes in cold seasonal snow. `refreezing_parametrised.pro` refreezes only on firn bands (its
+    cap is multiplied by `firn`) and only once cold has built up (`rf_cold < -50`), so winter melt on ice bands runs off.
+- **October** carries 40–65 % of the extra melt, and there the air and the spread are both right at the stations.
+  The lead is the degree-day factor, the same in October as in July although the autumn sun is much weaker. Not tested.
+- **The variability files are not real weather:** neighbouring cells' daily lists are uncorrelated and have no
+  day-to-day memory (the ice-temperature work, 2026-10-29).
+
+In every GloGEM run; harmless while the 2 m air is used, because the compensation holds. It matters for anyone who
+changes the air or the variability. No change made; the fix is Janosch's decision.
 
 ## 7. Decisions log
 
