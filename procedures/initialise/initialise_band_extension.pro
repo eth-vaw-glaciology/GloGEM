@@ -21,7 +21,8 @@ bx_n = bx_n > 0
 nv = bx_n + nb
 if bx_n gt 0 then begin
   bx_elev = elev0[0] - 10d * (bx_n - dindgen(bx_n))   ; lowest band first, as elev
-  v_elev = [bx_elev, reform(elev, nb)] & firn_v = [dblarr(bx_n), reform(firn, nb)]
+  ; firn as on the glacier's bands: above the median elevation
+  v_elev = [bx_elev, reform(elev, nb)] & firn_v = [double(bx_elev gt hmed[gg[g]]), reform(firn, nb)]
 endif else begin
   v_elev = reform(elev, nb) & firn_v = reform(firn, nb)
 endelse
