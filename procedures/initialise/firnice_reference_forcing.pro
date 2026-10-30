@@ -60,6 +60,19 @@ if firnice_thermal_air eq 'freeair' then begin
     endfor
 endif
 
+; real daily anomalies (firnice_daily_anomalies, setup_firnice_daily_anomalies.pro): the file's months of the
+; reference period, per calendar month; firnice_thermal_forcing.pro averages the melt over them
+if firnice_daily_anomalies ne '' then begin
+    hyd_da = long(da_year) + (long(da_mon) ge bal_month)
+    da_refix = lonarr(12, sp_y1 - sp_y0 + 1)
+    for da_ms = 1, 12 do begin
+        da_jm = where(hyd_da ge sp_y0 and hyd_da le sp_y1 and da_mon eq da_ms, da_cm)
+        if da_cm ne sp_y1 - sp_y0 + 1 then message, 'thermal spin-up: ' + strtrim(da_cm,2) + ' months ' + $
+            strtrim(da_ms,2) + ' of daily anomalies in ' + strtrim(sp_y0,2) + '-' + strtrim(sp_y1,2)
+        da_refix[da_ms-1, *] = da_jm
+    endfor
+endif
+
 if sp_y1 ne tran[0]-1l then $
     print, '  [thermal spinup] note: reference period ends Sep ' + strtrim(sp_y1,2) + $
            ', main run starts month ' + strtrim(bal_month,2) + ' of ' + strtrim(tran[0]-1l,2)
@@ -82,6 +95,7 @@ b_ref = dblarr(nb)
 rfw_mb = 0d & rfw_th = 0d   ; firn-band melt + rain of the kept year, mass balance and thermal
 mb_book = 0b
 ftw_dsp = double(firnice_spinup_dT)   ; firnice_thermal_forcing.pro: the thermal inputs only
+if firnice_daily_anomalies ne '' then da_ref = 1b   ; firnice_thermal_forcing.pro: the reference period's days
 for yr_rf = 0, 2 do begin
     rf_ind = dblarr(nb) & rf_cold = rf_ind
     bal_rf = dblarr(nb)
@@ -129,6 +143,7 @@ for yr_rf = 0, 2 do begin
 endfor
 mb_book = 1b
 ftw_dsp = 0d
+if firnice_daily_anomalies ne '' then da_ref = 0b
 sno = sno_keep & sur = sur_keep & snostor = snostor_keep
 tl_rf = tl_rf_keep & te_rf = te_rf_keep
 

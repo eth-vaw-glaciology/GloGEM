@@ -245,6 +245,12 @@ firnice_thermal_air     = 'era5_2m' ; air of the thermal model: 'era5_2m' = the 
                                 ; that refreeze, Herron-Langway and the spin-up; the mass balance keeps
                                 ; air_temperature (set to 'freeair' when air_temperature = 'freeair')
 firnice_freeair_file    = ''    ; the table of firnice_thermal_air = 'freeair' (same as freeair_file)
+firnice_daily_anomalies = ''    ; '' = the thermal melt adds the fixed sub-monthly list (variability_<region>.mdi);
+                                ; a file = each month's real daily anomalies of the climate cell instead
+                                ; (glogemflow_icetemp make_daily_anomalies.py), in the spin-up's reference year
+                                ; averaged over the reference period's months; the mass balance keeps the list.
+                                ; A run stops if it reaches months outside the file (e.g. before 1940 or
+                                ; projections) or its climate cell has no series in the file
 firnice_surface_cool    = 'n'   ; 'gilbert' = thermal surface min(0, 0.95 * air + firnice_surface_cool_dt)
                                 ; instead of min(0, air): the snow surface colder than the air (Gilbert et al.
                                 ; 2014, Col du Dome, daily means 2012-13)
@@ -623,6 +629,14 @@ if firnice_f_sur ne 0d and firnice_surface_cool ne 'n' then message, "firnice_f_
 if firnice_temperature eq 'y' and firnice_forcing_toff eq 'n' then $
   if meltmodel ne '1' or time_resolution ne 'monthly' or debris_supraglacial ne 'n' then $
     message, "firnice_forcing_toff = 'n' needs meltmodel '1', monthly steps and no supraglacial debris"
+; without the thermal model (e.g. calibrate = 'y') the daily anomalies have no effect
+if firnice_temperature eq 'n' then firnice_daily_anomalies = ''
+if firnice_daily_anomalies ne '' then begin
+  if firnice_temperature ne 'y' or firnice_forcing_toff ne 'n' or submonth_variability ne 'y' then $
+    message, "firnice_daily_anomalies needs firnice_temperature 'y', firnice_forcing_toff 'n' and " + $
+             "submonth_variability 'y'"
+  if not file_test(firnice_daily_anomalies) then message, 'firnice_daily_anomalies: no file ' + firnice_daily_anomalies
+endif
 
 ; reduced output for 2300 runs (Discharge not available)
 if long_GCM ne '' then outf_names = ['Area', 'Volume', 'Annual_Balance_sfc', 'Winter_balance_sfc', 'Icemelt_sfc', $

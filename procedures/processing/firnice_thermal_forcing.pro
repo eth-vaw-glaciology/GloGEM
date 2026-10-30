@@ -37,7 +37,8 @@ endif else begin
   plg_th = pg - ftw_ps
   ; positive-degree mean with sub-monthly variability, as meltmodel.pro
   ftw_tg = ftw_tl
-  if time_resolution eq 'monthly' and submonth_variability eq 'y' and meltmodel ne '3' then begin
+  if time_resolution eq 'monthly' and submonth_variability eq 'y' and meltmodel ne '3' and $
+     firnice_daily_anomalies eq '' then begin
     ftw_a = dblarr(mon_len[m - 1])
     for ftw_k = 0, mon_len[m - 1] - 1 do ftw_a[ftw_k] = ftw_tl[0] + variab[m - 1, ftw_k] - mean(variab[m - 1, 0 : mon_len[m - 1] - 1])
     for ftw_j = 0, nb - 1 do begin
@@ -45,6 +46,29 @@ endif else begin
       ftw_i = where(ftw_b gt 0, ftw_c)
       if ftw_c gt 0 then ftw_pdd = total(ftw_b[ftw_i]) else ftw_pdd = 0.
       if ftw_pdd gt 0 then ftw_tg[ftw_j] = ftw_pdd / mon_len[m - 1]
+    endfor
+  endif
+  ; firnice_daily_anomalies: this month's real daily anomalies instead of the list (halved in Nov-Mar, as the
+  ; list); in the spin-up's reference year the degree-days averaged over the reference period's months.
+  ; The positive-degree mean is taken over the days the file has (its leap years lack 31 December).
+  if firnice_daily_anomalies ne '' then begin
+    ftw_n = mon_len[m - 1]
+    if da_ref then ftw_ix = reform(da_refix[m - 1, *]) else ftw_ix = [da_tix[da_it]]
+    ftw_nix = n_elements(ftw_ix)
+    ftw_d = reform(da_node[0 : ftw_n - 1, ftw_ix], ftw_n, ftw_nix)
+    ftw_w = dblarr(ftw_n, ftw_nix)
+    ftw_vf = (m le 3 or m ge 11) ? 0.5d : 1d
+    for ftw_r = 0, ftw_nix - 1 do begin
+      ftw_ok = where(finite(ftw_d[*, ftw_r]), ftw_cd, complement = ftw_no, ncomplement = ftw_cn)
+      if ftw_cd lt ftw_n - 1 then message, 'firnice_daily_anomalies: only ' + strtrim(ftw_cd, 2) + ' days in month ' + $
+          strtrim(m, 2) + ' of ' + strtrim(da_year[ftw_ix[ftw_r]], 2)
+      ftw_d[ftw_ok, ftw_r] = ftw_vf * (ftw_d[ftw_ok, ftw_r] - mean(ftw_d[ftw_ok, ftw_r]))
+      if ftw_cn gt 0 then ftw_d[ftw_no, ftw_r] = -1d30
+      ftw_w[ftw_ok, ftw_r] = 1d / ftw_cd
+    endfor
+    for ftw_j = 0, nb - 1 do begin
+      ftw_pdd = total(((ftw_tl[ftw_j] + ftw_d) > 0d) * ftw_w) / ftw_nix
+      if ftw_pdd gt 0 then ftw_tg[ftw_j] = ftw_pdd
     endfor
   endif
   ; melt per surface type (snow, firn, ice), as meltmodel '1'

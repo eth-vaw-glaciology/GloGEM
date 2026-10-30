@@ -356,6 +356,10 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                   if use_freeair eq 'y' and cg gt 0 then begin
                     @procedures/initialise/setup_freeair.pro
                   endif
+                  ; real daily anomalies of this climate cell for the thermal melt (firnice_daily_anomalies)
+                  if firnice_daily_anomalies ne '' and cg gt 0 then begin
+                    @procedures/initialise/setup_firnice_daily_anomalies.pro
+                  endif
 
                   if cg gt 0 then begin
                     if calibrate eq 'n' then a=GCM_model[gcms]+'/'+GCM_rcp[rcps] else a='CALI - '+reanalysis
@@ -550,6 +554,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                                 temp[jjclim[0]+ccmon]+(elev-hclim)*dtdz[m-1],elev,hclim,freeair_blend_depth)+t_offset
                             ; this month's free air index, before accumulation.pro advances ccmon
                             if firnice_thermal_air eq 'freeair' then fa_it = jjclim[0]+ccmon
+                            if firnice_daily_anomalies ne '' then da_it = jjclim[0]+ccmon
 			    
                             ; === Mass balance model
 
