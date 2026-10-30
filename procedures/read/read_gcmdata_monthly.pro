@@ -55,8 +55,9 @@ endif else begin
 ; New system for the monthly model, but so far only available for GCMs of GMIP4
    
    mid=[mean(lon),mean(lat)]
-   gxs=strcompress(string(mid[0],fo='(f7.2)'),/remove_all)
-   gys=strcompress(string(mid[1],fo='(f7.2)'),/remove_all)
+   ; rounded first: float noise just below zero would print as '-0.00' and miss the file '0.00'
+   gxs=strcompress(string(round(mid[0]*100d)/100d,fo='(f7.2)'),/remove_all)
+   gys=strcompress(string(round(mid[1]*100d)/100d,fo='(f7.2)'),/remove_all)
    fn=dir_clim+'/future/'+time_resolution+'/'+GCM_data+'/'+dir_region+'/'+GCM_model[gcms]+ '/'+GCM_rcp[rcps]+'/clim_' + gxs + '_' + gys + '.dat'
    if FILE_TEST(fn) eq 1 then begin 
       ; All good and we continue
@@ -70,8 +71,8 @@ endif else begin
                if abs(q) eq radius or abs(r) eq radius then begin
                   ; get new coordinates
                   mid = [mean(lon) + double(q)/100., mean(lat) + double(r)/100.]
-                  gxs=strcompress(string(mid[0],fo='(f7.2)'),/remove_all)
-                  gys=strcompress(string(mid[1],fo='(f7.2)'),/remove_all)
+                  gxs=strcompress(string(round(mid[0]*100d)/100d,fo='(f7.2)'),/remove_all)
+                  gys=strcompress(string(round(mid[1]*100d)/100d,fo='(f7.2)'),/remove_all)
                   fn=dir_clim+'/future/'+time_resolution+'/'+GCM_data+'/'+dir_region+'/'+GCM_model[gcms]+ '/'+GCM_rcp[rcps]+'/clim_' + gxs + '_' + gys + '.dat'
                   if FILE_TEST(fn) eq 1 then begin
                      found = 1

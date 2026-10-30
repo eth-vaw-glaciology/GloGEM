@@ -106,6 +106,10 @@
 ;                                ;   front, down to this depth below it (0 = off; needs meltmodel '1')
 ;snowline_ext_valley = ''        ; folder with valley_floor_rgi<v>_<region>.dat (scripts/valley_floor.py):
 ;                                ;   the ground stops at each glacier's own valley floor ('' = off)
+;band_extension = 'n'            ; 'y': the elevation-band files continue below each glacier with the balance
+;                                ;   an ice surface would have there (monthly, meltmodel '1', read_parameters='y',
+;                                ;   write_mb_elevationbands='y'; no debris, ice temperature or full refreezing)
+;band_ext_depth = 1500.          ; [m] how far below the glacier (never below sea level)
 
 ; -----------------------------------------------------------------------
 ; LOOKUP TABLES

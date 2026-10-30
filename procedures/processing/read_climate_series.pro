@@ -26,8 +26,8 @@ if cg gt 0 then begin
   if time_resolution eq 'daily' then begin
     ; select reanalysis series from closest grid point
     rmid=[mean(lon),mean(lat)]
-    gxs=strcompress(string(rmid[0],fo='(f7.2)'),/remove_all)
-    gys=strcompress(string(rmid[1],fo='(f7.2)'),/remove_all)
+    gxs=strcompress(string(round(rmid[0]*100d)/100d,fo='(f7.2)'),/remove_all)
+    gys=strcompress(string(round(rmid[1]*100d)/100d,fo='(f7.2)'),/remove_all)
     ; meteo time series read from re-analysis data (past)
     @procedures/read/read_climatepast_daily.pro
     ; meteo time series downscaled from GCMs or whatever (future)
@@ -66,8 +66,8 @@ if cg gt 0 then begin
         @procedures/processing/gradient_variability_monthly.pro
      endif else begin
         rmid=[mean(lon),mean(lat)]
-        gxs=strcompress(string(rmid[0],fo='(f7.2)'),/remove_all)
-        gys=strcompress(string(rmid[1],fo='(f7.2)'),/remove_all)
+        gxs=strcompress(string(round(rmid[0]*100d)/100d,fo='(f7.2)'),/remove_all)
+        gys=strcompress(string(round(rmid[1]*100d)/100d,fo='(f7.2)'),/remove_all)
         @procedures/read/read_climatepast_monthly_new.pro
         @procedures/read/read_gcmdata_monthly.pro
         @procedures/processing/gradient_variability_monthly.pro

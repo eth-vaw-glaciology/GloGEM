@@ -170,6 +170,11 @@ adv_calving = -100. ; [m] terminal bed elevation (0 = no calving)
 adv_fcrit = 2. ; [m/a] elevation gains above this are redistributed
 adv_terminusfraction = 0.2
 adv_lookup = 'n'
+band_extension = 'n' ; 'y': the elevation-band files (belev) continue down to band_ext_depth below each glacier, with the balance an ice surface would have there (forcing for ice-flow models)
+band_ext_depth = 1500. ; [m] depth of the band extension below the lowest band of the glacier inventory (not below sea level)
+band_blend_depth = 300. ; [m] below the front over which the extension bands blend from the glacier's own parameters into the regional medians (at least)
+band_blend_dtdz = 0.003 ; [degC/m] largest change of the temperature offset per metre in that blend (about half a lapse rate)
+band_blend_dlnp = 5e-4 ; [1/m] largest relative change of a degree-day factor or c_prec per metre in that blend
 
 ; --- calving (Oerlemans & Nick, 2005; marine-terminating only)
 frontal_ablation = 'y'
@@ -426,6 +431,23 @@ if read_parameters eq 'y' then calibrate = 'n'
 if single_glacier ne '' then grid_run = 'n'
 
 if tran[1] gt 2020 then hindcast_dynamic = 'n'
+
+; band_extension: only the parts it reproduces; the glacier itself is unchanged
+if calibrate eq 'y' then band_extension = 'n'
+if band_extension eq 'y' then begin
+  if meltmodel ne '1' then message, 'band_extension needs meltmodel ''1'''
+  if time_resolution ne 'monthly' then message, 'band_extension is only available for monthly runs'
+  if read_parameters ne 'y' then message, 'band_extension needs read_parameters=''y'' (regional parameters from the calibration file)'
+  if debris_supraglacial eq 'y' or firnice_temperature eq 'y' or refreezing_full eq 'y' then $
+    message, 'band_extension does not support debris_supraglacial, firnice_temperature or refreezing_full'
+  if band_ext_depth le 0 then message, 'band_ext_depth must be positive [m]'
+  if band_blend_depth le 0 or band_blend_dtdz le 0 or band_blend_dlnp le 0 then $
+    message, 'band_blend_depth, band_blend_dtdz and band_blend_dlnp must be positive'
+  if write_mb_elevationbands ne 'y' then begin
+    print, 'NOTE: band_extension set to ''n'': it only adds rows to the elevation-band files (write_mb_elevationbands=''y'')'
+    band_extension = 'n'
+  endif else print, 'Band extension: elevation-band files down to ' + strtrim(string(band_ext_depth, format='(f8.0)'), 2) + ' m below each glacier (band_ext_depth), not below sea level'
+endif
 
 if meltmodel eq '3' then c2_tolerance = c2m3_tolerance
 

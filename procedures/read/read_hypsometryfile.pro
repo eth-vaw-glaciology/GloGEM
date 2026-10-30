@@ -48,6 +48,7 @@ endif else begin   ; checks relevant to RGIv7.0
 endelse
    
 ; add bands at glacier tongue
+nb_inv=nb   ; bands of the inventory (initialise_band_extension.pro)
 if advance eq 'y' and nb gt 3 then begin
     adv_addband=adv_addband0
    if adv_calving lt 0 then adv_hmin=adv_calving else adv_hmin=10.

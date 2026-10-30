@@ -177,6 +177,11 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
             if read_parameters eq 'y' then begin
               @procedures/calibration/read_calibration_params.pro
+              if band_extension eq 'y' then begin
+                ; regional parameters the band extension blends into below the fronts (initialise_band_extension.pro)
+                toff_reg=median(cali_toff,/even) & cprec_reg=median(cali_cprec,/even)
+                ddfs_reg=median(cali_ddfsnow,/even) & ddfi_reg=median(cali_ddfice,/even)
+              endif
             endif
 
             ; including gridded T-offsets in calibration
@@ -374,6 +379,10 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
                       sur=dblarr(nb) & sno=sur & snostor=sur
                       firn=sur & ff=where(elev gt hmed[gg[g]],ci) & if ci gt 0 then firn[ff]=1
+                      ; bands below the glacier and the balance as if ice for the elevation-band output
+                      if band_extension eq 'y' then begin
+                        @procedures/initialise/initialise_band_extension.pro
+                      endif
                       baly=dblarr(years,nb)
                       ; ground bands below the glacier front for the snowline
                       if snowline_ext_depth gt 0 then begin
@@ -396,6 +405,9 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
                         ; define arrays
                         bal=dblarr(nb) & melt=bal & acc=bal & refreeze=bal
+                        if band_extension eq 'y' then begin   ; balance as if ice and its refreezing state (virtual_ice_balance.pro)
+                          bal_v=dblarr(nv) & rf_cold_v=dblarr(nv) & rf_ind_v=dblarr(nv)
+                        endif
                         debris_red_factor=dblarr(nb)+snoval
                         rf_ind=dblarr(nb) & rf_cold=rf_ind
                         ii=where(gl ne noval,ci) & if ci gt 0 then ar_gl=total(area[ii]) else ar_gl=0
@@ -452,6 +464,11 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                                 ; no refreezing
                               endelse
                             endelse
+
+                            ; --- every band as if its surface were ice (needs this month's refreezing scaling)
+                            if band_extension eq 'y' then begin
+                              @procedures/processing/virtual_ice_balance.pro
+                            endif
 
                             ; --- firn/ice temperatures
                             ; (separate workflow as the target and setup differs)
@@ -514,6 +531,9 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                             if ar_gl ne 0 then begin
                               @procedures/write/store_elevationband_massbalance.pro
                             endif
+                            if band_extension eq 'y' then begin
+                              @procedures/write/store_band_extension.pro
+                            endif
 
                           endfor                          ; loop over months
 
@@ -539,6 +559,15 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
                         ; calculate balance - store results
                         @procedures/processing/finalize_annual_massbalance.pro
+
+                        ; virtual snow store and firn as finalize_annual_massbalance.pro: firn where the 5-year mean balance is positive
+                        if band_extension eq 'y' then begin
+                          snostor_v=sno_v
+                          bal_v5=shift(bal_v5,-1,0) & bal_v5[4,*]=bal_v
+                          if ye gt 4 then begin
+                            firn_v=dblarr(nv) & v_ii=where(total(bal_v5,1)/5d gt 0,v_ci) & if v_ci gt 0 then firn_v[v_ii]=1
+                          endif
+                        endif
 
                         ; === DEBRIS MODEL
                         ; annually adapting debris cover extent and thickness
