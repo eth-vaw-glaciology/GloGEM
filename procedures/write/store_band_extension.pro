@@ -3,8 +3,8 @@
 ;
 ; Band extension (band_extension='y'): in the elevation-band output the glacier's bands without ice and
 ; the extension bands below the glacier get the balance an ice surface would have (virtual_ice_balance.pro).
-; Below the inventory front the balance may not rise going down: a band where the blend into the regional
-; parameters would make it rise takes the value of the band above.
+; Below the inventory front the balance of the bands without ice may not rise going down: a band where the
+; blend into the regional parameters would make it rise takes the value of the band above.
 ; Called after store_elevationband_massbalance.pro, also when the glacier has no ice left.
 ; *************************************************************
 

@@ -9,26 +9,31 @@
 ; (sur_v: 1 snow, 2 firn, 0 ice), firn cover (firn_v) and refreezing state (rf_cold_v, rf_ind_v):
 ; the same accumulation, the same melt as meltmodel.pro (degree-day model), the same snow update and
 ; January snow carry-over as glogem.pro.
+; Every band is computed at its output row's elevation (elev0), also where the glacier's surface has moved.
 ; Parameters: the glacier's own down to its front; below it they blend linearly into the regional
-; medians over band_blend_depth (weight w_v). Where w_v > 0, temperature and snowfall are recomputed
-; with the blended offset and precipitation factor, as accumulation.pro and the sub-monthly step of
-; meltmodel.pro do.
+; medians over band_blend_depth (weight w_v). Where w_v > 0 or the band is not at the glacier's own
+; elevation, temperature and snowfall are recomputed with the (blended) offset and precipitation factor,
+; as accumulation.pro and the sub-monthly step of meltmodel.pro do.
 ; Refreezing: bands with ice keep their own (refreezing_parametrised.pro); bands without ice get the
 ; same expression among themselves.
-; On a glacier band it gives the band's own balance.
+; On a glacier band at its own elevation it gives the band's own balance.
 ; Called after the refreezing step and before the snow update.
 ; *************************************************************
 
 compile_opt idl2
 
-; inputs on the domain; the extension bands take the temperature glogem.pro would give them
-; (accumulation.pro advanced ccmon already), their snowfall is recomputed below (w_v > 0)
+; inputs on the domain, at the elevations of the output rows (elev0): the extension bands, and glacier
+; bands whose surface has moved (changing geometry), take the temperature glogem.pro gives a band at that
+; elevation (accumulation.pro advanced ccmon already); their snowfall is recomputed below (v_rc)
 v_ice = reform(gl ne noval, nb) & v_tgs = reform(tgs, nb) & v_tg = reform(tg, nb)
-v_psg = reform(psg, nb) & v_refr = reform(refr, nb) & v_elev = reform(elev, nb)
+v_psg = reform(psg, nb) & v_refr = reform(refr, nb) & v_elev = reform(elev0, nb)
+v_rc = reform(elev ne elev0, nb)
+v_ii = where(v_rc, v_ci)
+if v_ci gt 0 then v_tgs[v_ii] = temp[jjclim[0] + ccmon - 1] + (v_elev[v_ii] - hclim) * dtdz[m - 1] + t_offset
 if bx_n gt 0 then begin
   v_tgs = [temp[jjclim[0] + ccmon - 1] + (bx_elev - hclim) * dtdz[m - 1] + t_offset, v_tgs]
   v_tg = [v_tgs[0 : bx_n - 1], v_tg] & v_psg = [dblarr(bx_n), v_psg] & v_refr = [dblarr(bx_n), v_refr]
-  v_elev = [bx_elev, v_elev] & v_ice = [bytarr(bx_n), v_ice]
+  v_elev = [bx_elev, v_elev] & v_ice = [bytarr(bx_n), v_ice] & v_rc = [replicate(1b, bx_n), v_rc]
 endif
 
 ; snow left from the previous year counts as firn, as for sno in glogem.pro
@@ -38,7 +43,7 @@ sno_v = sno_v > 0
 
 ; temperature (tg_v after the sub-monthly step, tgr_v before it) and snowfall
 tg_v = v_tg & tgr_v = v_tgs & psg_v = v_psg
-v_bl = where(w_v gt 0, v_cbl)
+v_bl = where(w_v gt 0 or v_rc eq 1, v_cbl)
 if v_cbl gt 0 then begin
   tgr_v[v_bl] = v_tgs[v_bl] + toff_v[v_bl] - t_offset
   tg_v[v_bl] = tgr_v[v_bl]

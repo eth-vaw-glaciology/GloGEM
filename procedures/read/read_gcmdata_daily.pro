@@ -31,8 +31,8 @@ compile_opt idl2
 gcm_mid= [rmid[0],rmid[1]]
 ;gxg=strcompress(string(gcm_mid(0),fo='(f7.2)'),/remove_all)
 ;gyg=strcompress(string(gcm_mid(1),fo='(f7.2)'),/remove_all)
-gxs=strcompress(string(gcm_mid[0],fo='(f7.2)'),/remove_all)
-gys=strcompress(string(gcm_mid[1],fo='(f7.2)'),/remove_all)
+gxs=strcompress(string(round(gcm_mid[0]*100d)/100d,fo='(f7.2)'),/remove_all)
+gys=strcompress(string(round(gcm_mid[1]*100d)/100d,fo='(f7.2)'),/remove_all)
 fn=dir_clim+'/future/'+time_resolution+'/'+GCM_data+'/'+dir_region+'/'+GCM_model[gcms]+ '/'+GCM_rcp[rcps]+'/clim_' + gxs + '_' + gys + '.dat'
 if FILE_TEST(fn) eq 1 then begin
       ; All good and we continue                                                                                                                                                                                    
@@ -46,8 +46,8 @@ endif else begin
             if abs(q) eq radius or abs(r) eq radius then begin
                   ; Bereken nieuwe coördinaten                                                                                                                                                                      
                mid = [mean(lon) + STRING(double(q) / 100, FORMAT='(F5.2)'), mean(lat) + STRING(double(r) / 100, FORMAT='(F5.2)')]
-               gxs=strcompress(string(mid[0],fo='(f7.2)'),/remove_all)
-               gys=strcompress(string(mid[1],fo='(f7.2)'),/remove_all)
+               gxs=strcompress(string(round(mid[0]*100d)/100d,fo='(f7.2)'),/remove_all)
+               gys=strcompress(string(round(mid[1]*100d)/100d,fo='(f7.2)'),/remove_all)
                fn=dir_clim+'/future/'+time_resolution+'/'+GCM_data+'/'+dir_region+'/'+GCM_model[gcms]+ '/'+GCM_rcp[rcps]+'/clim_' + gxs + '_' + gys + '.dat'
                if FILE_TEST(fn) eq 1 then begin
                   found = 1

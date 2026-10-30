@@ -167,22 +167,25 @@ the glacier, for example as the mass-balance forcing of an ice-flow model:
 
 - **More rows.**
   - New 10 m bands continue below each glacier, down to `band_ext_depth` (default 1500 m) below the lowest band of
-    the inventory, never below sea level (the lowest band then lies at 5 m).
+    the inventory, never below sea level (the lowest band then lies between 5 and 25 m).
   - These rows come first in the file. The refreezing files (`refrelev_*.dat`) get the same rows, as −99.
-- **No −99 in the balance.** Every band without ice gets the balance an ice surface would have there: the new rows,
-  the advance bands, gaps inside the glacier, and with changing geometry the bands that lose their ice.
+- **No −99 in the balance.** Every band without ice gets the balance an ice surface would have at the row's
+  elevation: the new rows, the advance bands, gaps inside the glacier, and with changing geometry the bands that
+  lose their ice (computed at the row's elevation, not at the bed they melted down to).
   - It is GloGEM's own band model, with its own snow and firn cover: the same snowfall, degree-day melt of snow,
-    firn and ice, January snow carry-over, firn rule and parametrised refreezing.
-  - On a band with ice it gives that band's own balance.
+    firn and ice, yearly snow carry-over, firn rule and parametrised refreezing.
+  - Rows with ice keep GloGEM's own balance. With changing geometry that is computed at the band's current
+    surface, which can lie below the row's elevation (as without the option).
 - **Parameters below the front.**
   - Down to the inventory front each glacier keeps its own calibration.
   - Below the front its temperature offset, precipitation factor and degree-day factors blend linearly into the
-    regional medians of the calibration file, over at least `band_blend_depth` (300 m).
+    medians of the calibration file the run reads, over at least `band_blend_depth` (300 m). For a catchment run
+    that is the catchment's own calibration file.
   - The blend is stretched where the glacier's parameters lie far from the medians (`band_blend_dtdz`,
     `band_blend_dlnp`).
   - Far below their fronts, neighbouring glaciers then give the same balance at the same height.
-- **The balance never rises going down below the front.** Where the blend would make it rise, a band takes the
-  value of the band above.
+- **Below the front, the balance of the rows without ice never rises going down.** Where the blend would make it
+  rise, a band takes the value of the band above. Rows with ice (a glacier that re-advances) keep their own.
 - **Three decimals** (0.001 m w.e.) instead of one. Read the files by splitting on whitespace.
 - **The glacier itself is unchanged.** Area, volume, balance, every other output file and the rows of bands with
   ice are the same as without the option. It works with fixed geometry (`glacier_retreat = 'n'`) and with changing
@@ -197,6 +200,8 @@ the glacier, for example as the mass-balance forcing of an ice-flow model:
 - **Temperature follows the lapse rate down**, so winter valley inversions are missing.
 - **Refreezing of the ice surface** scales with the glacier's own cold content. Once a glacier has melted away,
   its last value is kept.
+- **Tidewater glaciers.** Their own advance bands can reach below sea level (`adv_calving`); those rows get a value
+  too.
 ```
 
 ---

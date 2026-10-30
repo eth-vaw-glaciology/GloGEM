@@ -29,8 +29,8 @@ endif else begin
             if abs(q) eq radius or abs(r) eq radius then begin
                ; Bereken nieuwe coördinaten
                rmid = [mean(lon) + STRING(double(q) / 100, FORMAT='(F5.2)'), mean(lat) + STRING(double(r) / 100, FORMAT='(F5.2)')]
-               gxg = STRTRIM(STRING(rmid[0], FORMAT='(F0.2)'), 2)
-               gyg = STRTRIM(STRING(rmid[1], FORMAT='(F0.2)'), 2)
+               gxg = STRTRIM(STRING(round(rmid[0]*100d)/100d, FORMAT='(F0.2)'), 2)
+               gyg = STRTRIM(STRING(round(rmid[1]*100d)/100d, FORMAT='(F0.2)'), 2)
                fn = dir_clim + 'reanalysis/' + time_resolution + '/' + reanalysis + '/' + dir_region + '/clim_' + gxg + '_' + gyg + '.dat'
                if FILE_TEST(fn) eq 1 then begin ;and check_reanalysis(fn) eq 1 then begin
                   found = 1
