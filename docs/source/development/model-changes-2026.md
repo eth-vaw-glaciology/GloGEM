@@ -17,6 +17,7 @@ For users of GloGEM; the details and the evidence are in the entries below.
 - **Fixed, elsewhere:** glaciers never simulated ({ref}`G8 <mc-g8>`); glaciers turning NaN in the Δh parameterisation ({ref}`G9 <mc-g9>`, {ref}`G10 <mc-g10>`); Δh mass check and sea-level calving ({ref}`G11 <mc-g11>`); the calving-flux file ({ref}`G15 <mc-g15>`); `mass_bsl` ({ref}`G18 <mc-g18>`); negative netCDF values ({ref}`G19 <mc-g19>`); monthly netCDF time labels ({ref}`G20 <mc-g20>`, also on main); the full refreezing model's year and cold reservoir ({ref}`G40 <mc-g40>`, {ref}`G41 <mc-g41>`, local GloGEMflow); the Δh parameterisation of glaciers with 4 bands or fewer lost or gained 1.5 × the balance ({ref}`G42 <mc-g42>`, behind a switch); the flowline now uses the RGI 7.0 area correction ({ref}`F15 <mc-f15>`).
 - **New for growing glaciers (AMOC), all off by default:** the flowline balance at the actual surface ({ref}`F17 <mc-f17>`), a blow-up check by mass ({ref}`F18 <mc-f18>`), free outflow at the end of the longest grid ({ref}`F19 <mc-f19>`), Δh regrowth with a thickness limit per glacier ({ref}`G34 <mc-g34>`), a restart of glaciers that melted out ({ref}`G35 <mc-g35>`), the blended parameters below the inventory front in GloGEM's own band model ({ref}`G37 <mc-g37>`) and in the flowline's balance ({ref}`F20 <mc-f20>`), and a gate that sends flow spin-ups with implausibly stiff ice or the ELA bias at its clamp to the Δh parameterisation ({ref}`F21 <mc-f21>`).
 - **New for snowline calibration, off by default:** the snowline can drop onto the ground below the glacier front, down to each glacier's own valley floor ({ref}`G43 <mc-g43>`, also on main since 2026-10-21).
+- **New on main, off by default:** the elevation-band files continue below the glacier with the balance of an ice surface ({ref}`G30 <mc-g30>`), on main since 2026-10-30 (`b178186`) as a version with separate bands that also works with changing geometry; the 0.01° rounding of the point lookups ({ref}`G26 <mc-g26>`) came with it.
 - **New for the Alps, off by default:** the free air (ERA5's pressure-level temperature at the band's height) as the mass balance's air ({ref}`G44 <mc-g44>`, branch `freeair-mb`, not yet on v3 or main). With the right air, two hidden stand-ins that hold winter melt down come to light ({ref}`K34 <mc-k34>`).
 - **Running:** the environment variables `GLOGEM_CONFIG` and `GLOGEM_LOGDIR`; the GMIP4 campaign scripts in `scripts/gmip4/` with a README ({ref}`S10 <mc-s10>`).
 - **Still open:** the swapped ice-melt and snow-melt files ({ref}`K12 <mc-k12>`), refreezing that depends on the number of elevation bands ({ref}`K26 <mc-k26>`) and the other items of section 6.
@@ -181,11 +182,11 @@ Janosch decided on 2026-09-25 not to rerun the submitted v1 regions, and on 2026
 | {ref}`G23 <mc-g23>` | "dhdt" renamed "Δh parameterisation" | core | done | no | — | `1661cac` |
 | {ref}`G24 <mc-g24>` | Englacial temperature module (off in GMIP4) | core | many fixes; in progress | only with `firnice_temperature='y'` | yes (at least three of the bugs) | see entry |
 | {ref}`G25 <mc-g25>` | AMOC runs re-read the regional ERA5 file in every 0.1° cell | core | fixed | bit-identical | yes | `0623127` |
-| {ref}`G26 <mc-g26>` | The GCM file search missed grid points at 0° longitude ("-0.00") | core | fixed | yes (cells whose search crosses 0°; Pyrenees with AMOC CESM) | yes | `1467b45` |
+| {ref}`G26 <mc-g26>` | The GCM file search missed grid points at 0° longitude ("-0.00") | core | fixed, also on main | yes (cells whose search crosses 0°; Pyrenees with AMOC CESM) | no (since `b178186`) | `1467b45`; main `c6eb2c3`, `f6a6fec` |
 | {ref}`G27 <mc-g27>` | An ERA5 hindcast in AMOC mode ran to 2499 | core | fixed | yes (AMOC-mode hindcasts only) | yes | `98790f3` |
 | {ref}`G28 <mc-g28>` | RGI6 survey year −999 was not treated as missing | core | fixed | yes (25 RGI6 glaciers in 08 and 11) | yes | `9bfc181` |
 | {ref}`G29 <mc-g29>` | `amoc_end_year`; every run keeps a copy of its config | core | done | no | — | `a1cdd61` |
-| {ref}`G30 <mc-g30>` | Mass balance below the glacier front (`band_extension`) | core | new (AMOC) | no unless switched on | — | `7e79e2d`, `edc87e1`, `f901a87` |
+| {ref}`G30 <mc-g30>` | Mass balance below the glacier front (`band_extension`) | core | new (AMOC); on main since 2026-10-30 (`b178186`, separate bands) | no unless switched on | on main | `7e79e2d`, `edc87e1`, `f901a87`; main `c6eb2c3`, `55a3746`, `f6a6fec` |
 | {ref}`G31 <mc-g31>` | Geodetic target averaged over 19 of its 20 years; now all 20 after one spin-up year | core (calibration) | fixed; on main and GloGEMflow (2026-10-19) | yes, small | no (the bug is in main) | main `a1fb2fa`; GloGEMflow `5dc500b`; local GloGEMflow `d075c98` |
 | {ref}`G32 <mc-g32>` | `refreezing_full` stopped without the firn/ice temperature model (`TL_RF` undefined) | GloGEMflow | fixed; on GloGEMflow (2026-10-19) | no (it ran only with the temperature model) | yes (GloGEMflow only; main sets the arrays for every glacier) | GloGEMflow `cfff689`; local GloGEMflow `5496a8d`; first `07d694d` |
 | {ref}`G33 <mc-g33>` | Snowline (TSLA) calibration of c_prec, fixed c_prec from a file, snow line as p10 | core (calibration) | new, on `snowline-calibration` | no unless switched on | her one-script version only | `6528443`, `54497c5`, `c7a477c` |
@@ -567,6 +568,11 @@ went from +0.10…+0.82 m w.e./yr after 2100 (wrong point) to −1.6…−2.6 (r
 IGM forcing made from them carry it. `1467b45` rounds each candidate to 0.01° before formatting; of 98 test
 glaciers only those three change.
 
+**On main since 2026-10-30** (`b178186`): the same rounding, and also in every other point lookup (ERA5 monthly and
+daily, the daily GCM search), so the ERA5 and GCM searches round alike and cannot end on different points next to
+0° (review of the main port). v3 rounds only the monthly GCM lookup; there G3 starts the GCM search at the ERA5
+point. On main the AMOC CentralEurope test changes only the three Pyrenees glaciers.
+
 (mc-g27)=
 ### G27. An ERA5 hindcast in AMOC mode ran to 2499
 
@@ -610,6 +616,28 @@ a blend depth that ignored the degree-day factors, small glaciers without extens
 byte-identical; with it, glacier-wide output identical to main + fix with the 10 advance bands; no band-year below
 a front rises going down; belev 1940–3000, no −99, written in f9.3. Details and figures: AMOC development history,
 chapter 4.
+
+**On main since 2026-10-30** (`b178186`; branch `feature/band-extension`: `c6eb2c3`, `55a3746`, `f6a6fec`; asked by
+Lander). A port with a different design:
+- **Separate bands.** The extension bands are their own arrays (`bx_`; `initialise_band_extension.pro`,
+  `store_band_extension.pro`), not glacier bands. The glacier is untouched, so it works in fixed and in changing
+  geometry without `dh_regrowth`, and main keeps its own refreezing average (no `nb_mbref`, K26).
+- **Every band at its row elevation** (`elev0`). Main's `glacier_retreat.pro` lowers a band's `elev` to its surface
+  or bed; the first version computed melted-out bands there and gave flat stretches of 100–450 m below Aletsch's
+  front in 292 of 620 glacier-years (found by the independent review; now 0).
+- **Firn** on the extension bands starts as on glacier bands (above `hmed`), as on v3.
+- **Lowest band.** Also capped at 5 m from the lowest band itself: where `hmin` lies above the band file (3
+  NewZealand RGI7 glaciers), v3's extension reaches −35 m. **Not fixed on v3.**
+- Monthly only; the safeguard covers the rows without ice; the medians come from the calibration file the run reads.
+- **Tests:** off = main byte-identical (Aletsch daily and monthly, AMOC Scandinavia; AMOC CentralEurope only the
+  Pyrenees, G26); on vs off only the belev/refrelev rows of bands without ice change (fixed and changing geometry,
+  NewZealand GMIP4); fixed geometry bit-identical to v3's belev (v3's normaliser set to main's) for 98 AMOC test
+  glaciers, Aletsch and 168 of 171 NewZealand glaciers.
+- **Main does not reproduce the IGM forcing for every glacier.** In batched runs the climate point depends on the
+  batch (G4, still in main: 12 of 107 CentralEurope batch-01 glaciers, up to 3 m w.e./yr from 1940 on); main's own
+  refreezing average adds about 0.001 m w.e./yr.
+- **For the merge:** main and v3 now hold two implementations of `band_extension`. v3's is needed by the flow model
+  and `dh_regrowth` (G35, G37); main's leaves the glacier untouched. Decide which to keep before merging.
 
 (mc-g31)=
 ### G31. Geodetic target averaged over 19 of its 20 years; now all 20 after one spin-up year
@@ -1763,6 +1791,7 @@ All decisions below were taken by Janosch Beer.
 | 2026-10-20 | No note to GlacierMIP4 about the stiff spin-ups (K31) or the small-glacier leak (G42) in the submitted runs. | K31, G42 |
 | 2026-10-21 | For Lander's Karakoram snowline calibration, main gets a snow-only option for the ground below the glacier front (not the full `band_extension`); the ground uses the glacier's own parameters and the precipitation of the inventory front. | G43, `5cd0370` |
 | 2026-10-21 | The ground below the front follows the terrain: it stops at each glacier's own valley floor, a fixed distance down its valley on a DEM. | G43, `0a67c16`, `7243ee6` |
+| 2026-10-30 | Main gets `band_extension` for Lander as a config option, off by default, in fixed and changing geometry; the glacier itself stays unchanged (separate bands) and keeps main's refreezing average. | G30, `b178186` |
 
 ---
 
@@ -1775,6 +1804,10 @@ All decisions below were taken by Janosch Beer.
 - `glogemflow-v3` is 364 commits ahead of `origin/main` at `736a770` (the clean-up, before the commit of this page). `GloGEMflow` (`c400a50`) has 15 englacial temperature commits that are not in `glogemflow-v3` (G24).
 - From the merge base to `736a770`: 98 files, +18,927 / −390 lines. Added lines by folder: `test/` 8,285 (data of the temperature module), `procedures/flow/` 2,537, `flow_analysis/` 2,033 (the temperature notebook and notes), `scripts/gmip4/` 1,784, `procedures/initialise/` 1,155, `docs/` 912, `procedures/processing/` 706, `scripts/` outside `gmip4/` about 690 (temperature calibration and advection-field configs and scripts), `procedures/write/` 436, `glogem.pro` 198. `settings.pro` grows by 132 lines.
 - **Files that are not model code.** After the clean-up (S10) the branch still adds, for the temperature work: `icetemperature_batch.dat` at the repository root (the glenglat borehole list; the model reads its copy from the data folder `dir`, not this one), `flow_analysis/advection_cross_section.ipynb` and `firn_offset_handoff.md`, the temperature scripts and configs in `scripts/`, and `test/` data (glenglat borehole elevations and calibration tables, two of them 4,080-line kNN tables). Suggested: leave the root copy of `icetemperature_batch.dat` and `flow_analysis/` out of main, and take the `test/` data only together with the temperature module. `config.pro.example` (the batch switch and the flow settings) and `scripts/gmip4/` go with the flow model.
+- **Main since 2026-10-21:** `d71a9a8` (G43); Lander's `95068b7` and `a076d52` (an option to remove climate extremes
+  on the daily path: `read_climatepast_daily.pro`, new functions); `b178186` (G30's main version, G26). Expect
+  conflicts in `glogem.pro`, `settings.pro`, `read_hypsometryfile.pro`, `write_elevationband_file.pro` and
+  `virtual_ice_balance.pro` (two band extensions), and in `read_gcmdata_monthly.pro` (G26 rounding against G3).
 - **Main-only commits.** `86e4f4c` (Alexandra, the `mass_bsl` fix) is on our branches as the identical `811cd41`. `70c5af5` (Lander, "Minor updates") changes only whitespace in the monthly path and adds three files nothing calls yet (`downscale_gcmdata_daily_new.pro`, `downscale_gcmdata_daily_old.pro`, `refreezing_parametrised_new.pro`) plus the backup files of K18. Our branches lack nothing from main that changes model results.
 
 ### Merge order and conflicts
