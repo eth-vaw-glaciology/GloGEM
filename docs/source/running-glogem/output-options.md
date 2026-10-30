@@ -60,6 +60,9 @@ The original GloGEM format. **One file per variable**, one row per glacier.
 - **`full_output='y'`** → the same 15 **plus** 6 sub-annual (monthly or daily) series, including the snowline
   (`snowline_ext_depth` lets it drop below the glacier front; see the output-files page).
 
+The elevation-band files (`write_mb_elevationbands='y'`) can continue below each glacier with the balance an ice
+surface would have there (`band_extension='y'`; see the output-files page).
+
 **Monthly/daily split for `.dat`:** the *extra* variables differ by `time_resolution`:
 
 | | Monthly (`write_results_files_monthly.pro`) | Daily (`write_results_files_daily.pro`) |

@@ -7,15 +7,28 @@
 compile_opt idl2
 
 ii = where(thick_ini eq 0, ci)
-if ci gt 0 then elev_bmb[*, ii] = snoval
-if ci gt 0 then elev_bwb[*, ii] = snoval
+; with band_extension the bands without ice carry their virtual balance
+if ci gt 0 and band_extension ne 'y' then elev_bmb[*, ii] = snoval
+if ci gt 0 and band_extension ne 'y' then elev_bwb[*, ii] = snoval
 if ci gt 0 then elev_refr[*, ii] = snoval
+; 0.001 m w.e. with band_extension (forcing for other models), else 0.1 as before
+if band_extension eq 'y' then fmt_bmb = 'f9.3' else fmt_bmb = 'f7.1'
+; band_extension: the extension bands below the glacier first
+if band_extension eq 'y' then begin
+  fmt = '(i6,' + strtrim(string(years, format = '(i4)'), 2) + fmt_bmb + ')'
+  for i = 0, bx_n - 1 do printf, 8, bx_elev[i], elev_bmbx[*, i], format = fmt
+endif
 for i = 0, n_elements(elev_bmb[0, *]) - 1 do begin
-  fmt = '(i6,' + strtrim(string(years, format = '(i4)'), 2) + 'f7.1)'
+  fmt = '(i6,' + strtrim(string(years, format = '(i4)'), 2) + fmt_bmb + ')'
   printf, 8, elev0[i], elev_bmb[*, i], format = fmt
 endfor
 close, 8
 
+; band_extension: no refreezing values on the extension bands
+if band_extension eq 'y' then begin
+  fmt = '(i6,' + strtrim(string(years, format = '(i4)'), 2) + 'f7.1)'
+  for i = 0, bx_n - 1 do printf, 40, bx_elev[i], dblarr(years) + snoval, format = fmt
+endif
 for i = 0, n_elements(elev_bmb[0, *]) - 1 do begin
   fmt = '(i6,' + strtrim(string(years, format = '(i4)'), 2) + 'f7.1)'
   printf, 40, elev0[i], elev_refr[*, i], format = fmt
