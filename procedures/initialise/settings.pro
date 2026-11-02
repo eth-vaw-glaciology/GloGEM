@@ -260,6 +260,10 @@ firnice_f_sur           = 0d    ; f_sur [K]: thermal surface min(0, air - f_sur)
                                 ; by a calibrated amount; 0 = off
 firnice_deepen_to_obs   = 'y'   ; 'y' = at borehole bands the column runs at least to the deepest
                                 ; reading; 'n' = to the band's ice thickness, as elsewhere
+firnice_adv_depthmap    = 'relative'   ; where the horizontal advection reads the band above: 'relative' = same
+                                ; relative depth of the resolved column (stretches a shallow neighbour over a
+                                ; deepened borehole column); 'inventory' = relative to the inventory thickness,
+                                ; no source below the neighbour's column; 'absolute' = same depth in metres
 firnice_temp_calib      = 'n'   ; 'y' = apply per-band transfer-model calibration
 firnice_temp_calib_file = ''    ; path to per-glacier override file; '' = use transfer model or defaults
 firnice_temp_calib_knn_file = '' ; path to per-glacier k-NN residual-correction file (band-aware);
@@ -586,6 +590,8 @@ if total(firnice_perm_limit eq ['hl', 'profile', 'cold']) eq 0 then $
 if total(firnice_thermal_lapse eq ['floor', 'reanalysis', 'stations']) eq 0 then $
     message, "firnice_thermal_lapse must be 'floor', 'reanalysis' or 'stations'"
 if total(firnice_deepen_to_obs eq ['y', 'n']) eq 0 then message, "firnice_deepen_to_obs must be 'y' or 'n'"
+if total(firnice_adv_depthmap eq ['relative', 'inventory', 'absolute']) eq 0 then $
+    message, "firnice_adv_depthmap must be 'relative', 'inventory' or 'absolute'"
 if total(firnice_snow_refreeze eq ['y', 'n']) eq 0 then message, "firnice_snow_refreeze must be 'y' or 'n'"
 if firnice_spinup_dT ne 0 and firnice_forcing_toff ne 'n' then $
     message, "firnice_spinup_dT needs firnice_forcing_toff = 'n'"

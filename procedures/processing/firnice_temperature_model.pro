@@ -501,13 +501,29 @@ endelse
          ; Ensure stability by limiting Courant number
          courant = courant < 0.8
 
-         ; Upglacier ice at the same RELATIVE depth: ice flows roughly parallel to the bed, and a
-         ; thinner band above has no ice at the same absolute depth
+         ; Upglacier source profile. 'relative' (today): ice at the same RELATIVE depth of the
+         ; resolved column, so a column deepened to a borehole (firnice_deepen_to_obs) reads its
+         ; shallower neighbour stretched over its whole depth (Taconnaz 3685 m: a 44 m neighbour
+         ; stretched onto 119 m, the neighbour's wet 5-20 m landing at 15-54 m). 'inventory': the
+         ; relative depth is taken against each band's inventory thickness, as it was before the
+         ; column was deepened; nodes deeper than the neighbour's resolved column get no source.
+         ; 'absolute': the same depth in metres; nodes below the neighbour's column get no source.
          tt_up    = tt_col[upglacier_idx]
-         IF tt_up GE 2 THEN $
-            t_up_map = interpol(reform(tl_fit[ii[upglacier_idx],0:tt_up-1]), reform(fit_dz[1,0:tt_up-1]), $
-                                (reform(fit_dz[1,0:tt-1]) / col_depth) * (fit_dz[1,tt_up-1] > 1.0D)) $
-         ELSE t_up_map = reform(tl_fit[ii[upglacier_idx],0:tt-1])
+         adv_src  = DBLARR(tt) + 1.0D                  ; 1 = a horizontal source exists at this node
+         IF tt_up GE 2 THEN BEGIN
+            z_here = reform(fit_dz[1,0:tt-1])
+            z_up   = reform(fit_dz[1,0:tt_up-1])
+            CASE firnice_adv_depthmap OF
+               'relative':  z_src = (z_here / col_depth) * (fit_dz[1,tt_up-1] > 1.0D)
+               'inventory': z_src = z_here * ((thick[ii[upglacier_idx]] > 1.0D) / (thick[ii[i]] > 1.0D))
+               'absolute':  z_src = z_here
+            ENDCASE
+            IF firnice_adv_depthmap NE 'relative' THEN BEGIN
+               j_none = WHERE(z_src GT fit_dz[1,tt_up-1], n_none)   ; below the neighbour's column: no source
+               IF n_none GT 0 THEN adv_src[j_none] = 0.0D
+            ENDIF
+            t_up_map = interpol(reform(tl_fit[ii[upglacier_idx],0:tt_up-1]), z_up, z_src)
+         ENDIF ELSE t_up_map = reform(tl_fit[ii[upglacier_idx],0:tt-1])
 
          ; Apply advection to each layer
          FOR j=1,tt-2 DO BEGIN
@@ -517,7 +533,7 @@ endelse
             ; column-mean courant already at its 0.8 cap would otherwise reach 1.0 in the
             ; near-surface layers -- the stability boundary of the first-order upwind step,
             ; at which a layer is replaced wholesale by its upglacier neighbour.
-            layer_courant = courant * vprofile[j]
+            layer_courant = courant * vprofile[j] * adv_src[j]
             layer_courant = (layer_courant > 0.0D) < 0.8D
             if fit_lacc_on then lacc_h[ii[i],j] += layer_courant   ; drift spin-up: exchange with the band above
 
