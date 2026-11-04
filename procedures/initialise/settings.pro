@@ -74,6 +74,18 @@ grid_step = 0.1
 bias_correction = 'y'
 bias_correction_method = 1 ; 1: delta method, 2: quantile mapping (daily T only)
 
+; --- air temperature at the bands
+air_temperature = 'era5_2m' ; 'era5_2m' = the 2 m temperature of the climate cell with the monthly lapse rate;
+                            ; 'freeair' = ERA5 pressure-level temperature at each band's height (freeair_file) for
+                            ; the mass balance, its calibration and, if on, the thermal model (monthly, gridded
+                            ; climate files, the years of the table only)
+freeair_file = ''           ; free-air temperature at fixed heights per grid cell and month (NetCDF from
+                            ; glogemflow_icetemp scripts/icetemp_analysis/freeair/make_freeair_table.py)
+freeair_blend_depth = 400d  ; [m] below the climate cell's ground the band air changes gradually from the free air
+                            ; to the 2 m air with the lapse rate, all 2 m air this far below it (freeair_blend.pro)
+freeair_mixed_calibration = 'n' ; 'y' = run on a calibration made with the other air (diagnostic); otherwise a
+                            ; run stops when its air differs from the calibration's (calibration/air_temperature.txt)
+
 ; === calibration
 
 valiglaciers_only = 'n'
@@ -151,15 +163,144 @@ refreezing_parametrised = 'y'
 
 ; --- englacial temperature model
 firnice_temperature = 'n'
-firnice_write = ['y', 'y'] ; [overall time series, detailed profiles]
+firnice_implicit = 'y'      ; heat conduction scheme: 'y' = implicit backward Euler (Thomas),
+                            ; unconditionally stable. 'n' = explicit, which needs the ×½ factor
+                            ; below to stay stable at the current layer thickness and timestep.
+firnice_write = ['y', 'y', 'n'] ; [overall time series, detailed profiles, full T(band,layer) field]
 firnice_batch = 'n'
 firnice_profile = [0.2, 0.65, 0.95] ; elevation ratios (or masl if >1) for profile output
+firnice_glenglat_lookup = ''  ; path to per-glacier borehole elevation lookup; '' = disabled
+firnice_thermal_spinup = 'n'          ; 'y' = run 1D thermal spinup before main loop
+firnice_spinup_ref_period = [1961, 1990] ; climate reference period for equilibrium spinup
+firnice_spinup_max_cycles = 500       ; max equilibrium cycles (convergence usually <200)
+firnice_spinup_tol = 0.05d            ; °C convergence tolerance (max change in deep layers)
+firnice_spinup_min_cycles = 200       ; minimum equilibrium cycles before convergence is checked
+firnice_spinup_dT = 0d               ; K added to the thermal model's air temperature in the spin-up's reference
+                                     ; forcing (diagnostic: a colder climate before the reference period); the
+                                     ; mass balance, firn mask and burial keep the reference climate
+firnice_spinup_solver = 'drift'       ; 'drift' = measure the drift and jump to equilibrium
+                                      ; (spinup_firnicetemp_thermal.pro); 'cycle' = repeat the
+                                      ; reference year until the deep layers stop changing
+mb_book = 1b                          ; 0b only inside the thermal spin-up's reference forcing:
+                                      ; the mass-balance files then skip the climate cursor and annual totals
+fit_lacc_on = 0b                      ; set only by the drift spin-up: firnice_temperature_model
+                                      ; then sums its conduction coefficients per band and layer
 enable_advection = 'n'
+enable_strain_heating   = 'n'   ; 'y' to add viscous dissipation heat source (SIA)
 advection_write = 'n'
 firn_permeability = 'y'
-ice_permeability = 'n'
+firnice_melt_surface = 'n'  ; 'y' = clamp the surface to the melting point in any month with
+                            ; melt, instead of applying air temperature + insulation offset
+firnice_perm_frac       = 1.0d  ; 0-1: scales effective percolation depth (1 = full H-L depth)
+firnice_z0_firn         = 15.0d ; C&P e-folding depth [m]; Z0=κ/w_acc — 15m≈alpine, 60-100m≈polar
+firnice_adv_scale       = 1.0d  ; advection velocity scaling factor (Tier-3 calib param); 1.0 = unscaled baseline
+firnice_refreeze_frac   = 1.0d  ; 0-1: fraction of surface meltwater+rain that percolates and
+                                ; refreezes rather than running off. Sets the latent heat entering
+                                ; the temperature profile. ENERGY ONLY -- the mass balance keeps
+                                ; taking its refreezing from refreezing_parametrised/_full, so
+                                ; this does not change runoff or require MB recalibration.
+firnice_insul_scale     = 1.0d  ; snow/firn insulation: multiplies the Calonne (2011) snow/firn
+                                ; conductivity. Higher = snow conducts more, insulates LESS.
+                                ; Ice is on a separate law and is not scaled, so this changes the
+                                ; snow-to-ice contrast rather than the overall conduction rate.
+                                ; 1.0 = Calonne as published; the other standard relations sit at
+                                ; Sturm 1997 0.59 and Yen 1981 1.09, giving a defensible range.
+firnice_forcing_toff    = 'y'   ; 'n' = the thermal model's energy inputs (surface temperature, the
+                                ; melt and rain that refreeze, Herron-Langway temperature, initial
+                                ; profile, spin-up forcing) without the mass-balance t_offset; its
+                                ; mass inputs (snow, firn mask, accumulation) keep it
+firnice_hl1980          = 'n'   ; 'y' = firn-ice transition depth from the closed form of Herron &
+                                ; Langway (1980), stage 1 independent of the accumulation rate
+firnice_lh_water        = 'n'   ; 'y' = latent heat per m of percolating water (1000 kg/m3)
+firnice_perm_limit      = 'hl'  ; 'profile' = water stops where the thermal model's density
+                                ; profile reaches 830 kg/m3 (diagnostic); 'hl' = Herron-Langway depth;
+                                ; 'cold' = water passes firn at the melting point, but reaches at most
+                                ; firnice_perm_cold_depth into cold firn; the rest runs off
+firnice_perm_cold_depth = 4.d   ; m, meltwater penetration into cold firn (Mattea et al. 2021, z_lim;
+                                ; Gilbert et al. 2014, 4-5 m at Col du Dome in 2012)
+firnice_snow_refreeze   = 'n'   ; 'y' = on ice bands, meltwater and rain (x f_ref) refreeze in the seasonal
+                                ; snow and at the ice surface beneath it before running off
+firnice_orient          = 'n'   ; 'table' = the thermal model's melt is multiplied per band by an orientation
+                                ; factor F (melt of the band's slope over melt of flat ground in the same
+                                ; weather), read from firnice_orient_dir as a function of the month's air
+                                ; temperature anomaly; the mass balance is unchanged
+firnice_orient_dir      = ''    ; folder of orient_<glacier id>.dat, one for every glacier of the run
+firnice_write_melth     = 'n'   ; 'y' = write, per band and month of the main run, the thermal model's degree-day
+                                ; melt before the orientation factor (firnice_melth_<id>.dat, m w.e.) and its air
+                                ; temperature (firnice_tairth_<id>.dat, C): the inputs the orientation tables match
+firnice_thermal_lapse   = 'floor' ; lapse rate of the thermal surface above the climate cell:
+                                ; 'floor' = at least 6.5 K/km; 'reanalysis' = ERA5's own (as the
+                                ; mass balance; better at Jungfraujoch and Corvatsch 1981-2020);
+                                ; 'stations' = firnice_lapse_stations, also for the refreezing melt
+                                ; when firnice_forcing_toff = 'n'
+; monthly lapse rate between the ERA5 grid point and Jungfraujoch / Corvatsch (mean of the two,
+; MeteoSwiss monthly means 1981-2020), K/m, January to December: winter inversions above the grid
+firnice_lapse_stations  = [-0.000833d, -0.002520d, -0.004709d, -0.005872d, -0.005987d, -0.006658d, $
+                           -0.006854d, -0.006397d, -0.005681d, -0.004061d, -0.002689d, -0.001051d]
+firnice_lapse_stations_dz = 1170.d ; m above the climate cell up to which the station rates hold (the two
+                                ; stations' mean height above their grid points); above it ERA5's own rate
+firnice_thermal_air     = 'era5_2m' ; air of the thermal model: 'era5_2m' = the 2 m temperature of the climate
+                                ; cell with the lapse rate above; 'freeair' = ERA5 pressure-level temperature at
+                                ; each band's height (firnice_freeair_file) for the surface, the melt and rain
+                                ; that refreeze, Herron-Langway and the spin-up; the mass balance keeps
+                                ; air_temperature (set to 'freeair' when air_temperature = 'freeair')
+firnice_freeair_file    = ''    ; the table of firnice_thermal_air = 'freeair' (same as freeair_file)
+firnice_daily_anomalies = ''    ; '' = the thermal melt adds the fixed sub-monthly list (variability_<region>.mdi);
+                                ; a file = each month's real daily anomalies of the climate cell instead
+                                ; (glogemflow_icetemp make_daily_anomalies.py), in the spin-up's reference year
+                                ; averaged over the reference period's months; the mass balance keeps the list.
+                                ; A run stops if it reaches months outside the file (e.g. before 1940 or
+                                ; projections) or its climate cell has no series in the file
+firnice_surface_cool    = 'n'   ; 'gilbert' = thermal surface min(0, 0.95 * air + firnice_surface_cool_dt)
+                                ; instead of min(0, air): the snow surface colder than the air (Gilbert et al.
+                                ; 2014, Col du Dome, daily means 2012-13)
+firnice_surface_cool_dt = -3.4d ; K: -3.4 = the measured skin; -1.4 = with Gilbert's +2 K for sunlight
+                                ; penetrating the snow (Trad of their firn model)
+firnice_f_sur           = 0d    ; f_sur [K]: thermal surface min(0, air - f_sur), the snow surface colder than the air
+                                ; by a calibrated amount; 0 = off
+firnice_deepen_to_obs   = 'y'   ; 'y' = at borehole bands the column runs at least to the deepest
+                                ; reading; 'n' = to the band's ice thickness, as elsewhere
+firnice_adv_depthmap    = 'relative'   ; where the horizontal advection reads the band above: 'relative' = same
+                                ; relative depth of the resolved column (stretches a shallow neighbour over a
+                                ; deepened borehole column); 'inventory' = relative to the inventory thickness,
+                                ; no source below the neighbour's column; 'absolute' = same depth in metres
+firnice_temp_calib      = 'n'   ; 'y' = apply per-band transfer-model calibration
+firnice_temp_calib_file = ''    ; path to per-glacier override file; '' = use transfer model or defaults
+firnice_temp_calib_knn_file = '' ; path to per-glacier k-NN residual-correction file (band-aware);
+                                  ; ADDS delta_pf/delta_ds/delta_z0 to the per-band transfer-model
+                                  ; baseline computed per elevation band — requires firnice_temp_calib='y'
+                                  ; (see read/apply_firnicetemp_calibration_knn.pro); '' = disabled
+                                  ; DEPRECATED — undamped nearest-neighbour copy, diagnosed to
+                                  ; produce negative real-world R² (correction applied at full
+                                  ; strength up to 650+ km); superseded by
+                                  ; firnice_temp_calib_bayes_file below. Kept only as a LOO
+                                  ; comparison baseline (see icetemp.calibration.validation).
+firnice_temp_calib_bayes_file = '' ; path to per-glacier Kennedy-O'Hagan Bayesian residual-
+                                  ; correction file (band-aware); ADDS delta_pf/delta_ds/delta_z0
+                                  ; to the per-band transfer-model baseline, same mechanism as
+                                  ; the _knn file above — requires firnice_temp_calib='y' (see
+                                  ; read/apply_firnicetemp_calibration_bayes.pro and Python
+                                  ; icetemp.calibration.writeback.ResidualWriter); '' = disabled
 
-; --- glacier retreat module
+; --- geometry evolution model
+; two options: (1) Δh parameterisation (Huss et al., 2010) via glacier_retreat='y',
+;              (2) coupled flowline model GloGEMflow (Zekollari et al., 2019) via use_flow_model='y'
+use_flow_model = 'n' ; 'y' activates GloGEMflow and disables the Δh parameterisation below
+
+; Spin-up quality gate (2026-09-09): after the spin-up (or a cache hit) the flow model is
+; only used if its un-rescaled survey-year state reproduces the observed glacier:
+; |volume error| <= spinup_gate_vol_tol AND modelled length >= spinup_gate_len_min x observed.
+; Otherwise the glacier runs on the Δh parameterisation from the start (like a failed
+
+; runtime growth limit (limit_glacier_growth.pro); same numbers as check_gmip4_output.py
+growth_max_thick = 2000.0d0 ; m, mean thickness no glacier may exceed
+growth_max_vol   = 50.0d0   ; km3, only bites together with growth_max_rel
+growth_max_rel   = 20.0d0   ; x the inventory volume
+; spin-up). Evaluated in glogemflow_coupled.pro; see the comment there for the evidence.
+spinup_gate_vol_tol = 0.5d0   ; fraction of observed volume
+spinup_gate_len_min = 0.5d0   ; fraction of observed length
+
+; --- glacier retreat module (Δh parameterisation option)
 glacier_retreat = 'y'
 expon = 2. ; valley shape parameter: band area loss vs. thickness loss
 dh_size = [5, 20] ; [km2] boundaries between dh-parameterisations (Huss et al., 2010)
@@ -216,6 +357,7 @@ count_mbelevsens_v0 = 5
 past_out = 'y'
 
 write_hypsometry_files = 'n'
+write_geometry_output = 'n' ; 'y' to save per-glacier geometry and flowline grid history (.sav)
 
 ; --- spatial extent
 lat0 = [-9999, -9999] ; specify sub-region [degrees]; or use [9999,9999] for full region
@@ -346,11 +488,20 @@ case MIP of
     GCM_model = ['ACCESS-ESM1-5', 'BCC-CSM2-MR', 'CESM2-WACCM', 'IPSL-CM6A-LR', 'MRI-ESM2-0', 'MPI-ESM1-2-HR', 'MIROC6', 'NorESM2-MM']
     GCM_rcp = ['ssp126', 'ssp370', 'ssp585', 'ssp534-over']
     GCM_experiment = 'r1i1p1f1'
-    rcp_batch = 3 ;
+    ; Must stay an 8-element array (one entry per GCM_model), matching every
+    ; other MIP case below — a bare scalar indexes fine at rcp_batch[0] (the
+    ; first GCM) but throws "subscript out of range" as soon as the GCM loop
+    ; advances to gcms=1, i.e. as soon as more than one model is requested
+    ; in the same run (GCM_model_idx=[0], "all") rather than one model per
+    ; invocation (GCM_model_idx=[N]).
+    rcp_batch = intarr(8) + 3
     GCM_data = 'gmip4'
     CMIP6 = 'n'
     GMIP4 = 'y'
     AMOC = 'n'
+    ; GMIP4 wants the ERA5 hindcast to evolve the geometry, not hold it fixed.
+    ; Reset to 'n' further below whenever tran[1] > 2025, so projections are unaffected.
+    hindcast_dynamic = 'y'
  end
   'AMOC': begin
     ; AMOC GCMs                                                                                                                                                                                                                                                                      
@@ -393,6 +544,12 @@ if full_output eq 'y' then begin
     , 'Accumulation_day', 'Rain_day', 'Snowmelt_day', 'Icemelt_day', 'Refreezing_day', 'Snowline_day']
 endif
 
+; Backward compatibility: firnice_write gained a third element (full T field) after
+; some config.pro files were written with only two. Indexing firnice_write[2] on such
+; a config would abort the run, so pad any short array with 'n' (feature off) here.
+if n_elements(firnice_write) lt 3 then $
+  firnice_write = [firnice_write, replicate('n', 3 - n_elements(firnice_write))]
+
 ; --- consistency enforcement (automatic exclusion to avoid erroneous runs)
 
 if calibrate eq 'y' then begin
@@ -424,13 +581,15 @@ if calibrate eq 'n' then begin
   calibration_phase = '1'
 endif
 
-if glacier_retreat eq 'n' and hindcast_dynamic ne 'y' then advance = 'n'
+if use_flow_model eq 'y' then advance = 'y' ; flow model requires advance bands
+if glacier_retreat eq 'n' and hindcast_dynamic ne 'y' and use_flow_model eq 'n' then advance = 'n'
 
 if read_parameters eq 'y' then calibrate = 'n'
 
 if single_glacier ne '' then grid_run = 'n'
 
-if tran[1] gt 2020 then hindcast_dynamic = 'n'
+; dynamics only inside the reanalysis record; ERA5 currently ends 2025
+if tran[1] gt 2025 then hindcast_dynamic = 'n'
 
 ; band_extension: only the parts it reproduces; the glacier itself is unchanged
 if calibrate eq 'y' then band_extension = 'n'
@@ -454,6 +613,69 @@ if meltmodel eq '3' then c2_tolerance = c2m3_tolerance
 if debris_supraglacial eq 'n' then eval_mbelevsensitivity = 'n'
 
 if firnice_temperature eq 'n' then firnice_batch = 'n'
+
+; latent heat released when percolating water refreezes in the thermal model [J m-3]: per m of ice
+; (Lh_rf, as before) or per m of water
+Lh_fit = Lh_rf
+if firnice_lh_water eq 'y' then Lh_fit = lhf * 1000.d
+if total(firnice_perm_limit eq ['hl', 'profile', 'cold']) eq 0 then $
+    message, "firnice_perm_limit must be 'hl', 'profile' or 'cold'"
+if total(firnice_thermal_lapse eq ['floor', 'reanalysis', 'stations']) eq 0 then $
+    message, "firnice_thermal_lapse must be 'floor', 'reanalysis' or 'stations'"
+if total(firnice_deepen_to_obs eq ['y', 'n']) eq 0 then message, "firnice_deepen_to_obs must be 'y' or 'n'"
+if total(firnice_adv_depthmap eq ['relative', 'inventory', 'absolute']) eq 0 then $
+    message, "firnice_adv_depthmap must be 'relative', 'inventory' or 'absolute'"
+if total(firnice_snow_refreeze eq ['y', 'n']) eq 0 then message, "firnice_snow_refreeze must be 'y' or 'n'"
+if firnice_spinup_dT ne 0 and firnice_forcing_toff ne 'n' then $
+    message, "firnice_spinup_dT needs firnice_forcing_toff = 'n'"
+if firnice_write_melth eq 'y' and firnice_forcing_toff ne 'n' then $
+    message, "firnice_write_melth needs firnice_forcing_toff = 'n'"
+if total(firnice_orient eq ['n', 'table']) eq 0 then message, "firnice_orient must be 'n' or 'table'"
+if firnice_orient eq 'table' then $
+  if firnice_temperature ne 'y' or firnice_forcing_toff ne 'n' or firnice_orient_dir eq '' then $
+    message, "firnice_orient = 'table' needs firnice_temperature 'y', firnice_forcing_toff 'n' and firnice_orient_dir"
+if firnice_orient eq 'table' then if not file_test(firnice_orient_dir, /directory) then $
+    message, 'firnice_orient: no folder ' + firnice_orient_dir
+if total(air_temperature eq ['era5_2m', 'freeair']) eq 0 then message, "air_temperature must be 'era5_2m' or 'freeair'"
+if air_temperature eq 'freeair' then begin
+  if time_resolution ne 'monthly' then message, "air_temperature = 'freeair' needs monthly steps"
+  if not (freeair_blend_depth gt 0) then message, 'freeair_blend_depth must be > 0'
+  if firnice_temperature eq 'y' then begin
+    if firnice_forcing_toff ne 'n' or firnice_thermal_lapse ne 'reanalysis' then $
+      message, "air_temperature = 'freeair' with the thermal model needs firnice_forcing_toff 'n' and " + $
+               "firnice_thermal_lapse 'reanalysis'"
+    firnice_thermal_air = 'freeair'
+  endif
+endif
+; without the thermal model (e.g. calibrate = 'y') its air setting has no effect
+if firnice_temperature eq 'n' then firnice_thermal_air = 'era5_2m'
+if total(firnice_thermal_air eq ['era5_2m', 'freeair']) eq 0 then $
+    message, "firnice_thermal_air must be 'era5_2m' or 'freeair'"
+; one table for the mass balance and the thermal model
+if freeair_file ne '' and firnice_freeair_file ne '' and freeair_file ne firnice_freeair_file then $
+    message, 'freeair_file and firnice_freeair_file name different tables'
+if freeair_file eq '' then freeair_file = firnice_freeair_file
+use_freeair = (air_temperature eq 'freeair' or (firnice_temperature eq 'y' and firnice_thermal_air eq 'freeair')) $
+    ? 'y' : 'n'
+if use_freeair eq 'y' then if not file_test(freeair_file) then message, 'free air: no file ' + freeair_file
+if firnice_thermal_air eq 'freeair' then $
+  if firnice_temperature ne 'y' or firnice_forcing_toff ne 'n' or firnice_thermal_lapse ne 'reanalysis' then $
+    message, "firnice_thermal_air = 'freeair' needs firnice_temperature 'y', firnice_forcing_toff 'n' and " + $
+             "firnice_thermal_lapse 'reanalysis'"
+if total(firnice_surface_cool eq ['n', 'gilbert']) eq 0 then message, "firnice_surface_cool must be 'n' or 'gilbert'"
+if firnice_f_sur lt 0d then message, 'firnice_f_sur must be >= 0'
+if firnice_f_sur ne 0d and firnice_surface_cool ne 'n' then message, "firnice_f_sur needs firnice_surface_cool 'n'"
+if firnice_temperature eq 'y' and firnice_forcing_toff eq 'n' then $
+  if meltmodel ne '1' or time_resolution ne 'monthly' or debris_supraglacial ne 'n' then $
+    message, "firnice_forcing_toff = 'n' needs meltmodel '1', monthly steps and no supraglacial debris"
+; without the thermal model (e.g. calibrate = 'y') the daily anomalies have no effect
+if firnice_temperature eq 'n' then firnice_daily_anomalies = ''
+if firnice_daily_anomalies ne '' then begin
+  if firnice_temperature ne 'y' or firnice_forcing_toff ne 'n' or submonth_variability ne 'y' then $
+    message, "firnice_daily_anomalies needs firnice_temperature 'y', firnice_forcing_toff 'n' and " + $
+             "submonth_variability 'y'"
+  if not file_test(firnice_daily_anomalies) then message, 'firnice_daily_anomalies: no file ' + firnice_daily_anomalies
+endif
 
 ; reduced output for 2300 runs (Discharge not available)
 if long_GCM ne '' then outf_names = ['Area', 'Volume', 'Annual_Balance_sfc', 'Winter_balance_sfc', 'Icemelt_sfc', $
@@ -495,6 +717,8 @@ rf_melcrit = 0.02 ; critical amount of melt for initialising refreezing module (
 dens_rf = [300, 300, 400, 450, 500, 550, 600, 650] ; approx. density of layers
 rf_dz = 1. ; layer thickness (m)
 rf_dsc = 3. ; increase in temporal resolution (num. stability of heat conduction)
+; rf_dt: 30 days / rf_dsc (monthly) or 1 day / rf_dsc; refreezing_full (rf_dtm) and the firn/ice temperature model
+; (fit_dt) set their sub-steps from mon_len instead
 if time_resolution eq 'daily' then begin
   rf_dt = 3600. * 24. / rf_dsc ; compute time step
 endif else begin
@@ -502,14 +726,38 @@ endif else begin
 end
 
 ; === ice temperature model initialisation
-fit_layers = [10, 10, 10]
+; Vertical grid of the englacial temperature model, as blocks of equal-thickness layers.
+; The third block was extended from 10 to 23 layers, taking the column from 259 m to 519 m
+; while keeping the 20 m spacing. Indices 0-29 are unchanged, so 2/10/18 still mean 2/14/54 m.
+;
+; The spacing matters as much as the reach. A first attempt appended 5 x 50 m below 259 m:
+; that moved the geothermal bed node to the right depth, but the model only solves interior
+; layers to tt-2, so for a 316 m band the deepest SOLVED value stayed at 259 m and 57 m of
+; ice above the bed had no temperature. Continuing at 20 m instead caps that gap at 19 m.
+; Only 17 of the 4079
+; RGI7 CentralEurope glaciers are thicker than 259 m -- but they hold 35 % of the region's
+; ice volume, and the deepest is 421 m, so 509 m covers the Alps with margin. Before this,
+; the geothermal flux for those glaciers was injected at 259 m rather than at the bed and
+; their basal thermal regime could not be diagnosed at all.
+;
+; Extending the grid is close to free: tt = min([ind+1, total(fit_layers)]) in
+; firnice_temperature_model.pro is set from each band's own thickness and every conduction
+; and advection loop runs to tt-2, so thin bands solve exactly as many layers as before.
+; Only memory and the genuinely deep bands pay. For a global run, lengthen the last block
+; (Alaska and the Karakoram reach ~1000 m); nothing else needs to change.
+fit_layers = [10, 10, 23]
 fit_dzstep = [1., 5., 20.]
-fit_dens = [250, 300, 360, 420, 480, 550, 580, 610, 640, 670, 700, 730, 760, 790, 820, 850, 880, 900]
+; fit_dens is defined below, after fit_dz, because it is resampled onto the layer grid.
 
 ; --- physical constants
 cice = 1890000. ; [J m-3 K-1] heat capacity of ice
 cair = 1297. ; [J m-3 K-1] heat capacity of air
 kice = 2.33 ; [J s-1 K-1 m-1] conductivity of ice
+k_ca = [0.024d, -1.23d-4, 2.5d-6] ; Calonne et al. (2011) snow/firn conductivity polynomial,
+                                  ; k = poly(rho) [W m-1 K-1], rho in kg m-3
+k_ice_a = 9.828d   ; Yen (1981) ice conductivity, k = k_ice_a*exp(k_ice_b*T), T in K
+k_ice_b = -5.7d-3  ; gives 2.07 at 0 degC, 2.32 at -20 degC
+rho_ice_k = 900.0d ; [kg m-3] firn-ice transition: at or above this, use the ice law
 kair = 0.001 ; [J s-1 K-1 m-1] conductivity of air
 
 cap = (1 - dens_rf / 1000.) * cair + dens_rf / 1000. * cice
@@ -520,21 +768,25 @@ max_f = 0.5
 
 fit_dz = dblarr(2, total(fit_layers))
 
-for i = 0, fit_layers[0] - 1 do begin
-  fit_dz[0, i] = fit_dzstep[0]
-endfor
-
-for i = fit_layers[0], total(fit_layers[0 : 1]) - 1 do begin
-  fit_dz[0, i] = fit_dzstep[1]
-endfor
-
-for i = total(fit_layers[0 : 1]), total(fit_layers[0 : 2]) - 1 do begin
-  fit_dz[0, i] = fit_dzstep[2]
+; Layer thicknesses, block by block. Generalised from three hardcoded blocks so that
+; fit_layers / fit_dzstep can be any matching length.
+_l0 = 0L
+for _blk = 0, n_elements(fit_layers) - 1 do begin
+  for i = _l0, _l0 + fit_layers[_blk] - 1 do fit_dz[0, i] = fit_dzstep[_blk]
+  _l0 = _l0 + fit_layers[_blk]
 endfor
 
 for i = 1, total(fit_layers) - 1 do begin
   fit_dz[1, i] = fit_dz[1, i - 1] + fit_dz[0, i]
 endfor
+
+; Firn density as a curve in DEPTH, resampled onto whatever layer grid is in use. It used to be
+; an 18-element list indexed by LAYER, so its meaning changed silently with the grid. The
+; reference points are the original values at their original depths, so this is a no-op on the
+; [10x1, 10x5, 23x20] grid. Below the deepest reference point the column is solid ice.
+fit_dens_z   = [0.d, 1, 2, 3, 4, 5, 6, 7, 8, 9, 14, 19, 24, 29, 34, 39, 44, 49]
+fit_dens_ref = [250.d, 300, 360, 420, 480, 550, 580, 610, 640, 670, 700, 730, 760, 790, 820, 850, 880, 900]
+fit_dens     = (interpol(fit_dens_ref, fit_dens_z, reform(fit_dz[1,*])) > fit_dens_ref[0]) < 900.d
 
 ; Expand range shorthand into index arrays ([0,0] means not used; range takes precedence)
 if GCM_model_range[0] ne 0 then $

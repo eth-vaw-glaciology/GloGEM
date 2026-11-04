@@ -19,7 +19,7 @@ compile_opt idl2
 ; defining where procedures are found
 CD, CURRENT=base_dir ; define base directory
 a = !path            ; save current path
-!PATH = a + ':' + base_dir + '/functions/:' + base_dir + '/procedures/read/:' + base_dir + '/procedures/write/:' + base_dir + '/procedures/processing/:' ; add path to procedures and functions
+!PATH = a + ':' + base_dir + '/functions/:' + base_dir + '/procedures/read/:' + base_dir + '/procedures/write/:' + base_dir + '/procedures/processing/:' + base_dir + '/procedures/flow/' ; add path to procedures and functions
 
 ; load all model settings (and user overrides from ~/.glogem/config.pro)
 @procedures/initialise/settings.pro
@@ -29,10 +29,13 @@ fn='procedures/initialise/settings.pro' & anz=file_lines(fn) & input_file_conten
 openr,1,fn & readf,1,input_file_content & close,1
 
 ; open log file to capture all console output
-file_mkdir, base_dir + '/logs'
+; GLOGEM_LOGDIR keeps these verbose journals off the home quota; default unchanged
+log_dir = getenv('GLOGEM_LOGDIR')
+if log_dir eq '' then log_dir = base_dir + '/logs'
+file_mkdir, log_dir
 a=systime() & b=strsplit(a,' ',/extract)
 log_timestamp=string(b[4],fo='(a4)')+'_'+string(b[1],fo='(a3)')+string(b[2],fo='(a2)')+'_'+strjoin(strsplit(b[3],':',/extract),'h')+'m'
-log_file=base_dir+'/logs/glogem_'+log_timestamp+'.log'
+log_file=log_dir+'/glogem_'+log_timestamp+'.log'
 journal, log_file
 
 ; Some information to show which model we are running
@@ -64,6 +67,15 @@ if firnice_temperature eq 'y' then begin
   @procedures/read/read_geothermal.pro
   if firnice_batch eq 'y' then begin
     @procedures/read/read_firnicebatch.pro
+  endif
+  if firnice_temp_calib_file ne '' then begin
+    @procedures/initialise/read_firnicetemp_calibration.pro
+  endif
+  if firnice_temp_calib_knn_file ne '' then begin
+    @procedures/initialise/read_firnicetemp_calibration_knn.pro
+  endif
+  if firnice_temp_calib_bayes_file ne '' then begin
+    @procedures/initialise/read_firnicetemp_calibration_bayes.pro
   endif
 endif
 
@@ -117,6 +129,12 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
           count_glaciers=1
           cali_calflux=0
+          if use_flow_model eq 'y' then begin
+            n_flow_ok       = 0L
+            n_flow_short    = 0L
+            n_flow_fallback = 0L
+            n_flow_gated    = 0L
+          endif
 
           ; Define start of mass balance year and clean stale t_offset
           @procedures/initialise/setup_massbalance_year.pro
@@ -125,9 +143,26 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
           lat0=[9999,9999]        ; run for entire region
           lon0=[0,0]        ; or specify sub-regions
           if clim_subregion ne '' and time_resolution eq 'monthly' then begin
-            ccl='_'+clim_subregion 
+            ccl='_'+clim_subregion
             @procedures/read/read_climatepast_monthly.pro
-            @procedures/read/read_gcmdata_monthly.pro
+            ; This region-setup-time GCM read only makes sense for the CMIP6
+            ; path, which loads one whole regional grid (gcm_lon/gcm_lat) up
+            ; front and never touches the per-glacier lon/lat here. The
+            ; GMIP4 (CMIP6='n') branch instead looks up a per-coordinate
+            ; file via mean(lon)/mean(lat) -- but lon/lat aren't assigned
+            ; until the grid loop starts (see 'lon=' below), so calling it
+            ; this early crashes with "Variable is undefined: X" the moment
+            ; a config actually exercises this branch. It's also redundant
+            ; there regardless: rvlat/rvlon (the only thing used right below)
+            ; come from read_climatepast_monthly.pro above, not this call,
+            ; and the real per-grid-cell GCM read already happens correctly
+            ; later via read_climate_series.pro, once lon/lat exist. Confirmed
+            ; via LowLatitudes/Antarctic's flow/ssp126 wave, 2026-08-17 --
+            ; the first time subregion + GMIP4 + a forward (non-calibration)
+            ; run had ever actually been exercised together.
+            if CMIP6 eq 'y' then begin
+              @procedures/read/read_gcmdata_monthly.pro
+            endif
             lat0=[min(rvlat)-0.1,max(rvlat)]
             if clim_subregion eq 'Atlantic' then lat0[0]=-60.5
             lon0=[min(rvlon)-0.1,max(rvlon)]
@@ -172,6 +207,11 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
             ; generating folder structure
             @procedures/initialise/setup_output_folders.pro
+
+            ; a free-air calibration records its air (read_calibration_params.pro checks it)
+            if calibrate eq 'y' then begin
+              @procedures/calibration/write_calibration_air.pro
+            endif
 
             ; read parameter for individual regions from file
 
@@ -226,6 +266,9 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
               @procedures/initialise/initialise_results_files.pro
             endif
 
+            ; full-region inventory, kept so the climate grid point ignores batching
+            xy_clim = xy & a_gl_clim = a_gl & volini_clim = volume_ini
+
             ; selecting a specific subset of glaciers from a list (catchment) within one RGI region
             if catchment_selection ne '' then begin
               @procedures/initialise/catchment_selection.pro
@@ -260,13 +303,13 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                 if single_glacier ne '' then begin
                   nc_total_g = 1
                 endif else if size_range[0] ne -99 then begin
-                  void = where(xy[1,*] gt lat0[0] and xy[1,*] lt lat0[1] and $
-                               xy[0,*] gt lon0[0] and xy[0,*] lt lon0[1] and $
+                  void = where(xy[1,*] ge lat0[0] and xy[1,*] le lat0[1] and $
+                               xy[0,*] ge lon0[0] and xy[0,*] le lon0[1] and $
                                a_gl gt size_range[0] and a_gl lt size_range[1] and $
                                volume_ini gt 0, nc_total_g)
                 endif else begin
-                  void = where(xy[1,*] gt lat0[0] and xy[1,*] lt lat0[1] and $
-                               xy[0,*] gt lon0[0] and xy[0,*] lt lon0[1] and $
+                  void = where(xy[1,*] ge lat0[0] and xy[1,*] le lat0[1] and $
+                               xy[0,*] ge lon0[0] and xy[0,*] le lon0[1] and $
                                volume_ini gt 0, nc_total_g)
                 endelse
                 ; Call the appropriate init procedure. It creates the NetCDF file
@@ -284,23 +327,50 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                 for gy=0,ngy-1 do begin
 
                   if grid_run eq 'y' then begin
-                    lon=[lon0[0]+gx*grid_step,lon0[0]+gx*grid_step+grid_step]
-                    lat=[lat0[0]+gy*grid_step,lat0[0]+gy*grid_step+grid_step]
+                    ; 2026-09-08: half-open [lo, hi) cells, hi of cell gx == lo of cell gx+1 bit for bit,
+                    ; so a glacier exactly on a cell edge is run exactly once (SouthAsiaEast batch11
+                    ; lost 05759 at lon 85.450001 to the old strict gt/lt pair).
+                    lon=[lon0[0]+gx*grid_step,lon0[0]+(gx+1)*grid_step]
+                    lat=[lat0[0]+gy*grid_step,lat0[0]+(gy+1)*grid_step]
                   endif
 
                   ; select glacier subsample to be calculated
-                  if lat[0] ne -99 and size_range[0] ne -99 then gg=where(xy[1,*] gt lat[0] and xy[1,*] lt lat[1] and xy[0,*] gt lon[0] and xy[0,*] lt lon[1] and a_gl gt size_range[0] and a_gl lt size_range[1] and volume_ini gt 0,cg)
-                  if lat[0] ne -99 and size_range[0] eq -99 then gg=where(xy[1,*] gt lat[0] and xy[1,*] lt lat[1] and xy[0,*] gt lon[0] and xy[0,*] lt lon[1] and volume_ini gt 0,cg)
+                  if lat[0] ne -99 and size_range[0] ne -99 then gg=where(xy[1,*] ge lat[0] and xy[1,*] lt lat[1] and xy[0,*] ge lon[0] and xy[0,*] lt lon[1] and a_gl gt size_range[0] and a_gl lt size_range[1] and volume_ini gt 0,cg)
+                  if lat[0] ne -99 and size_range[0] eq -99 then gg=where(xy[1,*] ge lat[0] and xy[1,*] lt lat[1] and xy[0,*] ge lon[0] and xy[0,*] lt lon[1] and volume_ini gt 0,cg)
                   if lat[0] eq -99 and size_range[0] ne -99 then gg=where(a_gl gt size_range[0] and a_gl lt size_range[1] and volume_ini gt 0,cg)
                   if single_glacier ne '' then gg=where(id eq single_glacier and volume_ini gt 0,cg)
 
+                  ; climate grid point uses every glacier of the cell, not only this batch
+                  cgc = 0
+                  if lat[0] ne -99 and single_glacier eq '' then begin
+                    in_cell = xy_clim[1,*] ge lat[0] and xy_clim[1,*] lt lat[1] and $
+                              xy_clim[0,*] ge lon[0] and xy_clim[0,*] lt lon[1] and volini_clim gt 0
+                    if size_range[0] ne -99 then $
+                      in_cell = in_cell and a_gl_clim gt size_range[0] and a_gl_clim lt size_range[1]
+                    gc = where(in_cell, cgc)
+                  endif
+
                   latitudes=lat_gl[gg] & longitudes=lon_gl[gg]
+                  if cgc gt 0 then begin
+                    latitudes_clim = reform(xy_clim[1, gc]) & longitudes_clim = reform(xy_clim[0, gc])
+                  endif else begin
+                    latitudes_clim = latitudes & longitudes_clim = longitudes
+                  endelse
                   
                   ; storage arrays
                   stor_im=dblarr(nout) & stor_dv=stor_im & stor_ar=stor_im & stor_vo=stor_im
 
                   @procedures/processing/read_climate_series.pro
-		  
+
+                  ; free air of this climate cell (air_temperature or firnice_thermal_air = 'freeair')
+                  if use_freeair eq 'y' and cg gt 0 then begin
+                    @procedures/initialise/setup_freeair.pro
+                  endif
+                  ; real daily anomalies of this climate cell for the thermal melt (firnice_daily_anomalies)
+                  if firnice_daily_anomalies ne '' and cg gt 0 then begin
+                    @procedures/initialise/setup_firnice_daily_anomalies.pro
+                  endif
+
                   if cg gt 0 then begin
                     if calibrate eq 'n' then a=GCM_model[gcms]+'/'+GCM_rcp[rcps] else a='CALI - '+reanalysis
                     if total(a_gl[gg]) gt 10. and gx mod 2 eq 0 and gy mod 2 eq 0 then $
@@ -318,6 +388,11 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                     if calibrate_individual eq 'y' then begin
                       cal1max=15
                     endif
+
+                    if use_flow_model eq 'y' then flow_initialised = !NULL
+                    use_flow_model_gl = use_flow_model  ; per-glacier, may be overridden below
+                    flow_gated_gl = 0   ; set by the spin-up quality gate in glogemflow_coupled.pro
+                    if n_elements(n_growth_clamped) eq 0 then n_growth_clamped = 0
 
                     for cal1=0,cal1max do begin
 
@@ -337,6 +412,13 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                         ; define variables and process hypsometry
                         @procedures/processing/process_hypsometry_data.pro
 
+                        ; Flow model only for glaciers >= 1 km at inventory date;
+                        ; shorter glaciers fall back to the Δh parameterisation.
+                        if use_flow_model eq 'y' and length[0] lt 1.0d0 then begin
+                          use_flow_model_gl = 'n'
+                          if cal1 eq 0 and calibrate ne 'y' then n_flow_short = n_flow_short + 1
+                        endif
+
                         ; prepare output for mass balance in elevation bands
 
                         if meltmodel eq '1' then mtt='' else mtt='_m3'
@@ -345,6 +427,9 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
                       ; prepare output of ice temperature model
                       if firnice_temperature eq 'y' then begin
+                        if firnice_glenglat_lookup ne '' then begin
+                          @procedures/initialise/setup_firnice_profile_from_glenglat.pro
+                        endif
                         @procedures/write/prepare_output_firnicetemp.pro
                       endif
 
@@ -393,7 +478,40 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
                       ; === MAIN LOOP over years
 
-                      @procedures/initialise/initialise_firnicetemp_spinup.pro
+                      if firnice_temperature eq 'y' then begin
+                        @procedures/initialise/initialise_firnicetemp_spinup.pro
+                        if firnice_temp_calib_file ne '' then begin
+                          @procedures/initialise/apply_firnicetemp_calibration.pro
+                        endif
+                        if firnice_temp_calib_knn_file ne '' then begin
+                          @procedures/initialise/apply_firnicetemp_calibration_knn.pro
+                        endif
+                        if firnice_temp_calib_bayes_file ne '' then begin
+                          @procedures/initialise/apply_firnicetemp_calibration_bayes.pro
+                        endif
+                        ; Spinup runs AFTER the overrides above: it calls the full temperature
+                        ; model, so it must see this glacier's calibrated parameters. Run inside
+                        ; initialise_firnicetemp_spinup (as before) it only ever saw the defaults.
+                        if firnice_orient eq 'table' then begin
+                          @procedures/initialise/setup_firnice_orient.pro
+                        endif
+                        if firnice_write_melth eq 'y' then begin
+                          melth_log = dblarr(years, 12, nb) + noval & tairth_log = melth_log
+                        endif
+                        ; reference-period forcing, balance b_ref and thermal firn mask
+                        ; (spin-up forcing, and burial/emergence in the main run)
+                        if time_resolution eq 'monthly' then begin
+                          @procedures/initialise/firnice_reference_forcing.pro
+                        endif else b_ref = dblarr(nb)
+                        if firnice_thermal_spinup eq 'y' then begin
+                          @procedures/initialise/spinup_firnicetemp_thermal.pro
+                        endif
+                      endif
+
+                      ; Record eligibility after length check — short glaciers already have
+                      ; use_flow_model_gl='n' and must not inflate the fallback counter.
+                      flow_eligible = (use_flow_model eq 'y') and (use_flow_model_gl eq 'y')
+
                       for ye=0,years-1 do begin
 
                         if eval_mbelevsensitivity eq 'y' then begin
@@ -412,6 +530,15 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                         rf_ind=dblarr(nb) & rf_cold=rf_ind
                         ii=where(gl ne noval,ci) & if ci gt 0 then ar_gl=total(area[ii]) else ar_gl=0
                         if elev[0] gt elev[1]+100 then elev[0]=elev[1]
+
+                        ; Geometry stays frozen at the inventory geometry until each glacier's
+                        ; survey year; the Δh parameterisation / flow model only evolve from the
+                        ; inventory date onward. glacier_retreat is 'y' globally (settings.pro)
+                        ; and was only reset to 'n' inside initialise_firnicetemp_spinup (skipped
+                        ; when firnice_temperature='n'), so without this reset the Δh
+                        ; parameterisation ran from tran[0] (1940) and inflated the inventory-date
+                        ; volume well above the ice-thickness product.
+                        if find_startyear eq 'y' or hindcast_dynamic eq 'y' then glacier_retreat = 'n'
 
                         ; allow glacier area changes in hindcast period after date of RGI
                         if hindcast_dynamic eq 'y' then if ye+tran[0] ge survey_year[gg[g]] then glacier_retreat='y'
@@ -443,6 +570,12 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                             if time_resolution eq 'monthly' then cdm=cmon else cdm=cday
                             if ccmon eq 0 then jjclim=where(cyear eq ye-1+tran[0] and cdm eq m)
                             tg=temp[jjclim[0]+ccmon]+(elev-hclim)*dtdz[m-1]+t_offset
+                            if air_temperature eq 'freeair' then if fa_tix[jjclim[0]+ccmon] ge 0 then $
+                              tg=freeair_blend(freeair_at(fa_node,fa_h0,fa_dh,elev,fa_tix[jjclim[0]+ccmon]), $
+                                temp[jjclim[0]+ccmon]+(elev-hclim)*dtdz[m-1],elev,hclim,freeair_blend_depth)+t_offset
+                            ; this month's free air index, before accumulation.pro advances ccmon
+                            if firnice_thermal_air eq 'freeair' then fa_it = jjclim[0]+ccmon
+                            if firnice_daily_anomalies ne '' then da_it = jjclim[0]+ccmon
 			    
                             ; === Mass balance model
 
@@ -472,8 +605,20 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
                             ; --- firn/ice temperatures
                             ; (separate workflow as the target and setup differs)
+                            ; When the flow model is active, skip ice temperature updates
+                            ; until the flow model has been initialised (geometry converged).
+                            ; Pre-convergence years use a frozen geometry that does not
+                            ; reflect the calibrated flowline state, so evolving temperatures
+                            ; there is both physically wrong and wasteful. The C&P
+                            ; initialisation already provides the equilibrium starting profile.
 
-                            if firnice_temperature eq 'y' then begin
+                            if firnice_temperature eq 'y' and $
+                               (use_flow_model_gl ne 'y' or n_elements(flow_initialised) gt 0) then begin
+                              if firnice_thermal_air eq 'freeair' then $
+                                fa_tm = freeair_at(fa_node, fa_h0, fa_dh, elev, fa_tix[fa_it])
+                              if air_temperature eq 'freeair' then $
+                                fa_tm = freeair_blend(fa_tm, temp[fa_it] + (elev - hclim) * dtdz[m-1], elev, hclim, freeair_blend_depth)
+                              @procedures/processing/firnice_thermal_forcing.pro
                               @procedures/processing/firnice_temperature_model.pro
                             endif    ; firn-ice temperature model
 
@@ -590,10 +735,30 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                         @procedures/processing/calving_model.pro
 
                         if glacier_retreat eq 'y' then begin
-                          @procedures/processing/glacier_retreat.pro
-                        endif    ; glacier retreat
+                          if use_flow_model_gl eq 'y' and ye + tran[0] ge survey_year[gg[g]] then begin
+                            @procedures/flow/glogemflow_coupled
+                            @procedures/flow/update_elevation_bands
+                          endif else begin
+                            @procedures/processing/glacier_retreat.pro
+                          endelse
+                          ; bound the result whichever path produced it
+                          @procedures/processing/limit_glacier_growth.pro
+                        endif                           ; glacier retreat
+
+                        ; save per-glacier geometry and flowline grid history (.sav)
+                        if write_geometry_output eq 'y' then begin
+                          @procedures/write/save_geometry_output.pro
+                        endif
 
                       endfor    ; Loop over years
+
+                      ; write firn temperature validation diagnostics (C&P vs. model f_rf)
+                      if firnice_temperature eq 'y' then begin
+                        @procedures/write/write_firnicetemp_validation
+                      endif
+                      if firnice_temperature eq 'y' and firnice_write_melth eq 'y' then begin
+                        @procedures/write/write_firnice_melth.pro
+                      endif
 
                       ; === Optimization - SINGLE-GLACIER MASS BALANCE
 
@@ -609,6 +774,14 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
                       ; write hypsometry-evolution file
                       @procedures/write/write_hypsometry_evolution_file.pro
+
+                      ; Count flow model usage (once per glacier, forward runs only).
+                      ; flow_eligible excludes glaciers too short for the flow model.
+                      if flow_eligible and calibrate ne 'y' and cal1 eq 0 then begin
+                        if use_flow_model_gl eq 'y' then n_flow_ok = n_flow_ok + 1 $
+                        else if flow_gated_gl then n_flow_gated = n_flow_gated + 1 $
+                        else n_flow_fallback = n_flow_fallback + 1
+                      endif
 
                     endif                           ; bedrock-file available?
 
@@ -710,6 +883,18 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
           ; output of total calving flux for calibration purposes
           print, '--------- TOTAL CALVING FLUX (Gt/a) (period average):'
           print, string(cali_calflux,fo='(f9.4)')
+          if use_flow_model eq 'y' then begin
+            n_flow_total = count_glaciers - 1   ; total glaciers the loop visited
+            pct_ok      = string(n_flow_ok      * 100. / n_flow_total, fo='(f5.1)')
+            pct_short   = string(n_flow_short   * 100. / n_flow_total, fo='(f5.1)')
+            pct_fallbk  = string(n_flow_fallback* 100. / n_flow_total, fo='(f5.1)')
+            pct_gated   = string(n_flow_gated   * 100. / n_flow_total, fo='(f5.1)')
+            print, '--------- GLOGEMFLOW USAGE (' + strtrim(n_flow_total,2) + ' glaciers total):'
+            print, '  ' + strtrim(n_flow_ok,2)       + ' (' + strtrim(pct_ok,2)     + '%)  ran with GloGEMflow'
+            print, '  ' + strtrim(n_flow_short,2)    + ' (' + strtrim(pct_short,2)  + '%)  excluded: length < 1 km'
+            print, '  ' + strtrim(n_flow_fallback,2) + ' (' + strtrim(pct_fallbk,2) + '%)  excluded: spinup failure (fell back to Dh parameterisation)'
+            print, '  ' + strtrim(n_flow_gated,2)    + ' (' + strtrim(pct_gated,2)   + '%)  excluded: spin-up could not reproduce the observed glacier (quality gate)'
+          endif
         endif
 
         ; print statistics for calibration phases and write file for calibration phase statistics
@@ -750,6 +935,8 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
   if write_hypsometry_files eq 'y' then begin
     @procedures/write/zip_and_clean_hypsometry_files.pro
   endif
+
+  if calibrate eq 'y' then break  ; calibration uses reanalysis — SSP choice is irrelevant
 
 endfor  ; RCPs
 

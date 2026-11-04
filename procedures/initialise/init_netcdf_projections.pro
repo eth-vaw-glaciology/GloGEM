@@ -121,11 +121,14 @@ for yr = 0L, nc_years-1L do $
 
 nc_period = strtrim(string(nc_tran[0]),2) + '-' + strtrim(string(nc_tran[1]),2)
 
+; GloGEMflow output must be distinguishable from plain GloGEM in the submission
+nc_model = use_flow_model eq 'y' ? 'GloGEMflow' : 'GloGEM'
+
 ; --- full period file names ---
-nc_fn_ann   = nc_outdir + 'GloGEM_' + nc_base_tag  + '_' + nc_gcm_tag + '_annual.nc'
-nc_fn_sub   = nc_outdir + 'GloGEM_' + nc_base_tag  + '_' + nc_gcm_tag + '_' + nc_sub_lbl + '.nc'
-nc_fn_ann_i = nc_outdir + 'GloGEM_' + nc_indiv_tag + '_' + nc_gcm_tag + '_annual.nc'
-nc_fn_sub_i = nc_outdir + 'GloGEM_' + nc_indiv_tag + '_' + nc_gcm_tag + '_' + nc_sub_lbl + '.nc'
+nc_fn_ann   = nc_outdir + nc_model + '_' + nc_base_tag  + '_' + nc_gcm_tag + '_annual.nc'
+nc_fn_sub   = nc_outdir + nc_model + '_' + nc_base_tag  + '_' + nc_gcm_tag + '_' + nc_sub_lbl + '.nc'
+nc_fn_ann_i = nc_outdir + nc_model + '_' + nc_indiv_tag + '_' + nc_gcm_tag + '_annual.nc'
+nc_fn_sub_i = nc_outdir + nc_model + '_' + nc_indiv_tag + '_' + nc_gcm_tag + '_' + nc_sub_lbl + '.nc'
 
 ; --- global attributes helper values ---
 nc_institution = 'ETH, VAW'
@@ -315,6 +318,45 @@ nc_reg_temp_a = dblarr(nc_n_sub)
 nc_has_split = (netcdf_split eq 'y')
 nc_g         = 0L
 
+; ================================================================
+; INDIVIDUAL-GLACIER WRITE BUFFERS (full period only -- the split
+; past/future files below are unaffected and keep writing directly)
+; ================================================================
+; write_netcdf_glacier.pro accumulates each glacier's values here instead
+; of calling ncdf_varput immediately; write_netcdf_projections.pro flushes
+; each buffer in one bulk call before closing nc_ann_i/nc_sub_i. Same
+; pattern already used for the nc_reg_* regional sums above -- this just
+; extends it to the per-glacier arrays. Measured 2026-08-31 on a real
+; 3150-glacier batch: 888,640 individual ncdf_varput calls -> ~14 bulk
+; calls, same final values/dimensions/attributes, only write timing changes.
+; nc_total_g (this buffer's row count) is a pre-count taken before the
+; glacier loop runs and can exceed the number of glaciers that actually
+; reach write_netcdf_glacier.pro (confirmed 2026-08-31 on a LowLatitudes/
+; Mexico test). The old immediate-write code never touched the unused
+; trailing rows, so netCDF4's own fill-on-create behaviour left them as
+; nc_fv (matching each variable's _FillValue attribute above). IDL's
+; fltarr() defaults to 0.0, not nc_fv, so without this the bulk write
+; below would silently overwrite those rows with explicit zeros instead of
+; the correct fill value -- initialise every float buffer to nc_fv here so
+; a full-buffer write reproduces old behaviour exactly regardless of
+; nc_total_g vs. actual-glacier-count. RGIId is a plain /string var with
+; no _FillValue attribute, so strarr()'s default '' already matches.
+nc_buf_rgiid = strarr(nc_total_g)
+nc_buf_area  = replicate(nc_fv, nc_total_g, nc_years)
+nc_buf_mass  = replicate(nc_fv, nc_total_g, nc_years)
+nc_buf_mbsl  = replicate(nc_fv, nc_total_g, nc_years)
+nc_buf_fabl  = replicate(nc_fv, nc_total_g, nc_years)
+nc_buf_ela   = replicate(nc_fv, nc_total_g, nc_years)
+nc_buf_aar   = replicate(nc_fv, nc_total_g, nc_years)
+nc_buf_run   = replicate(nc_fv, nc_total_g, nc_n_sub)
+nc_buf_rbas  = replicate(nc_fv, nc_total_g, nc_n_sub)
+nc_buf_acc   = replicate(nc_fv, nc_total_g, nc_n_sub)
+nc_buf_melt  = replicate(nc_fv, nc_total_g, nc_n_sub)
+nc_buf_refr  = replicate(nc_fv, nc_total_g, nc_n_sub)
+nc_buf_prec  = replicate(nc_fv, nc_total_g, nc_n_sub)
+nc_buf_temp  = replicate(nc_fv, nc_total_g, nc_n_sub)
+nc_buf_snln  = replicate(nc_fv, nc_total_g, nc_n_sub)
+
 if ~nc_has_split then goto, init_proj_done
 
 ; ================================================================
@@ -385,16 +427,16 @@ if ~file_test(nc_outdir_sp, /directory) then file_mkdir, nc_outdir_sp
 if ~file_test(nc_outdir_sf, /directory) then file_mkdir, nc_outdir_sf
 
 ; --- split past file names (hindcast naming with reanalysis) ---
-nc_sp_fn_ann   = nc_outdir_sp + 'GloGEM_' + nc_base_tag  + '_' + nc_gcm_tag + '_' + nc_rea + '_annual.nc'
-nc_sp_fn_sub   = nc_outdir_sp + 'GloGEM_' + nc_base_tag  + '_' + nc_gcm_tag + '_' + nc_rea + '_' + nc_sub_lbl + '.nc'
-nc_sp_fn_ann_i = nc_outdir_sp + 'GloGEM_' + nc_indiv_tag + '_' + nc_gcm_tag + '_' + nc_rea + '_annual.nc'
-nc_sp_fn_sub_i = nc_outdir_sp + 'GloGEM_' + nc_indiv_tag + '_' + nc_gcm_tag + '_' + nc_rea + '_' + nc_sub_lbl + '.nc'
+nc_sp_fn_ann   = nc_outdir_sp + nc_model + '_' + nc_base_tag  + '_' + nc_gcm_tag + '_' + nc_rea + '_annual.nc'
+nc_sp_fn_sub   = nc_outdir_sp + nc_model + '_' + nc_base_tag  + '_' + nc_gcm_tag + '_' + nc_rea + '_' + nc_sub_lbl + '.nc'
+nc_sp_fn_ann_i = nc_outdir_sp + nc_model + '_' + nc_indiv_tag + '_' + nc_gcm_tag + '_' + nc_rea + '_annual.nc'
+nc_sp_fn_sub_i = nc_outdir_sp + nc_model + '_' + nc_indiv_tag + '_' + nc_gcm_tag + '_' + nc_rea + '_' + nc_sub_lbl + '.nc'
 
 ; --- split future file names (projection naming) ---
-nc_sf_fn_ann   = nc_outdir_sf + 'GloGEM_' + nc_base_tag  + '_' + nc_gcm_tag + '_annual.nc'
-nc_sf_fn_sub   = nc_outdir_sf + 'GloGEM_' + nc_base_tag  + '_' + nc_gcm_tag + '_' + nc_sub_lbl + '.nc'
-nc_sf_fn_ann_i = nc_outdir_sf + 'GloGEM_' + nc_indiv_tag + '_' + nc_gcm_tag + '_annual.nc'
-nc_sf_fn_sub_i = nc_outdir_sf + 'GloGEM_' + nc_indiv_tag + '_' + nc_gcm_tag + '_' + nc_sub_lbl + '.nc'
+nc_sf_fn_ann   = nc_outdir_sf + nc_model + '_' + nc_base_tag  + '_' + nc_gcm_tag + '_annual.nc'
+nc_sf_fn_sub   = nc_outdir_sf + nc_model + '_' + nc_base_tag  + '_' + nc_gcm_tag + '_' + nc_sub_lbl + '.nc'
+nc_sf_fn_ann_i = nc_outdir_sf + nc_model + '_' + nc_indiv_tag + '_' + nc_gcm_tag + '_annual.nc'
+nc_sf_fn_sub_i = nc_outdir_sf + nc_model + '_' + nc_indiv_tag + '_' + nc_gcm_tag + '_' + nc_sub_lbl + '.nc'
 
 ; --- create split past files (5–8) ---
 nc_sp_ann = ncdf_create(nc_sp_fn_ann, /clobber, /netcdf4)

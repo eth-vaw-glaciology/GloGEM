@@ -43,6 +43,26 @@ ncdf_varput, nc_sub, nc_vid_run,  nc_reg_run
 ncdf_varput, nc_sub, nc_vid_prec, nc_reg_prec
 ncdf_varput, nc_sub, nc_vid_temp, nc_reg_temp
 
+; Flush the buffered individual-glacier arrays -- see the matching block
+; in write_netcdf_projections.pro / init_netcdf_hindcast.pro (2026-08-31).
+ncdf_varput, nc_ann_i, nc_vid_i_rgid,  nc_buf_rgiid
+ncdf_varput, nc_ann_i, nc_vid_i_area,  nc_buf_area
+ncdf_varput, nc_ann_i, nc_vid_i_mass,  nc_buf_mass
+ncdf_varput, nc_ann_i, nc_vid_i_mbsl,  nc_buf_mbsl
+ncdf_varput, nc_ann_i, nc_vid_i_fabl,  nc_buf_fabl
+ncdf_varput, nc_ann_i, nc_vid_i_ela,   nc_buf_ela
+ncdf_varput, nc_ann_i, nc_vid_i_aar,   nc_buf_aar
+
+ncdf_varput, nc_sub_i, nc_vid_i_rgid_s, nc_buf_rgiid
+ncdf_varput, nc_sub_i, nc_vid_i_run,    nc_buf_run
+ncdf_varput, nc_sub_i, nc_vid_i_rbas,   nc_buf_rbas
+ncdf_varput, nc_sub_i, nc_vid_i_acc,    nc_buf_acc
+ncdf_varput, nc_sub_i, nc_vid_i_melt,   nc_buf_melt
+ncdf_varput, nc_sub_i, nc_vid_i_refr,   nc_buf_refr
+ncdf_varput, nc_sub_i, nc_vid_i_prec,   nc_buf_prec
+ncdf_varput, nc_sub_i, nc_vid_i_temp,   nc_buf_temp
+ncdf_varput, nc_sub_i, nc_vid_i_snln,   nc_buf_snln
+
 ; Close all files
 ncdf_close, nc_ann
 ncdf_close, nc_sub

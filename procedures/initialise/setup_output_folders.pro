@@ -30,6 +30,7 @@ core_dirs = [ $
    bd + '/calibration', $
    bd + '/PAST' + version_past + mtt, $
    bd + '/PAST' + version_past + mtt + '/PAST_original', $
+   bd + '/PAST' + version_past + mtt + '/PAST_original/dyn', $   ; dynamic hindcast writes here
    bd + '/files' + mtt, $
    bd + '/files' + mtt + '/files_original', $
    bd + '/files' + mtt + '/files_original/SINGLE', $

@@ -14,6 +14,11 @@ compile_opt idl2
 ; calculate balance - store results
 if ar_gl ne 0 then mb[ye]=total(bal*area)/ar_gl
 baly[ye,*]=bal
+
+; Accumulate per-band melt and refreeze for firn temperature validation (before noval masking)
+melt_rf_sum += melt
+refr_rf_sum += refreeze
+
 if nb gt elev_range_p/step and plot eq 'y' then begin
    ii=where(gl eq noval,ci) & if ci gt 0 then melt[ii]=noval
    accy[ye,*]=acc & mely[ye,*]=melt & refry[ye,*]=refreeze
@@ -27,6 +32,16 @@ if ye gt 4 then begin
    balm=dblarr(nb)
    for i=0,nb-1 do balm[i]=mean(baly[ye-4:ye,i])
    firn=dblarr(nb) & ii=where(balm gt 0 and gl ne noval,ci) & if ci gt 0 then firn[ii]=1
+   if firnice_temperature eq 'y' then begin
+      nflip_ice[ye]  = total(firn_th eq 1 and firn eq 0 and gl ne noval)
+      nflip_firn[ye] = total(firn_th eq 0 and firn eq 1 and gl ne noval)
+   endif
+   firn_th = firn   ; the thermal model follows the modelled mask from here on
+endif
+; lowest thermal firn band this year
+if firnice_temperature eq 'y' then begin
+   ii=where(firn_th eq 1 and gl ne noval,ci)
+   if ci gt 0 then firnline_th[ye]=min(elev[ii]) else firnline_th[ye]=max(elev)
 endif
 
 ; statistics (area and volume stored BEFORE surface updating)

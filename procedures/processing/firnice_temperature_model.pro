@@ -25,140 +25,528 @@ IF enable_advection EQ 'y' AND advection_write EQ 'y' THEN BEGIN
 ENDIF
 
 ;*********************
-; copute ice velocity based on shallow ice approximation
+; compute ice velocity for advection
 ii_perm=where(gl ne noval,ci)
 
 grav = 9.81   ; acceleration due to gravity [m/s^2]  (not 'g' — that is the glacier loop index)
 rho_ice = 917 ; density of ice [kg/m^3]
 A = 2.4e-24   ; ice flow law parameter [Pa^-3 s^-1]
 n = 3         ; Glen's flow law exponent
-THRESHOLD_ICE_VELOCITY_GRADIENT = 1e-4  ; Threshold for ice velocity gradient [year^-1]
 
-; Compute the driving stress (tau_d) and ice velocity (u) for each element in one loop
-u     = FLTARR(N_ELEMENTS(gl))  ; Initialize the velocity array with the same number of elements as gl
-tau_d = FLTARR(N_ELEMENTS(gl))  ; Initialize the driving stress array with the same number of elements as gl
-for i = 0, ci-1 do begin
-   ; Calculate driving stress
-   tau_d = rho_ice * grav * thick[ii_perm[i]] * SIN(slope[ii_perm[i]] * !DTOR)  ; driving stress in Pa
-   ; Calculate depth-averaged velocity
-   u[i] = (2 * A / (n + 2)) * tau_d^n * thick[ii_perm[i]] * 365.25 * 24 * 3600  ; ice velocity in m/year
-endfor
+; u[i] = depth-averaged speed of the i-th glacierized band (compact indexing, m/year)
+u     = FLTARR(N_ELEMENTS(gl))
+tau_d = FLTARR(N_ELEMENTS(gl))
 
-;*********************
-; alternative permeability model based on velocity gradient
-du = FLTARR(N_ELEMENTS(u))  ; Initialize the gradient array with the same number of elements as u
-
-; Compute the gradient of the velocity array using finite differences
-du[0] = (u[1] - u[0])  ; Forward difference for the first element
-FOR i = 1, N_ELEMENTS(u) - 2 DO BEGIN
-    du[i] = (u[i+1] - u[i-1]) / 2.0  ; Central difference for the middle elements
-ENDFOR
-du[N_ELEMENTS(u) - 1] = (u[N_ELEMENTS(u) - 1] - u[N_ELEMENTS(u) - 2])  ; Backward difference for the last element
-; PRINT, 'Ice velocity gradient (du) in m/year/m: ', du
-
-; Normalize the velocity gradient to a range of 0 to 1
-min_du = MIN(du)
-max_du = MAX(du)
-normalized_du = (du - min_du) / (max_du - min_du)
-
-; Apply the threshold for ice velocity gradient
-permeability = normalized_du
-indices = WHERE(normalized_du lt THRESHOLD_ICE_VELOCITY_GRADIENT, count)
-
-; Divide by 2 to allow only 50% permeability
-permeability = permeability / 2
+IF use_flow_model_gl EQ 'y' AND N_ELEMENTS(u_flowmodel) EQ nb THEN BEGIN
+   ; Use calibrated velocity from GloGEMflow (mapped to elevation bands at end of previous SIA year)
+   FOR i = 0, ci-1 DO u[i] = u_flowmodel[ii_perm[i]]
+ENDIF ELSE BEGIN
+   ; Standalone SIA estimate: used when flow model is off or before the first SIA step (year 0)
+   FOR i = 0, ci-1 DO BEGIN
+      tau_d = rho_ice * grav * thick[ii_perm[i]] * SIN(slope[ii_perm[i]] * !DTOR)
+      u[i] = (2 * A / (n + 2)) * tau_d^n * thick[ii_perm[i]] * 365.25 * 24 * 3600
+   ENDFOR
+ENDELSE
 
 ;*********************
+; Pre-compute the pressure-melting-point (PMP) profile once per call, used
+; below as an unconditional safety clamp on every layer of tl_fit. The
+; per-block clamps above only cover j=1..tt-2, which can skip layers
+; entirely for very thin/marginal bands (small tt) -- the clamp below
+; guarantees no output path (conduction, advection, latent heat,
+; bedrock-fill) can ever leave a value above PMP regardless of tt.
+nfit = total(fit_layers)
 
+; Output/diagnostic slots chosen by DEPTH, not by hard-coded layer index, so they survive a
+; change of fit_layers/fit_dzstep. On the standard grid these resolve to 2, 10 and 18, whose
+; true node depths are 2, 14 and 54 m (the old comments said 2/10/50 m, which was wrong).
+_dmin = min(abs(reform(fit_dz[1,*]) -  2.d), idx_out_2m)
+_dmin = min(abs(reform(fit_dz[1,*]) - 14.d), idx_out_14m)
+_dmin = min(abs(reform(fit_dz[1,*]) - 54.d), idx_out_54m)
+
+pmp_profile = dblarr(nfit + 1)
+pmp_profile[0] = 0d0
+for jp = 1, nfit - 1 do pmp_profile[jp] = (fit_dz[1,jp] * 0.9d0 / 10.0d0) * (-0.00742d0)
+pmp_profile[nfit] = pmp_profile[nfit - 1]
+;*********************
 
 ii=where(gl ne noval,ci)
+
+; ── Advection velocity scaling (Tier-3 Bayesian calibration parameter) ──────
+; Scales the depth-averaged velocity u[i] per elevation band by a calibrated
+; factor (default 1.0 = unscaled baseline; see firnice_adv_scale_b in
+; initialise_firnicetemp_spinup.pro). Only the horizontal advection reads u[i];
+; the vertical velocity comes from the reference balance (or GloGEMflow's
+; kinematic velocity), so f_adv does not scale it.
+for i=0,ci-1 do u[i] = u[i] * firnice_adv_scale_b[ii[i]]
+
+; column depth of every band first: horizontal advection maps from the band above
+tt_col=lonarr(ci)
+for i=0,ci-1 do begin
+   ; only `ind` (the by-reference index) is used; the returned minimum is discarded
+   dummy_min=min(abs(thick[ii[i]]-fit_dz[1,*]),ind)
+   if firnice_batch eq 'y' then dummy_min=min(abs(firnice_maxdepth[0]-fit_dz[1,*]),ind)  ; run to actual depth of profile in batch/validation-mode
+
+   ; glenglat: where the borehole reaches DEEPER than the modelled band thickness, run the column
+   ; to the observed depth instead. thick[] is a width-averaged inventory value and underestimates
+   ; small glaciers badly (Tete Rousse: 19 m modelled against a 70 m borehole), which truncated the
+   ; column above most of the data. Only ever deepens -- a shallow borehole on thick ice is ignored.
+   if firnice_deepen_to_obs eq 'y' and n_elements(firnice_profile_maxdepth) gt 0 and $
+      n_elements(firnice_profile_ind) gt 0 then begin
+      if n_elements(firnice_profile_maxdepth) eq n_elements(firnice_profile) then begin
+         for jp = 0l, n_elements(firnice_profile)-1l do begin
+            if ii[i] eq firnice_profile_ind[0,jp] and $
+               firnice_profile_maxdepth[jp] gt thick[ii[i]] then begin
+               ; first node AT OR BELOW the borehole depth, not the nearest one: nearest can snap
+               ; UP (a 65 m hole -> the 59 m node) and still truncate the deepest readings.
+               jj_deep = where(reform(fit_dz[1,*]) ge firnice_profile_maxdepth[jp], n_deep)
+               ind = (n_deep gt 0) ? jj_deep[0] : (total(fit_layers) - 1l)
+            endif
+         endfor
+      endif
+   endif
+   tt_col[i]=min([ind+1,total(fit_layers)])  ; either run to bedrock, or to max of layers
+endfor
+
 for i=0,ci-1 do begin
 
 ; generate local, and actualized arrays for layer heat capacity, condictivity and density
 dens_fit=dblarr(total(fit_layers))+900
-a=fix(sno[ii[i]]/(fit_dens[1]/1000.)) ; number of snow layers
-if a gt 18 then a=18            ; preventing too many layers for extreme snow depth (??)
-; replacing top of density profile with snow values
-for j=0,a-1 do dens_fit[j]=fit_dens[j]
-; replacing top of density profile with firn values for the firn area
-if firn[ii[i]] eq 1 then for j=min([a,5]),17 do dens_fit[j]=fit_dens[j] ; to be verified...
+; firn column first, so the snow blend below mixes against the right material underneath
+if firn_th[ii[i]] eq 1 then dens_fit[0:n_elements(fit_dens)-1]=fit_dens ; to be verified...
+
+; Snow depth at 300 kg/m3 and the number of layers it reaches (snow logbook). The snow itself
+; enters through the gap conductances below; on firn bands it is inert (snow and firn share
+; fit_dens).
+z_snow     = sno[ii[i]] / (fit_dens[1]/1000.d)
+n_fd       = n_elements(fit_dens)
+z_top      = 0.d
+n_snow_lay = 0
+for j=0, n_elements(dens_fit)-1 do begin
+   if z_top ge z_snow then break
+   z_top = z_top + fit_dz[0,j]
+   n_snow_lay = j + 1
+endfor
 
 cap_fit=(1-dens_fit/1000.)*cair+dens_fit/1000.*cice
-cond_fit=(1-dens_fit/1000.)*kair+dens_fit/1000.*kice
 
-a=min(abs(thick[ii[i]]-fit_dz[1,*]),ind)
-if firnice_batch eq 'y' then a=min(abs(firnice_maxdepth[0]-fit_dz[1,*]),ind)  ; run to actual depth of profile in batch/validation-mode
-tt=min([ind+1,total(fit_layers)])  ; either run to bedrock, or to max of layers
+; Effective thermal conductivity. Snow/firn: Calonne et al. (2011), scaled by the
+; calibrated firnice_insul_scale_b. Ice: Yen (1981) temperature-dependent law, left
+; unscaled so the parameter controls the snow-to-ice contrast (the insulation) rather
+; than the overall conduction rate. The snow/firn branch is capped at the ice value --
+; without it, insul_scale above ~1.12 makes dense firn conduct better than solid ice.
+; tl_fit has one layer more than dens_fit, hence the explicit subscript range.
+k_ice_l=k_ice_a*exp(k_ice_b*(reform(tl_fit[ii[i],0:n_elements(dens_fit)-1])+273.15d))
+cond_fit=(poly(dens_fit,k_ca)*firnice_insul_scale_b[ii[i]]) < k_ice_l
+jj_ice=where(dens_fit ge rho_ice_k,n_ice)
+if n_ice gt 0 then cond_fit[jj_ice]=k_ice_l[jj_ice]
+
+; Gap conductances: kgap[j] for the gap between node j-1 and node j. Inside firn or ice the
+; mean of the two nodes. On ice bands the seasonal snow fills the gaps from the surface down,
+; each at the firn-curve density of the node above it; in a gap holding snow and ice the two
+; resistances add, and each node's heat capacity is that of what its slice holds.
+n_cond = n_elements(cond_fit)
+kgap = dblarr(n_cond)
+kgap[1:n_cond-1] = 0.5d*(cond_fit[0:n_cond-2] + cond_fit[1:n_cond-1])
+if firn_th[ii[i]] eq 0 and sno[ii[i]] gt 0d then begin
+   s_rest = sno[ii[i]]
+   v_snow = dblarr(n_cond) & c_snow = dblarr(n_cond)   ; snow volume and heat capacity per node slice
+   for j=1, n_cond-1 do begin
+      if s_rest le 0d then break
+      rho_s = fit_dens[(j-1) < (n_fd-1)]
+      s_gap = (s_rest / (rho_s/1000.d)) < fit_dz[0,j]
+      k_s   = (poly(rho_s,k_ca)*firnice_insul_scale_b[ii[i]]) < k_ice_l[j]
+      k_i   = 0.5d*(k_ice_l[j-1] + k_ice_l[j])
+      kgap[j] = fit_dz[0,j] / (s_gap/k_s + (fit_dz[0,j]-s_gap)/k_i)
+      cap_s = (1-rho_s/1000.)*cair + rho_s/1000.*cice
+      v_up  = s_gap < (0.5d*fit_dz[0,j])                 ; upper half of the gap: node j-1
+      v_snow[j-1] = v_snow[j-1] + v_up        & c_snow[j-1] = c_snow[j-1] + v_up*cap_s
+      v_snow[j]   = v_snow[j] + (s_gap-v_up)  & c_snow[j]   = c_snow[j] + (s_gap-v_up)*cap_s
+      s_rest = s_rest - s_gap*rho_s/1000.d
+   endfor
+   for j=1, n_cond-1 do begin
+      if v_snow[j] le 0d then continue
+      dz_sl = 0.5d*(fit_dz[0,j] + fit_dz[0,(j+1) < (n_cond-1)])
+      cap_fit[j] = (c_snow[j] + (dz_sl - v_snow[j])*cap_fit[j]) / dz_sl
+   endfor
+endif
+
+tt=tt_col[i]  ; column depth, set for all bands before the band loop
+
+; Permeability limit: stop meltwater at the firn-ice transition. Depth is
+; band-specific (Herron-Langway, computed in initialise_firnicetemp_spinup.pro)
+; so that high-accumulation sites get the physically correct ~50-80 m depth
+; rather than the fixed 30 m that the constant fit_dens profile would give.
+; Heat conduction still runs to bedrock (tt-2); only the latent-heat loop is capped.
+z_perm_b  = firnice_perm_depth[ii[i]] * firnice_perm_frac_b[ii[i]]
+if firnice_perm_limit eq 'profile' then begin
+   ; diagnostic: where the thermal model's own density profile reaches 830 kg/m3
+   pd_830 = where(fit_dens ge 830.d, n_830)
+   if n_830 gt 0 then z_perm_b = fit_dz[1, pd_830[0]]
+endif
+pdidx_arr = where(fit_dz[1,*] ge z_perm_b, n_pdi)
+perm_limit = (n_pdi gt 0) ? ((pdidx_arr[0] - 1l) > 1l) : (tt - 2l)
+perm_limit = perm_limit < (tt - 2l)
+
+; ── latent heat from refreezing (applied BEFORE conduction substeps) ─────────────
+; Moved before the conduction loop so that all rf_dsc substeps of heat diffusion
+; can smooth the temperature gradient at perm_limit depth each month. If refreezing
+; ran AFTER conduction (as before), the sharp warm/cold boundary at perm_limit was
+; recreated every month with no subsequent smoothing pass, producing a non-physical
+; step discontinuity in the profile. Applying it first, then diffusing, is also the
+; more natural operator-split: phase change is fast, diffusion is slow.
+; Surface meltwater+rain reaching the column, scaled by the calibrated percolating
+; fraction. This is the binding constraint on the latent-heat loop below.
+; Energy only: the mass balance's refr still comes from refreezing_parametrised/_full.
+fit_water=(mel_th[ii[i]]+plg_th[ii[i]])*firnice_refreeze_frac_b[ii[i]]
+n_fitdz = n_elements(fit_dz[0,*])
+
+if firn_permeability eq 'n' then fit_water = 0  ; check if permeability is disabled, if yes then set infiltrating water to zero
+
+; latent heat release over firn/snow surface
+; water percolation is capped at perm_limit (firn-ice transition density);
+; cold ice below that depth is not reachable by annual meltwater
+if firn_th[ii[i]] eq 1 then begin
+
+wd_j = 0l   ; deepest node the water brings to the melting point (wet-depth log)
+z_cold0 = -1d   ; firnice_perm_limit 'cold': depth where the water first met cold firn this month
+for j=1,perm_limit do begin ; percolate to firn-ice transition only
+   dz_cv = 0.5d*(fit_dz[0,j] + fit_dz[0,(j+1) < (n_fitdz-1)])  ; node's slice, as in conduction
+   c=(-1)*(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*cap_fit[j]*dz_cv/Lh_fit ; cold content in layer below pressure melting point
+   if firnice_perm_limit eq 'cold' then begin
+      if z_cold0 lt 0d and tl_fit[ii[i],j] lt (fit_dz[1,j]*0.9/10.)*(-0.00742) - 0.01d then z_cold0 = fit_dz[1,j]
+      if z_cold0 ge 0d and fit_dz[1,j] - z_cold0 ge firnice_perm_cold_depth then break
+   endif
+   if fit_water gt c then begin   ; temperate layer if cold reservoir used, remaining water being transferred
+      tl_fit[ii[i],j]=(fit_dz[1,j]*0.9/10.)*(-0.00742) & fit_water=fit_water-c
+      wd_j = j
+      if fit_lacc_on then lacc_wet[ii[i],j] = 1b   ; drift spin-up: meltwater sets this layer
+   endif else begin
+      if c gt 0 and fit_water gt 0 then tl_fit[ii[i],j]=tl_fit[ii[i],j]-(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*(fit_water/c)
+      fit_water=fit_water-c
+   endelse
+ ;  if j eq 10 and ii(i) eq 245 then print, m,c,fit_water,tl_fit(ii(i),10)
+endfor
+; wet-depth log: deepest wetted node this year, and water left at the limit (discarded)
+if firnice_write[0] eq 'y' then begin
+   if wd_j gt 0 then wdl_depth[ye,ii[i]] = wdl_depth[ye,ii[i]] > fit_dz[1,wd_j]
+   wdl_lost[ye,ii[i]] = wdl_lost[ye,ii[i]] + (fit_water > 0d)
+endif
+
+endif else begin
+
+; ice bands: meltwater runs off the impermeable ice; the seasonal snow shares the top nodes of the
+; ice column. Without firnice_snow_refreeze no latent heat goes into them.
+fit_water=0d
+; firnice_snow_refreeze 'y': the month's water refreezes in the seasonal snow and as superimposed
+; ice on the ice surface: it warms the nodes holding snow, down to the node whose slice holds the
+; snow-ice interface; the rest runs off
+if firnice_snow_refreeze eq 'y' && sno[ii[i]] gt 0d then begin
+   fit_water = (mel_th[ii[i]]+plg_th[ii[i]])*firnice_refreeze_frac_b[ii[i]]
+   if firn_permeability eq 'n' then fit_water = 0d
+   jsn = where(v_snow gt 1d-6, n_sn)   ; ignores the rounding residue of the snow loop
+   ; the node whose slice holds the snow-ice interface; at least node 1, so thin snow (all of it in the
+   ; surface node's slice) still gives its superimposed ice
+   j_snow = ((n_sn gt 0) ? (max(jsn) > 1l) : 1l) < (tt-2)
+   if firnice_write[0] eq 'y' then sr_steps = sr_steps + 1l   ; main run only (the spin-up turns the logs off)
+   if firnice_write[0] eq 'y' && j_snow ge tt-2 then sr_bed = sr_bed + 1l
+   for j = 1, j_snow do begin
+      if fit_water le 0d then break
+      dz_cv = 0.5d*(fit_dz[0,j] + fit_dz[0,(j+1) < (n_fitdz-1)])
+      c = (-1)*(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*cap_fit[j]*dz_cv/Lh_fit
+      if fit_water gt c then begin
+         tl_fit[ii[i],j] = (fit_dz[1,j]*0.9/10.)*(-0.00742) & fit_water = fit_water - c
+         if fit_lacc_on then lacc_wet[ii[i],j] = 1b   ; drift spin-up: meltwater sets this layer
+      endif else begin
+         if c gt 0 then tl_fit[ii[i],j] = tl_fit[ii[i],j]-(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*(fit_water/c)
+         fit_water = fit_water - c
+      endelse
+   endfor
+   fit_water = 0d
+endif
+
+endelse
+
+   ; driving stress (SIA): used for strain heating if enabled
+   tau_d_sh = rho_ice * grav * (thick[ii[i]] > 1.0d) * sin(slope[ii[i]] * !DTOR)
+
+   ; thermal sub-step [s]: this step's real length (a month of mon_len days, or one day) in rf_dsc parts
+   fit_dt = 86400d * mon_len[m-1] / rf_dsc
 
    for h=0,rf_dsc-1 do begin
 
-      ; heat conduction (vertical) in the firn/ice layers
-      for j=1,tt-2 do begin
+      ; ── boundary conditions (shared by both conduction schemes) ──────────────
+      ; Surface = air temperature, capped at the melting point. The snow/firn
+      ; insulation offset that used to be added here came from a decision tree; it
+      ; is now carried by the seasonally varying snow conductivity instead
+      ; (firnice_insul_scale_b, see the cond_fit block above).
+      fit_tair = tgs_th[ii[i]] + (((elev[ii[i]]-hclim) > 0d) < zth_cap)*(dtdz_icetemp[m-1]-dtdz[m-1])
+      ; firnice_surface_cool = 'gilbert': the snow surface colder than the air (Gilbert et al. 2014)
+      if firnice_surface_cool eq 'gilbert' then fit_tair = 0.95d * fit_tair + firnice_surface_cool_dt
+      ; firnice_f_sur: the snow surface colder than the air by f_sur
+      if firnice_f_sur ne 0d then fit_tair = fit_tair - firnice_f_sur
+      tl_fit[ii[i],0] = min([0d, fit_tair])
 
-         tl_fit[ii[i],0]=min([0,tgs[ii[i]]]) ; temperature of topmost layer corresponding to air temperature or melting point!
-         ; temperature of bottommost layer warmed up by geothermal heat flux (cumulative energy over one time step over a )
-         ttgeot=tl_fit[ii[i],tt-1]+geothermal_flux*(3600*24*30.5/rf_dsc)/cice       ; /fit_dz(0,tt-1) ; unclear how to attribute a layer thickness for collecting flux (1m at the moment...)
+      ; ── melting-surface clamp (experimental, firnice_melt_surface eq 'y') ─────
+      ; A surface that is melting is AT the melting point, by definition; it cannot be
+      ; at the air temperature. The BC above applies air temperature plus a fixed
+      ; insulation offset in every month, so in a wet firn area it produces an annual-mean
+      ; cold skin of 10-20 m that should not exist. Vertical advection then buries that
+      ; skin and horizontal advection carries it downglacier, which is where Aletsch's
+      ; 5-60 m cold layer in the ablation zone comes from -- the ice there ends up colder
+      ; at 14-34 m than at its own surface, a subsurface minimum that local forcing cannot
+      ; produce and which is therefore diagnostic of advected, not generated, cold.
+      ;
+      ; Clamping the surface to the melting point whenever there is melt also reproduces,
+      ; from the physics, the thermal rectification the fixed offset was standing in for:
+      ; summers pinned at 0 C and winters at air temperature give an annual mean warmer
+      ; than the air temperature, with no fitted constant.
+      if firnice_melt_surface eq 'y' then $
+          if mel_th[ii[i]] gt 0d then tl_fit[ii[i],0] = 0d
+      ; Basal boundary condition: prescribed geothermal GRADIENT (Neumann), from Fourier's law
+      ;     G = -k dT/dz_up   ->   dT/dz = G / k   (z measured downward, T warming with depth)
+      ; so the bed node sits one layer-spacing below its neighbour at that gradient:
+      ;     T[tt-1] = T[tt-2] + G * dz / k
+      ;
+      ; REPLACES an accumulation form, ttgeot = T[tt-1] + G*(month_seconds/rf_dsc)/cice, which
+      ; had three separate problems:
+      ;   (a) UNITS: W m^-2 * s / (J m^-3 K^-1) = K*m, not K -- the division by a layer
+      ;       thickness was missing, so it behaved as if every layer were 1 m thick when the
+      ;       bottom layer is 20 m for any column deeper than 79 m.
+      ;   (b) the month length was hardcoded (3600*24*30.5), so a daily-resolution run would
+      ;       have received a ~30x too large increment.
+      ;   (c) it accumulated into the bed node, but line ~430 then overwrote that node with the
+      ;       node ABOVE it at the end of every month, discarding the accumulated warming.
+      ; Net effect of the old form was an insulating base plus a fixed ~0.08 K offset, i.e. an
+      ; effective gradient near 0.004 K/m against a true G/k of ~0.029 K/m -- roughly 7x too
+      ; weak, biasing modelled deep ice COLD and so under-predicting temperate basal ice.
+      ; The gradient form below is timestep-independent by construction, which is why it fixes
+      ; (a) and (b) together; (c) is fixed at the bedrock-fill line itself.
+      dz_bed = (fit_dz[1,tt-1] - fit_dz[1,tt-2]) > 1.0d   ; true spacing of the bottom layer [m]
+      ttgeot = tl_fit[ii[i],tt-2] + geothermal_flux * dz_bed / cond_fit[tt-1]
+      tl_fit[ii[i],tt-1] = min([ttgeot, (fit_dz[1,tt-1]*0.9d/10.d)*(-0.00742d)])
+      if fit_lacc_on then begin   ; spin-up drift correction: column depth and bed conductivity
+         lacc_tt[ii[i]] = tt & lacc_kbed[ii[i]] = cond_fit[tt-1]
+      endif
 
-         tl_fit[ii[i],tt-1]=min([ttgeot,(fit_dz[1,tt-1]*0.9/10.)*(-0.00742)])    ; cannot be higher than pressure melting point
+      ; ── heat conduction (vertical) ────────────────────────────────────────────
+      ; Node spacing is NOT uniform: fit_dz[1,j]=fit_dz[1,j-1]+fit_dz[0,j], so the gap below
+      ; node j is fit_dz[0,j] and the gap above is fit_dz[0,j+1]. Both schemes below use a
+      ; finite-volume form with interface conductivities, correct across the 1/5/20 m block
+      ; edges. The previous fit_dz[0,j]^2 form assumed a uniform grid and made the steady
+      ; profile linear in layer INDEX rather than in depth.
+      if firnice_implicit eq 'n' then begin
 
-         te_fit[ii[i],j]=tl_fit[ii[i],j]+((rf_dt*cond_fit[j]/(cap_fit[j])*(tl_fit[ii[i],j-1]-tl_fit[ii[i],j])/fit_dz[0,j]^2.)- $
-             (rf_dt*cond_fit[j]/(cap_fit[j])*(tl_fit[ii[i],j]-tl_fit[ii[i],j+1])/fit_dz[0,j]^2.))/2. ; division by 2 to be removed?! result becomes unstable without ?!?
-         tl_fit[ii[i],j]=te_fit[ii[i],j]
+         ; Explicit forward-difference. The /2. below is NOT cosmetic: explicit stability needs
+         ; dt <= dz^2/(2*kappa), which for ice (kappa ~1.11e-6 m2/s) and the 1 m near-surface
+         ; layers is 5.2 days, against fit_dt = 9.3-10.3 days. Halving the diffusivity lifts the limit
+         ; to 10.4 days. Remove it only with a smaller timestep. Prefer firnice_implicit='y'.
+         for j=1,tt-2 do begin
+            dzm = fit_dz[0,j]
+            dzp = fit_dz[0,(j+1) < (n_cond-1)]
+            dzc = 0.5d*(dzm + dzp)
+            km  = kgap[j]
+            kp  = kgap[(j+1) < (n_cond-1)]
+            if fit_lacc_on then begin   ; yearly sums of the coupling, halved as below
+               lacc_a[ii[i],j] += 0.5d*fit_dt*km/(cap_fit[j]*dzc*dzm)
+               lacc_c[ii[i],j] += 0.5d*fit_dt*kp/(cap_fit[j]*dzc*dzp)
+            endif
+            te_fit[ii[i],j]=tl_fit[ii[i],j]+(fit_dt/(cap_fit[j]*dzc)* $
+                (km*(tl_fit[ii[i],j-1]-tl_fit[ii[i],j])/dzm $
+                 - kp*(tl_fit[ii[i],j]-tl_fit[ii[i],j+1])/dzp))/2.
+            tl_fit[ii[i],j]=te_fit[ii[i],j]
+            if tl_fit[ii[i],j] gt (fit_dz[1,j]*0.9/10.)*(-0.00742) then tl_fit[ii[i],j]=(fit_dz[1,j]*0.9/10.)*(-0.00742)
+         endfor
 
-         ; set back any temperatures to pressure melting point
-         if tl_fit[ii[i],j] gt (fit_dz[1,j]*0.9/10.)*(-0.00742) then tl_fit[ii[i],j]=(fit_dz[1,j]*0.9/10.)*(-0.00742)
+      endif else begin
 
-      endfor
+         ; fully implicit backward Euler — Thomas algorithm, O(N) per column.
+         ; Unconditionally stable, so no artificial halving factor is needed.
+         n_inner = tt - 2
+         if n_inner gt 0 then begin
+            aa = dblarr(n_inner)   ; subdiagonal   -ra
+            bb = dblarr(n_inner)   ; diagonal       1 + ra + rc
+            cc = dblarr(n_inner)   ; superdiagonal -rc
+            dd = dblarr(n_inner)   ; RHS
+
+            for k=0,n_inner-1 do begin
+               j   = k + 1
+               dzm = fit_dz[0,j]
+               dzp = fit_dz[0,(j+1) < (n_cond-1)]
+               dzc = 0.5d*(dzm + dzp)
+               km  = kgap[j]
+               kp  = kgap[(j+1) < (n_cond-1)]
+               ra  = fit_dt * km / (cap_fit[j] * dzc * dzm)
+               rc  = fit_dt * kp / (cap_fit[j] * dzc * dzp)
+               if fit_lacc_on then begin   ; yearly sums of the coupling for the drift correction
+                  lacc_a[ii[i],j] += ra & lacc_c[ii[i],j] += rc
+               endif
+               aa[k] = -ra
+               bb[k] = 1.0d + ra + rc
+               cc[k] = -rc
+               dd[k] = tl_fit[ii[i],j]
+            endfor
+
+            ; fold Dirichlet surface and bed values into the RHS
+            dd[0]         = dd[0]         - aa[0]         * tl_fit[ii[i],0]
+            dd[n_inner-1] = dd[n_inner-1] - cc[n_inner-1] * tl_fit[ii[i],tt-1]
+
+            ; Thomas forward sweep
+            for k=1,n_inner-1 do begin
+               m_thomas = aa[k] / bb[k-1]   ; not `m`: that is the month index, printed below
+               bb[k] = bb[k] - m_thomas * cc[k-1]
+               dd[k] = dd[k] - m_thomas * dd[k-1]
+            endfor
+
+            ; back substitution — write result directly to tl_fit, apply PMP clamp
+            tl_fit[ii[i],tt-2] = min([dd[n_inner-1]/bb[n_inner-1], $
+                                       (fit_dz[1,tt-2]*0.9d/10.d)*(-0.00742d)])
+            for k=n_inner-2,0,-1 do begin
+               j = k + 1
+               tl_fit[ii[i],j] = min([(dd[k] - cc[k]*tl_fit[ii[i],j+1])/bb[k], $
+                                       (fit_dz[1,j]*0.9d/10.d)*(-0.00742d)])
+            endfor
+         endif
+
+      endelse
+
+      ; ── strain heating (viscous dissipation) ──────────────────────────────────────
+      if enable_strain_heating eq 'y' then begin
+          ; Rate factor for the dissipation. The flow model calibrates `aflow` per glacier
+          ; (Pa^-3 yr^-1) so that the modelled geometry matches the inventory; using the
+          ; hardcoded A above instead would heat the ice at a rate inconsistent with the
+          ; velocity field the model actually produces -- for Aletsch by a factor 2.4
+          ; (calibrated 1.0e-24 vs hardcoded 2.4e-24 Pa^-3 s^-1), and Q goes as tau^(n+1),
+          ; so the inconsistency is not small. `aflow` lumps sliding in with deformation,
+          ; which is the right total dissipation to first order (tau_b*u_b + internal
+          ; shear both scale with the same calibrated flux) even though this term then
+          ; distributes all of it as internal shear rather than as basal friction.
+          A_sh = A
+          if n_elements(aflow) gt 0 then $
+             if finite(aflow[0]) then $
+                if aflow[0] gt 0 then A_sh = aflow[0] / 3.15576d7   ; yr^-1 -> s^-1
+          sh_exp = double(n) + 1.0d   ; = 4 for Glen n=3
+          for j = 1, tt-2 do begin
+              tau_j = tau_d_sh * ((fit_dz[1,j] / (thick[ii[i]] > 1.0d)) < 1.0d)
+              Q_j   = 2.0d * A_sh * tau_j^sh_exp       ; W m⁻³
+              dT_j  = Q_j * fit_dt / cap_fit[j]         ; K per substep (cap_fit is J m⁻³ K⁻¹)
+              tl_fit[ii[i],j] = (tl_fit[ii[i],j] + dT_j) < pmp_profile[j]
+          endfor
+      endif
 
       ; advection (horizontal and vertical) in the firn/ice layers
       IF enable_advection EQ 'y' THEN BEGIN
          ; Horizontal advection
-         ; Skip first elevation band (highest) since there's no upglacier source
-         IF i GT 0 THEN BEGIN
-         ; Calculate vertical profile of horizontal velocity (Nye's approximation)
-         vprofile = FLTARR(tt)
+         ; Bands are ascending (i=0 = terminus, i=ci-1 = top). Skip topmost band: no upglacier source above it.
+         IF i LT ci-1 THEN BEGIN
+         ; Vertical profile of horizontal velocity: the SIA/Nye shear profile
+         ;     u(zeta)/u_surface = 1 - zeta^(n+1),   zeta = depth/H,  n = 3
+         ; Ice moves at close to surface speed through most of the column, with the shear
+         ; concentrated in a thin layer near the bed.
+         ;
+         ; REPLACES the previous form vprofile = (1 - j/tt)^4, i.e. relative_height^4, which is
+         ; a DIFFERENT function -- it decays immediately with depth instead of near the bed. At
+         ; quarter depth it gave 0.32 of the surface speed where the correct profile gives
+         ; 0.996; at half depth 0.06 versus 0.94. That under-applied horizontal advection by
+         ; more than an order of magnitude over most of the column, including the 10-80 m band
+         ; where essentially all glenglat calibration observations sit.
+         ;
+         ; Two further corrections in the same block:
+         ;  (a) zeta is now a true DEPTH fraction (fit_dz[1,j] / resolved column depth), not the
+         ;      layer INDEX fraction j/tt. The grid is stretched (1 m / 5 m / 20 m blocks), so
+         ;      index 10 of 30 is a third of the way down by count but only 14 m of 259 m by
+         ;      depth -- the old form evaluated the profile at the wrong place as well as
+         ;      using the wrong shape.
+         ;  (b) u[i] is a DEPTH-AVERAGED speed in both paths that supply it (GloGEMflow's
+         ;      u_flowmodel = D|ds/dx|/H, glogemflow_coupled.pro STEP 7; and the standalone
+         ;      2A/(n+2)*tau_d^n*H estimate at line 47 -- the (n+2) denominator is the
+         ;      depth-average normalisation). Scaling it by a profile equal to 1 at the surface
+         ;      would apply the depth-averaging twice. The profile is therefore renormalised by
+         ;      its own column mean, mean(1 - zeta^(n+1)) = 1 - 1/(n+2) = 0.8 for n=3, so that
+         ;      the column mean of vprofile is 1 and vprofile[0] = 1/0.8 = 1.25 recovers the
+         ;      surface speed from the depth-averaged input.
+         vprofile  = DBLARR(tt)
+         col_depth = fit_dz[1,tt-1] > 1.0D            ; resolved column depth [m]
+         nye_mean  = 1.0D - 1.0D/(DOUBLE(n) + 2.0D)   ; = 0.8 for n = 3
          FOR j=0,tt-1 DO BEGIN
-            relative_height = 1.0D - (DOUBLE(j) / DOUBLE(tt))  ; 1 at surface, 0 at bed
-            vprofile[j] = relative_height^4  ; approximation of velocity profile with n=3
+            zeta = fit_dz[1,j] / col_depth            ; 0 at surface, 1 at bed
+            zeta = (zeta > 0.0D) < 1.0D
+            vprofile[j] = (1.0D - zeta^(DOUBLE(n) + 1.0D)) / nye_mean
          ENDFOR
 
          ; Get velocity for current elevation band
          current_vel = u[i]
 
-         ; Get upglacier index (where ice is flowing from)
-         upglacier_idx = i - 1
+         ; Upglacier source is the next higher-elevation band (i+1)
+         upglacier_idx = i + 1
 
-         ; Calculate timestep in seconds
-         dt_seconds = rf_dt * 3600.0D * 24.0D * 30.5D / rf_dsc
+         ; Timestep in seconds. fit_dt (set above) is already seconds-per-
+         ; substep (= seconds-in-the-step / rf_dsc) -- do not multiply by
+         ; another month-seconds/rf_dsc factor here, that double-counts the
+         ; conversion and inflates dt_seconds by ~rf_dsc*86400*30.5, which
+         ; saturates the courant clamp below for almost any nonzero velocity.
+         dt_seconds = fit_dt
 
-         ; Calculate the actual horizontal distance based on slope
-         band_vertical_spacing = 10.0D  ; Vertical spacing between bands in meters - ADJUST THIS VALUE
-         min_slope_rad = 0.01D * !DTOR  ; Minimum slope to prevent division by zero
+         ; Horizontal distance to upglacier band, derived from actual elevation spacing and slope
+         delta_elev = ABS(elev[ii[i+1]] - elev[ii[i]])  ; vertical elevation step [m]
+         delta_elev = MAX([delta_elev, 5.0D])            ; guard against identical elevations
+         min_slope_rad = 0.01D * !DTOR  ; minimum slope to avoid division by zero
          local_slope_rad = MAX([slope[ii_perm[i]] * !DTOR, min_slope_rad])
-         dx = band_vertical_spacing / TAN(local_slope_rad)
-         dx = dx < 1000.0D  ; Cap maximum horizontal distance
+         dx_horiz = delta_elev / TAN(local_slope_rad)
+         dx_horiz = dx_horiz < 5000.0D  ; cap at 5 km
 
          ; Calculate advection coefficient (Courant number)
-         courant = current_vel * dt_seconds / (dx * 365.25D * 24.0D * 3600.0D)
+         courant = current_vel * dt_seconds / (dx_horiz * 365.25D * 24.0D * 3600.0D)
 
          ; Ensure stability by limiting Courant number
          courant = courant < 0.8
 
+         ; Upglacier source profile. 'relative' (today): ice at the same RELATIVE depth of the
+         ; resolved column, so a column deepened to a borehole (firnice_deepen_to_obs) reads its
+         ; shallower neighbour stretched over its whole depth (Taconnaz 3685 m: a 44 m neighbour
+         ; stretched onto 119 m, the neighbour's wet 5-20 m landing at 15-54 m). 'inventory': the
+         ; relative depth is taken against each band's inventory thickness, as it was before the
+         ; column was deepened; nodes deeper than the neighbour's resolved column get no source.
+         ; 'absolute': the same depth in metres; nodes below the neighbour's column get no source.
+         tt_up    = tt_col[upglacier_idx]
+         adv_src  = DBLARR(tt) + 1.0D                  ; 1 = a horizontal source exists at this node
+         IF tt_up GE 2 THEN BEGIN
+            z_here = reform(fit_dz[1,0:tt-1])
+            z_up   = reform(fit_dz[1,0:tt_up-1])
+            CASE firnice_adv_depthmap OF
+               'relative':  z_src = (z_here / col_depth) * (fit_dz[1,tt_up-1] > 1.0D)
+               'inventory': z_src = z_here * ((thick[ii[upglacier_idx]] > 1.0D) / (thick[ii[i]] > 1.0D))
+               'absolute':  z_src = z_here
+            ENDCASE
+            IF firnice_adv_depthmap NE 'relative' THEN BEGIN
+               j_none = WHERE(z_src GT fit_dz[1,tt_up-1], n_none)   ; below the neighbour's column: no source
+               IF n_none GT 0 THEN adv_src[j_none] = 0.0D
+            ENDIF
+            t_up_map = interpol(reform(tl_fit[ii[upglacier_idx],0:tt_up-1]), z_up, z_src)
+         ENDIF ELSE t_up_map = reform(tl_fit[ii[upglacier_idx],0:tt-1])
+
          ; Apply advection to each layer
          FOR j=1,tt-2 DO BEGIN
-            ; Scale advection by the vertical velocity profile
-            layer_courant = courant * vprofile[j]
+            ; Scale advection by the vertical velocity profile. The 0.8 clamp is re-applied
+            ; PER LAYER, not just to the column-mean courant above: vprofile now peaks at
+            ; 1/0.8 = 1.25 at the surface (see the renormalisation note above), so a
+            ; column-mean courant already at its 0.8 cap would otherwise reach 1.0 in the
+            ; near-surface layers -- the stability boundary of the first-order upwind step,
+            ; at which a layer is replaced wholesale by its upglacier neighbour.
+            layer_courant = courant * vprofile[j] * adv_src[j]
+            layer_courant = (layer_courant > 0.0D) < 0.8D
+            if fit_lacc_on then lacc_h[ii[i],j] += layer_courant   ; drift spin-up: exchange with the band above
 
             ; Store the temperature before horizontal advection at 10m depth
-            temp_before = tl_fit[ii[i],10]  ; Store 10m temperature before horizontal advection
+            temp_before = tl_fit[ii[i],idx_out_14m]  ; 14 m, before horizontal advection
 
             ; First-order upwind scheme for advection
             tl_fit[ii[i],j] = (1.0D - layer_courant) * tl_fit[ii[i],j] + $
-                     layer_courant * tl_fit[ii[upglacier_idx],j]
+                     layer_courant * t_up_map[j]
 
             ; Store horizontal advection effect (average temperature change at key depths)
             IF advection_write EQ 'y' THEN BEGIN
-            IF j EQ 10 THEN adv_horiz_effect[ii[i]] = tl_fit[ii[i],j] - temp_before  ; Effect of horizontal advection at 10m depth
+            IF j EQ idx_out_14m THEN adv_horiz_effect[ii[i]] = tl_fit[ii[i],j] - temp_before  ; at 14 m
             ENDIF
 
             ; Ensure temperature doesn't exceed pressure melting point
@@ -166,55 +554,75 @@ tt=min([ind+1,total(fit_layers)])  ; either run to bedrock, or to max of layers
          ENDFOR
          ENDIF
 
-         ; Vertical advection
-         ; Calculate vertical velocity component
+         ; Vertical advection: burial (downward, +) or emergence (-), m/yr. Surface value in m w.e.:
+         ; GloGEMflow's kinematic velocity when coupled, otherwise the band's reference balance
+         ; b_ref (firnice_reference_forcing.pro). With depth: the ice passing a level is the surface
+         ; value times 1 - F(zeta), F = share of the Nye flux above zeta (0 at the surface, 1 at
+         ; the bed); in m/yr of the layer's material, i.e. faster in firn (1000/rho).
          vertical_vel = DBLARR(tt)
-
-         ; In accumulation area: downward movement due to burial by new snow
-         ; In ablation area: upward movement due to emergence velocity
-         IF sno[ii[i]] GT mel[ii[i]] THEN BEGIN
-         ; Accumulation area: downward movement
-         ; Surface velocity = net accumulation rate
-         surface_vertical_vel = MAX([(sno[ii[i]] - mel[ii[i]]), 0.0]) ; m/year, downward positive
-
-
-         ; Linear decrease of vertical velocity with depth (zero at bed)
+         IF use_flow_model EQ 'y' AND N_ELEMENTS(w_flowmodel) EQ nb THEN $
+            surface_we_v = w_flowmodel[ii_perm[i]] * 0.9D $
+         ELSE surface_we_v = b_ref[ii[i]]
+         col_depth_v = fit_dz[1,tt-1] > 1.0D
+         nye_mean_v  = 1.0D - 1.0D/(DOUBLE(n) + 2.0D)
          FOR j=0,tt-1 DO BEGIN
-            relative_depth = DOUBLE(j) / DOUBLE(tt-1)
-            vertical_vel[j] = surface_vertical_vel * (1.0D - relative_depth)
+            zeta_v = (fit_dz[1,j] / col_depth_v) < 1.0D
+            flux_above_v = (zeta_v - zeta_v^(DOUBLE(n)+2.0D)/(DOUBLE(n)+2.0D)) / nye_mean_v
+            vertical_vel[j] = surface_we_v * (1000.D / dens_fit[j]) * ((1.0D - flux_above_v) > 0.0D)
          ENDFOR
-         ENDIF ELSE BEGIN
-         ; Ablation area: upward movement (emergence velocity)
-         ; Simplified emergence velocity estimate based on surface slope and ice velocity
-         min_slope_rad = 0.01D * !DTOR  ; Minimum slope to prevent division by zero
-         local_slope_rad = MAX([slope[ii_perm[i]] * !DTOR, min_slope_rad])
-         current_vel = u[i] ; Get velocity for current elevation band
-         emergence_vel = current_vel * TAN(local_slope_rad) ; m/year, upward positive
 
-         ; Convert to our coordinate system (downward positive)
-         surface_vertical_vel = -emergence_vel
-
-         ; Linear decrease of vertical velocity with depth (zero at bed)
-         FOR j=0,tt-1 DO BEGIN
-            relative_depth = DOUBLE(j) / DOUBLE(tt-1)
-            vertical_vel[j] = surface_vertical_vel * (1.0D - relative_depth)
-         ENDFOR
-         ENDELSE
+         ; ── velocity-field diagnostic ────────────────────────────────────────
+         ; Records the advection field the model actually applies: the Nye-shaped
+         ; horizontal profile u(zeta) = u_bar (1 - zeta^(n+1)) / (1 - 1/(n+2)) and the
+         ; kinematic vertical profile, both per layer. Sits inside the advection block,
+         ; so it only fills when enable_advection='y' -- and, like the advection itself,
+         ; it skips the topmost band (no upglacier source above it).
+         IF firnice_write[2] EQ 'y' THEN BEGIN
+            col_depth_d = fit_dz[1,tt-1] > 1.0D
+            nye_mean_d  = 1.0D - 1.0D/(DOUBLE(n) + 2.0D)
+            FOR j = 0, tt-1 DO BEGIN
+               zeta_d = ((fit_dz[1,j] / col_depth_d) > 0.0D) < 1.0D
+               fit_u_sum[ye,ii[i],j] = fit_u_sum[ye,ii[i],j] + $
+                  u[i] * (1.0D - zeta_d^(DOUBLE(n) + 1.0D)) / nye_mean_d
+               fit_w_sum[ye,ii[i],j] = fit_w_sum[ye,ii[i],j] + vertical_vel[j]
+            ENDFOR
+            fit_vel_cnt[ye,ii[i]] = fit_vel_cnt[ye,ii[i]] + 1d0
+            fit_vel_tt[ye,ii[i]]  = tt
+         ENDIF
 
          ; Apply vertical advection (upwind scheme)
          ; Only if vertical velocity is significant
-         IF ABS(MAX(vertical_vel)) GT 0.1D THEN BEGIN
+         ; Activation guard. MUST be MAX(ABS(...)), not ABS(MAX(...)): vertical_vel tapers
+         ; linearly to exactly 0.0 at the bed, so in the ABLATION zone -- where the whole
+         ; profile is negative (upward/emergence) -- MAX(vertical_vel) returns that trailing
+         ; 0.0 and ABS(0.0) > 0.1 is false. The entire vertical-advection block was therefore
+         ; skipped for every emergence case, and the v_courant < 0 upwind branch below was
+         ; unreachable. That silently disabled exactly the mechanism that carries deep cold ice
+         ; toward the surface in the ablation zone -- and it was active (enable_advection='y')
+         ; in all four Bayesian calibration campaigns run to date.
+         IF MAX(ABS(vertical_vel)) GT 0.1D THEN BEGIN
          ; Create temporary array to store updated temperatures
          temp_v = tl_fit[ii[i],*]
-         temp_before_v = tl_fit[ii[i],10]  ; Store 10m temperature before vertical advection
+         temp_before_v = tl_fit[ii[i],idx_out_14m]  ; 14 m, before vertical advection
 
-         ; Convert to proper time units
-         dt_years = rf_dt * (30.5D/rf_dsc) / 365.25D
+         ; Convert fit_dt (already seconds-per-substep) to years directly --
+         ; do not multiply by another month-seconds/rf_dsc factor here, see
+         ; the matching note on dt_seconds above (same bug, same fix).
+         dt_years = fit_dt / (365.25D * 24.0D * 3600.0D)
 
          ; Apply vertical advection for each layer (except boundaries)
          FOR j=1,tt-2 DO BEGIN
-            ; Calculate vertical grid spacing (might vary with depth in your model)
-            dz = fit_dz[0,j]
+            ; Grid-aware spacing: use the actual center-to-center distance
+            ; between donor and receiver layers (from the cumulative depth
+            ; array fit_dz[1,*]) rather than this layer's own thickness --
+            ; correctly handles the 1m/5m/20m depth-resolution transitions
+            ; (~9m, ~59m) instead of mismatching dz across them.
+            IF vertical_vel[j] GE 0 THEN BEGIN
+               dz = fit_dz[1,j] - fit_dz[1,j-1]     ; downward: distance to layer above
+            ENDIF ELSE BEGIN
+               dz = fit_dz[1,j+1] - fit_dz[1,j]      ; upward: distance to layer below
+            ENDELSE
+            dz = dz > 1d-3                            ; guard against zero spacing
 
             ; Calculate Courant number for vertical advection
             v_courant = vertical_vel[j] * dt_years / dz
@@ -225,16 +633,22 @@ tt=min([ind+1,total(fit_layers)])  ; either run to bedrock, or to max of layers
 
             IF v_courant GE 0 THEN BEGIN
             ; Downward advection (from above)
-            IF j GT 1 THEN temp_v[j] = temp_v[j] - v_courant * (temp_v[j] - temp_v[j-1])
+            IF j GT 1 THEN BEGIN
+               temp_v[j] = temp_v[j] - v_courant * (temp_v[j] - temp_v[j-1])
+               if fit_lacc_on then lacc_vd[ii[i],j] += v_courant   ; drift spin-up: burial
+            ENDIF
             ENDIF ELSE BEGIN
             ; Upward advection (from below)
-            IF j LT tt-2 THEN temp_v[j] = temp_v[j] - v_courant * (temp_v[j+1] - temp_v[j])
+            IF j LT tt-2 THEN BEGIN
+               temp_v[j] = temp_v[j] - v_courant * (temp_v[j+1] - temp_v[j])
+               if fit_lacc_on then lacc_vu[ii[i],j] -= v_courant   ; drift spin-up: emergence
+            ENDIF
             ENDELSE
          ENDFOR
 
          ; Store vertical advection effect at 10m depth
          IF advection_write EQ 'y' THEN BEGIN
-            adv_vert_effect[ii[i]] = temp_v[10] - temp_before_v  ; Effect at 10m depth
+            adv_vert_effect[ii[i]] = temp_v[idx_out_14m] - temp_before_v  ; Effect at 10m depth
          ENDIF
 
          ; Update temperature array with advected values
@@ -250,86 +664,99 @@ tt=min([ind+1,total(fit_layers)])  ; either run to bedrock, or to max of layers
 
    endfor
 
-; setting all bedrock temperatures to lowermost computed layer (to avoid constant warming from beneath)
-tl_fit[ii[i],tt-1:total(fit_layers)]=tl_fit[ii[i],tt-2]
+; Fill the unresolved output slots BELOW the bed with the bed value. Previously this line read
+;   tl_fit[ii[i],tt-1:total(fit_layers)] = tl_fit[ii[i],tt-2]
+; which also overwrote the BED node (tt-1) with the node above it, deleting the geothermal
+; warming every month -- the comment "to avoid constant warming from beneath" describes a
+; symptom of the old accumulating BC (see the basal boundary condition above), not something
+; the gradient BC needs: that form is diagnostic from T[tt-2] each substep and cannot run away.
+; The bed node is now preserved and only slots strictly below it are filled.
+if tt le total(fit_layers) then tl_fit[ii[i],tt:total(fit_layers)]=tl_fit[ii[i],tt-1]
 
-fit_water=mel[ii[i]]+plg[ii[i]]  ; liquid water available from surface (melt+rain)
+; universal PMP safety clamp -- see pmp_profile note above
+tl_fit[ii[i],*] = tl_fit[ii[i],*] < pmp_profile
 
-if firn_permeability eq 'n' then fit_water = 0  ; check if permeability is disabled, if yes then set infiltrating water to zero
-
-; latent heat release over firn/snow surface (entirely permeable)
-if firn[ii[i]] eq 1 then begin
-
-for j=1,tt-2 do begin ; loop through all considered layers from top, and update temperatures
-   c=(-1)*(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*cap_fit[j]*fit_dz[0,j]/Lh_rf ; cold content in layer below pressure melting point
-   if fit_water gt c then begin   ; temperate layer if cold reservoir used, remaining water being transferred
-      tl_fit[ii[i],j]=(fit_dz[1,j]*0.9/10.)*(-0.00742) & fit_water=fit_water-c
-   endif else begin
-      if c gt 0 and fit_water gt 0 then tl_fit[ii[i],j]=tl_fit[ii[i],j]-(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*(fit_water/c)
-      fit_water=fit_water-c
-   endelse
- ;  if j eq 10 and ii(i) eq 245 then print, m,c,fit_water,tl_fit(ii(i),10)
-endfor
-
-endif else begin
-
-; latent heat release over ice surface, incl. seasonal snow (mainly impermeable)
-
-kk=where(dens_fit lt 900,ck)
-for j=1,ck do begin ; loop through all SNOW layers from top, and update temperatures
-   c=(-1)*(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*cap_fit[j]*fit_dz[0,j]/Lh_rf ; cold content in layer below pressure melting point
-   if fit_water gt c then begin   ; temperate layer if cold reservoir used, remaining water being transferred
-      tl_fit[ii[i],j]=(fit_dz[1,j]*0.9/10.)*(-0.00742) & fit_water=fit_water-c
-   endif else begin
-      if c gt 0 and fit_water gt 0 then tl_fit[ii[i],j]=tl_fit[ii[i],j]-(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*(fit_water/c)
-      fit_water=fit_water-c
-   endelse
-endfor
-
-; reduce liquid water input through glacier ice using different permeability models
-if ice_permeability eq 'y' then begin
-   f = permeability[ii[i]] ; velocity gradient based permeability (Janosch model)
-   fit_water=fit_water*f   ; reducing amount of water entering glacier ice
-   ; f=(slope(ii(i))^2*fact_permeability(0))*(thick(ii(i))*fact_permeability(1)) ; slope based permeability (Matthias model)
-endif else begin
-   fit_water=fit_water*0 ; no water entering glacier ice
-endelse
-
-for j=ck+1,tt-2 do begin ; loop through all ICE layers from top, and update temperatures
-   c=(-1)*(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*cap_fit[j]*fit_dz[0,j]/Lh_rf ; cold content in layer below pressure melting point
-   if fit_water gt c then begin   ; temperate layer if cold reservoir used, remaining water being transferred
-      tl_fit[ii[i],j]=(fit_dz[1,j]*0.9/10.)*(-0.00742) & fit_water=fit_water-c
-   endif else begin
-      if c gt 0 and fit_water gt 0 then tl_fit[ii[i],j]=tl_fit[ii[i],j]-(tl_fit[ii[i],j]-((fit_dz[1,j]*0.9/10.)*(-0.00742)))*(fit_water/c)
-      fit_water=fit_water-c
-   endelse
-;   if j eq 10 and ii(i) eq 20 then print, m,c,fit_water,tl_fit(ii(i),20),f
-endfor
-
-endelse
+; bed log: the node at the band's ice thickness and the column's bottom node (deeper where the
+; column runs to a borehole's deepest reading)
+if firnice_write[0] eq 'y' then begin
+   dummy_bed = min(abs(thick[ii[i]] - fit_dz[1,0:tt-1]), j_bed)
+   bed_sum[ye,ii[i]] = bed_sum[ye,ii[i]] + tl_fit[ii[i],j_bed]
+   bed_cnt[ye,ii[i]] = bed_cnt[ye,ii[i]] + 1d
+   bed_z[ye,ii[i]]   = fit_dz[1,j_bed]
+   bed_min[ye,ii[i]] = bed_min[ye,ii[i]] < tl_fit[ii[i],j_bed]
+   bed_max[ye,ii[i]] = bed_max[ye,ii[i]] > tl_fit[ii[i],j_bed]
+   bed_bot[ye,ii[i]] = bed_bot[ye,ii[i]] + tl_fit[ii[i],tt-1]
+   bed_zb[ye,ii[i]]  = fit_dz[1,tt-1]
+endif
 
 ; prepare for output
 if firnice_write[0] eq 'y' then begin
          ; maximum temperature in layer during one year
-   elev_firnicetemp[0,ye,ii[i]]=max([elev_firnicetemp[0,ye,ii[i]],tl_fit[ii[i],2]])  ; 2m
-   elev_firnicetemp[1,ye,ii[i]]=max([elev_firnicetemp[1,ye,ii[i]],tl_fit[ii[i],10]]) ; 10m
-   elev_firnicetemp[2,ye,ii[i]]=max([elev_firnicetemp[2,ye,ii[i]],tl_fit[ii[i],18]]) ; 50m
-   elev_firnicetemp[3,ye,ii[i]]=max([elev_firnicetemp[3,ye,ii[i]],tl_fit[ii[i],30]]) ; bedrock
+   elev_firnicetemp[0,ye,ii[i]]=max([elev_firnicetemp[0,ye,ii[i]],tl_fit[ii[i],idx_out_2m]])  ; 2 m
+   elev_firnicetemp[1,ye,ii[i]]=max([elev_firnicetemp[1,ye,ii[i]],tl_fit[ii[i],idx_out_14m]]) ; 14 m
+   elev_firnicetemp[2,ye,ii[i]]=max([elev_firnicetemp[2,ye,ii[i]],tl_fit[ii[i],idx_out_54m]]) ; 54 m
+   elev_firnicetemp[3,ye,ii[i]]=max([elev_firnicetemp[3,ye,ii[i]],tl_fit[ii[i],total(fit_layers)]]) ; bedrock (last slot; was hardcoded 30)
+endif
+
+; snow logbook: snow, temperatures and the resistance from the surface to the first node under
+; the snow, as the solver uses it (R_used) and as layered snow and ice give it (R_series)
+if firnice_write[0] eq 'y' then begin
+   snl_rest = sno[ii[i]] & snl_zm = 0d & snl_rs = 0d & snl_n = 0
+   for snl_j = 1, n_elements(dens_fit)-1 do begin
+      if snl_rest le 0d then break
+      snl_rho = fit_dens[(snl_j-1) < (n_fd-1)]
+      snl_dz  = (snl_rest / (snl_rho/1000d)) < fit_dz[0,snl_j]
+      snl_ks  = (poly(snl_rho,k_ca)*firnice_insul_scale_b[ii[i]]) < k_ice_l[snl_j]
+      snl_rs  = snl_rs + snl_dz/snl_ks + (fit_dz[0,snl_j]-snl_dz)/k_ice_l[snl_j]
+      snl_rest = snl_rest - snl_dz*snl_rho/1000d
+      snl_zm  = snl_zm + snl_dz
+      snl_n   = snl_j
+   endfor
+   snl_k  = (snl_n > n_snow_lay) > 1
+   snl_ru = 0d
+   for snl_j = 1, snl_k do begin
+      snl_ru = snl_ru + fit_dz[0,snl_j] / kgap[snl_j]
+      if snl_j gt snl_n then snl_rs = snl_rs + fit_dz[0,snl_j]/k_ice_l[snl_j]
+   endfor
+   snl_sum[*,m-1,ii[i]] = snl_sum[*,m-1,ii[i]] + [sno[ii[i]], z_snow, snl_zm, tl_fit[ii[i],0], $
+      tl_fit[ii[i],snl_k], tl_fit[ii[i],1], tl_fit[ii[i],2], snl_ru, snl_rs, double(firn_th[ii[i]])]
+   snl_cnt[m-1,ii[i]] = snl_cnt[m-1,ii[i]] + 1d
+   if m eq 5 then snl_may[ye,ii[i]] = sno[ii[i]]
+   if n_elements(snl_bh) gt 0 then begin
+      snl_p = where(firnice_profile_ind[0,*] eq ii[i], c_snl_p)
+      if c_snl_p gt 0 then snl_bh[ye,m-1,snl_p] = sno[ii[i]]
+   endif
+endif
+
+if firnice_write[2] eq 'y' then begin
+         ; full column, accumulated over the months of this year (annual MEAN at write
+         ; time). Layers at or below tt-1 are the bed node and the below-bed fill, so
+         ; tt is stored to let the reader mask everything the model did not resolve.
+   fit_field_sum[ye,ii[i],*] = fit_field_sum[ye,ii[i],*] + reform(tl_fit[ii[i],0:total(fit_layers)-1])
+   fit_field_cnt[ye,ii[i]]   = fit_field_cnt[ye,ii[i]] + 1d0
+   fit_field_tt[ye,ii[i]]    = tt
+   fit_field_th[ye,ii[i]]    = thick[ii[i]]
 endif
 
 if firnice_write[1] eq 'y' then begin
    for j=0,n_elements(firnice_profile)-1 do begin
       if ii[i] eq firnice_profile_ind[0,j] then begin
-         a=tl_fit[firnice_profile_ind[0,j],1:total(fit_layers)] & a[tt-2:total(fit_layers)-1]=snoval
-         printf,51+j,ye+tran[0],m,a,fo='(2i4,'+string(total(fit_layers),fo='(i2)')+'f8.3)'
+         ; prof_out[k] = tl_fit[k+1], so prof_out[tt-2] IS the bed node. Masking from tt-2
+         ; discarded it; mask from tt-1 so the deepest resolved node reaches the output.
+         prof_out=tl_fit[firnice_profile_ind[0,j],1:total(fit_layers)] & prof_out[tt-1:total(fit_layers)-1]=snoval
+         r_prof = fit_prof_n[j]
+         if r_prof ge 12l*years then message, 'more profile rows than months in the run'
+         fit_prof_val[j,r_prof,*] = prof_out
+         fit_prof_ym[j,r_prof,0] = ye+tran[0] & fit_prof_ym[j,r_prof,1] = m
+         fit_prof_n[j] = r_prof + 1
       endif
    endfor
 endif
 
 endfor
 
-; Return advection effects in the output variables if requested
+; Store advection effects in the annual output arrays (indexed by year)
 IF enable_advection EQ 'y' AND advection_write EQ 'y' THEN BEGIN
-   elev_adv_horiz = adv_horiz_effect
-   elev_adv_vert = adv_vert_effect
+   elev_adv_horiz[ye, *] = adv_horiz_effect
+   elev_adv_vert[ye, *]  = adv_vert_effect
 ENDIF

@@ -22,6 +22,7 @@ dummy = min(abs(rlat - gmid[0]), ind_lat)
 ; Closest longitude
 dummy = min(abs(rlon - gmid[1]), ind_lon)
 rmid = [rlat[ind_lat], rlon[ind_lon]]
+clim_ilat = ind_lat & clim_ilon = ind_lon   ; reanalysis cell, kept for the thermal spin-up
 
 ; ------------------------------
 ; meteo time series directly from re-analysis data (past)

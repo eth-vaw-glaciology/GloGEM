@@ -25,6 +25,12 @@ endelse
 mb=dblarr(years)+snoval & wb=mb
 smelt=dblarr(years) & imelt=smelt & accum=smelt & rain=smelt & refre=smelt
 ela=dblarr(years)+snoval & dbdz=ela & btongue=ela & aar=ela & hmin_g=ela
+firnline_th=ela & nflip_ice=lonarr(years) & nflip_firn=lonarr(years)   ; thermal firn line log
 area_cat=total(area)
 
 if adv_lookup eq 'y' then adv_lookup_data=dblarr(3,nb,years)
+ccmon=0l
+; state of the full refreezing model, for every glacier (also set by initialise_firnicetemp_spinup)
+te_rf=dblarr(nb,rf_layers) & tl_rf=te_rf
+melt_rf_sum = dblarr(nb)
+refr_rf_sum = dblarr(nb)

@@ -35,6 +35,17 @@ for i = 0, n_elements(elev_bmb[0, *]) - 1 do begin
 endfor
 close, 40
 
+; winter balance per band [m w.e.], to the end of the winter month (store_elevationband_massbalance.pro)
+get_lun, lun_bw
+openw, lun_bw, dirres + '/' + time_resolution + '/' + dir_region + subpath + '/mb_elevation/bwelev_' + id[gg[g]] + '.dat'
+a = '' & for i = 0, years - 1 do a = a + string(i + tran[0], fo = '(i4)') + '    '
+printf, lun_bw, 'Elev  ' + a
+for i = 0, n_elements(elev_bwb[0, *]) - 1 do begin
+  fmt = '(i6,' + strtrim(string(years, format = '(i4)'), 2) + 'f8.3)'
+  printf, lun_bw, elev0[i], elev_bwb[*, i], format = fmt
+endfor
+free_lun, lun_bw
+
 if debris_supraglacial eq 'y' then begin
   for i = 0, n_elements(elev_bmb[0, *]) - 1 do begin
     fmt = '(i6,' + strtrim(string(years, format = '(i4)'), 2) + 'f8.3)'
