@@ -186,7 +186,7 @@ Janosch decided on 2026-09-25 not to rerun the submitted v1 regions, and on 2026
 | {ref}`G21 <mc-g21>` | Buffered per-glacier netCDF writes | core | done | bit-identical | — | `748dc8d` |
 | {ref}`G22 <mc-g22>` | Start year of the Δh geometry change | core | fixed | no for standard configs | edge case differs | `780520a`, `ae75e1e` |
 | {ref}`G23 <mc-g23>` | "dhdt" renamed "Δh parameterisation" | core | done | no | — | `1661cac` |
-| {ref}`G24 <mc-g24>` | Englacial temperature module (off in GMIP4) | core | many fixes; in progress | only with `firnice_temperature='y'` | yes (at least three of the bugs) | see entry |
+| {ref}`G24 <mc-g24>` | Englacial temperature module (off in GMIP4) | core | many fixes; in progress; merge into main prepared (`e9828aa`, local, 2026-11-04) | only with `firnice_temperature='y'` | yes (at least three of the bugs) | see entry |
 | {ref}`G25 <mc-g25>` | AMOC runs re-read the regional ERA5 file in every 0.1° cell | core | fixed | bit-identical | yes | `0623127` |
 | {ref}`G26 <mc-g26>` | The GCM file search missed grid points at 0° longitude ("-0.00") | core | fixed, also on main | yes (cells whose search crosses 0°; Pyrenees with AMOC CESM) | no (since `b178186`) | `1467b45`; main `c6eb2c3`, `f6a6fec` |
 | {ref}`G27 <mc-g27>` | An ERA5 hindcast in AMOC mode ran to 2499 | core | fixed | yes (AMOC-mode hindcasts only) | yes | `98790f3` |
@@ -554,6 +554,36 @@ The ice-temperature runs now use FRH: no offset, ERA5's lapse rate, the HL and l
 - meltwater refreezing in the winter snow on ice (`snow-refreeze`).
 
 13 commits of this work (`cea254f` to `e9c0cca`) are only on `GloGEMflow` and not in v3. `cea254f` adds bookkeeping lines to the core mass-balance files (`accumulation.pro`, `meltmodel.pro`, `refreezing_*.pro`, `calculatedebrismelt.pro`; claimed bit-identical on Iceland) and conflicts with `d62db11`: a test merge (`git merge-tree`) of `GloGEMflow` into `glogemflow-v3` conflicts in exactly `meltmodel.pro` and `calculatedebrismelt.pro`. The history of this work is kept in the separate `glogemflow_icetemp/development_history/` book.
+
+**The thermal chain of 21 October to 4 November, and its merge into main (prepared, not pushed).** Five local branches,
+each on the one before, add 14 commits to local `GloGEMflow` `8a8aba9`: `orientation-factor` (`53af4e5`) →
+`freeair-thermal` (`61ada09`) → `freeair-mb` (`5964b0f`) → `thermal-daily-anomalies` (`bd490db`) →
+`advection-depthmap` (`e181e93`). Every switch defaults to the earlier behaviour. The chapters are those of the
+ice-temperature development history (`glogemflow_icetemp/development_history/`).
+
+| Switch (default) | What it does when on | Commits | Chapter | Test with the switch off |
+|---|---|---|---|---|
+| `firnice_orient` (`'n'`; `'table'` with `firnice_orient_dir`) | the thermal model's melt times a per-band orientation factor from a table over air-temperature anomalies; the mass balance is untouched | `4f84a94`, `1192935` | 12 | an all-ones table bit-identical; mass balance byte-identical |
+| `firnice_spinup_dT` (0) | K added to the thermal spin-up's air only (diagnostic) | `1d6f970` | 12 | default unchanged |
+| `firnice_write_melth` (`'n'`) | output only: each band's thermal melt and air per month | `2a3d1fd`, `53af4e5` | 12 | output only |
+| `firnice_thermal_air` (`'era5_2m'`; `'freeair'` with `firnice_freeair_file`), `firnice_surface_cool` (`'n'`; `'gilbert'`) | the thermal model's air from ERA5 pressure levels at the band's height; Gilbert et al. (2014) surface cooling | `df7407a`, `d783f84` | 13, 14 | 373 of 373 output files byte-identical to the o4 runs |
+| `firnice_f_sur` (0) | thermal surface min(0, air − f_sur), calibrated with f_ref | `61ada09` | 14 | f_sur = 0 byte-identical |
+| `air_temperature` (`'era5_2m'`; `'freeair'` with `freeair_file`, `freeair_blend_depth` 400 m) | the free air for the mass balance, see {ref}`G44 <mc-g44>` | `a90b24a`, `a7cdeb3`, `5ea744b`, `5964b0f` | 15 | see G44 |
+| `firnice_daily_anomalies` (`''`) | the thermal melt on each month's real daily anomalies (a NetCDF file) instead of the fixed list in `variability_<region>.mdi`; the mass balance keeps the list | `bd490db` | 17 | 419 of 419 files byte-identical to `5964b0f` (23 glaciers) |
+| `firnice_adv_depthmap` (`'relative'`; `'inventory'`, `'absolute'`) | where the horizontal advection reads the band above, at a borehole column deepened beyond its inventory thickness | `e181e93` | 19 | 373 of 373 files byte-identical to o4 |
+
+Version 1.0 of the ice-temperature product (decided 4 November) runs with `firnice_adv_depthmap = 'inventory'`
+and with `firnice_perm_limit = 'cold'` (meltwater at most 4 m into cold firn) in the north-facing part runs only.
+These are run settings; the defaults above are not changed. Known limitations of version 1.0: over-burial at high
+saddles and summits; the unexplained f_ref split between Mont Blanc and Monte Rosa; the meltwater scheme's switch
+near 0 °C; the orientation factor adopted against its rule B.
+
+The merge into main is prepared as `e9828aa` (branch `merge/thermal-chain-20261104`, local, not pushed): `main`
+`b178186` merged with `advection-depthmap`. It brings all of `GloGEMflow` (329 commits not on main: the flowline
+model, this module and its calibration readers, the GMIP4 scripts), not the thermal chain alone, because the chain
+needs its base. Two conflicts, both additions on each side (`check_tran.pro`, `config.pro.example`). Not tested:
+`band_extension` or `snowline_ext_depth` with `use_flow_model = 'y'`. Gates: see the tidy-up log of 2026-11-04
+(development folder, `handovers/2026-11-04_tidy_up_log.md`).
 
 ---
 
