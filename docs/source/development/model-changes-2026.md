@@ -186,7 +186,7 @@ Janosch decided on 2026-09-25 not to rerun the submitted v1 regions, and on 2026
 | {ref}`G21 <mc-g21>` | Buffered per-glacier netCDF writes | core | done | bit-identical | — | `748dc8d` |
 | {ref}`G22 <mc-g22>` | Start year of the Δh geometry change | core | fixed | no for standard configs | edge case differs | `780520a`, `ae75e1e` |
 | {ref}`G23 <mc-g23>` | "dhdt" renamed "Δh parameterisation" | core | done | no | — | `1661cac` |
-| {ref}`G24 <mc-g24>` | Englacial temperature module (off in GMIP4) | core | many fixes; in progress; merge into main prepared (`e9828aa`, local, 2026-11-04) | only with `firnice_temperature='y'` | yes (at least three of the bugs) | see entry |
+| {ref}`G24 <mc-g24>` | Englacial temperature module (off in GMIP4) | core | many fixes; in progress; merge into main prepared (`e9828aa`, branch on GitHub, not on main, 2026-11-05) | only with `firnice_temperature='y'` | yes (at least three of the bugs) | see entry |
 | {ref}`G25 <mc-g25>` | AMOC runs re-read the regional ERA5 file in every 0.1° cell | core | fixed | bit-identical | yes | `0623127` |
 | {ref}`G26 <mc-g26>` | The GCM file search missed grid points at 0° longitude ("-0.00") | core | fixed, also on main | yes (cells whose search crosses 0°; Pyrenees with AMOC CESM) | no (since `b178186`) | `1467b45`; main `c6eb2c3`, `f6a6fec` |
 | {ref}`G27 <mc-g27>` | An ERA5 hindcast in AMOC mode ran to 2499 | core | fixed | yes (AMOC-mode hindcasts only) | yes | `98790f3` |
@@ -578,12 +578,23 @@ These are run settings; the defaults above are not changed. Known limitations of
 saddles and summits; the unexplained f_ref split between Mont Blanc and Monte Rosa; the meltwater scheme's switch
 near 0 °C; the orientation factor adopted against its rule B.
 
-The merge into main is prepared as `e9828aa` (branch `merge/thermal-chain-20261104`, local, not pushed): `main`
+The merge into main is prepared as `e9828aa` (branch `merge/thermal-chain-20261104`, on GitHub, not on main): `main`
 `b178186` merged with `advection-depthmap`. It brings all of `GloGEMflow` (329 commits not on main: the flowline
 model, this module and its calibration readers, the GMIP4 scripts), not the thermal chain alone, because the chain
-needs its base. Two conflicts, both additions on each side (`check_tran.pro`, `config.pro.example`). Not tested:
-`band_extension` or `snowline_ext_depth` with `use_flow_model = 'y'`. Gates: see the tidy-up log of 2026-11-04
-(development folder, `handovers/2026-11-04_tidy_up_log.md`).
+needs its base. **It does not bring `glogemflow-v3`** (126 commits, 87 with changes beyond the docs, 40 in the flow
+model and the Δh regrowth), so its flowline model is not the one the GMIP4 v3 and v4 runs used; see "Merge order and
+conflicts" in section 8. Two conflicts, both additions on each side (`check_tran.pro`, `config.pro.example`). Not
+tested: `band_extension` or `snowline_ext_depth` with `use_flow_model = 'y'`.
+
+| Compared, byte for byte | Result |
+|---|---|
+| New options on, against the runs o4, o7, z1 | 373 of 373 files identical in each |
+| All options off, against `GloGEMflow` `8a8aba9` | calibration 5 of 5, past run 25 of 26 (the settings record: new setting names only), thermal-only mode 57 of 57; projections differ through main's month alignment, the flow spin-up too (reasoned, no revert test) |
+| All options off, against `main`, calibration of all CentralEurope | 4062 of 4073 shared glaciers identical; 6 glaciers only in the merge and 5 neighbours of one of them ({ref}`G8 <mc-g8>`), 5 Pyrenees glaciers ({ref}`G6 <mc-g6>`), 1 (04045) by 0.002 °C, unexplained. Causes inferred from the code and coordinates; no rerun with only those fixes |
+| All options off, against `main`, 3 test glaciers | 00786 differs ({ref}`G4 <mc-g4>`, {ref}`G11 <mc-g11>`); 00774 and 03116 identical in the projection files checked |
+
+So main's results change with every option off: G6 and G8 are bugs on main today, G4 and G11 are always on. Logs: tidy-up
+log of 2026-11-04 (development folder, `handovers/2026-11-04_tidy_up_log.md`).
 
 ---
 
@@ -1916,6 +1927,8 @@ Planned: first merge `GloGEMflow` (the temperature work) and `glogemflow-v3` int
 | `origin/main` (`6ee55bc`) with `glogemflow-v3` (**done 2026-10-16**, `769534d`, with `fb7f9c0` and exactly these resolutions; tested: the SouthernAndes catchment of S10, hindcast and MRI-ESM2-0 ssp126 to 2300, gives all 23 `.dat` files, 17 spin-up files and every netCDF variable identical apart from the corrected monthly time labels; on 98 RGI6 glaciers of the AMOC study, fixed geometry to 3000, the result is byte-identical to main + fix) | `check_tran.pro` (2 places): our skip for reanalysis hindcasts (G13, `goto, check_tran_done`) against Lander's two debug `print` lines and his AMOC block. Keep both, with the label `check_tran_done:` after the AMOC block; ask Lander whether the prints stay. `read_climatepast_monthly_new.pro` (1): keep main's `;print, fn` and add our `era5_pt` line after it. `write_netcdf_glacier.pro` (1): keep ours (`nc_s_mbsl`); Lander's NaN fix for the temperature (`749e36f`) merges next to it. |
 
 Main has not touched `glogem.pro` since the split. The hard part is not git: a whole-branch merge brings the flow model, the temperature model and the GMIP4 scripts into main.
+
+**State 2026-11-05.** The thermal merge `e9828aa` ({ref}`G24 <mc-g24>`) covers `GloGEMflow` and the thermal chain only; the first step planned above, `GloGEMflow` with `glogemflow-v3`, has not been made. A `git merge-tree` dry run of `e9828aa` with `glogemflow-v3` gives conflicts in 11 files (`config.pro.example`, `glogem.pro`, `check_tran.pro`, `settings.pro`, `accumulation.pro`, `calculatedebrismelt.pro`, `meltmodel.pro`, `virtual_ice_balance.pro`, `read_gcmdata_monthly.pro`, `read_hypsometryfile.pro`, `write_elevationband_file.pro`). Whether `glogemflow-v3` goes to main with this merge or after it is open.
 
 ### Core-only port
 
