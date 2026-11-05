@@ -14,14 +14,14 @@ For users of GloGEM; the details and the evidence are in the entries below.
 - **New: growth limit.** Every glacier is bounded once a year, on both geometry paths ({ref}`G12 <mc-g12>`).
 - **New: the GMIP4 ERA5 hindcast runs with changing geometry** ({ref}`G13 <mc-g13>`). Flow runs write `GloGEMflow_*` netCDF files.
 - **Fixed, climate input:** projections read the climate months late, in GMIP4 ({ref}`G1 <mc-g1>`) and in CMIP6 and AMOC ({ref}`G2 <mc-g2>`; both also fixed on main since 2026-10-16); ERA5 and GCM came from neighbouring grid points ({ref}`G3 <mc-g3>`); the climate point depended on the batching ({ref}`G4 <mc-g4>`); lapse rate and variability on the per-point climate path ({ref}`G5 <mc-g5>`); lost longitudes ({ref}`G6 <mc-g6>`); speed ({ref}`G7 <mc-g7>`).
-- **Fixed, elsewhere:** glaciers never simulated ({ref}`G8 <mc-g8>`); glaciers turning NaN in the Δh parameterisation ({ref}`G9 <mc-g9>`, {ref}`G10 <mc-g10>`); Δh mass check and sea-level calving ({ref}`G11 <mc-g11>`); the calving-flux file ({ref}`G15 <mc-g15>`); `mass_bsl` ({ref}`G18 <mc-g18>`); negative netCDF values ({ref}`G19 <mc-g19>`); monthly netCDF time labels ({ref}`G20 <mc-g20>`, also on main); the full refreezing model's year and cold reservoir ({ref}`G40 <mc-g40>`, {ref}`G41 <mc-g41>`, local GloGEMflow); the Δh parameterisation of glaciers with 4 bands or fewer lost or gained 1.5 × the balance ({ref}`G42 <mc-g42>`, behind a switch); the flowline now uses the RGI 7.0 area correction ({ref}`F15 <mc-f15>`).
+- **Fixed, elsewhere:** glaciers never simulated ({ref}`G8 <mc-g8>`); glaciers turning NaN in the Δh parameterisation ({ref}`G9 <mc-g9>`, {ref}`G10 <mc-g10>`); Δh mass check and sea-level calving ({ref}`G11 <mc-g11>`); the calving-flux file ({ref}`G15 <mc-g15>`); `mass_bsl` ({ref}`G18 <mc-g18>`); negative netCDF values ({ref}`G19 <mc-g19>`); monthly netCDF time labels ({ref}`G20 <mc-g20>`, also on main); the full refreezing model's year and cold reservoir ({ref}`G40 <mc-g40>`, {ref}`G41 <mc-g41>`, local GloGEMflow); the Δh parameterisation of glaciers with 4 bands or fewer lost or gained 1.5 × the balance ({ref}`G42 <mc-g42>`, behind a switch); the flowline now uses the RGI 7.0 area correction ({ref}`F15 <mc-f15>`); the swapped ice-melt and snow-melt files ({ref}`K12 <mc-k12>`).
 - **New for growing glaciers (AMOC), all off by default:** the flowline balance at the actual surface ({ref}`F17 <mc-f17>`), a blow-up check by mass ({ref}`F18 <mc-f18>`), free outflow at the end of the longest grid ({ref}`F19 <mc-f19>`), Δh regrowth with a thickness limit per glacier ({ref}`G34 <mc-g34>`), a restart of glaciers that melted out ({ref}`G35 <mc-g35>`), the blended parameters below the inventory front in GloGEM's own band model ({ref}`G37 <mc-g37>`) and in the flowline's balance ({ref}`F20 <mc-f20>`), and a gate that sends flow spin-ups with implausibly stiff ice or the ELA bias at its clamp to the Δh parameterisation ({ref}`F21 <mc-f21>`).
 - **New for snowline calibration, off by default:** the snowline can drop onto the ground below the glacier front, down to each glacier's own valley floor ({ref}`G43 <mc-g43>`, also on main since 2026-10-21).
 - **New on main, off by default:** the elevation-band files continue below the glacier with the balance of an ice surface ({ref}`G30 <mc-g30>`), on main since 2026-10-30 (`b178186`) as a version with separate bands that also works with changing geometry; the 0.01° rounding of the point lookups ({ref}`G26 <mc-g26>`) came with it.
 - **New for the Alps, off by default:** the free air (ERA5's pressure-level temperature at the band's height) as the mass balance's air ({ref}`G44 <mc-g44>`, branch `freeair-mb`, not yet on v3 or main). With the right air, two hidden stand-ins that hold winter melt down come to light ({ref}`K34 <mc-k34>`).
 - **GMIP4 resubmission (v4, 2026-10-30):** 14 regions were rerun on `gmip4-v3` plus F15, G26 and F16, with G42 and F21 switched on, after GlacierMIP4 found that the monthly fluxes of the v1 and v2 regions did not add up to their annual mass change; the budget now closes within 0.5 % to 2100 ({ref}`S13 <mc-s13>`).
 - **Running:** the environment variables `GLOGEM_CONFIG` and `GLOGEM_LOGDIR`; the GMIP4 campaign scripts in `scripts/gmip4/` with a README ({ref}`S10 <mc-s10>`).
-- **Still open:** the swapped ice-melt and snow-melt files ({ref}`K12 <mc-k12>`), refreezing that depends on the number of elevation bands ({ref}`K26 <mc-k26>`) and the other items of section 6.
+- **Still open:** refreezing that depends on the number of elevation bands ({ref}`K26 <mc-k26>`) and the other items of section 6.
 
 ```{admonition} If you read nothing else: bugs that are still in main
 :class: important
@@ -186,7 +186,7 @@ Janosch decided on 2026-09-25 not to rerun the submitted v1 regions, and on 2026
 | {ref}`G21 <mc-g21>` | Buffered per-glacier netCDF writes | core | done | bit-identical | — | `748dc8d` |
 | {ref}`G22 <mc-g22>` | Start year of the Δh geometry change | core | fixed | no for standard configs | edge case differs | `780520a`, `ae75e1e` |
 | {ref}`G23 <mc-g23>` | "dhdt" renamed "Δh parameterisation" | core | done | no | — | `1661cac` |
-| {ref}`G24 <mc-g24>` | Englacial temperature module (off in GMIP4) | core | many fixes; in progress; merge into main prepared (`e9828aa`, branch on GitHub, not on main, 2026-11-05) | only with `firnice_temperature='y'` | yes (at least three of the bugs) | see entry |
+| {ref}`G24 <mc-g24>` | Englacial temperature module (off in GMIP4) | core | many fixes; in progress; merge into main prepared (`merge/full-model-20261105`, not on main, 2026-11-05) | only with `firnice_temperature='y'` | yes (at least three of the bugs) | see entry |
 | {ref}`G25 <mc-g25>` | AMOC runs re-read the regional ERA5 file in every 0.1° cell | core | fixed | bit-identical | yes | `0623127` |
 | {ref}`G26 <mc-g26>` | The GCM file search missed grid points at 0° longitude ("-0.00") | core | fixed, also on main | yes (cells whose search crosses 0°; Pyrenees with AMOC CESM) | no (since `b178186`) | `1467b45`; main `c6eb2c3`, `f6a6fec` |
 | {ref}`G27 <mc-g27>` | An ERA5 hindcast in AMOC mode ran to 2499 | core | fixed | yes (AMOC-mode hindcasts only) | yes | `98790f3` |
@@ -584,7 +584,9 @@ model, this module and its calibration readers, the GMIP4 scripts), not the ther
 needs its base. **It does not bring `glogemflow-v3`** (126 commits, 87 with changes beyond the docs, 40 in the flow
 model and the Δh regrowth), so its flowline model is not the one the GMIP4 v3 and v4 runs used; see "Merge order and
 conflicts" in section 8. Two conflicts, both additions on each side (`check_tran.pro`, `config.pro.example`). Not
-tested: `band_extension` or `snowline_ext_depth` with `use_flow_model = 'y'`.
+tested: `band_extension` or `snowline_ext_depth` with `use_flow_model = 'y'`. **Superseded on 2026-11-05 as the candidate
+for main by `merge/full-model-20261105`, which adds `glogemflow-v3` and `glogemflow-v4` on top of it (section 8).** The
+results below stay valid for that merge: its calibration of all CentralEurope is byte-identical to `e9828aa`.
 
 | Compared, byte for byte | Result |
 |---|---|
@@ -685,8 +687,11 @@ Lander). A port with a different design:
 - **Main does not reproduce the IGM forcing for every glacier.** In batched runs the climate point depends on the
   batch (G4, still in main: 12 of 107 CentralEurope batch-01 glaciers, up to 3 m w.e./yr from 1940 on); main's own
   refreezing average adds about 0.001 m w.e./yr.
-- **For the merge:** main and v3 now hold two implementations of `band_extension`. v3's is needed by the flow model
-  and `dh_regrowth` (G35, G37); main's leaves the glacier untouched. Decide which to keep before merging.
+- **In `merge/full-model-20261105` both stay, under two names** (proposed 2026-11-05, for the developers to confirm). `band_extension`
+  is main's: it adds rows to the elevation-band files and leaves the glacier alone. `band_extension_glacier` is v3's, with
+  `virtual_ice_balance_glacier.pro`: real glacier bands, which the flow model, `dh_regrowth` and `dh_reseed` need
+  (G35, G37). `make_amoc_configs.py` sets it. Both off by default; an error if both are on. A v3 config with
+  `band_extension='y'` must be renamed, or it gets main's version.
 
 (mc-g31)=
 ### G31. Geodetic target averaged over 19 of its 20 years; now all 20 after one spin-up year
@@ -1899,6 +1904,7 @@ All decisions below were taken by Janosch Beer.
 | 2026-10-29 | Once all 14 regions pass the output gate and the budget check, move the submitted folders to an archive and publish v4 in their place. | S13 |
 | 2026-10-30 | Main gets `band_extension` for Lander as a config option, off by default, in fixed and changing geometry; the glacier itself stays unchanged (separate bands) and keeps main's refreezing average. | G30, `b178186` |
 | 2026-11-02 | Push the tag `gmip4-v4` to GitHub and record v4 on this page. | Tags, S13 |
+| 2026-11-05 | Janosch: main should get the most recent and advanced state, with the GMIP4 and AMOC fixes: `glogemflow-v3` and `glogemflow-v4` join the thermal merge. Waits for the developers. | Section 8, G24, G30 |
 
 ---
 
@@ -1928,7 +1934,28 @@ Planned: first merge `GloGEMflow` (the temperature work) and `glogemflow-v3` int
 
 Main has not touched `glogem.pro` since the split. The hard part is not git: a whole-branch merge brings the flow model, the temperature model and the GMIP4 scripts into main.
 
-**State 2026-11-05.** The thermal merge `e9828aa` ({ref}`G24 <mc-g24>`) covers `GloGEMflow` and the thermal chain only; the first step planned above, `GloGEMflow` with `glogemflow-v3`, has not been made. A `git merge-tree` dry run of `e9828aa` with `glogemflow-v3` gives conflicts in 11 files (`config.pro.example`, `glogem.pro`, `check_tran.pro`, `settings.pro`, `accumulation.pro`, `calculatedebrismelt.pro`, `meltmodel.pro`, `virtual_ice_balance.pro`, `read_gcmdata_monthly.pro`, `read_hypsometryfile.pro`, `write_elevationband_file.pro`). Whether `glogemflow-v3` goes to main with this merge or after it is open.
+**State 2026-11-05.** `merge/full-model-20261105` holds everything: `e9828aa` (`main` `b178186` + `GloGEMflow` + the thermal chain) + `glogemflow-v3` (`ec24b54`) + `glogemflow-v4` (`e573b34`). No commit of `main`, `GloGEMflow`, the chain, v3, v4, `gmip4-v3` or `gmip4-v4` is missing. Tested code: `e573b34`; later commits on the branch change only this page. Not on main.
+
+- Merging v3: 30 conflicting places in 11 files. Bookings in `meltmodel.pro` and `calculatedebrismelt.pro` keep `if mb_book then if ar_gl ne 0 then`; `read_gcmdata_monthly.pro` starts at `gcm_start` (G3) with main's rounding (G26); `check_tran.pro` drops the two debug prints (K18); the two `band_extension` stay apart (G30); v3's blended offset comes after the free-air temperature in `glogem.pro`. The `ccmon` trap below does not occur: the one reset is in `initialise_output_arrays.pro`.
+- Merging v4 changes no `.pro` file: its model fixes reached v3 as their own commits. It adds the `--v4` options, `GMIP4_FINAL_BASE` and five scripts, moved to `scripts/gmip4/`.
+
+| Compared, with the same settings and fresh spin-ups unless noted | Result |
+|---|---|
+| Against `main`: Aletsch test configs, daily and monthly, calibration, past, projection | same numbers. Differences: K12 labels, the calving-flux file (G15), the settings record |
+| Against `e9828aa`: calibration of all CentralEurope | 5 of 5 files byte-identical, so the G24 result against `main` holds (4062 of 4073 shared glaciers identical) |
+| Against `e9828aa`: past run of 3 glaciers; thermal-only mode | same numbers; 57 of 57 files |
+| Against `e9828aa`: projection of 3 glaciers | 00774 differs, by up to 0.38 m w.e./a from 1940 (G3). **Proven:** with only G3 undone every number equals `e9828aa`. So main's projections change where the ERA5 and GCM grid points differ |
+| Against v3, same 3 glaciers, projection with and without the flow model | every `.dat` identical; spin-ups hold the same data; spin-up table differs in its run-time column |
+| Against v3, Aletsch | differs from the calibration on: v3 lacks main's G31. **Proven:** with the merge's calibration v3's code gives identical results, daily and monthly, flow example included |
+| Against the v4 test runs: CentralEurope batch 23 (ssp585), Iceland batch 04 (ssp126), to 2300, G42 and F21 on | same spin-up data and netCDF values. Differences: monthly `time` labels (G20; the combine script sets its own), K12 labels, dates, the settings record |
+| Against v4 production: ERA5 hindcast, CentralEurope batch 23 | same |
+| Against AMOC RUN 3: CentralEurope b01 CESM_RCP85_045sv, Scandinavia b04 GFDL ref, production spin-up caches, `band_extension_glacier` | all `.dat` and hypsometry identical; flowline files hold the same data |
+| Against o4, o7, z1: new thermal options on | 373 of 373 files identical in each; orientation tables same hashes |
+| `band_extension` on, against `e9828aa` | band files of 2 of 3 glaciers identical; the third is 00774 (G3); with G3 undone 9 of 9 |
+
+**Not tested on this merge:** every region other than CentralEurope and Iceland in GMIP4 mode, Scandinavia in AMOC mode; the new climate path of NorthAsia, LowLatitudes and Antarctic (G5, where results on main change most); `air_temperature='freeair'`; `band_extension` or `snowline_ext_depth` with the flow model.
+
+**Consequences for users of main.** Calibrations made on this merge carry G31, so they differ slightly from those behind GMIP4 v3 and v4. Scripts that read `Icemelt_sfc` or `Snowmelt_sfc` must follow K12. Old spin-up caches are not found under the new names (F16); clear them (F5). This page holds internal notes; decide whether it goes to main.
 
 ### Core-only port
 
