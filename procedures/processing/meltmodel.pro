@@ -43,6 +43,7 @@ case meltmodel of
     ii = where(sur eq 1 and tg gt t_melt, ci) ; snow
     if ci gt 0 then begin
       mel[ii] = DDFsnow * tg[ii] * mon_len[m - 1] / 1000.
+      if bext_dyn then mel[ii] = ddfs_v[ii] * tg[ii] * mon_len[m - 1] / 1000. ; blended below the inventory front
       jj = where(gl[ii] ne noval, cj)
       if mb_book then if cj gt 0 and ar_gl ne 0 then smelt[ye] = smelt[ye] + total(mel[ii[jj]] * area[ii[jj]]) / ar_gl
       if time_resolution eq 'daily' then snowmel[ii] = mel[ii]
@@ -51,14 +52,16 @@ case meltmodel of
     ii = where(sur eq 2 and tg gt t_melt, ci) ; Firn
     if ci gt 0 then begin
       mel[ii] = (0.5 * DDFice + 0.5 * DDFsnow) * tg[ii] * mon_len[m - 1] / 1000.
-      if mb_book then imelt[ye] = imelt[ye] + total(mel[ii] * area[ii]) / ar_gl
+      if bext_dyn then mel[ii] = (0.5 * ddfi_v[ii] + 0.5 * ddfs_v[ii]) * tg[ii] * mon_len[m - 1] / 1000.
+      if mb_book then if ar_gl ne 0 then imelt[ye] = imelt[ye] + total(mel[ii] * area[ii]) / ar_gl
       if time_resolution eq 'daily' then icemel[ii] = mel[ii]
     endif
 
     ii = where(sur eq 0 and tg gt t_melt, ci) ; Ice
     if ci gt 0 then begin
       mel[ii] = DDFice * tg[ii] * mon_len[m - 1] / 1000.
-      if mb_book then imelt[ye] = imelt[ye] + total(mel[ii] * area[ii]) / ar_gl
+      if bext_dyn then mel[ii] = ddfi_v[ii] * tg[ii] * mon_len[m - 1] / 1000.
+      if mb_book then if ar_gl ne 0 then imelt[ye] = imelt[ye] + total(mel[ii] * area[ii]) / ar_gl
       if time_resolution eq 'daily' then icemel[ii] = mel[ii]
     endif
 
@@ -74,7 +77,7 @@ case meltmodel of
       mel[ii] = ((1. - alb_snow) * sw_rad[ii, m - 1] + C0 + C1 * tg[ii]) * 3600 * 24. * mon_len[m - 1] / 1000. / lhf
       jj = where(mel lt 0, cj)
       if cj gt 0 then mel[jj] = 0
-      if mb_book then smelt[ye] = smelt[ye] + total(mel[ii] * area[ii]) / ar_gl
+      if mb_book then if ar_gl ne 0 then smelt[ye] = smelt[ye] + total(mel[ii] * area[ii]) / ar_gl
       if time_resolution eq 'daily' then snowmel[ii] = mel[ii]
     endif
 
@@ -83,7 +86,7 @@ case meltmodel of
       mel[ii] = ((1. - alb_firn) * sw_rad[ii, m - 1] + C0 + C1 * tg[ii]) * 3600 * 24. * mon_len[m - 1] / 1000. / lhf
       jj = where(mel lt 0, cj)
       if cj gt 0 then mel[jj] = 0
-      if mb_book then imelt[ye] = imelt[ye] + total(mel[ii] * area[ii]) / ar_gl
+      if mb_book then if ar_gl ne 0 then imelt[ye] = imelt[ye] + total(mel[ii] * area[ii]) / ar_gl
       if time_resolution eq 'daily' then icemel[ii] = mel[ii]
     endif
 
@@ -92,7 +95,7 @@ case meltmodel of
       mel[ii] = ((1. - alb_ice) * sw_rad[ii, m - 1] + C0 + C1 * tg[ii]) * 3600 * 24. * mon_len[m - 1] / 1000. / lhf
       jj = where(mel lt 0, cj)
       if cj gt 0 then mel[jj] = 0
-      if mb_book then imelt[ye] = imelt[ye] + total(mel[ii] * area[ii]) / ar_gl
+      if mb_book then if ar_gl ne 0 then imelt[ye] = imelt[ye] + total(mel[ii] * area[ii]) / ar_gl
       if time_resolution eq 'daily' then icemel[ii] = mel[ii]
     endif
 
@@ -105,7 +108,7 @@ case meltmodel of
           ; debris-covered ice + bare ice + area of ponds/cliffs
           mel[ii[i]] = (debris_frac[0, ii[i]] - debris_ponddens[ii[i]]) * debris_type_red[ind] * mel[ii[i]] + (1. - debris_frac[0, ii[i]]) * mel[ii[i]] + debris_ponddens[ii[i]] * debris_pond_enhancementfactor * mel[ii[i]]
         endfor
-        if mb_book then imelt[ye] = imelt[ye] + total(mel[ii] * area[ii]) / ar_gl ; updating array from above
+        if mb_book then if ar_gl ne 0 then imelt[ye] = imelt[ye] + total(mel[ii] * area[ii]) / ar_gl ; updating array from above
         if time_resolution eq 'daily' then icemel[ii] = mel[ii]
       endif
     endif

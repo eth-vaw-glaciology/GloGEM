@@ -1,5 +1,4 @@
 compile_opt idl2
-; print, 'TEST'
 
 ; Import glacier geometry data
 glacier_geom = import_glacier_geometry(fn)
@@ -124,6 +123,16 @@ prefrontal_elev = reverse(prefrontal_elev)
 ; Surface elevation in prefrontal region (set equal to bedrock for zero thickness)
 sur_concat = prefrontal_elev
 
+; Kept for extend_flowline_grid.pro, which lengthens the prefrontal area when the
+; ice reaches its end: another quarter of the glacier length each time, at most
+; 1.5 glacier lengths in all (Harry's MATLAB volume_calibration.m)
+flow_frontal_length     = frontal_length
+flow_frontal_length_max = 1.5
+flow_pf_n     = extra_grids          ; prefrontal cells
+flow_pf_len   = dist_dx_init[-1]     ; glacier part of the grid (m)
+flow_pf_bed0  = lowest_bedrock_elev
+flow_pf_slope = avg_slope
+
 ; Merge arrays: prepend prefrontal region to glacier arrays
 dist_dx_init = [dist_dx_init, x_concat]
 sur_dx_init = [sur_concat, sur_dx_init]
@@ -136,16 +145,13 @@ volume_Huss_1d = total((glacier_geom[*, 3] * 1e6) * glacier_geom[*, 4])
 print, 'volume_Huss_1d = ', volume_Huss_1d
 volume_Huss_1d_fixeddistance = total(width_dx_init * thick_dx_init * dx)
 print, 'volume_Huss_1d_fixeddistance = ', volume_Huss_1d_fixeddistance
-area_Huss_1d = total(glacier_geom[*, 3] * 1e6)
+; band area after the RGI7 area correction, as read_hypsometryfile.pro applies it to the bands
+area_Huss_1d = total(glacier_geom[*, 3] * 1e6) * area_correction_factor[gg[g]]
 print, 'area_Huss_1d = ', area_Huss_1d
 area_Huss_1d_fixeddistance = total(width_dx_init * dx)
 print, 'area_Huss_1d_fixeddistance = ', area_Huss_1d_fixeddistance
 i = where(thick_dx_init gt 1, count)
 length_fixeddistance = count * dx
-
-difference_volume = volume_Huss_1d_fixeddistance - volume_Huss_1d
-; print, 'difference_volume = ', difference_volume
-; print, 'difference_in_percentage = ', (difference_volume / volume_Huss_1d) * 100, '%'
 
 ; Normalize flowline widths to match the elevation-band (RGI) area.
 ; Corrects for interpolation error when converting from non-uniform
@@ -160,4 +166,3 @@ if area_Huss_1d_fixeddistance gt 0 then begin
 endif
 
 horizontal_grid_inputs = {dist_dx: dist_dx_init, sur_dx: sur_dx_init, width_dx: width_dx_init, thick_dx: thick_dx_init, bed_dx: bed_dx_init}
-save, horizontal_grid_inputs, file = 'horizontal_grid_inputs.sav'

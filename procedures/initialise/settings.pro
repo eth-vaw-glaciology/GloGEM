@@ -299,6 +299,42 @@ growth_max_rel   = 20.0d0   ; x the inventory volume
 ; spin-up). Evaluated in glogemflow_coupled.pro; see the comment there for the evidence.
 spinup_gate_vol_tol = 0.5d0   ; fraction of observed volume
 spinup_gate_len_min = 0.5d0   ; fraction of observed length
+; and the spin-up's parameters inside their range (0: off): A_flow at least spinup_gate_aflow_min [Pa-3 a-1],
+; |ELA bias| below spinup_gate_ela_max [m] (the spin-up clamps it at 500 m)
+spinup_gate_aflow_min = 0d0
+spinup_gate_ela_max = 0d0
+
+; Spin-up cost limit (spinup_flowmodel.pro): the calibration of one glacier stops after
+; spinup_max_substeps flow time steps (Phase A and B, all attempts). That is the work the
+; former 180 s wall-clock limit allowed on an idle vierzack for a flowline of typical size
+; (about 120 cells), and it gives the same result on an idle and a busy host. The
+; wall-clock cap is only a safety net, about 3x what the budget takes on the largest grids;
+; it should never bind at normal load, and the run log says when it does.
+spinup_max_substeps      = 2500000l
+spinup_max_wallclock_sec = 900d0
+
+; Ice that flows out of the last active flowline cell (the downstream end of the grid):
+;   'frontal'      book it as frontal ablation
+;   'melt_if_land' book it as frontal ablation only where the bed of that cell is below
+;                  0 m, otherwise as ice melt
+; Either way it is written to *_flow_gridend_outflow.dat and summed in the run log.
+; Ice now only leaves the grid of a glacier whose inventory front is on a bed below
+; 0 m, where that bed is below 0 m too (other fronts get a longer grid instead), so
+; both settings give the same result.
+flow_mb_elev_cap = 'all' ; flowline balance read at: 'all' the surface, at most the inventory surface (MATLAB); 'ice' that cap only where the inventory had ice; 'none' the surface (as IGM)
+flow_gridend_outflow = 'frontal'
+; A flow-model year is a blow-up (the glacier goes to the Δh parameterisation) when a cell is
+; thicker than 5000 m or not finite, or:
+;   'proxy30' the sum of the cell thicknesses changed by more than 30 %
+;   'mass'    the volume changed by more than flow_blowup_mass_tol (share of the volume at the
+;             start of the year) beyond what the balance and the flow through the grid ends explain
+flow_blowup_check = 'proxy30'
+flow_blowup_mass_tol = 0.01
+; When the ice reaches the end of the longest flowline grid (1.5 glacier lengths in front):
+;   'handover' the glacier goes to the Δh parameterisation for the rest of the run
+;   'outflow'  it stays on the flow model and the grid end lets the ice out, booked as
+;              grid-end outflow (see flow_gridend_outflow; use 'melt_if_land' on land)
+flow_domain_end = 'handover'
 
 ; --- glacier retreat module (Δh parameterisation option)
 glacier_retreat = 'y'
@@ -311,11 +347,29 @@ adv_calving = -100. ; [m] terminal bed elevation (0 = no calving)
 adv_fcrit = 2. ; [m/a] elevation gains above this are redistributed
 adv_terminusfraction = 0.2
 adv_lookup = 'n'
+; Δh regrowth (procedures/processing/dh_regrowth.pro), 'n' = the advance scheme above:
+; a growing glacier refills its former bands, then bands beyond its inventory front, with
+; the volume kept exactly; no band grows thicker than the glacier's own bed strength
+; allows on its slope (dh_regrowth_tau_pct percentile of its inventory basal stress, at
+; least dh_regrowth_tau_min); ice left at the lowest band leaves as grid-end outflow
+dh_regrowth = 'n'
+dh_regrowth_tau_min = 100d3 ; [Pa]
+dh_regrowth_tau_pct = 0.9
+dh_regrowth_adv_max = 100. ; [m/a] largest advance of the front along the flow in a year (0: no limit)
+; a glacier with no ice left restarts where the ice-surface balance of its old footprint has been
+; positive in each of the last dh_reseed_years years (procedures/processing/dh_reseed.pro; needs band_extension_glacier and dh_regrowth)
+dh_reseed = 'n'
+dh_reseed_years = 10
+; glaciers with 4 bands or fewer (procedures/processing/glacier_retreat.pro): 'y' keeps each band's
+; volume when its area adapts to the new thickness; 'n' (legacy) loses or gains about 1.5x the balance
+dh_small_conserve = 'n'
 band_extension = 'n' ; 'y': the elevation-band files (belev) continue down to band_ext_depth below each glacier, with the balance an ice surface would have there (forcing for ice-flow models)
+band_extension_glacier = 'n' ; 'y': real glacier bands down to band_ext_depth below the glacier, with the balance an ice surface would have there (flow model, dh_regrowth, dh_reseed, IGM forcing); not together with band_extension
 band_ext_depth = 1500. ; [m] depth of the band extension below the lowest band of the glacier inventory (not below sea level)
 band_blend_depth = 300. ; [m] below the front over which the extension bands blend from the glacier's own parameters into the regional medians (at least)
 band_blend_dtdz = 0.003 ; [degC/m] largest change of the temperature offset per metre in that blend (about half a lapse rate)
 band_blend_dlnp = 5e-4 ; [1/m] largest relative change of a degree-day factor or c_prec per metre in that blend
+amoc_end_year = 3000 ; last year of AMOC projections; the GCM series are extended to it by repeating their last 50 years
 
 ; --- calving (Oerlemans & Nick, 2005; marine-terminating only)
 frontal_ablation = 'y'
@@ -357,7 +411,8 @@ count_mbelevsens_v0 = 5
 past_out = 'y'
 
 write_hypsometry_files = 'n'
-write_geometry_output = 'n' ; 'y' to save per-glacier geometry and flowline grid history (.sav)
+write_geometry_output = 'n' ; 'y' to save per-glacier geometry and flowline grid history (.sav), 'flow' the flowline history only
+geometry_output_every = 1 ; [years] with more than 1: only every n-th year (and the last), single precision
 
 ; --- spatial extent
 lat0 = [-9999, -9999] ; specify sub-region [degrees]; or use [9999,9999] for full region
@@ -582,7 +637,36 @@ if calibrate eq 'n' then begin
 endif
 
 if use_flow_model eq 'y' then advance = 'y' ; flow model requires advance bands
+if flow_mb_elev_cap ne 'all' and flow_mb_elev_cap ne 'ice' and flow_mb_elev_cap ne 'none' then $
+  message, 'flow_mb_elev_cap must be ''all'', ''ice'' or ''none'', not ''' + strtrim(flow_mb_elev_cap, 2) + ''''
+if flow_gridend_outflow ne 'frontal' and flow_gridend_outflow ne 'melt_if_land' then $
+  message, 'flow_gridend_outflow must be ''frontal'' or ''melt_if_land'', not ''' + strtrim(flow_gridend_outflow, 2) + ''''
+if flow_blowup_check ne 'proxy30' and flow_blowup_check ne 'mass' then $
+  message, 'flow_blowup_check must be ''proxy30'' or ''mass'', not ''' + strtrim(flow_blowup_check, 2) + ''''
+if dh_regrowth ne 'y' and dh_regrowth ne 'n' then $
+  message, 'dh_regrowth must be ''y'' or ''n'', not ''' + strtrim(dh_regrowth, 2) + ''''
+if flow_domain_end ne 'handover' and flow_domain_end ne 'outflow' then $
+  message, 'flow_domain_end must be ''handover'' or ''outflow'', not ''' + strtrim(flow_domain_end, 2) + ''''
 if glacier_retreat eq 'n' and hindcast_dynamic ne 'y' and use_flow_model eq 'n' then advance = 'n'
+if dh_regrowth eq 'y' and advance ne 'y' then $
+  message, 'dh_regrowth=''y'' needs advance=''y'' (the bands below the front it grows into); with fixed geometry set dh_regrowth=''n'''
+if dh_regrowth eq 'y' and adv_lookup eq 'y' then message, 'dh_regrowth=''y'' and adv_lookup=''y'' exclude each other'
+if dh_regrowth_adv_max lt 0 then message, 'dh_regrowth_adv_max must be 0 (no limit) or positive'
+if spinup_gate_aflow_min lt 0 or spinup_gate_ela_max lt 0 then $
+  message, 'spinup_gate_aflow_min and spinup_gate_ela_max must be 0 (off) or positive'
+if write_geometry_output ne 'y' and write_geometry_output ne 'n' and write_geometry_output ne 'flow' then $
+  message, 'write_geometry_output must be ''y'', ''n'' or ''flow'', not ''' + strtrim(write_geometry_output, 2) + ''''
+if geometry_output_every lt 1 or geometry_output_every ne round(geometry_output_every) then $
+  message, 'geometry_output_every must be a whole number of years, at least 1'
+if dh_small_conserve ne 'y' and dh_small_conserve ne 'n' then $
+  message, 'dh_small_conserve must be ''y'' or ''n'', not ''' + strtrim(dh_small_conserve, 2) + ''''
+if dh_reseed ne 'y' and dh_reseed ne 'n' then $
+  message, 'dh_reseed must be ''y'' or ''n'', not ''' + strtrim(dh_reseed, 2) + ''''
+if dh_reseed eq 'y' and (dh_reseed_years lt 1 or dh_reseed_years ne round(dh_reseed_years)) then $
+  message, 'dh_reseed_years must be a whole number of years, at least 1'
+if dh_reseed eq 'y' and (band_extension_glacier ne 'y' or dh_regrowth ne 'y') then $
+  message, 'dh_reseed=''y'' needs band_extension_glacier=''y'' (the ice-surface balance of the old footprint) and dh_regrowth=''y'''
+if AMOC eq 'y' and amoc_end_year lt 2026 then message, 'amoc_end_year must be 2026 or later (an earlier end makes the run an ERA5 hindcast, K13)'
 
 if read_parameters eq 'y' then calibrate = 'n'
 
@@ -607,6 +691,28 @@ if band_extension eq 'y' then begin
     band_extension = 'n'
   endif else print, 'Band extension: elevation-band files down to ' + strtrim(string(band_ext_depth, format='(f8.0)'), 2) + ' m below each glacier (band_ext_depth), not below sea level'
 endif
+; band_extension_glacier: with changing geometry (glogem.pro switches glacier_retreat on after the survey year
+; when find_startyear or hindcast_dynamic is 'y') only with dh_regrowth, whose bands below the front it
+; provides (the old advance scheme would amplify them); only with the parts it reproduces
+if calibrate eq 'y' then band_extension_glacier = 'n'
+if band_extension eq 'y' and band_extension_glacier eq 'y' then $
+  message, 'band_extension and band_extension_glacier cannot be on together'
+if band_extension_glacier eq 'y' then begin
+  if meltmodel ne '1' then message, 'band_extension_glacier needs meltmodel ''1'''
+  if read_parameters ne 'y' then message, 'band_extension_glacier needs read_parameters=''y'' (regional parameters from the calibration file)'
+  if (glacier_retreat eq 'y' or find_startyear eq 'y' or hindcast_dynamic eq 'y') and dh_regrowth ne 'y' then $
+    message, 'band_extension_glacier with changing geometry needs dh_regrowth=''y''; for fixed geometry set glacier_retreat=''n'', find_startyear=''n'', hindcast_dynamic=''n'''
+  if debris_supraglacial eq 'y' or firnice_temperature eq 'y' or refreezing_full eq 'y' then $
+    message, 'band_extension_glacier does not support debris_supraglacial, firnice_temperature or refreezing_full'
+  if band_ext_depth lt adv_addband0 * 10. then message, 'band_ext_depth must be at least adv_addband0*10 m'
+  if band_blend_depth le 0 or band_blend_dtdz le 0 or band_blend_dlnp le 0 then $
+    message, 'band_blend_depth, band_blend_dtdz and band_blend_dlnp must be positive'
+  if write_mb_elevationbands ne 'y' then print, 'NOTE: band_extension_glacier without write_mb_elevationbands: the extension is computed but not written'
+endif
+; band_extension_glacier with changing geometry: the glacier's own band model takes the blended parameters
+; of the extension (toff_v, cprec_v, ddfs_v, ddfi_v) on every band; at and above the inventory front they
+; are the glacier's own
+bext_dyn = band_extension_glacier eq 'y' and dh_regrowth eq 'y'
 
 if meltmodel eq '3' then c2_tolerance = c2m3_tolerance
 
@@ -702,6 +808,11 @@ if snowline_ext_depth gt 0 then begin
     print, 'NOTE: snowline_ext_depth set to 0: the snowline is not computed when outf_names[14] is empty'
     snowline_ext_depth = 0.
   endif else begin
+    ; band_extension_glacier already gives bands down to band_ext_depth (precipitation with the normal gradient)
+    if band_extension_glacier eq 'y' and snowline_ext_depth gt band_ext_depth then begin
+      print, 'NOTE: snowline_ext_depth capped at band_ext_depth (band_extension_glacier provides the bands below the front)'
+      snowline_ext_depth = band_ext_depth
+    endif
     print, 'Snowline below the glacier front: ground bands down to ' + strtrim(string(snowline_ext_depth, format='(f8.0)'), 2) + ' m below the front (snowline_ext_depth)'
     if snowline_ext_valley ne '' then print, '  ... and not below each glacier''s valley floor from ' + snowline_ext_valley
     if full_output ne 'y' and write_netcdf ne 'y' then $

@@ -61,7 +61,8 @@ endif else ht1=max(elev)
 hmin_g[ye]=ht1
 
 jj=where(gl eq noval,cj) & if cj gt 0 then sur[jj]=noval
-if outf_names[n_elements(where(outf_names ne ''))-1] eq 'n' then if cj eq nb then ye=1000
+; (a glacier without ice ends its years here, unless it can restart: dh_reseed)
+if dh_reseed ne 'y' then if outf_names[n_elements(where(outf_names ne ''))-1] eq 'n' then if cj eq nb then ye=1000
 
 ; store decadal hypsometry snapshot
 if write_hypsometry_files eq 'y' then begin

@@ -5,8 +5,6 @@ compile_opt idl2
 gcmmodel = GCM_model[gcms]
 rcpmodel =  GCM_rcp[rcps]
 
-print, gcmmodel
-print, rcpmodel
 ; GCM end years apply to projections only -- a reanalysis hindcast keeps its config tran
 if reanalysis_direct eq 'y' then goto, check_tran_done
 
@@ -31,11 +29,11 @@ endif
 
 ; AMOC
 if AMOC eq 'y' then begin
-;    if rcpmodel eq 'ssp534-over'then begin                                                                                                                                                            
+;    if rcpmodel eq 'ssp534-over'then begin
    if gcmmodel eq 'CESM' then begin
-      tran[1]=3000
+      tran[1]=amoc_end_year
    endif else begin
-      tran[1]=3000
+      tran[1]=amoc_end_year
    endelse
 endif
 

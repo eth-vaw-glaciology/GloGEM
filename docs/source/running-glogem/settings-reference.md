@@ -36,7 +36,7 @@ All settings have defaults in `procedures/initialise/settings.pro`. To override 
 | `calibrate` | `'n'` | `'y'` to calibrate, `'n'` to run with existing parameters |
 | `find_startyear` | `'y'` | Auto-detect glacier retreat start year from RGI survey date |
 | `reanalysis_direct` | `'n'` | `'y'` to use reanalysis throughout without GCM |
-| `hindcast_dynamic` | `'n'` | `'y'` to allow dynamic geometry in the historical period |
+| `hindcast_dynamic` | `'n'` | `'y'` to allow dynamic geometry in the historical period (set to `'y'` for GMIP4; reset to `'n'` when `tran[1]` is after 2025) |
 | `write_file` | `'y'` | `'y'` to write output files to disk |
 
 ---
@@ -93,13 +93,43 @@ All settings have defaults in `procedures/initialise/settings.pro`. To override 
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `glacier_retreat` | `'y'` | Activate annual glacier geometry update |
+| `glacier_retreat` | `'y'` | Activate annual glacier geometry update (Δh parameterisation) |
+| `use_flow_model` | `'n'` | `'y'` to use the GloGEMflow flowline model instead of the Δh parameterisation where it can; sets `advance = 'y'` (see {ref}`settings-flowline-model`) |
 | `advance` | `'y'` | Allow glacier advance |
 | `frontal_ablation` | `'y'` | Activate calving for marine-terminating glaciers |
 | `refreezing_parametrised` | `'y'` | Activate parametrised refreezing |
 | `refreezing_full` | `'n'` | Activate full physics refreezing (slow) |
 | `firnice_temperature` | `'n'` | Activate englacial firn/ice temperature model |
 | `debris_supraglacial` | `'n'` | Activate supraglacial debris model |
+
+---
+
+(settings-flowline-model)=
+## Flowline model (GloGEMflow)
+
+Used only with `use_flow_model = 'y'`; see [Flowline Model (GloGEMflow)](../model-description/glacier-dynamics/flow-model.md).
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `spinup_gate_vol_tol` | `0.5d0` | Spin-up quality gate: largest volume error of the survey-year state (fraction of the observed volume) |
+| `spinup_gate_len_min` | `0.5d0` | Spin-up quality gate: smallest length of the survey-year state (fraction of the observed length) |
+| `spinup_max_substeps` | `2500000l` | Work limit of one glacier's spin-up: flow time steps over all attempts |
+| `spinup_max_wallclock_sec` | `900d0` | Wall-clock safety cap of one glacier's spin-up (s); should never bind |
+| `flow_gridend_outflow` | `'frontal'` | Ice leaving the end of the flowline grid: `'frontal'` books it as frontal ablation, `'melt_if_land'` as ice melt where the bed there is above 0 m |
+
+Glaciers that fail the gate or the spin-up, and glaciers shorter than 1 km, run on the Δh parameterisation. Spin-ups are cached in `<dirres>/spinup_cache/`; delete that folder after any change of climate, calibration or flow code.
+
+---
+
+## Growth limit
+
+`limit_glacier_growth.pro` bounds every glacier once a year, with the flow model and with the Δh parameterisation.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `growth_max_thick` | `2000.0d0` | Largest mean thickness of a glacier (m) |
+| `growth_max_vol` | `50.0d0` | Volume (km³) above which a glacier is limited, when it is also more than `growth_max_rel` times its inventory volume |
+| `growth_max_rel` | `20.0d0` | See `growth_max_vol` |
 
 ---
 
@@ -125,3 +155,21 @@ All settings have defaults in `procedures/initialise/settings.pro`. To override 
 | `write_hypsometry_files` | `'n'` | Write annual hypsometry evolution for all glaciers |
 | `firnice_write` | `['y', 'y']` | Write firn-ice temperature: [time series, detailed profiles] |
 | `version_past` | `''` | Version tag appended to historical output folder name |
+| `write_geometry_output` | `'n'` | `'y'` saves each glacier's band (and, with the flow model, flowline) geometry history as `.sav` files; about 0.5–1 MB per glacier and scenario |
+
+---
+
+## Environment variables
+
+Read when GloGEM starts (`.r glogem`), so different runs can share one copy of the code.
+
+| Variable | Read by | Description |
+|----------|---------|-------------|
+| `GLOGEM_CONFIG` | `settings.pro` | Absolute path of the user config to load instead of `<repository>/config.pro` |
+| `GLOGEM_LOGDIR` | `glogem.pro` | Folder for the run journal (`glogem_<time>.log`); default `<repository>/logs` |
+| `GLOGEM_BATCH` | the user config | Not read by the model itself: batch configs read it with `getenv('GLOGEM_BATCH')` to set `catchment_selection` (see `config.pro.example` and `scripts/gmip4/README.md`) |
+
+```bash
+cd <repository>
+echo '.r glogem' | GLOGEM_CONFIG=/abs/path/my_config.pro GLOGEM_LOGDIR=/abs/path/logs idl
+```

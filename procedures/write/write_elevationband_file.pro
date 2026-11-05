@@ -7,12 +7,12 @@
 compile_opt idl2
 
 ii = where(thick_ini eq 0, ci)
-; with band_extension the bands without ice carry their virtual balance
-if ci gt 0 and band_extension ne 'y' then elev_bmb[*, ii] = snoval
-if ci gt 0 and band_extension ne 'y' then elev_bwb[*, ii] = snoval
+; with band_extension or band_extension_glacier the bands without ice carry their virtual balance
+if ci gt 0 and band_extension ne 'y' and band_extension_glacier ne 'y' then elev_bmb[*, ii] = snoval
+if ci gt 0 and band_extension ne 'y' and band_extension_glacier ne 'y' then elev_bwb[*, ii] = snoval
 if ci gt 0 then elev_refr[*, ii] = snoval
-; 0.001 m w.e. with band_extension (forcing for other models), else 0.1 as before
-if band_extension eq 'y' then fmt_bmb = 'f9.3' else fmt_bmb = 'f7.1'
+; 0.001 m w.e. with band_extension or band_extension_glacier (forcing for other models), else 0.1 as before
+if band_extension eq 'y' or band_extension_glacier eq 'y' then fmt_bmb = 'f9.3' else fmt_bmb = 'f7.1'
 ; band_extension: the extension bands below the glacier first
 if band_extension eq 'y' then begin
   fmt = '(i6,' + strtrim(string(years, format = '(i4)'), 2) + fmt_bmb + ')'

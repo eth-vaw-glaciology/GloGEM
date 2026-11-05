@@ -80,6 +80,29 @@ endif else begin
   gl[*]   = noval
 endelse
 
+; Flowline ice but no band inside its elevation range (a single ice cell, or a
+; remnant flatter than one band step): keep the band nearest to its bed active,
+; with the flowline's ice area and mean surface, so the remnant gets that band's
+; balance next year and the band area stays non-zero.
+if n_ice ge 1l then begin
+  ii_gl_rem = where(gl ne noval, n_gl_rem)
+  if n_gl_rem eq 0 then begin
+    w_rem = total(width_surface_dx[ii_ice])
+    if w_rem gt 0d0 then begin
+      z_rem = total(sur_dx[ii_ice] * width_surface_dx[ii_ice]) / w_rem
+      b_rem = total(bed_dx[ii_ice] * width_surface_dx[ii_ice]) / w_rem
+    endif else begin
+      z_rem = mean(sur_dx[ii_ice])
+      b_rem = mean(bed_dx[ii_ice])
+    endelse
+    d_rem = min(abs(bed_elev - b_rem), j_rem)
+    area[j_rem]  = w_rem * dx / 1d6   ; m2 -> km2
+    width[j_rem] = w_rem / n_ice
+    elev[j_rem]  = z_rem
+    gl[j_rem]    = elev[j_rem]
+  endif
+endif
+
 ; ---- Elevation-mass balance feedback: update elev[j] from flow model ----
 ; For each active band, interpolate the current surface elevation from the
 ; flowline grid using bed elevation as the (fixed) abscissa. The bed never

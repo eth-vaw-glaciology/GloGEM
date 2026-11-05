@@ -15,17 +15,33 @@ noval = -9999
 
 ; entry geometry, kept for the mass-conservation guard at the end of this file
 gr_thick0 = thick & gr_area0 = area & gr_elev0 = elev & gr_gl0 = gl
+gr_area_ini0 = area_ini & gr_thick_ini0 = thick_ini
+gr_qcalv = 0d0   ; ice removed by the sea-level cut-off below, mio m3
+gr_qout = 0d0    ; ice that left a regrowing glacier at its lowest band (dh_regrowth.pro), mio m3
+gr_qseed = 0d0   ; ice of a glacier that restarts this year (dh_reseed.pro), mio m3
 
 ; -----------------------------
 ; update surface geometry
 
 ii = where(thick gt 0, ci)
 
+; a glacier with no ice left can restart (dh_reseed='y')
+if ci eq 0 and dh_reseed eq 'y' then begin
+  @procedures/processing/dh_reseed
+endif
+
+; a growth year with dh_regrowth='y' goes to procedures/processing/dh_regrowth.pro
+dhr_on = dh_regrowth eq 'y' and dvol gt 0 and ci gt 0
+
 ; initialize dh-param if elevation range of glacier larger than 50m, else non-dyn downwasting
-if ci gt 4 then begin
+if ci gt 4 or dhr_on then begin
   ; normalized dh-function
   dh = dblarr(nb) + noval
   hr = dh
+  if ci le 4 then begin
+    dh[ii] = 1d0   ; Δh regrowth of 4 bands or fewer: even thickening
+    goto, dhr_grow
+  endif
   hr0 = elev[ii[ci - 1]] - elev[ii[0]]
   for i = 0, ci - 1 do hr[ii[i]] = (elev[ii[ci - 1]] - elev[ii[i]]) / hr0 ; elevation range
   ; dh function
@@ -37,6 +53,12 @@ if ci gt 4 then begin
   if cj gt 0 then dh[jj] = 1
   jj = where(dh lt 0 and dh ne noval, cj)
   if cj gt 0 then dh[jj] = 0
+
+  dhr_grow:
+  if dhr_on then begin
+    @procedures/processing/dh_regrowth
+    goto, dhr_done
+  endif
 
   ; distribute volume change - dh-function
   f = dvol / (total(dh[ii] * area[ii] * 1000000))
@@ -152,8 +174,16 @@ if ci gt 4 then begin
   vtt = total(area * thick) - volumes[ye] * 1000.
   ii = where(thick gt 0, ci)
   if ci gt 0 then begin
-    fcorr = (vtt - dvol / 1000000.) / (total(dh[ii] * area[ii]))
-    thick[ii] = thick[ii] - dh[ii] * fcorr
+    gr_den = total(dh[ii] * area[ii])
+    if gr_den ne 0 then begin
+      fcorr = (vtt - dvol / 1000000.) / gr_den
+      thick[ii] = thick[ii] - dh[ii] * fcorr
+    endif else begin
+      ; only dh=0 bands (the glacier top) keep ice: spread the correction evenly;
+      ; if that removes their ice, the glacier melts out below
+      gr_at = total(area[ii])
+      if gr_at gt 0 then thick[ii] = thick[ii] - (vtt - dvol / 1000000.) / gr_at else thick[ii] = 0
+    endelse
     jj = where(thick le 0, cj)
     if cj gt 0 then begin
       thick[jj] = 0
@@ -166,6 +196,7 @@ if ci gt 4 then begin
     if cj gt 0 then gl[jj] = elev[jj]
   endif
 
+  dhr_done:
   ; ----- calving
   ; terminus break-off due to calving
 
@@ -174,10 +205,10 @@ if ci gt 4 then begin
   q_calv = 0
   if ci gt 0 then begin
     q_calv = q_calv + total(thick[ii] * area[ii]) * 1000000.
-    flux_calv[ye] = flux_calv[ye] + q_calv / 1000000. * dens / ar_gl
   endif
 
   if q_calv ne 0 then begin
+    gr_vcut0 = total(thick * area)
     ii = where(thick ne 0, ci)
     vcum = 0
     for i = 0, ci - 1 do begin
@@ -188,13 +219,25 @@ if ci gt 4 then begin
         elev[ii[i]] = bed_elev[ii[i]]
       endif else begin
         tt = vcum - thick[ii[i]] * area[ii[i]] * 1000000.
+        gr_area_cut = area[ii[i]]
         thick[ii[i]] = thick[ii[i]] * (vcum - q_calv) / (vcum - tt)
-        elev[ii[i]] = bed_elev[ii[i]] + thick[ii[i]]
         area[ii[i]] = area_ini[ii[i]] * (thick[ii[i]] / thick_ini[ii[i]]) ^ (1. / expon)
+        ; keep the old area if the scaling gives none
+        if ~finite(area[ii[i]]) or area[ii[i]] le 0 then area[ii[i]] = gr_area_cut
+        ; thickness from the ice left in this band, so exactly q_calv is removed
+        if vcum gt q_calv and area[ii[i]] gt 0 then begin
+          thick[ii[i]] = (vcum - q_calv) / 1000000. / area[ii[i]]
+        endif else begin
+          thick[ii[i]] = 0 & area[ii[i]] = 0
+        endelse
+        elev[ii[i]] = bed_elev[ii[i]] + thick[ii[i]]
         goto, end_calv
       endelse
     endfor
     end_calv:
+    ; report the ice actually removed (q_calv, up to rounding; never negative)
+    gr_qcalv = (gr_vcut0 - total(thick * area)) > 0
+    flux_calv[ye] = flux_calv[ye] + gr_qcalv * dens / ar_gl
   endif
 
   ii = where(area eq 0, ci)
@@ -203,10 +246,27 @@ endif else begin
   ; ----------------------------
   ; very small glaciers
 
-  ; apply surface elevation change
-  for i = 0, ci - 1 do thick[ii[i]] = thick[ii[i]] + bal[ii[i]] / 0.9 ; thickness
-  for i = 0, ci - 1 do elev[ii[i]] = elev[ii[i]] + bal[ii[i]] / 0.9 ; surface elevation
-  for i = 0, ci - 1 do area[ii[i]] = area_ini[ii[i]] * (thick[ii[i]] / thick_ini[ii[i]]) ^ (1. / expon) ; area in elevation band
+  if dh_small_conserve eq 'y' then begin
+    ; each band keeps its volume plus its balance: area from the area-thickness scaling, thickness from the volume
+    for i = 0, ci - 1 do begin
+      gr_k = ii[i]
+      gr_vb = area[gr_k] * (thick[gr_k] + bal[gr_k] / 0.9)
+      if gr_vb le 0 then thick[gr_k] = -1d0 else begin   ; no ice left: cleared below (NaN goes on to the mass check)
+        if thick_ini[gr_k] gt 0 and area_ini[gr_k] gt 0 then begin
+          gr_a = area_ini[gr_k] * ((thick[gr_k] + bal[gr_k] / 0.9) / thick_ini[gr_k]) ^ (1. / expon)
+          if finite(gr_a) and gr_a gt 0 then area[gr_k] = gr_a
+        endif
+        thick[gr_k] = gr_vb / area[gr_k]
+        elev[gr_k] = bed_elev[gr_k] + thick[gr_k]
+        gl[gr_k] = elev[gr_k]
+      endelse
+    endfor
+  endif else begin
+    ; apply surface elevation change
+    for i = 0, ci - 1 do thick[ii[i]] = thick[ii[i]] + bal[ii[i]] / 0.9 ; thickness
+    for i = 0, ci - 1 do elev[ii[i]] = elev[ii[i]] + bal[ii[i]] / 0.9 ; surface elevation
+    for i = 0, ci - 1 do area[ii[i]] = area_ini[ii[i]] * (thick[ii[i]] / thick_ini[ii[i]]) ^ (1. / expon) ; area in elevation band
+  endelse
   jj = where(thick lt 0, cj)
   if cj gt 0 then begin
     thick[jj] = 0
@@ -248,9 +308,11 @@ endif
 ; redistribution above has gone unstable. Revert and downwaste uniformly
 ; instead, keeping the ice so the glacier can still grow later.
 gr_vreal = total(area * thick) - volumes[ye] * 1000.   ; realised change, mio m3
-gr_vexp = dvol / 1000000.                              ; mass-balance change, mio m3
+gr_vexp = dvol / 1000000. - gr_qcalv - gr_qout + gr_qseed   ; mass-balance change less sea-level calving and outflow, plus a restart, mio m3
 gr_tol = (0.1 * abs(gr_vexp)) > (0.05 * volumes[ye] * 1000.) > 0.05
-if abs(gr_vreal - gr_vexp) gt gr_tol then begin
+; a non-finite result (NaN/Inf geometry) is reverted as well
+gr_bad = ~finite(gr_vreal) or total(~finite(area_ini)) gt 0 or total(~finite(thick_ini)) gt 0
+if gr_bad or abs(gr_vreal - gr_vexp) gt gr_tol then begin
   print, 'WARNING: glacier_retreat mass check failed for ' + strtrim(id[gg[g]], 2) + $
     ' in ' + strtrim(ye + tran[0], 2) + ': geometry changed by ' + $
     strtrim(gr_vreal, 2) + ' mio m3, mass balance gave ' + strtrim(gr_vexp, 2) + $
@@ -259,6 +321,16 @@ if abs(gr_vreal - gr_vexp) gt gr_tol then begin
   area = gr_area0
   elev = gr_elev0
   gl = gr_gl0
+  flux_calv[ye] = 0   ; only the surface balance is applied below: no calving this year
+  gr_qout = 0d0 & gr_qseed = 0d0   ; and no outflow or restart
+  if gr_bad then begin
+    ; also undo this year's hypothetical advance bands; zero what is still non-finite
+    area_ini = gr_area_ini0 & thick_ini = gr_thick_ini0
+    gr_nf = where(~finite(area_ini) or ~finite(thick_ini), gr_cnf)
+    if gr_cnf gt 0 then begin
+      area_ini[gr_nf] = 0 & thick_ini[gr_nf] = 0
+    endif
+  endif
   gr_ii = where(thick gt 0, gr_ci)
   if gr_ci gt 0 then begin
     thick[gr_ii] = (thick[gr_ii] + bal[gr_ii] / 0.9) > 0
@@ -271,6 +343,35 @@ if abs(gr_vreal - gr_vexp) gt gr_tol then begin
     elev[gr_jj] = bed_elev[gr_jj]
     gl[gr_jj] = noval
   endif
+endif
+
+; ice that left a regrowing glacier at its lowest band (dh_regrowth.pro): frontal ablation,
+; or ice melt on land with flow_gridend_outflow='melt_if_land', as at the flow model's grid end
+if gr_qout gt 0 then begin
+  if flow_gridend_outflow eq 'melt_if_land' and bed_elev[0] ge 0 and ~adv_sea then begin
+    if areas[ye] gt 0 then begin
+      bim_we = gr_qout * 0.9d0 / areas[ye]   ; m w.e.
+      @procedures/processing/book_ice_melt
+    endif
+  endif else if ar_gl gt 0 then flux_calv[ye] = flux_calv[ye] + gr_qout * dens / ar_gl
+  ; per glacier and year in *_flow_gridend_outflow.dat, as the flow model's grid-end outflow
+  if areas[ye] gt 0 then flow_gridend[ye] = flow_gridend[ye] + gr_qout * 0.9d0 / areas[ye]
+  flow_ge_bed = bed_elev[0] & flow_ge_sea = adv_sea
+  n_dh_outflow = n_dh_outflow + 1
+  dh_outflow_gt = dh_outflow_gt + gr_qout * 0.9d0 / 1000d0
+endif
+
+; a glacier that restarted this year (dh_reseed.pro): its new ice is its balance of the year
+if gr_qseed gt 0 then begin
+  areas[ye] = total(area)
+  mb[ye] = gr_qseed * 0.9d0 / areas[ye]
+  n_reseed = n_reseed + 1
+  if ~reseed_gl then n_reseed_gl = n_reseed_gl + 1
+  reseed_gl = 1b
+  accum[ye] = mb[ye]   ; the new ice is snow of the last five years
+  print, 'Glacier ' + strtrim(id[gg[g]], 2) + ' restarts in ' + strtrim(ye + tran[0], 2) + ' on ' + $
+    strtrim(long(total(gl ne noval)), 2) + ' band(s) of its old footprint: ' + $
+    strtrim(string(gr_qseed, fo='(e10.3)'), 2) + ' mio m3 (dh_reseed)'
 endif
 
 ; storing of results

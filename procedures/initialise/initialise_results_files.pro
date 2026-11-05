@@ -47,4 +47,14 @@ openw,7,dirres+'/'+time_resolution+'/'+dir_region+subpath+long_GCM+sub_region+cc
 printf,7,'Year  vol_<0masl(km3)'
 
 openw,33,dirres+'/'+time_resolution+'/'+dir_region+subpath+long_GCM+sub_region+cc+'_calving_flux.dat'
-printf,33,'ID  frontal ablation (Gt/a)'
+printf,33,'ID  area(km2)  frontal ablation (Gt/a), first model year'
+
+; flowline grid-end outflow per glacier and year (written by write_flow_gridend_outflow), also the
+; outflow of the Δh regrowth at the lowest band
+if use_flow_model eq 'y' or dh_regrowth eq 'y' then begin
+    openw,36,dirres+'/'+time_resolution+'/'+dir_region+subpath+long_GCM+sub_region+cc+'_flow_gridend_outflow.dat'
+    printf,36,'ID  bed_end(m)  booked_as  '+string(y,fo='('+strcompress(string(years),/remove_all)+'i10)')
+    ; flowline ice calved at the front below sea level per glacier and year (same writer)
+    openw,37,dirres+'/'+time_resolution+'/'+dir_region+subpath+long_GCM+sub_region+cc+'_flow_front_calving.dat'
+    printf,37,'ID  '+string(y,fo='('+strcompress(string(years),/remove_all)+'i10)')
+endif

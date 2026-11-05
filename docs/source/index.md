@@ -66,6 +66,7 @@ model-description/mass-balance/refreezing
 model-description/mass-balance/firn-ice-temperature
 model-description/glacier-dynamics/retreat-model
 model-description/glacier-dynamics/calving-model
+model-description/glacier-dynamics/flow-model
 model-description/debris-model
 model-description/discharge
 ```
@@ -112,4 +113,12 @@ calibration/snowline
 
 contributing/index
 contributing/git-workflow
+```
+
+```{toctree}
+:maxdepth: 2
+:titlesonly:
+:caption: Development
+
+development/model-changes-2026
 ```

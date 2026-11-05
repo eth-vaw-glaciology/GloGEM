@@ -62,5 +62,6 @@ if frontal_ablation eq 'y' and fa eq 'y' then begin
   ; if single_glacier ne '' then print, 'Frontal ablation (Gt/a): ('+string(ye+tran(0),fo='(i4)')+')'+string(q_front/1000000000.,fo='(f8.4)')
   ; if q_front/1000000000. gt 0.1 then print, 'Frontal ablation (Gt/a): ('+id(gg(g))+')'+string(q_front/1000000000.,fo='(f8.4)')
 
-  if ye eq tran[0] then if q_front / 1000000000. gt 0.0005 then printf, 33, id[gg[g]], total(area), q_front / 1000000000., fo = '(a,2f10.4)'
+  ; first model year, forward runs only (unit 33 is opened in initialise_results_files)
+  if ye eq 0 and calibrate ne 'y' and write_file eq 'y' then if q_front / 1000000000. gt 0.0005 then printf, 33, id[gg[g]], total(area), q_front / 1000000000., fo = '(a,2f10.4)'
 endif

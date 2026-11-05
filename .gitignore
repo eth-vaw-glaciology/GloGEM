@@ -1,26 +1,14 @@
-flowline_geom/
-rgi/
 *.sav
-dem_extended/
-thickness_extended/
-smb_rcm/
-output/
-*.png
-*.pdf
-*.grid
-*.agr
+# figures saved at the repository root (docs/ and test/ keep theirs)
+/*.png
+/*.pdf
 *.log
+*.idlnb
 .DS_Store
 config.pro
 logs/
-__pycache__/
 *.pyc
 .vscode/
-results_glogemflow/
-results_dhdt/
-products/
-supplement_Zekollari_et_al_TC2019_hz02APR2019/
-results_dhdt_vs_flow/
 test/outputs/
 test/config_active.pro
 output_checks/
@@ -32,9 +20,7 @@ __pycache__/
 .ipynb_checkpoints
 */.ipynb_checkpoints/*
 
-# One-off GMIP4 run configs and orchestration scripts (machine/run-specific,
-# not reusable — regenerated per submission push, unlike the *_fwd.pro
-# templates and launch_batches.sh/create_region_batches.py infra they use)
+# GMIP4 run configs, written per campaign (see scripts/gmip4/README.md)
 scripts/config_*_gmip4*.pro
 scripts/config_cali_rgi7_*.pro
 # spent one-off repair and debug configs from the same campaign

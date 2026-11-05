@@ -48,20 +48,25 @@ if cg gt 0 then begin
         new = 'n'
      endelse
      if new eq 'n' then begin
+        gmid=[mean(latitudes_clim),mean(longitudes_clim)]
         ; READING MONTHLY CLIMATE DATA, so far only implemented like this for GMIP4
         if GMIP4 eq 'y' or AMOC eq 'y' then begin
            if clim_subregion ne '' then begin
-              ccl='_'+clim_subregion 
+              ccl='_'+clim_subregion
            endif else begin
               ccl=''
            endelse
-           ; GCM --- CLIMATE FILE
-           @procedures/read/read_climatepast_monthly.pro
+           ; the regional ERA5 arrays are read once per region in glogem.pro and nothing modifies them
+           ; GMIP4: take the GCM series at the reanalysis grid point the past series comes from
+           if GMIP4 eq 'y' then begin
+              dummy = min(abs(rlat - gmid[0]), gcm_ilat)
+              dummy = min(abs(rlon - gmid[1]), gcm_ilon)
+              gcm_start = [rlon[gcm_ilon], rlat[gcm_ilat]]
+           endif else gcm_start = [mean(lon), mean(lat)]
            if reanalysis_direct ne 'y' then begin
               @procedures/read/read_gcmdata_monthly.pro
            endif
         endif
-        gmid=[mean(latitudes_clim),mean(longitudes_clim)]
         @procedures/processing/downscale_gcmdata_monthly.pro
         @procedures/processing/gradient_variability_monthly.pro
      endif else begin
@@ -69,6 +74,8 @@ if cg gt 0 then begin
         gxs=strcompress(string(round(rmid[0]*100d)/100d,fo='(f7.2)'),/remove_all)
         gys=strcompress(string(round(rmid[1]*100d)/100d,fo='(f7.2)'),/remove_all)
         @procedures/read/read_climatepast_monthly_new.pro
+        ; GCM series at the ERA5 grid point the past series comes from
+        gcm_start = era5_pt
         @procedures/read/read_gcmdata_monthly.pro
         @procedures/processing/gradient_variability_monthly.pro
         @procedures/processing/downscale_gcmdata_monthly_new.pro

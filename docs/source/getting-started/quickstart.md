@@ -277,6 +277,32 @@ full climate data share instead — see [GCM configuration](../running-glogem/gc
 
 ---
 
+## Optional Step 7 — Monthly projection with the flowline model
+
+The same run as Step 6, with the GloGEMflow flowline model instead of the
+Δh parameterisation (see [Flowline Model](../model-description/glacier-dynamics/flow-model.md)):
+
+```bash
+cp test/configs/config_aletsch_flow_monthly_projection.pro config.pro
+```
+
+Then `.r glogem` in IDL. It writes into the same folders as Step 6 and
+overwrites its `.dat` files, so run it after the visualisation below, or run
+Step 6 again afterwards.
+
+**Expected output** (~30 s; most of it is the flow model's spin-up):
+
+```
+Note: 1961-1990 not in window; using tran[0]-2003 as reference
+...
+FINISHED region !!! centraleurope !!!
+    calculated with GCM: MRI-ESM2-0 / ssp126
+...
+  2 (100.0%)  ran with GloGEMflow
+```
+
+---
+
 ## Visualising results
 
 After completing all six runs, open the visualisation notebook in Jupyter

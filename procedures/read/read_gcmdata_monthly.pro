@@ -54,12 +54,17 @@ endif else begin
 
 ; New system for the monthly model, but so far only available for GCMs of GMIP4
    
-   mid=[mean(lon),mean(lat)]
+   mid=gcm_start
    ; rounded first: float noise just below zero would print as '-0.00' and miss the file '0.00'
    gxs=strcompress(string(round(mid[0]*100d)/100d,fo='(f7.2)'),/remove_all)
    gys=strcompress(string(round(mid[1]*100d)/100d,fo='(f7.2)'),/remove_all)
    fn=dir_clim+'/future/'+time_resolution+'/'+GCM_data+'/'+dir_region+'/'+GCM_model[gcms]+ '/'+GCM_rcp[rcps]+'/clim_' + gxs + '_' + gys + '.dat'
-   if FILE_TEST(fn) eq 1 then begin 
+   ; without the scenario folder the ring search below would never end
+   if ~file_test(file_dirname(fn), /directory) then begin
+      print, 'GCM scenario folder not found: ' + file_dirname(fn)
+      STOP
+   endif
+   if FILE_TEST(fn) eq 1 then begin
       ; All good and we continue
    endif else begin
       found = 0
@@ -70,7 +75,7 @@ endif else begin
                ; Only coordinates on this radius
                if abs(q) eq radius or abs(r) eq radius then begin
                   ; get new coordinates
-                  mid = [mean(lon) + double(q)/100., mean(lat) + double(r)/100.]
+                  mid = [gcm_start[0] + double(q)/100., gcm_start[1] + double(r)/100.]
                   gxs=strcompress(string(round(mid[0]*100d)/100d,fo='(f7.2)'),/remove_all)
                   gys=strcompress(string(round(mid[1]*100d)/100d,fo='(f7.2)'),/remove_all)
                   fn=dir_clim+'/future/'+time_resolution+'/'+GCM_data+'/'+dir_region+'/'+GCM_model[gcms]+ '/'+GCM_rcp[rcps]+'/clim_' + gxs + '_' + gys + '.dat'
@@ -85,9 +90,9 @@ endif else begin
          if found eq 1 then break
          ; Increase search window
          radius = radius + 1
-         ; Stop if search window gets 100 ... (1°)
-         if radius eq 100 and 'AMOC' eq 'n' then begin
-               print, 'No suitable GCM grid point found within 1° radius. Please check your input coordinates.'
+         ; Stop at 10° (1000 steps of 0.01°), as read_climatepast_daily.pro
+         if radius gt 1000 then begin
+               print, 'No suitable GCM grid point found within 10° radius. Please check your input coordinates.'
                STOP
          endif
       endwhile
@@ -107,11 +112,11 @@ endelse
 
 if AMOC eq 'y' then begin
 ; ============================================================
-; EXTEND GCM TO 3000 BY RANDOMLY REPEATING LAST 50 YEARS
+; EXTEND GCM TO amoc_end_year (default 3000) BY RANDOMLY REPEATING LAST 50 YEARS
 ; AMOC / 1-D monthly climate data
 ; ============================================================
 
-extend_to_year = 3000
+extend_to_year = amoc_end_year
 
 last_year = fix(max(gcm_year))
 

@@ -49,11 +49,26 @@ endelse
    
 ; add bands at glacier tongue
 nb_inv=nb   ; bands of the inventory (initialise_band_extension.pro)
-if advance eq 'y' and nb gt 3 then begin
+nb_mbref=nb
+adv_sea=0b   ; the lowest band is the cut at sea level: ice leaving it enters the sea
+if (advance eq 'y' and nb gt 3) or band_extension_glacier eq 'y' then begin
     adv_addband=adv_addband0
    if adv_calving lt 0 then adv_hmin=adv_calving else adv_hmin=10.
-   if hmin[gg[g]]-adv_addband*10. lt adv_hmin then adv_addband=fix((hmin[gg[g]]-adv_hmin)/10)
+   if hmin[gg[g]]-adv_addband*10. lt adv_hmin then begin
+      adv_addband=fix((hmin[gg[g]]-adv_hmin)/10) & adv_sea=adv_hmin ge 0
+   endif
    adv_addband=max([0,adv_addband])
+   ; bands the refreezing scaling averages over: the advance bands the calibration had (K26; none below 4 bands)
+   if nb gt 3 then nb_mbref=nb+adv_addband
+   ; band_extension_glacier: bands down to band_ext_depth below the glacier instead
+   if band_extension_glacier eq 'y' then begin
+      ; down to band_ext_depth below the glacier, but not below sea level
+      adv_addband=round(band_ext_depth/10.) & adv_sea=0b
+      if hmin[gg[g]]-adv_addband*10. lt (adv_hmin > 0.) then begin
+         adv_addband=fix((hmin[gg[g]]-(adv_hmin > 0.))/10) & adv_sea=1b
+      endif
+      adv_addband=max([0,adv_addband])
+   endif
    nb0=nb & nb=nb+adv_addband & tt=da & da=dblarr(12,nb) & da[*,nb-nb0:nb-1]=tt[*,0:nb0-1]
    for i=nb-nb0-1,0,-1 do da[1,i]=da[1,i+1]-10.
 endif

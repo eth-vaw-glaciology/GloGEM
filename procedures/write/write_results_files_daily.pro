@@ -27,8 +27,8 @@ compile_opt idl2
 	        1: var = volumes
 	        2: var = mb
 	        3: var = wb
-	        4: var = smelt
-	        5: var = imelt
+	        4: var = imelt   ; outf_names[4] is Icemelt_sfc (ice and firn melt)
+	        5: var = smelt   ; outf_names[5] is Snowmelt_sfc
 	        6: var = accum
 	        7: var = rain
 	        8: var = ela

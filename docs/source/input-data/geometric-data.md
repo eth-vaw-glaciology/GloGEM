@@ -98,6 +98,8 @@ The fallback to the Huss & Farinotti (2012) dataset is triggered by different co
 
 For RGI 7.0 runs, band areas in the primary (Maffezzoli) hypsometry file are corrected for a known area bias before the glacier is processed. The correction factor is derived per glacier as the ratio of the Huss & Farinotti (2012) area to the Maffezzoli area, read from `files_HF/thick_<region>.dat`. After applying this factor to all band areas, the initial ice volume (`volume_ini`) is recomputed to remain consistent.
 
+The flowline of the [GloGEMflow model](../model-description/glacier-dynamics/flow-model.md) is built from the uncorrected band file, and its widths are scaled to the corrected band area, so both geometry models start from the same area. The area-weighted factor is 0.81–0.97 in New Zealand, Low Latitudes, Southern Andes, Greenland and Antarctica and close to 1 elsewhere; single glaciers range from about 0.16 to 3.9.
+
 ### File format
 
 Plain-text file with a 5-line header followed by one row per elevation band. Each row contains 12 columns:

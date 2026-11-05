@@ -37,6 +37,13 @@ if n_elements(flow_initialised) eq 0 then begin
   width_dx = horizontal_grid_inputs.width_dx
   bed_dx = bed_dx_init
 
+  ; Sea or land front, from the bed under the inventory front (first ice cell of the
+  ; inventory profile). Only a sea front lets ice leave the grid end as frontal ablation.
+  ii_sf = where(horizontal_grid_inputs.thick_dx gt 0, c_sf)
+  flow_sea_front = c_sf gt 0 ? (bed_dx[ii_sf[0]] lt 0) : 0b
+  ; set when the ice reaches the end of the longest grid with flow_domain_end='outflow'
+  flow_open_end = 0b
+
   ; Initialise cross-section geometry from initial_geometry.pro
   width_surface_dx = width_surface_dx_init
   width_mid_dx = width_mid_dx_init
@@ -53,7 +60,10 @@ if n_elements(flow_initialised) eq 0 then begin
   ; Cache them to disk after the first SSP so subsequent SSPs can skip
   ; the ~5-minute calibration loop entirely.
   spinup_cache_dir  = dirres + 'spinup_cache/'
-  spinup_cache_file = spinup_cache_dir + strtrim(id[gg[g]], 2) + '_spinup.sav'
+  ; keyed by the spin-up year as well: a hindcast spins up one year earlier than a projection
+  ; and by RGI version and region: the same 5-digit id names different glaciers in RGI6 and RGI7
+  spinup_key        = 'rgi' + RGIversion + '_' + dir_region + '_' + strtrim(id[gg[g]], 2) + '_y' + strtrim(tran[0] + ye - 1, 2)
+  spinup_cache_file = spinup_cache_dir + spinup_key + '_spinup.sav'
   ; Failure verdicts are cached as well (2026-09-08). A failed spin-up used to be
   ; recomputed for the same glacier in every GCM loop of a session and in every
   ; GCM/SSP run of a batch: 30-42 % of a batch's glaciers, each up to several
@@ -64,12 +74,21 @@ if n_elements(flow_initialised) eq 0 then begin
   ; goes to the Δh parameterisation just as it did after the failed attempt.
   ; Delete spinup_cache/ (both *_spinup.sav and *_spinup_failed.txt) whenever
   ; spin-up settings, the flow code or the MB calibration change.
-  spinup_fail_file  = spinup_cache_dir + strtrim(id[gg[g]], 2) + '_spinup_failed.txt'
+  spinup_fail_file  = spinup_cache_dir + spinup_key + '_spinup_failed.txt'
 
   if file_test(spinup_cache_file) then begin
+    spinup_frontal_length = !null
     restore, spinup_cache_file   ; restores: spinup_aflow, spinup_ela_bias, thick_dx,
                                  ;           sur_dx, width_surface_dx, width_mid_dx,
-                                 ;           width_base_dx, lambda_dx
+                                 ;           width_base_dx, lambda_dx, spinup_frontal_length
+    ; the grid the spin-up ended on: lengthen the prefrontal area to match
+    if n_elements(spinup_frontal_length) gt 0 then begin
+      ext_ctx = 'spinup'
+      while flow_frontal_length lt spinup_frontal_length - 1d-6 do begin
+        @procedures/flow/extend_flowline_grid
+        if ext_n eq 0 then break
+      endwhile
+    endif
     aflow = spinup_aflow
     if n_elements(spinup_dtfactor) gt 0 then begin
       dtfactor = spinup_dtfactor
@@ -95,10 +114,27 @@ if n_elements(flow_initialised) eq 0 then begin
       goto, glogemflow_skip
     endif
     save, spinup_aflow, spinup_ela_bias, spinup_dtfactor, thick_dx, sur_dx, $
-          width_surface_dx, width_mid_dx, width_base_dx, lambda_dx, $
+          width_surface_dx, width_mid_dx, width_base_dx, lambda_dx, spinup_frontal_length, $
           file=spinup_cache_file
     print, 'Spin-up cache saved: ' + strtrim(id[gg[g]], 2)
+    dtfactor = spinup_dtfactor   ; as a later cache hit does
   endelse
+  ; same start after a fresh spin-up and a cache hit: no diffusivity carried over, double precision
+  df_dx = dblarr(xnum)
+  ; the spin-up has no calving: front ice of its survey-year state whose surface is below sea
+  ; level is removed before the run starts (not frontal ablation; the rescale below restores
+  ; the observed volume)
+  @procedures/flow/calve_below_sea_level
+  if fc_n gt 0 then begin
+    sur_dx = bed_dx + thick_dx
+    width_surface_dx = width_base_dx + lambda_dx * thick_dx
+    width_mid_dx = (width_base_dx + width_surface_dx) / 2.0
+    print, 'Spin-up state: ' + strtrim(fc_n, 2) + ' front cells below sea level removed (' + $
+      strtrim(string(fc_vol / 1d9, fo='(f10.4)'), 2) + ' km3) before the run starts'
+  endif
+  ; grid arrays of the (possibly lengthened) grid
+  dist_dx = horizontal_grid_inputs.dist_dx
+  width_dx = horizontal_grid_inputs.width_dx
 
   ; Initialise time-stepping state
   t = 0l
@@ -171,6 +207,17 @@ if n_elements(flow_initialised) eq 0 then begin
     flow_gated_gl = 1
     goto, glogemflow_skip
   endif
+  ; spin-up parameters at the edge of their range: ice that barely flows (A_flow below spinup_gate_aflow_min)
+  ; or the ELA bias at its clamp (spinup_gate_ela_max); 0 switches each off
+  if (spinup_gate_aflow_min gt 0d0 and spinup_aflow lt spinup_gate_aflow_min) or $
+     (spinup_gate_ela_max gt 0d0 and abs(spinup_ela_bias) ge spinup_gate_ela_max) then begin
+    print, 'WARNING: spin-up parameter gate: glacier ' + strtrim(id[gg[g]], 2) + ' -- A_flow ' + $
+      strtrim(string(spinup_aflow, fo='(e9.2)'), 2) + ', ELA bias ' + $
+      strtrim(string(spinup_ela_bias, fo='(f7.1)'), 2) + ' m --- using the Δh parameterisation from the start.'
+    use_flow_model_gl = 'n'
+    flow_gated_gl = 1
+    goto, glogemflow_skip
+  endif
 
   flow_initialised = 1
   print, 'GloGEMflow coupled: initialised at year ' + $
@@ -208,47 +255,85 @@ if n_elements(flow_initialised) eq 0 then begin
   flow_blown_up = 0
   if flow_vol_init_m3 gt 0d0 and volumes[ye] gt 0d0 then begin
     target_vol_m3 = volumes[ye] * 1d9
-    coefA = dx * total(thick_dx[ii_init] * width_base_dx[ii_init])
-    coefB = dx * total(lambda_dx[ii_init] * thick_dx[ii_init] ^ 2) / 2d0
-    if coefB gt 0d0 then begin
-      f_scale = (-coefA + sqrt(coefA ^ 2 + 4d0 * coefB * target_vol_m3)) / (2d0 * coefB)
-    endif else begin
-      f_scale = target_vol_m3 / flow_vol_init_m3   ; no width-thickness coupling: linear is exact
-    endelse
-    thick_dx         = thick_dx * f_scale
-    sur_dx           = bed_dx + thick_dx
-    width_surface_dx = width_base_dx + lambda_dx * thick_dx
-    width_mid_dx     = (width_base_dx + width_surface_dx) / 2d0
-    if abs(f_scale - 1d0) gt 0.01d0 then $
-      print, 'INFO: Rescaled thick_dx by factor ' + strtrim(f_scale, 2) + $
-        ' to match GloGEM survey vol (was ' + strtrim(flow_vol_init_m3/1d9, 2) + ' km3)'
+    ; a thinning scale can put front ice below sea level again: remove it and scale
+    ; the rest once more (that second scale only thickens)
+    for i_rs = 0, 1 do begin
+      if i_rs eq 1 then begin
+        @procedures/flow/calve_below_sea_level
+        if fc_n eq 0 then break
+        ii_init = where(thick_dx gt 0, c_init)
+        if c_init eq 0 then break
+        flow_vol_init_m3 = total(thick_dx[ii_init] * (width_base_dx[ii_init] + lambda_dx[ii_init] * thick_dx[ii_init] / 2d0) * dx)
+      endif
+      coefA = dx * total(thick_dx[ii_init] * width_base_dx[ii_init])
+      coefB = dx * total(lambda_dx[ii_init] * thick_dx[ii_init] ^ 2) / 2d0
+      if coefB gt 0d0 then begin
+        f_scale = (-coefA + sqrt(coefA ^ 2 + 4d0 * coefB * target_vol_m3)) / (2d0 * coefB)
+      endif else begin
+        f_scale = target_vol_m3 / flow_vol_init_m3   ; no width-thickness coupling: linear is exact
+      endelse
+      thick_dx         = thick_dx * f_scale
+      sur_dx           = bed_dx + thick_dx
+      width_surface_dx = width_base_dx + lambda_dx * thick_dx
+      width_mid_dx     = (width_base_dx + width_surface_dx) / 2d0
+      if abs(f_scale - 1d0) gt 0.01d0 then $
+        print, 'INFO: Rescaled thick_dx by factor ' + strtrim(f_scale, 2) + $
+          ' to match GloGEM survey vol (was ' + strtrim(flow_vol_init_m3/1d9, 2) + ' km3)'
+      if f_scale ge 1d0 then break
+    endfor
   endif
 
   ; Reference surface frozen at inventory-date state (after scaling).
   ; Used in STEP 2 to cap MB interpolation elevation — matches MATLAB massbal.m:
   ;   mb_sur(z) = obs_surf(z)  for cells where sur > obs_surf
   obs_sur_dx = sur_dx
+  obs_ice_dx = thick_dx gt 0   ; cells with ice at the inventory date (flow_mb_elev_cap='ice')
 
 endif
 
 ; ========== STEP 2: MAP GloGEM'S MB ONTO FLOWLINE GRID ========== ;
 ; Interpolate GloGEM's elevation-band MB (bal, m w.e./yr) at each
 ; flowline cell's current surface elevation (sur_dx), then convert
-; to m ice. Replaces the duplicate T-index recalculation in
-; flowline_massbal.pro — GloGEM's calibrated MB is the single source.
+; to m ice. GloGEM's calibrated MB is the single source.
 bal_dx = dblarr(xnum)
-; Cap surface elevation used for MB interpolation at the inventory-date reference surface.
-; Prevents runaway positive feedback when modelled ice temporarily exceeds the observed
-; profile (inflated geometry → high elevation → positive accumulation-zone MB → more growth).
-mb_sur_dx = sur_dx < obs_sur_dx
+; Elevation for the MB interpolation (flow_mb_elev_cap): 'all' caps it at the inventory-date
+; surface (MATLAB; prevents a runaway feedback when modelled ice exceeds the observed profile),
+; 'ice' only where the inventory had ice, 'none' not at all.
+mb_sur_dx = flow_mb_surface(sur_dx, obs_sur_dx, obs_ice_dx, flow_mb_elev_cap)
+; glacier bands sorted by elevation, one per elevation (interpol needs a monotonic abscissa)
+mb_bal = bal & mb_refr = refreeze
 ii_gl_bands = where(gl ne noval, n_gl_bands)
-if n_gl_bands ge 2 then begin
-  bal_we_interp = interpol(bal[ii_gl_bands], elev[ii_gl_bands], mb_sur_dx)
+if n_gl_bands eq 0 then ii_gl_bands = lindgen(nb)
+mb_srt = ii_gl_bands
+if bext_dyn and n_gl_bands gt 0 then begin
+  ; below the lowest glacier band: the ice-surface balance of the bands there (band_extension_glacier),
+  ; not rising going down (as the IGM forcing)
+  mb_lo = min(elev[ii_gl_bands], mb_jlo) & mb_jlo = ii_gl_bands[mb_jlo]
+  ii_bx = where(gl eq noval and elev lt mb_lo, n_bx)
+  if n_bx gt 0 then begin
+    ii_bx = ii_bx[reverse(sort(elev[ii_bx]))]
+    mb_bal[ii_bx] = bal_v[ii_bx] & mb_refr[ii_bx] = refre_v[ii_bx]
+    mb_bal[ii_bx[0]] = mb_bal[ii_bx[0]] < mb_bal[mb_jlo]
+    for mb_k = 1l, n_bx - 1 do mb_bal[ii_bx[mb_k]] = mb_bal[ii_bx[mb_k]] < mb_bal[ii_bx[mb_k - 1]]
+    mb_srt = [ii_bx, ii_gl_bands]
+  endif
+endif
+mb_srt = mb_srt[sort(elev[mb_srt])]
+mb_srt = mb_srt[uniq(elev[mb_srt])]
+; beyond the lowest/highest band hold that band's value (no linear extrapolation)
+mb_z = (mb_sur_dx > elev[mb_srt[0]]) < elev[mb_srt[-1]]
+if n_elements(mb_srt) ge 2 then begin
+  bal_we_interp = interpol(mb_bal[mb_srt], elev[mb_srt], mb_z)
+  acc_we_interp = interpol(acc[mb_srt], elev[mb_srt], mb_z)
+  refr_we_interp = interpol(mb_refr[mb_srt], elev[mb_srt], mb_z)
 endif else begin
-  bal_we_interp = interpol(bal, elev, mb_sur_dx)
+  bal_we_interp = dblarr(xnum) + mb_bal[mb_srt[0]]
+  acc_we_interp = dblarr(xnum) + acc[mb_srt[0]]
+  refr_we_interp = dblarr(xnum) + mb_refr[mb_srt[0]]
 endelse
+; m w.e. -> m ice with GloGEM's ice density (0.9), the one used for volume -> mass
 ii_ice_mb = where(thick_dx gt 0, c_ice_mb)
-if c_ice_mb gt 0 then bal_dx[ii_ice_mb] = bal_we_interp[ii_ice_mb] / 0.917d0
+if c_ice_mb gt 0 then bal_dx[ii_ice_mb] = bal_we_interp[ii_ice_mb] / 0.9d0
 ; Apply NEGATIVE MB to ice-free cells as well — matches MATLAB (massbal.m zeroes
 ; only positive MB in ice-free cells, not negative).  Without this, SIA-advanced
 ; terminus cells see zero ablation for a full year and survive; with it they are
@@ -257,7 +342,7 @@ ii_free_mb = where(thick_dx le 0, c_free_mb)
 if c_free_mb gt 0 then begin
   ii_neg_in_free = where(bal_we_interp[ii_free_mb] lt 0, c_neg)
   if c_neg gt 0 then $
-    bal_dx[ii_free_mb[ii_neg_in_free]] = bal_we_interp[ii_free_mb[ii_neg_in_free]] / 0.917d0
+    bal_dx[ii_free_mb[ii_neg_in_free]] = bal_we_interp[ii_free_mb[ii_neg_in_free]] / 0.9d0
 endif
 
 ; ========== STEP 2b: STORE BEGINNING-OF-YEAR STATE (matching Δh parameterisation timing) ========== ;
@@ -266,6 +351,8 @@ endif
 ; Skip if blown up: volumes[ye]/areas[ye] from finalize_annual_massbalance.pro
 ; (the Δh parameterisation) are then automatically kept in the output.
 if NOT flow_blown_up then begin
+  mb_band_ye = mb[ye]   ; band balance of this year, kept for a fallback to Δh
+  w_boy_dx = width_surface_dx   ; start-of-year widths, for report_flowline_budget
   ii_boy = where(thick_dx gt 0, c_boy)
   if c_boy gt 0 then begin
     volumes[ye] = total(thick_dx[ii_boy] * width_mid_dx[ii_boy] * dx) / 1d9
@@ -285,14 +372,11 @@ if NOT flow_blown_up then begin
     endif
     areas[ye] = (area_sum_boy > 0d0) / 1d6
 
-    ; mb[ye] specifically depends on bal_dx, which interpol() can leave
-    ; non-finite for some of Iceland's largest, flattest ice caps once enough
-    ; bands have gone ice-free that elev[ii_gl_bands] (STEP 2) stops being
-    ; usefully monotonic -- interpol() assumes monotonic x but never
-    ; validates it. volumes[ye]/areas[ye] above don't depend on bal_dx and
-    ; stay valid regardless; only mb[ye] needs the finite check here.
+    ; mb[ye] needs a finite bal_dx (interpol on unsorted band elevations
+    ; used to leave it non-finite; STEP 2 now sorts them, the check stays).
+    ; volumes[ye]/areas[ye] above don't depend on bal_dx.
     if total(~finite(bal_dx[ii_boy])) eq 0 then begin
-      mb[ye] = total(bal_dx[ii_boy] * width_surface_dx[ii_boy] * dx * 0.917d0) / $
+      mb[ye] = total(bal_dx[ii_boy] * width_surface_dx[ii_boy] * dx * 0.9d0) / $
                total(width_surface_dx[ii_boy] * dx)
     endif else begin
       mb[ye] = 0d0
@@ -318,6 +402,7 @@ if NOT flow_blown_up and total(~finite(bal_dx)) gt 0 then begin
     ' --- falling back to Δh parameterisation for remainder of run.'
   flow_blown_up = 1
   @procedures/flow/sync_bands_thickness
+  @procedures/flow/handover_to_dh
   use_flow_model_gl = 'n'
 endif
 
@@ -340,21 +425,35 @@ sur_dx_year_start   = sur_dx
 ; below -- a true volume would need width_mid_dx recomputed every
 ; sub-step, which STEP 4 currently only does once per year.
 vol_proxy_year_start = total(thick_dx_year_start)
+if flow_blowup_check eq 'mass' then $
+  flow_vol_ys = flow_cell_volume(thick_dx, width_base_dx, lambda_dx, dx)
+; an ice-free flowline cannot regain ice: skip its no-op sub-steps (df_dx as they would leave it)
+flow_icefree = max(thick_dx) le 0d0
+if flow_icefree then df_dx[*] = 0
+; with dh_reseed the glacier continues on the Δh parameterisation, which restarts it when its
+; old footprint gains mass again
+if flow_icefree and dh_reseed eq 'y' then begin
+  print, 'GloGEMflow: no ice left on the flowline in ' + strtrim(ye + tran[0], 2) + $
+    ' --- the glacier continues on the Δh parameterisation, which can restart it (dh_reseed)'
+  flow_blown_up = 1
+  use_flow_model_gl = 'n'
+  flow_meltout_gl = 1
+  fm_jj = where(thick le 0, fm_cj)
+  if fm_cj gt 0 then elev[fm_jj] = bed_elev[fm_jj]   ; bands without ice lie on their bed, as in the Δh parameterisation
+endif
 
-while (time_flow lt year_end_flow) and (iter_flow lt max_iter_flow) do begin
-  ; ---- Adaptive time step (CFL criterion) ----
+; this year's applied balance, outflow at the downstream end and inflow at the
+; upstream end (m3 ice), see ice_thickness.pro
+flow_mb_vol = 0d0 & flow_fa_vol = 0d0 & flow_hd_vol = 0d0 & flow_budget_on = 1
+while (~flow_icefree) and (time_flow lt year_end_flow) and (iter_flow lt max_iter_flow) do begin
+  ; ---- Adaptive time step (CFL criterion, width-aware) ----
   ; Bootstrap case (df_dx still all-zero, before the first diffusivity call):
   ; use df_lim as the safe proxy for max diffusivity, matching MATLAB's
   ; constants_counters_initialvalues_sizevariables.m:17 initial dt. A fixed
   ; dt=0.25 here ignores this glacier's own dx/df_lim scale and can be ~1000x
   ; too large, causing the SIA to blow up on the very first sub-step.
-  if max(df_dx) gt 0 then begin
-    dt = dtfactor * (dx ^ 2) / max(df_dx)
-  endif else begin
-    dt = dtfactor * (dx ^ 2) / df_lim
-  endelse
-  dt = dt < 0.25d0 ; cap
-  dt = dt > 1d-4 ; floor
+  dt_fac = dtfactor
+  @procedures/flow/flow_timestep
   if time_flow + dt gt year_end_flow then dt = year_end_flow - time_flow
 
   ; ---- Diffusivity ----
@@ -383,12 +482,23 @@ while (time_flow lt year_end_flow) and (iter_flow lt max_iter_flow) do begin
   ; (small valley glaciers), catches the genuine ice-cap blow-ups in Svalbard/
   ; RussianArctic. Guard on vol_proxy_year_start avoids tripping on noisy
   ; ratios for near-ice-free glaciers.
-  vol_blowup = (vol_proxy_year_start gt 100d0) and $
-    (abs(total(thick_dx) - vol_proxy_year_start) gt 0.30d0 * vol_proxy_year_start)
+  ; flow_blowup_check='mass': instead, only a volume change that this year's balance and
+  ; the flow through both grid ends cannot explain (more than flow_blowup_mass_tol of the
+  ; volume at the start of the year, at least 10^4 m3)
+  if flow_blowup_check eq 'mass' then begin
+    flow_vol_res = flow_cell_volume(thick_dx, width_base_dx, lambda_dx, dx) - $
+      (flow_vol_ys + flow_mb_vol - flow_fa_vol + flow_hd_vol)
+    vol_blowup = ~finite(flow_vol_res) or abs(flow_vol_res) gt (flow_blowup_mass_tol * flow_vol_ys > 1d4)
+  endif else $
+    vol_blowup = (vol_proxy_year_start gt 100d0) and $
+      (abs(total(thick_dx) - vol_proxy_year_start) gt 0.30d0 * vol_proxy_year_start)
   if max(thick_dx) gt 5000d0 or total(~finite(thick_dx)) gt 0 or vol_blowup then begin
     print, 'WARNING: GloGEMflow blow-up at iter=' + strtrim(iter_flow, 2) + $
       ', max(thick_dx)=' + strtrim(max(thick_dx), 2) + $
       ', total_thick=' + strtrim(total(thick_dx), 2) + ' (was ' + strtrim(vol_proxy_year_start, 2) + ')'
+    if flow_blowup_check eq 'mass' then $
+      print, '  unexplained volume change ' + strtrim(flow_vol_res, 2) + ' m3 of ' + $
+        strtrim(flow_vol_ys, 2) + ' m3 at the start of the year'
     print, '  Falling back to Δh parameterisation for remainder of run.'
     flow_blown_up = 1
     thick_dx      = thick_dx_year_start
@@ -398,15 +508,57 @@ while (time_flow lt year_end_flow) and (iter_flow lt max_iter_flow) do begin
     ; writes it (only area/gl/width/elev), so without this sync thick[]
     ; would still be the pre-flow-model value, inconsistent with area[]/elev[].
     @procedures/flow/sync_bands_thickness
+    @procedures/flow/handover_to_dh
     use_flow_model_gl = 'n'   ; actually switch this glacier to Δh from here on
     break
   endif
+
+  ; Ice reached the last active cell (index 2): lengthen the ice-free area in front
+  ; of the glacier before any ice can leave the grid. Beyond the longest grid the
+  ; flow model stops for this glacier and the Δh parameterisation takes this year
+  ; from its start; with flow_domain_end='outflow' the glacier stays on the flow model
+  ; and the grid end lets the ice out (ice_thickness.pro). A sea front whose grid end
+  ; is below sea level is not lengthened: the ice leaving the end is frontal ablation.
+  if thick_dx[2] gt 0d0 and (flow_sea_front eq 0 or bed_dx[2] ge 0d0) and ~flow_open_end then begin
+    ext_ctx = 'coupled'
+    @procedures/flow/extend_flowline_grid
+    if ext_n gt 0 then begin
+      print, 'GloGEMflow: ice reached the end of the flowline grid in ' + strtrim(ye + tran[0], 2) + $
+        ' --- ' + strtrim(ext_n, 2) + ' cells added in front (' + $
+        strtrim(string(flow_frontal_length, fo='(f4.2)'), 2) + ' glacier lengths)'
+    endif else if flow_domain_end eq 'outflow' then begin
+      flow_open_end = 1b
+      print, 'WARNING: GloGEMflow ice reached the end of the longest flowline grid in ' + $
+        strtrim(ye + tran[0], 2) + ' (' + strtrim(string(flow_frontal_length, fo='(f4.2)'), 2) + $
+        ' glacier lengths in front) --- from now on the ice flows out of the grid end (grid-end outflow)'
+    endif else begin
+      print, 'WARNING: GloGEMflow ice reached the end of the longest flowline grid in ' + $
+        strtrim(ye + tran[0], 2) + ' (' + strtrim(string(flow_frontal_length, fo='(f4.2)'), 2) + $
+        ' glacier lengths in front) --- falling back to Δh parameterisation for remainder of run.'
+      flow_blown_up = 1
+      thick_dx      = thick_dx_year_start
+      sur_dx        = sur_dx_year_start
+      @procedures/flow/sync_bands_thickness
+      @procedures/flow/handover_to_dh
+      use_flow_model_gl = 'n'
+      break
+    endelse
+  endif
 endwhile
+flow_budget_on = 0
 
 if iter_flow ge max_iter_flow then $
   print, 'WARNING: GloGEMflow hit max iterations for year ' + strtrim(ye + tran[0], 2)
 
 endif  ; NOT flow_blown_up (STEP 3)
+
+; ice at the front with its surface below sea level calves off (frontal ablation),
+; then report the balance, outflow and calving the flowline actually had this year
+if NOT flow_blown_up then begin
+  @procedures/flow/calve_below_sea_level
+  flow_fc_vol = fc_vol
+  @procedures/flow/report_flowline_budget
+endif
 
 ; ========== STEP 4: UPDATE GEOMETRY ========== ;
 ; No explicit terminus cleanup here — ice_thickness.pro already zeroes
@@ -445,7 +597,7 @@ if c_ice_dx gt 0 then begin
   endif
   flow_area = (area_sum > 0d0) / 1d6  ; m² → km²
   ; Glacier-wide mass balance (m w.e./yr)
-  flow_mb = total(bal_dx[ii_ice_dx] * width_surface_dx[ii_ice_dx] * dx * 0.917d0) / $
+  flow_mb = total(bal_dx[ii_ice_dx] * width_surface_dx[ii_ice_dx] * dx * 0.9d0) / $
     total(width_surface_dx[ii_ice_dx] * dx)
 endif else begin
   flow_vol = 0d0
@@ -455,14 +607,11 @@ endelse
 
 ; Volume/area/mb are now stored BEFORE the SIA advance (STEP 2b above).
 ; Post-SIA values retained here for internal diagnostics only.
-; volumes[ye] = flow_vol / 1d9
-; areas[ye] = flow_area
-; mb[ye] = flow_mb
 
 ; ========== STEP 6: STORE ANNUAL FLOWLINE HISTORY ========== ;
 flow_thick_hist[*, ye] = thick_dx
 flow_sur_hist[*, ye] = sur_dx
-flow_bal_hist[*, ye] = bal_dx * 0.917d0 ; store as m w.e.
+flow_bal_hist[*, ye] = bal_dx * 0.9d0 ; store as m w.e.
 flow_width_hist[*, ye] = width_surface_dx
 
 ; Print diagnostic (show scaled values for consistency with GloGEM)

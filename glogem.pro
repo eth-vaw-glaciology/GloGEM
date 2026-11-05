@@ -90,7 +90,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 ; automatically setting end of modelling period for future runs
   if reanalysis_direct ne 'y' then tran[1]=2100
   if long_GCM ne '' then tran[1]=2300
-  if AMOC eq 'y' then tran[1]=2499
+  if AMOC eq 'y' and reanalysis_direct ne 'y' then tran[1]=2499
   
   ; === LOOP OVER DIFFERENT RCPs/SSPs
   if rcp_batch[0] ne 0 then ne_GCM_rcp=rcp_batch[gcms] else ne_GCM_rcp=n_elements(GCM_rcp)
@@ -129,11 +129,19 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
           count_glaciers=1
           cali_calflux=0
+          n_cali_nomatch=0L   ; glaciers without their own calibration row
+          n_growth_clamped=0L & growth_removed_gt=0d0   ; growth limit: clamps, ice removed (Gt)
+          n_dh_outflow=0L & dh_outflow_gt=0d0   ; dh_regrowth: glacier-years with outflow at the lowest band, ice (Gt)
+          n_reseed=0L & n_reseed_gl=0L   ; dh_reseed: restarts of glaciers that had no ice left, glaciers that restarted
           if use_flow_model eq 'y' then begin
             n_flow_ok       = 0L
             n_flow_short    = 0L
             n_flow_fallback = 0L
             n_flow_gated    = 0L
+            n_flow_meltout  = 0L
+            flow_ge_fa_gt   = 0d0   ; grid-end outflow booked as frontal ablation, Gt
+            flow_ge_melt_gt = 0d0   ; grid-end outflow booked as melt, Gt
+            flow_fc_gt      = 0d0   ; flowline ice calved at the front below sea level, Gt
           endif
 
           ; Define start of mass balance year and clean stale t_offset
@@ -164,13 +172,15 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
               @procedures/read/read_gcmdata_monthly.pro
             endif
             lat0=[min(rvlat)-0.1,max(rvlat)]
-            if clim_subregion eq 'Atlantic' then lat0[0]=-60.5
+            ; Atlantic starts where the Peninsula domain ends (-60.8), so the South Orkneys are run once
+            if clim_subregion eq 'Atlantic' then lat0[0]=-60.8
             lon0=[min(rvlon)-0.1,max(rvlon)]
           endif
           ; We keep for the moment reading in .mdi files for the CMIP6 models before looping over the grid
-          if time_resolution eq 'monthly' and AMOC ne 'y' then begin
+          ; (AMOC reads its 1-D GCM files per cell, but the regional ERA5 file only once, here)
+          if time_resolution eq 'monthly' then begin
              @procedures/read/read_climatepast_monthly.pro
-             if GMIP4 ne 'y' and reanalysis_direct ne 'y' then begin
+             if GMIP4 ne 'y' and AMOC ne 'y' and reanalysis_direct ne 'y' then begin
                 @procedures/read/read_gcmdata_monthly.pro
              endif
           endif
@@ -217,8 +227,8 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
 
             if read_parameters eq 'y' then begin
               @procedures/calibration/read_calibration_params.pro
-              if band_extension eq 'y' then begin
-                ; regional parameters the band extension blends into below the fronts (initialise_band_extension.pro)
+              if band_extension eq 'y' or band_extension_glacier eq 'y' then begin
+                ; regional parameters the band extension blends into below the fronts (initialise_band_extension.pro, virtual_ice_balance_glacier.pro)
                 toff_reg=median(cali_toff,/even) & cprec_reg=median(cali_cprec,/even)
                 ddfs_reg=median(cali_ddfsnow,/even) & ddfi_reg=median(cali_ddfice,/even)
               endif
@@ -239,7 +249,8 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
             @procedures/read/read_glacier_inventory_batchfile.pro
 
             ; checking whether survey-year/inventory-year is known and filling up with average if necessary
-            ii=where(survey_year ne noval,ci) & jj=where(survey_year eq noval,cj)
+            ; missing survey year: noval (-9999) in RGI7, -999 in RGI6
+            ii=where(survey_year gt 0,ci) & jj=where(survey_year le 0,cj)
             if ci gt 0 and cj gt 0 then survey_year[jj]=mean(survey_year[ii])
 
             ; if find_startyear eq 'y' then tran(0)=max([1980,min(survey_year)])
@@ -392,7 +403,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                     if use_flow_model eq 'y' then flow_initialised = !NULL
                     use_flow_model_gl = use_flow_model  ; per-glacier, may be overridden below
                     flow_gated_gl = 0   ; set by the spin-up quality gate in glogemflow_coupled.pro
-                    if n_elements(n_growth_clamped) eq 0 then n_growth_clamped = 0
+                    flow_meltout_gl = 0   ; set when the flowline melted out (dh_reseed, glogemflow_coupled.pro)
 
                     for cal1=0,cal1max do begin
 
@@ -443,6 +454,11 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                         @procedures/initialise/initialise_advance_scheme_vars.pro
                       endif
 
+                      ; thickness limit of the Δh regrowth
+                      if dh_regrowth eq 'y' then begin
+                        @procedures/initialise/initialise_dh_regrowth.pro
+                      endif
+
                       ; potential radiation time series
                       if meltmodel eq '3' then begin
                         @procedures/processing/potential_solarradiation.pro
@@ -461,12 +477,32 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                       gls=dblarr(nout,nb) & cnp=0
                       areas=dblarr(years) & volumes=areas
                       flux_calv=areas
+                      flow_gridend=areas & flow_ge_bed=-9999d0   ; flowline grid-end outflow (m w.e.), bed there (m)
+                      flow_ge_sea=0b & reseed_gl=0b   ; outflow at the sea-level cut of the bands; the glacier restarted
+                      flow_fcalv=areas   ; flowline ice calved at the front below sea level (m w.e.)
 
                       sur=dblarr(nb) & sno=sur & snostor=sur
                       firn=sur & ff=where(elev gt hmed[gg[g]],ci) & if ci gt 0 then firn[ff]=1
                       ; bands below the glacier and the balance as if ice for the elevation-band output
                       if band_extension eq 'y' then begin
                         @procedures/initialise/initialise_band_extension.pro
+                      endif
+                      if band_extension_glacier eq 'y' then begin
+                        ; virtual ice surface on every band (virtual_ice_balance_glacier.pro): snow, surface type, firn, last 5 balances
+                        sno_v=dblarr(nb) & sur_v=dblarr(nb) & snostor_v=dblarr(nb) & firn_v=firn & bal_v5=dblarr(5,nb)
+                        if dh_reseed eq 'y' then bal_vr=dblarr(dh_reseed_years,nb)   ; the last dh_reseed_years balances (dh_reseed.pro)
+                        ; parameters per band: the glacier's own down to its front, blending linearly into the
+                        ; regional medians below it (w_v = 0 at and above the front), over band_blend_depth or
+                        ; more: the offset changes by at most band_blend_dtdz per metre, the degree-day factors and
+                        ; c_prec by at most band_blend_dlnp (relative) per metre, so the balance still falls going down
+                        v_ii=where(gl ne noval,v_ci) & if v_ci gt 0 then z_front_v=min(elev[v_ii]) else z_front_v=min(elev)
+                        if v_ci gt 0 then i_front_v=min(v_ii) else i_front_v=0   ; lowest band with ice
+                        blend_d_v=band_blend_depth > abs(t_offset-toff_reg)/band_blend_dtdz
+                        blend_d_v=blend_d_v > abs(alog(DDFice/ddfi_reg))/band_blend_dlnp > abs(alog(DDFsnow/ddfs_reg))/band_blend_dlnp
+                        blend_d_v=blend_d_v > abs(alog(c_prec/cprec_reg))/band_blend_dlnp
+                        w_v=((z_front_v-elev)/blend_d_v > 0d) < 1d
+                        toff_v=t_offset+w_v*(toff_reg-t_offset) & cprec_v=c_prec+w_v*(cprec_reg-c_prec)
+                        ddfs_v=DDFsnow+w_v*(ddfs_reg-DDFsnow) & ddfi_v=DDFice+w_v*(ddfi_reg-DDFice)
                       endif
                       baly=dblarr(years,nb)
                       ; ground bands below the glacier front for the snowline
@@ -526,6 +562,9 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                         if band_extension eq 'y' then begin   ; balance as if ice and its refreezing state (virtual_ice_balance.pro)
                           bal_v=dblarr(nv) & rf_cold_v=dblarr(nv) & rf_ind_v=dblarr(nv)
                         endif
+                        if band_extension_glacier eq 'y' then begin   ; the same on the glacier's own bands (virtual_ice_balance_glacier.pro)
+                          bal_v=dblarr(nb) & rf_cold_v=dblarr(nb) & rf_ind_v=dblarr(nb) & refre_v=dblarr(nb)
+                        endif
                         debris_red_factor=dblarr(nb)+snoval
                         rf_ind=dblarr(nb) & rf_cold=rf_ind
                         ii=where(gl ne noval,ci) & if ci gt 0 then ar_gl=total(area[ii]) else ar_gl=0
@@ -573,6 +612,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                             if air_temperature eq 'freeair' then if fa_tix[jjclim[0]+ccmon] ge 0 then $
                               tg=freeair_blend(freeair_at(fa_node,fa_h0,fa_dh,elev,fa_tix[jjclim[0]+ccmon]), $
                                 temp[jjclim[0]+ccmon]+(elev-hclim)*dtdz[m-1],elev,hclim,freeair_blend_depth)+t_offset
+                            if bext_dyn then tg=tg+(toff_v-t_offset)   ; blended offset below the inventory front
                             ; this month's free air index, before accumulation.pro advances ccmon
                             if firnice_thermal_air eq 'freeair' then fa_it = jjclim[0]+ccmon
                             if firnice_daily_anomalies ne '' then da_it = jjclim[0]+ccmon
@@ -585,6 +625,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                             ; --- melt (positive)
                             ; two melt models are available: 1: temperature-index model, 3: simplified energy balance model (only for monthly time steps)
                             @procedures/processing/meltmodel.pro
+
 
                             ; --- refreezing (positive)
 
@@ -601,6 +642,9 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                             ; --- every band as if its surface were ice (needs this month's refreezing scaling)
                             if band_extension eq 'y' then begin
                               @procedures/processing/virtual_ice_balance.pro
+                            endif
+                            if band_extension_glacier eq 'y' then begin
+                              @procedures/processing/virtual_ice_balance_glacier.pro
                             endif
 
                             ; --- firn/ice temperatures
@@ -706,11 +750,14 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                         @procedures/processing/finalize_annual_massbalance.pro
 
                         ; virtual snow store and firn as finalize_annual_massbalance.pro: firn where the 5-year mean balance is positive
-                        if band_extension eq 'y' then begin
+                        if band_extension eq 'y' or band_extension_glacier eq 'y' then begin
                           snostor_v=sno_v
                           bal_v5=shift(bal_v5,-1,0) & bal_v5[4,*]=bal_v
+                          if dh_reseed eq 'y' then begin
+                            bal_vr=shift(bal_vr,-1,0) & bal_vr[dh_reseed_years-1,*]=bal_v
+                          endif
                           if ye gt 4 then begin
-                            firn_v=dblarr(nv) & v_ii=where(total(bal_v5,1)/5d gt 0,v_ci) & if v_ci gt 0 then firn_v[v_ii]=1
+                            firn_v=dblarr(n_elements(bal_v)) & v_ii=where(total(bal_v5,1)/5d gt 0,v_ci) & if v_ci gt 0 then firn_v[v_ii]=1
                           endif
                         endif
 
@@ -737,16 +784,21 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                         if glacier_retreat eq 'y' then begin
                           if use_flow_model_gl eq 'y' and ye + tran[0] ge survey_year[gg[g]] then begin
                             @procedures/flow/glogemflow_coupled
+                            ; bound the flowline before the bands are rebuilt from it
+                            if use_flow_model_gl eq 'y' then begin
+                              @procedures/processing/limit_glacier_growth.pro
+                            endif
                             @procedures/flow/update_elevation_bands
-                          endif else begin
+                          endif
+                          ; Δh glaciers, and a flow glacier in the year the flow model gives up
+                          if use_flow_model_gl ne 'y' or ye + tran[0] lt survey_year[gg[g]] then begin
                             @procedures/processing/glacier_retreat.pro
-                          endelse
-                          ; bound the result whichever path produced it
-                          @procedures/processing/limit_glacier_growth.pro
+                            @procedures/processing/limit_glacier_growth.pro
+                          endif
                         endif                           ; glacier retreat
 
                         ; save per-glacier geometry and flowline grid history (.sav)
-                        if write_geometry_output eq 'y' then begin
+                        if write_geometry_output ne 'n' then begin
                           @procedures/write/save_geometry_output.pro
                         endif
 
@@ -780,6 +832,7 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                       if flow_eligible and calibrate ne 'y' and cal1 eq 0 then begin
                         if use_flow_model_gl eq 'y' then n_flow_ok = n_flow_ok + 1 $
                         else if flow_gated_gl then n_flow_gated = n_flow_gated + 1 $
+                        else if flow_meltout_gl then n_flow_meltout = n_flow_meltout + 1 $
                         else n_flow_fallback = n_flow_fallback + 1
                       endif
 
@@ -804,6 +857,11 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
                     endif else begin
                       PRINT, 'Error: temporal resolution is required.'
                     endelse
+                  endif
+
+                  ; flowline grid-end outflow of this glacier
+                  if write_file eq 'y' and calibrate ne 'y' and (use_flow_model eq 'y' or dh_regrowth eq 'y') then begin
+                    @procedures/write/write_flow_gridend_outflow.pro
                   endif
 
                   ; === NETCDF OUTPUT: write this glacier's data slice into the
@@ -883,6 +941,18 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
           ; output of total calving flux for calibration purposes
           print, '--------- TOTAL CALVING FLUX (Gt/a) (period average):'
           print, string(cali_calflux,fo='(f9.4)')
+          print, '--------- GROWTH LIMIT: ' + strtrim(n_growth_clamped, 2) + ' glacier-years clamped, ' + $
+            strtrim(string(growth_removed_gt, fo='(e10.3)'), 2) + ' Gt removed and booked as ice melt'
+          if dh_regrowth eq 'y' then $
+            print, '--------- Δh REGROWTH OUTFLOW: ' + strtrim(n_dh_outflow, 2) + ' glacier-years with ice leaving the lowest band, ' + $
+              strtrim(string(dh_outflow_gt, fo='(e10.3)'), 2) + ' Gt (flow_gridend_outflow=''' + flow_gridend_outflow + ''')'
+          if dh_reseed eq 'y' then $
+            print, '--------- RESTARTS: ' + strtrim(n_reseed, 2) + ' restart(s) of ' + strtrim(n_reseed_gl, 2) + $
+              ' glacier(s) that had no ice left (dh_reseed)'
+          if read_parameters eq 'y' then begin
+            if n_cali_nomatch gt 0 then cali_msg = 'WARNING: ' else cali_msg = ''
+            print, '--------- ' + cali_msg + strtrim(n_cali_nomatch,2) + ' glacier(s) without their own row in the calibration file (nearest glacier ID used)'
+          endif
           if use_flow_model eq 'y' then begin
             n_flow_total = count_glaciers - 1   ; total glaciers the loop visited
             pct_ok      = string(n_flow_ok      * 100. / n_flow_total, fo='(f5.1)')
@@ -894,6 +964,18 @@ for gcms=first_GCM,n_elements(GCM_model)-1 do begin
             print, '  ' + strtrim(n_flow_short,2)    + ' (' + strtrim(pct_short,2)  + '%)  excluded: length < 1 km'
             print, '  ' + strtrim(n_flow_fallback,2) + ' (' + strtrim(pct_fallbk,2) + '%)  excluded: spinup failure (fell back to Dh parameterisation)'
             print, '  ' + strtrim(n_flow_gated,2)    + ' (' + strtrim(pct_gated,2)   + '%)  excluded: spin-up could not reproduce the observed glacier (quality gate)'
+            if dh_reseed eq 'y' then $
+              print, '  ' + strtrim(n_flow_meltout,2) + ' (' + strtrim(string(n_flow_meltout * 100. / n_flow_total, fo='(f5.1)'),2) + $
+                '%)  ran with GloGEMflow until the flowline melted out, then on the Δh parameterisation (dh_reseed)'
+            flow_ge_gt = flow_ge_fa_gt + flow_ge_melt_gt
+            print, '--------- FLOWLINE GRID-END OUTFLOW (flow_gridend_outflow=''' + flow_gridend_outflow + '''):'
+            print, '  ' + strtrim(string(flow_ge_gt, fo='(f12.4)'), 2) + ' Gt over the run (' + $
+              strtrim(string(flow_ge_gt / years, fo='(f10.4)'), 2) + ' Gt/a averaged over ' + strtrim(years, 2) + ' model years): ' + $
+              strtrim(string(flow_ge_fa_gt, fo='(f12.4)'), 2) + ' Gt booked as frontal ablation, ' + $
+              strtrim(string(flow_ge_melt_gt, fo='(f12.4)'), 2) + ' Gt as melt'
+            print, '--------- FLOWLINE CALVING BELOW SEA LEVEL (frontal ablation):'
+            print, '  ' + strtrim(string(flow_fc_gt, fo='(f12.4)'), 2) + ' Gt over the run (' + $
+              strtrim(string(flow_fc_gt / years, fo='(f10.4)'), 2) + ' Gt/a averaged over ' + strtrim(years, 2) + ' model years)'
           endif
         endif
 
