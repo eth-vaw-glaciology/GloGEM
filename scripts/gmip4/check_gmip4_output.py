@@ -26,10 +26,12 @@ Two checks per region:
      until proven otherwise).
 
 Usage:
-    python3 scripts/gmip4/check_gmip4_output.py REGION [REGION ...] [--all] [--quiet] [--v2 | --v3]
+    python3 scripts/gmip4/check_gmip4_output.py REGION [REGION ...] [--all] [--quiet] [--v2 | --v3 | --v4]
 
     REGION   lower-case as used in combine_gmip4_output.py, e.g. svalbard,
              arcticcanadan, southasiaeast
+
+    Environment: GMIP4_FINAL_BASE, as in combine_gmip4_output.py
 
 Thresholds were set against the 2026-09-08 findings and against what
 healthy runs look like (largest legitimate single glacier: an ArcticCanadaN
@@ -57,7 +59,7 @@ EXCESS_TOL  = 0.01     # flagged glaciers worth <1 % of regional ice pass: the
                        # lands a hair over. Judge the volume, not the boundary.
 
 GLOGEM_BASE = str(RUN_DIR)
-FINAL_BASE  = str(RESULTS_DIR / "flow")
+FINAL_BASE  = os.environ.get("GMIP4_FINAL_BASE", str(RESULTS_DIR)) + "/flow"
 
 # Kept in sync by hand with combine_gmip4_output.py (which cannot be imported:
 # it runs process() at module level).
@@ -242,6 +244,8 @@ def main(argv):
         RUN = "gmip4v2"
     if "--v3" in argv:
         RUN = "gmip4v3"
+    if "--v4" in argv:
+        RUN = "gmip4v4"
     regions = [a for a in argv if not a.startswith("--")]
     if "--all" in argv or not regions:
         regions = list(REGION_DIR)

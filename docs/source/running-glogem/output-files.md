@@ -206,6 +206,8 @@ the glacier, for example as the mass-balance forcing of an ice-flow model:
 
 ---
 
+`band_extension_glacier = 'y'` gives the same rows through real glacier bands instead of separate rows. The flow model, `dh_regrowth` and `dh_reseed` need it; with changing geometry it needs `dh_regrowth`. It cannot be on together with `band_extension`.
+
 ## Hypsometry evolution output
 
 Activated with `write_hypsometry_files = 'y'`. Writes the full elevation-band hypsometry (area, thickness, surface elevation per band) at each time step for every glacier. Files are compressed (zipped) at the end of the run. This output can be large for full regional runs.

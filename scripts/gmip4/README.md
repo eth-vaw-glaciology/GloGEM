@@ -23,6 +23,9 @@ Every script prints its usage with `--help`. Run them from the repository root.
 | `check_gmip4_output.py` | Output gate, read-only: flags runaway glaciers (absurd volume or mean thickness), glaciers that turn NaN, an empty run folder, non-finite values in the combined files, regional regrowth under ssp370/ssp585 and mass below sea level larger than the mass. Runaways worth less than 1 % of the regional ice are tolerated; any other finding makes it exit non-zero. | nothing |
 | `sync_spinup_cache.py` | Copies each region's flow spin-up cache next to the combined results. `--dry-run` writes nothing. | `GMIP4_RESULTS_DIR/spinup_cache/<Region>/` |
 | `gmip4_paths.py` | The folders above, from environment variables (imported by the Python scripts). | - |
+| `make_gmip4v4_configs.py`, `stage_calibration_v4.sh`, `feed_v4_campaign.py` | The v4 resubmission of 14 regions (tag `gmip4-v4`): configs, calibration files, job feeder | configs in this folder, calibration copies, queued jobs |
+| `check_gmip4_budget.py` | Does the annual mass change of combined files match their monthly fluxes? | prints per region |
+| `publish_gmip4v4.sh` | Moves checked v4 folders into the publish folder and writes the checksums | publish folders |
 
 ## Order of a campaign
 
